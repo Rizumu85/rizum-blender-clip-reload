@@ -1,0 +1,933 @@
+﻿"""
+clip_loader.py 鈥?minimal Clip Studio Paint (.clip) reader and compositor.
+
+Scope (MVP): full-color raster layers, Normal blend mode, opacity, visibility,
+folder traversal. Skips and warns on non-Normal blend modes, grayscale layers,
+non-zero layer offsets, vector / 3D / text layers.
+
+Designed to run with stdlib + numpy only. No OpenCV / Pillow dependency.
+
+Output convention: a single (H, W, 4) uint8 RGBA NumPy array, straight alpha,
+matching the convention CSP uses when exporting flattened PNGs.
+
+v0.5 optimizations:
+  鈥?Lazy CHNKExta parsing 鈥?only the few blobs we actually use get zlib-decompressed
+  鈥?Vectorized tile assembly (numpy reshape/transpose, no Python per-tile loop)
+  鈥?save_png defaults to zlib level 1 (PNG cache; size cost ~10鈥?0%, much faster)
+
+Verified bit-equivalent (alpha-aware) against CSP's PNG export on:
+  - Illustration.clip   (512x512, 1 raster layer)
+  - Illustration4K.clip (4096x4096, 3 raster layers)
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import sqlite3
+import struct
+import tempfile
+import zlib
+from dataclasses import dataclass
+from typing import Iterable, Optional
+
+import numpy as np
+
+
+log = logging.getLogger("clip_loader")
+
+CSF_MAGIC = b"CSFCHUNK"
+TILE = 256
+PER_TILE_BYTES = TILE * TILE * 5   # 1B alpha + 4B BGRA per pixel
+LAYER_TYPE_RASTER = 1
+LAYER_TYPE_GROUP = 2
+LAYER_TYPE_RASTER_MASKED = 3
+LAYER_TYPE_LAYER_FOLDER = 0
+LAYER_TYPE_FOLDER = 256
+LAYER_TYPE_PAPER = 1584
+COMPOSITE_NORMAL = 0
+RASTER_LAYER_TYPES = {LAYER_TYPE_RASTER, LAYER_TYPE_RASTER_MASKED}
+
+
+# --------------------------------------------------------------------------- #
+# Chunk container
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class _Chunk:
+    type: bytes
+    body: bytes
+
+
+def _walk_chunks(data: bytes) -> Iterable[_Chunk]:
+    if data[:8] != CSF_MAGIC:
+        raise ValueError("Not a CLIP file (missing CSFCHUNK magic).")
+    pos = 8 + 16
+    while pos < len(data):
+        ctype = data[pos:pos + 8]
+        csize = struct.unpack_from(">Q", data, pos + 8)[0]
+        body = data[pos + 16 : pos + 16 + csize]
+        yield _Chunk(ctype, body)
+        pos += 16 + csize
+
+
+def _read_exta_id(body: bytes) -> str:
+    """Read just the external_id from an Exta body, without parsing blocks."""
+    L = struct.unpack_from(">Q", body, 0)[0]
+    return body[8:8 + L].decode("ascii")
+
+
+def _split_clip(path: str):
+    """Walk the .clip file once. Index every CHNKExta by external_id but DO NOT
+    decompress its blocks yet 鈥?that happens lazily in `_parse_exta`.
+
+    Returns (ext_to_body: dict[str, bytes], sqlite_bytes: bytes).
+    """
+    with open(path, "rb") as f:
+        data = f.read()
+
+    sqlite_bytes = None
+    ext_to_body: dict[str, bytes] = {}
+    for chunk in _walk_chunks(data):
+        if chunk.type == b"CHNKSQLi":
+            sqlite_bytes = chunk.body
+        elif chunk.type == b"CHNKExta":
+            try:
+                ext_id = _read_exta_id(chunk.body)
+            except (struct.error, UnicodeDecodeError) as exc:
+                log.warning("Skipping unreadable Exta header: %s", exc)
+                continue
+            ext_to_body[ext_id] = chunk.body
+    if sqlite_bytes is None:
+        raise ValueError("CLIP file has no CHNKSQLi chunk.")
+    return ext_to_body, sqlite_bytes
+
+
+def _parse_exta(body: bytes) -> tuple[str, bytes]:
+    """Decompress the blocks of an Exta body. Returns (external_id, tile_blob).
+
+    Two block-name framings exist:
+      Case A (no payload): size_01 = name_len, size_02 = "Bl" UTF-16BE marker
+        (0x0042006C). Rewind 4 so size_02 becomes the first 4 name bytes.
+      Case B (with payload): size_01 = outer_payload_size, size_02 = name_len.
+
+    For BlockDataBeginChunk / BlockStatus / BlockCheckSum we derive block_end
+    from inner fields, matching csp_tool's verified-correct behaviour.
+    """
+    pos = 0
+    L = struct.unpack_from(">Q", body, pos)[0]
+    pos += 8
+    ext_id = body[pos:pos + L].decode("ascii")
+    pos += L
+    pos += 8  # external data size 鈥?informational
+
+    out = bytearray()
+    BL_MARKER = 0x0042006C  # "Bl" in UTF-16BE 鈥?prefix of every "Block*" name
+
+    while pos < len(body):
+        if pos + 8 > len(body):
+            break
+        block_start = pos
+        s1 = struct.unpack_from(">L", body, pos)[0]; pos += 4
+        s2 = struct.unpack_from(">L", body, pos)[0]; pos += 4
+
+        if s2 == BL_MARKER:
+            name_len = s1
+            outer_payload = 0
+            pos = block_start + 4
+        else:
+            name_len = s2
+            outer_payload = s1
+
+        if name_len == 0 or name_len >= 256:
+            log.warning("Bad name_len=%d at exta offset %d (ext_id=%s)",
+                        name_len, block_start, ext_id)
+            break
+
+        if pos + name_len * 2 > len(body):
+            log.warning("Block name truncated at offset %d", block_start)
+            break
+        name = body[pos:pos + name_len * 2].decode("utf-16-be")
+        pos += name_len * 2
+
+        inner_start = pos
+        block_end = inner_start + outer_payload
+
+        if name == "BlockDataBeginChunk":
+            pos += 4
+            uncomp = struct.unpack_from(">L", body, pos)[0]; pos += 4
+            pos += 4
+            pos += 4
+            exist = struct.unpack_from(">L", body, pos)[0]; pos += 4
+            if exist > 0:
+                inner_len = struct.unpack_from(">L", body, pos)[0]; pos += 4
+                tail_len = struct.unpack_from("<L", body, pos)[0]; pos += 4
+                zdata = body[pos:pos + tail_len]
+                decoded = zlib.decompress(zdata)
+                if len(decoded) != uncomp:
+                    log.warning("Tile uncompressed size mismatch: %d vs %d",
+                                len(decoded), uncomp)
+                out += decoded
+                block_end = inner_start + 24 + inner_len
+            else:
+                out += bytes(uncomp)
+                block_end = inner_start + 20
+        elif name in ("BlockStatus", "BlockCheckSum"):
+            block_end = inner_start + 24
+        elif name == "BlockDataEndChunk":
+            pass
+        else:
+            log.warning("Unknown block name %r in Exta %s", name, ext_id)
+            break
+
+        pos = block_end
+    return ext_id, bytes(out)
+
+
+# --------------------------------------------------------------------------- #
+# Tile data 鈫?RGBA image  (vectorized 鈥?no per-tile Python loop)
+# --------------------------------------------------------------------------- #
+
+def _tiles_to_rgba(tile_blob: bytes, width: int, height: int) -> np.ndarray:
+    """Decode a layer's tile blob into a (H, W, 4) uint8 RGBA array.
+
+    Tile layout (per tile, after zlib decompression):
+      [TILE*TILE bytes alpha plane] [TILE*TILE*4 bytes BGRA plane]
+    The standalone alpha plane is the authoritative alpha; the BGRA plane's A
+    channel is ignored. Tiles are laid out row-major.
+    """
+    cols = (width + TILE - 1) // TILE
+    rows = (height + TILE - 1) // TILE
+    expected = cols * rows * PER_TILE_BYTES
+    if len(tile_blob) != expected:
+        raise ValueError(
+            f"Tile blob size mismatch: have {len(tile_blob)}, expect {expected} "
+            f"({rows}x{cols} tiles)."
+        )
+
+    arr = np.frombuffer(tile_blob, dtype=np.uint8)
+
+    # (rows, cols, alpha_bytes + bgra_bytes)
+    grouped = arr.reshape(rows, cols, PER_TILE_BYTES)
+    alpha_planes = grouped[:, :, : TILE * TILE].reshape(rows, cols, TILE, TILE)
+    bgra_planes = grouped[:, :, TILE * TILE :].reshape(rows, cols, TILE, TILE, 4)
+
+    # Reorder (rows, cols, TILE, TILE) 鈫?(rows, TILE, cols, TILE) 鈫?(rows*TILE, cols*TILE)
+    alpha_full = alpha_planes.transpose(0, 2, 1, 3).reshape(rows * TILE, cols * TILE)
+    bgra_full = bgra_planes.transpose(0, 2, 1, 3, 4).reshape(rows * TILE, cols * TILE, 4)
+
+    # Compose RGBA: take BGR from bgra_full, swap to RGB, alpha from alpha_full.
+    canvas = np.empty((rows * TILE, cols * TILE, 4), dtype=np.uint8)
+    canvas[:, :, 0] = bgra_full[:, :, 2]   # R
+    canvas[:, :, 1] = bgra_full[:, :, 1]   # G
+    canvas[:, :, 2] = bgra_full[:, :, 0]   # B
+    canvas[:, :, 3] = alpha_full
+    return canvas[:height, :width].copy()
+
+
+
+def _tiles_to_alpha(tile_blob: bytes, width: int, height: int) -> np.ndarray:
+    """Decode a single-channel mask blob into a (H, W) uint8 array.
+
+    Layout: each tile is just TILE*TILE bytes of grayscale (alpha) data, no
+    BGRA plane. CSP uses this for layer masks (and grayscale layers, which we
+    don't otherwise support yet).
+    """
+    cols = (width + TILE - 1) // TILE
+    rows = (height + TILE - 1) // TILE
+    expected = cols * rows * TILE * TILE
+    if len(tile_blob) != expected:
+        raise ValueError(
+            f"Mask tile blob size mismatch: have {len(tile_blob)}, expect {expected}."
+        )
+    arr = np.frombuffer(tile_blob, dtype=np.uint8)
+    grouped = arr.reshape(rows, cols, TILE, TILE)
+    full = grouped.transpose(0, 2, 1, 3).reshape(rows * TILE, cols * TILE)
+    return full[:height, :width].copy()
+
+
+# --------------------------------------------------------------------------- #
+# Blend modes
+#
+# CSP stores blend mode as an integer in Layer.LayerComposite. The mapping
+# from integer to named mode is NOT publicly documented; we collect it
+# empirically by saving test samples in CSP and observing which int comes out.
+# Update _BLEND_MAPPING below as new ones are observed.
+#
+# Blend functions take and return STRAIGHT (non-premultiplied) RGB in [0, 1].
+# --------------------------------------------------------------------------- #
+
+# Empirical mapping: CSP integer 鈫?blend mode name. Filled in by observing
+# IllustrationBlendModes.clip (one labelled layer per CSP UI mode). Modes with
+# no integer assigned yet behave like NORMAL with a warning.
+_BLEND_MAPPING = {
+    0: "NORMAL",
+    # Confirmed by IllustrationBlendModes*.clip inspection (2026-04-28/29):
+    1: "DARKEN",
+    2: "MULTIPLY",
+    3: "COLOR_BURN",
+    4: "LINEAR_BURN",
+    5: "SUBTRACT",
+    6: "DARKER_COLOR",
+    7: "LIGHTEN",
+    8: "SCREEN",
+    9: "COLOR_DODGE",
+    10: "GLOW_DODGE",
+    11: "ADD",
+    12: "ADD_GLOW",
+    13: "LIGHTER_COLOR",
+    14: "OVERLAY",
+    15: "SOFT_LIGHT",
+    16: "HARD_LIGHT",
+    17: "VIVID_LIGHT",
+    18: "LINEAR_LIGHT",
+    19: "PIN_LIGHT",
+    20: "HARD_MIX",
+    21: "DIFFERENCE",
+    22: "EXCLUSION",
+    23: "HUE",
+    24: "SATURATION",
+    25: "COLOR",
+    26: "BRIGHTNESS",
+    36: "DIVIDE",
+    # Gaps (1, 4, 6, 7, 10, 12, 13, 17鈥?0, 22+) likely belong to:
+}
+
+
+# --- HSL helpers (Photoshop / W3C non-separable blend math) --- #
+
+def _lum(c: np.ndarray) -> np.ndarray:
+    """Photoshop luminosity: 0.3 R + 0.59 G + 0.11 B."""
+    return 0.3 * c[..., 0] + 0.59 * c[..., 1] + 0.11 * c[..., 2]
+
+
+def _set_lum(c: np.ndarray, l: np.ndarray) -> np.ndarray:
+    """Translate c so its luminosity equals l, then clip into [0,1]."""
+    diff = (l - _lum(c))[..., None]
+    out = c + diff
+    L = _lum(out)[..., None]
+    mn = out.min(axis=-1, keepdims=True)
+    mx = out.max(axis=-1, keepdims=True)
+    # Clip values that fall below 0 toward L
+    below = mn < 0
+    out_below = L + (out - L) * (L / np.maximum(L - mn, 1e-6))
+    out = np.where(below, out_below, out)
+    # Clip values above 1 toward L
+    above = mx > 1
+    out_above = L + (out - L) * ((1.0 - L) / np.maximum(mx - L, 1e-6))
+    out = np.where(above, out_above, out)
+    return out
+
+
+def _sat(c: np.ndarray) -> np.ndarray:
+    return c.max(axis=-1) - c.min(axis=-1)
+
+
+def _set_sat(c: np.ndarray, s: np.ndarray) -> np.ndarray:
+    """Set saturation channel-wise; preserves min/max ordering of c."""
+    out = np.zeros_like(c)
+    cmax = c.max(axis=-1, keepdims=True)
+    cmin = c.min(axis=-1, keepdims=True)
+    span = cmax - cmin
+    s_b = s[..., None]
+    # For pixels where span > 0, scale relative position.
+    rel = np.where(span > 0, (c - cmin) / np.maximum(span, 1e-6), 0.0)
+    out = rel * s_b
+    return out
+
+
+def _blend_func(mode: str, s: np.ndarray, d: np.ndarray) -> np.ndarray:
+    """Pure blend function: returns blended RGB given straight src/dst RGB."""
+    if mode in ("HUE", "SATURATION", "BRIGHTNESS", "LUMINOSITY"):
+        s = np.floor(np.clip(s, 0.0, 1.0) * 255.0 + 0.5) / 255.0
+        d = np.floor(np.clip(d, 0.0, 1.0) * 255.0 + 0.5) / 255.0
+    if mode == "NORMAL":
+        return s
+    if mode == "MULTIPLY":
+        return s * d
+    if mode == "SCREEN":
+        return 1.0 - (1.0 - s) * (1.0 - d)
+    if mode == "OVERLAY":
+        return np.where(d < 0.5, 2.0 * s * d, 1.0 - 2.0 * (1.0 - s) * (1.0 - d))
+    if mode == "HARD_LIGHT":
+        return np.where(s < 0.5, 2.0 * s * d, 1.0 - 2.0 * (1.0 - s) * (1.0 - d))
+    if mode == "SOFT_LIGHT":
+        return np.where(
+            s < 0.5,
+            d - (1.0 - 2.0 * s) * d * (1.0 - d),
+            d + (2.0 * s - 1.0) * (np.where(d < 0.25,
+                                             ((16.0 * d - 12.0) * d + 4.0) * d,
+                                             np.sqrt(d)) - d),
+        )
+    if mode == "ADD" or mode == "ADD_GLOW":
+        # CSP's "Add" and "Add (Glow)" are both straight saturating addition;
+        # the visual difference comes from light-source gamma which we don't
+        # model here. Behaviourally they should match for opaque pixels.
+        return np.minimum(s + d, 1.0)
+    if mode == "SUBTRACT":
+        return np.maximum(d - s, 0.0)
+    if mode == "DIFFERENCE":
+        return np.abs(s - d)
+    if mode == "EXCLUSION":
+        return s + d - 2.0 * s * d
+    if mode == "LIGHTEN":
+        return np.maximum(s, d)
+    if mode == "DARKEN":
+        return np.minimum(s, d)
+    if mode == "DIVIDE":
+        return np.minimum(d / np.maximum(s, 1e-6), 1.0)
+    if mode == "COLOR_DODGE" or mode == "GLOW_DODGE":
+        s_u8 = np.clip(np.floor(s * 255.0 + 0.5), 0, 255).astype(np.int32)
+        d_u8 = np.clip(np.floor(d * 255.0 + 0.5), 0, 255).astype(np.int32)
+        out = np.where(s_u8 >= 255, 255,
+                       np.minimum(255, (d_u8 * 255) // np.maximum(255 - s_u8, 1)))
+        return out.astype(np.float32) / 255.0
+    if mode == "COLOR_BURN":
+        s_u8 = np.clip(np.floor(s * 255.0 + 0.5), 0, 255).astype(np.int32)
+        d_u8 = np.clip(np.floor(d * 255.0 + 0.5), 0, 255).astype(np.int32)
+        out = np.where(s_u8 <= 0, 0,
+                       255 - np.minimum(255, ((255 - d_u8) * 255) // np.maximum(s_u8, 1)))
+        return out.astype(np.float32) / 255.0
+    if mode == "LINEAR_BURN":
+        return np.maximum(s + d - 1.0, 0.0)
+    if mode == "LINEAR_LIGHT":
+        # 2*s + d - 1, clamped
+        return np.clip(2.0 * s + d - 1.0, 0.0, 1.0)
+    if mode == "VIVID_LIGHT":
+        # s<0.5: color-burn(d, 2*s) ; s>=0.5: color-dodge(d, 2*(s-0.5))
+        burn = np.where(d >= 1, 1.0,
+                        np.where(2.0 * s <= 0, 0.0,
+                                 1.0 - np.minimum((1.0 - d) / np.maximum(2.0 * s, 1e-6), 1.0)))
+        dodge_s = 2.0 * (s - 0.5)
+        dodge = np.where(d <= 0, 0.0,
+                         np.where(dodge_s >= 1, 1.0,
+                                  np.minimum(d / np.maximum(1.0 - dodge_s, 1e-6), 1.0)))
+        return np.where(s < 0.5, burn, dodge)
+    if mode == "PIN_LIGHT":
+        # s<0.5: darken(d, 2s) ; s>=0.5: lighten(d, 2(s-0.5))
+        return np.where(s < 0.5, np.minimum(d, 2.0 * s), np.maximum(d, 2.0 * (s - 0.5)))
+    if mode == "HARD_MIX":
+        burn = np.where(d >= 1, 1.0,
+                        np.where(2.0 * s <= 0, 0.0,
+                                 1.0 - np.minimum((1.0 - d) / np.maximum(2.0 * s, 1e-6), 1.0)))
+        dodge_s = 2.0 * (s - 0.5)
+        dodge = np.where(d <= 0, 0.0,
+                         np.where(dodge_s >= 1, 1.0,
+                                  np.minimum(d / np.maximum(1.0 - dodge_s, 1e-6), 1.0)))
+        return (np.where(s < 0.5, burn, dodge) >= (127.0 / 255.0)).astype(np.float32)
+    if mode == "DARKER_COLOR":
+        # Pick whichever pixel has lower luminosity, channel-wise replace
+        s_lum = _lum(s)[..., None]
+        d_lum = _lum(d)[..., None]
+        return np.where(s_lum < d_lum, s, d)
+    if mode == "LIGHTER_COLOR":
+        s_lum = _lum(s)[..., None]
+        d_lum = _lum(d)[..., None]
+        return np.where(s_lum > d_lum, s, d)
+    if mode == "HUE":
+        return _set_lum(_set_sat(s, _sat(d)), _lum(d))
+    if mode == "SATURATION":
+        return _set_lum(_set_sat(d, _sat(s)), _lum(d))
+    if mode == "COLOR":
+        return _set_lum(s, _lum(d))
+    if mode == "LUMINOSITY" or mode == "BRIGHTNESS":
+        # CSP labels this "Brightness"; W3C/PSD call it "Luminosity".
+        return _set_lum(d, _lum(s))
+    # Unknown mode 鈫?fall back to Normal silently.
+    return s
+
+
+def _alpha_bbox(alpha: np.ndarray):
+    """Return (y0, y1, x0, x1) tightly enclosing all alpha>0 pixels, else None.
+
+    For sparse layers (typical of CSP files where ~99% of pixels are transparent)
+    this lets the compositor skip the empty regions entirely.
+    """
+    if not alpha.any():
+        return None
+    rows = np.any(alpha, axis=1)
+    cols = np.any(alpha, axis=0)
+    y0 = int(np.argmax(rows))
+    y1 = len(rows) - int(np.argmax(rows[::-1]))
+    x0 = int(np.argmax(cols))
+    x1 = len(cols) - int(np.argmax(cols[::-1]))
+    return y0, y1, x0, x1
+
+
+def _clip_color_component(value) -> int:
+    """CSP may store color components as a repeated-byte 32-bit value."""
+    value = int(value or 0)
+    if value > 255:
+        value = (value >> 24) & 0xFF
+    return min(max(value, 0), 255)
+
+
+# --------------------------------------------------------------------------- #
+# High-level reader
+# --------------------------------------------------------------------------- #
+
+class ClipFile:
+    def __init__(self, path: str):
+        self.path = path
+        self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed
+        self._tile_blob_cache: dict[str, bytes] = {}
+
+        fd, self._db_path = tempfile.mkstemp(suffix=".sqlite3")
+        os.close(fd)
+        with open(self._db_path, "wb") as f:
+            f.write(sqlite_bytes)
+        self._db = sqlite3.connect(self._db_path, check_same_thread=False)
+        self._db.row_factory = sqlite3.Row
+
+        canv = self._db.execute(
+            "SELECT MainId, CanvasWidth, CanvasHeight, CanvasRootFolder FROM Canvas LIMIT 1"
+        ).fetchone()
+        self.canvas_id: int = canv["MainId"]
+        self.width: int = int(canv["CanvasWidth"])
+        self.height: int = int(canv["CanvasHeight"])
+        self.root_layer_id: int = canv["CanvasRootFolder"]
+
+    def close(self):
+        try:
+            self._db.close()
+        finally:
+            try:
+                os.unlink(self._db_path)
+            except OSError:
+                pass
+
+    # ----- layer hierarchy ----- #
+
+    def _layer_row(self, layer_id: int) -> sqlite3.Row:
+        return self._db.execute(
+            "SELECT * FROM Layer WHERE MainId=?", (layer_id,)
+        ).fetchone()
+
+    def _walk_chain(self, first_id: int) -> list[int]:
+        ids = []
+        cur = first_id
+        seen = set()
+        while cur and cur not in seen:
+            seen.add(cur)
+            ids.append(cur)
+            row = self._layer_row(cur)
+            if row is None:
+                break
+            cur = row["LayerNextIndex"]
+        return ids
+
+    def composite_layers_in_order(self) -> list[sqlite3.Row]:
+        """Return visible raster layers in render order (bottom-most first).
+
+        FirstChild 鈫?NextIndex chain is already bottom-up (verified against
+        Illustration4K.png ground truth: walking as-is gives premultiplied diff
+        < 0.01 max; reversing inflates max diff to 0.99).
+        """
+        root = self._layer_row(self.root_layer_id)
+        if root is None or root["LayerType"] != LAYER_TYPE_FOLDER:
+            raise ValueError("Root layer not found or not a folder.")
+        out = []
+
+        def visit_chain(first_id: int):
+            for lid in self._walk_chain(first_id):
+                row = self._layer_row(lid)
+                if row["LayerVisibility"] == 0:
+                    continue
+                if row["LayerType"] == LAYER_TYPE_PAPER:
+                    continue
+                if row["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
+                    visit_chain(row["LayerFirstChildIndex"])
+                    continue
+                if row["LayerType"] not in RASTER_LAYER_TYPES:
+                    log.warning("Skipping layer %d (%r): unsupported type %d",
+                                lid, row["LayerName"], row["LayerType"])
+                    continue
+                if row["LayerOffsetX"] or row["LayerOffsetY"]:
+                    log.warning("Layer %d (%r) has offset (%d,%d); not yet handled.",
+                                lid, row["LayerName"],
+                                row["LayerOffsetX"], row["LayerOffsetY"])
+                out.append(row)
+
+        visit_chain(root["LayerFirstChildIndex"])
+        return out
+
+    def _paper_color(self) -> Optional[tuple[float, float, float]]:
+        root = self._layer_row(self.root_layer_id)
+        if root is None or root["LayerType"] != LAYER_TYPE_FOLDER:
+            return None
+        for lid in self._walk_chain(root["LayerFirstChildIndex"]):
+            row = self._layer_row(lid)
+            if row["LayerVisibility"] == 0 or row["LayerType"] != LAYER_TYPE_PAPER:
+                continue
+            keys = set(row.keys())
+            if {"DrawColorMainRed", "DrawColorMainGreen", "DrawColorMainBlue"} <= keys:
+                rgb = (
+                    _clip_color_component(row["DrawColorMainRed"]),
+                    _clip_color_component(row["DrawColorMainGreen"]),
+                    _clip_color_component(row["DrawColorMainBlue"]),
+                )
+                if rgb != (0, 0, 0) or row["DrawColorEnable"]:
+                    return tuple(c / 255.0 for c in rgb)
+
+            thumb = self._db.execute(
+                "SELECT ThumbnailMainColorRed, ThumbnailMainColorGreen, ThumbnailMainColorBlue "
+                "FROM LayerThumbnail WHERE LayerId=?",
+                (lid,),
+            ).fetchone()
+            if thumb is not None:
+                rgb = (
+                    _clip_color_component(thumb["ThumbnailMainColorRed"]),
+                    _clip_color_component(thumb["ThumbnailMainColorGreen"]),
+                    _clip_color_component(thumb["ThumbnailMainColorBlue"]),
+                )
+                if rgb != (0, 0, 0):
+                    return tuple(c / 255.0 for c in rgb)
+
+            return tuple(
+                _clip_color_component(row[name]) / 255.0
+                for name in ("LayerPaletteRed", "LayerPaletteGreen", "LayerPaletteBlue")
+            )
+        return None
+
+    # ----- raster decode (lazy) ----- #
+
+    def _resolve_external_id(self, layer_id: int) -> Optional[str]:
+        row = self._layer_row(layer_id)
+        if row is None:
+            return None
+        mipmap = self._db.execute(
+            "SELECT BaseMipmapInfo FROM Mipmap WHERE MainId=?",
+            (row["LayerRenderMipmap"],),
+        ).fetchone()
+        if mipmap is None:
+            return None
+        mipmap_info = self._db.execute(
+            "SELECT Offscreen FROM MipmapInfo WHERE MainId=?",
+            (mipmap["BaseMipmapInfo"],),
+        ).fetchone()
+        if mipmap_info is None:
+            return None
+        offscreen = self._db.execute(
+            "SELECT BlockData FROM Offscreen WHERE MainId=?",
+            (mipmap_info["Offscreen"],),
+        ).fetchone()
+        if offscreen is None:
+            return None
+        return offscreen["BlockData"].decode("ascii")
+
+    def _layer_pixel_size(self, layer_id: int) -> tuple[int, int]:
+        row = self._db.execute(
+            "SELECT ThumbnailCanvasWidth, ThumbnailCanvasHeight "
+            "FROM LayerThumbnail WHERE LayerId=?",
+            (layer_id,),
+        ).fetchone()
+        if row:
+            return int(row["ThumbnailCanvasWidth"]), int(row["ThumbnailCanvasHeight"])
+        return self.width, self.height
+
+    def _get_tile_blob(self, ext_id: str) -> Optional[bytes]:
+        cached = self._tile_blob_cache.get(ext_id)
+        if cached is not None:
+            return cached
+        body = self._exta_bodies.get(ext_id)
+        if body is None:
+            return None
+        _, blob = _parse_exta(body)
+        self._tile_blob_cache[ext_id] = blob
+        return blob
+
+    def decode_layer(self, layer_id: int) -> Optional[np.ndarray]:
+        ext_id = self._resolve_external_id(layer_id)
+        if ext_id is None:
+            return None
+        blob = self._get_tile_blob(ext_id)
+        if blob is None:
+            return None
+        w, h = self._layer_pixel_size(layer_id)
+        return _tiles_to_rgba(blob, w, h)
+
+    def _resolve_mask_external_id(self, layer_id: int) -> Optional[str]:
+        """Resolve the highest-res mask blob's external_id for a layer, or None."""
+        row = self._layer_row(layer_id)
+        if row is None or not row["LayerMasking"]:
+            return None
+        mask_mipmap = row["LayerLayerMaskMipmap"]
+        if not mask_mipmap:
+            return None
+        mip = self._db.execute(
+            "SELECT BaseMipmapInfo FROM Mipmap WHERE MainId=?", (mask_mipmap,)
+        ).fetchone()
+        if mip is None:
+            return None
+        info = self._db.execute(
+            "SELECT Offscreen FROM MipmapInfo WHERE MainId=?",
+            (mip["BaseMipmapInfo"],),
+        ).fetchone()
+        if info is None:
+            return None
+        off = self._db.execute(
+            "SELECT BlockData FROM Offscreen WHERE MainId=?", (info["Offscreen"],)
+        ).fetchone()
+        if off is None:
+            return None
+        return off["BlockData"].decode("ascii")
+
+    def decode_layer_mask(self, layer_id: int) -> Optional[np.ndarray]:
+        """Returns (H, W) uint8 mask at canvas size, or None if no mask / failure."""
+        ext_id = self._resolve_mask_external_id(layer_id)
+        if ext_id is None:
+            return None
+        blob = self._get_tile_blob(ext_id)
+        if blob is None:
+            return None
+        try:
+            return _tiles_to_alpha(blob, self.width, self.height)
+        except ValueError as exc:
+            log.warning("Mask decode failed for layer %d: %s", layer_id, exc)
+            return None
+
+    # ----- composite ----- #
+
+    def _blend_mode_for_layer(self, layer: sqlite3.Row) -> str:
+        comp_int = layer["LayerComposite"]
+        mode = _BLEND_MAPPING.get(comp_int)
+        if mode is None:
+            log.warning("Layer %d (%r): unknown LayerComposite=%d - treating as Normal. "
+                        "Add this integer to clip_loader._BLEND_MAPPING when its mode is identified.",
+                        layer["MainId"], layer["LayerName"], comp_int)
+            mode = "NORMAL"
+        return mode
+
+    def _apply_mask_and_clip(
+        self,
+        layer: sqlite3.Row,
+        rgba: np.ndarray,
+        mask: Optional[np.ndarray],
+        clip_alpha_u8: Optional[np.ndarray],
+    ) -> np.ndarray:
+        layer_alpha_u8 = rgba[..., 3]
+        if mask is not None:
+            if mask.shape == layer_alpha_u8.shape:
+                layer_alpha_u8 = ((layer_alpha_u8.astype(np.uint16) * mask) // 255).astype(np.uint8)
+            else:
+                log.warning("Layer %d (%r): mask shape %s != layer shape %s; ignoring mask.",
+                            layer["MainId"], layer["LayerName"],
+                            mask.shape, layer_alpha_u8.shape)
+        if layer["LayerClip"] and clip_alpha_u8 is not None:
+            layer_alpha_u8 = (
+                (layer_alpha_u8.astype(np.uint16) * clip_alpha_u8) // 255
+            ).astype(np.uint8)
+        return layer_alpha_u8
+
+    def _composite_image(self, out: np.ndarray, layer: sqlite3.Row, rgba: np.ndarray,
+                         layer_alpha_u8: np.ndarray) -> bool:
+        mode = self._blend_mode_for_layer(layer)
+
+        bbox = _alpha_bbox(layer_alpha_u8)
+        if bbox is None:
+            return False
+        y0, y1, x0, x1 = bbox
+
+        opacity = min(layer["LayerOpacity"] / 256.0, 1.0)
+        src_rgb_u8 = rgba[y0:y1, x0:x1, :3]
+        src_a_u8 = layer_alpha_u8[y0:y1, x0:x1]
+
+        src_rgb = src_rgb_u8.astype(np.float32) / 255.0
+        src_a = (src_a_u8.astype(np.float32) / 255.0)[..., None] * opacity
+
+        dst_rgb_pm = out[y0:y1, x0:x1, :3]
+        dst_a = out[y0:y1, x0:x1, 3:4]
+
+        if mode == "NORMAL":
+            src_rgb_pm = src_rgb * src_a
+            inv_sa = 1.0 - src_a
+            out[y0:y1, x0:x1, :3] = src_rgb_pm + dst_rgb_pm * inv_sa
+            out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
+
+        elif mode == "ADD" or mode == "ADD_GLOW":
+            src_rgb_pm = src_rgb * src_a
+            inv_sa = 1.0 - src_a
+            out_a = src_a + dst_a * inv_sa
+            out[y0:y1, x0:x1, :3] = np.minimum(src_rgb_pm + dst_rgb_pm, out_a)
+            out[y0:y1, x0:x1, 3:4] = out_a
+        elif mode == "GLOW_DODGE":
+            out_a = src_a + dst_a * (1.0 - src_a)
+            dst_rgb_straight = dst_rgb_pm / np.maximum(dst_a, 1e-6)
+            strength_u8 = np.clip(np.floor(src_rgb * src_a * 255.0 + 0.5), 0, 255).astype(np.int32)
+            dst_u8 = np.clip(np.floor(dst_rgb_straight * 255.0 + 0.5), 0, 255).astype(np.int32)
+            out_rgb_u8 = np.where(strength_u8 >= 255, 255,
+                                  np.minimum(255, (dst_u8 * 255) // np.maximum(255 - strength_u8, 1)))
+            out_rgb = out_rgb_u8.astype(np.float32) / 255.0
+            out[y0:y1, x0:x1, :3] = out_rgb * out_a
+            out[y0:y1, x0:x1, 3:4] = out_a
+        elif mode == "COLOR_DODGE" or mode == "COLOR_BURN":
+            eps = 1e-6
+            dst_rgb_straight = dst_rgb_pm / np.maximum(dst_a, eps)
+            dst_rgb_quant = np.floor(np.clip(dst_rgb_straight, 0.0, 1.0) * 255.0 + 0.5) / 255.0
+            blended = np.clip(_blend_func(mode, src_rgb, dst_rgb_quant), 0.0, 1.0)
+
+            inv_sa = 1.0 - src_a
+            inv_da = 1.0 - dst_a
+            src_pm = src_rgb * src_a
+            dst_rgb_pm_quant = dst_rgb_quant * dst_a
+            out[y0:y1, x0:x1, :3] = (
+                inv_da * src_pm + inv_sa * dst_rgb_pm_quant + src_a * dst_a * blended
+            )
+            out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
+        else:
+            eps = 1e-6
+            dst_rgb_straight = dst_rgb_pm / np.maximum(dst_a, eps)
+            blended = np.clip(_blend_func(mode, src_rgb, dst_rgb_straight), 0.0, 1.0)
+
+            inv_sa = 1.0 - src_a
+            inv_da = 1.0 - dst_a
+            src_pm = src_rgb * src_a
+            out[y0:y1, x0:x1, :3] = inv_da * src_pm + inv_sa * dst_rgb_pm + src_a * dst_a * blended
+            out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
+
+        return True
+
+    def _premul_to_rgba_u8(self, premul: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        alpha = premul[..., 3:4]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            rgb = np.where(alpha > 0, premul[..., :3] / np.where(alpha > 0, alpha, 1.0), 0.0)
+        rgba = np.empty_like(premul)
+        rgba[..., :3] = rgb
+        rgba[..., 3:4] = alpha
+        rgba_u8 = np.clip(rgba * 255.0 + 0.5, 0, 255).astype(np.uint8)
+        return rgba_u8, rgba_u8[..., 3]
+
+    def _render_chain(self, first_id: int, out: np.ndarray) -> Optional[np.ndarray]:
+        last_layer_alpha_u8 = None
+        for lid in self._walk_chain(first_id):
+            layer = self._layer_row(lid)
+            if layer["LayerVisibility"] == 0:
+                continue
+            if layer["LayerType"] == LAYER_TYPE_PAPER:
+                continue
+            if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
+                child_last = self._render_chain(layer["LayerFirstChildIndex"], out)
+                if child_last is not None:
+                    last_layer_alpha_u8 = child_last
+                continue
+            if layer["LayerType"] == LAYER_TYPE_GROUP:
+                group_out = np.zeros_like(out)
+                self._render_chain(layer["LayerFirstChildIndex"], group_out)
+                rgba, _ = self._premul_to_rgba_u8(group_out)
+                mask = self.decode_layer_mask(layer["MainId"]) if layer["LayerMasking"] else None
+                layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, last_layer_alpha_u8)
+                if self._composite_image(out, layer, rgba, layer_alpha_u8):
+                    last_layer_alpha_u8 = layer_alpha_u8
+                continue
+            if layer["LayerType"] not in RASTER_LAYER_TYPES:
+                log.warning("Skipping layer %d (%r): unsupported type %d",
+                            lid, layer["LayerName"], layer["LayerType"])
+                continue
+            if layer["LayerOffsetX"] or layer["LayerOffsetY"]:
+                log.warning("Layer %d (%r) has offset (%d,%d); not yet handled.",
+                            lid, layer["LayerName"],
+                            layer["LayerOffsetX"], layer["LayerOffsetY"])
+
+            rgba = self.decode_layer(layer["MainId"])
+            if rgba is None:
+                log.warning("Layer %d (%r): no raster data; skipping.",
+                            layer["MainId"], layer["LayerName"])
+                continue
+
+            mask = self.decode_layer_mask(layer["MainId"]) if layer["LayerMasking"] else None
+            layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, last_layer_alpha_u8)
+            if self._composite_image(out, layer, rgba, layer_alpha_u8):
+                last_layer_alpha_u8 = layer_alpha_u8
+
+        return last_layer_alpha_u8
+
+    def _composite_recursive(self) -> np.ndarray:
+        out = np.zeros((self.height, self.width, 4), dtype=np.float32)
+        paper_color = self._paper_color()
+        if paper_color is not None:
+            out[..., 0] = paper_color[0]
+            out[..., 1] = paper_color[1]
+            out[..., 2] = paper_color[2]
+            out[..., 3] = 1.0
+
+        root = self._layer_row(self.root_layer_id)
+        if root is None or root["LayerType"] != LAYER_TYPE_FOLDER:
+            raise ValueError("Root layer not found or not a folder.")
+        self._render_chain(root["LayerFirstChildIndex"], out)
+
+        a = out[..., 3:4]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            rgb = np.where(a > 0, out[..., :3] / np.where(a > 0, a, 1.0), 0.0)
+        result = np.empty_like(out)
+        result[..., :3] = rgb
+        result[..., 3:4] = a
+        return np.clip(result * 255.0 + 0.5, 0, 255).astype(np.uint8)
+
+    def composite(self) -> np.ndarray:
+        return self._composite_recursive()
+
+
+
+# --------------------------------------------------------------------------- #
+# PNG writer (stdlib only)
+# --------------------------------------------------------------------------- #
+
+def save_png(path: str, rgba: np.ndarray, compress_level: int = 1) -> None:
+    """Write a (H, W, 4) uint8 RGBA NumPy array to a PNG file.
+
+    `compress_level` defaults to 1 (fastest) 鈥?this PNG is a sidecar cache,
+    not a deliverable, so we trade ~10鈥?0% size for ~3鈥?x faster encode.
+    """
+    if rgba.dtype != np.uint8 or rgba.ndim != 3 or rgba.shape[2] != 4:
+        raise ValueError(
+            f"Expected (H, W, 4) uint8 RGBA, got shape={rgba.shape} dtype={rgba.dtype}"
+        )
+    h, w = rgba.shape[:2]
+
+    filter_col = np.zeros((h, 1), dtype=np.uint8)
+    filtered = np.concatenate([filter_col, rgba.reshape(h, w * 4)], axis=1).tobytes()
+
+    def _chunk(tag, data):
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)
+    idat = zlib.compress(filtered, compress_level)
+    with open(path, "wb") as f:
+        f.write(sig)
+        f.write(_chunk(b"IHDR", ihdr))
+        f.write(_chunk(b"IDAT", idat))
+        f.write(_chunk(b"IEND", b""))
+
+
+def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("clip_path")
+    ap.add_argument("-o", "--out", default=None,
+                    help="Output PNG path (default: <clip_path>.flat.png)")
+    ap.add_argument("--png-level", type=int, default=1,
+                    help="PNG compression level 0-9 (default 1, fast).")
+    ap.add_argument("-v", "--verbose", action="store_true")
+    args = ap.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
+                        format="%(levelname)s %(name)s: %(message)s")
+
+    clip = ClipFile(args.clip_path)
+    print(f"Canvas: {clip.width}x{clip.height}, root folder id={clip.root_layer_id}")
+    img = clip.composite()
+    out_path = args.out or args.clip_path + ".flat.png"
+    save_png(out_path, img, compress_level=args.png_level)
+    print(f"Wrote {out_path}")
+    clip.close()
+
+
+if __name__ == "__main__":
+    main()
+
