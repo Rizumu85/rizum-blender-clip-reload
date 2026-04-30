@@ -875,12 +875,14 @@ class ClipFile:
         with np.errstate(invalid="ignore", divide="ignore"):
             dst_rgb = np.where(dst_a > 1e-6, before[..., :3] / np.maximum(dst_a, 1e-6), 0.0)
         if mode == "NORMAL":
-            blended = src_rgb
+            preserve_rgb = src_rgb * src_strength + dst_rgb * (1.0 - src_strength)
+        elif mode == "ADD" or mode == "ADD_GLOW":
+            preserve_rgb = np.minimum(dst_rgb + src_rgb * src_strength, 1.0)
         else:
             blended = np.clip(_blend_func(mode, src_rgb, dst_rgb), 0.0, 1.0)
+            preserve_rgb = blended * src_strength + dst_rgb * (1.0 - src_strength)
 
         preserve = before.copy()
-        preserve_rgb = blended * src_strength + dst_rgb * (1.0 - src_strength)
         preserve[..., :3] = preserve_rgb * dst_a
 
         clip_a = clip_base_alpha_u8[y0:y1, x0:x1].astype(np.float32) / 255.0
@@ -902,7 +904,7 @@ class ClipFile:
         self,
         first_id: int,
         out: np.ndarray,
-        preserve_clipped_alpha: bool = False,
+        preserve_clipped_alpha: bool = True,
     ) -> Optional[np.ndarray]:
         clip_base_alpha_u8 = None
         for lid in self._walk_chain(first_id):

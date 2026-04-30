@@ -258,22 +258,57 @@ Follow-up on layer visibility bit flags:
 - The loader now uses `(LayerVisibility & 1) != 0` everywhere visibility is checked, including paper layers, hierarchy flattening, and recursive compositing.
 - On `Ref_Wuwu_Live2D.clip/png`, this removes the large extra regions and improves the full-image comparison to max premultiplied diff `0.007843`, mean `0.00000408`, and exact pixels `24374657 / 24400000`. The older `Test_RealArt.clip/png` result remains unchanged at max `0.0980`, mean `0.00000585`, exact `10525908 / 24400000`.
 
+Follow-up on root-level clipping edges:
+
+- `Test_ClippingEdge.clip/png` and `Test_ClippingEdge4K.clip/png` isolate the clipped-layer edge behavior outside an offscreen folder/group.
+- CSP preserves the clipping base layer's edge alpha while repainting color from the clipped layer according to the clipped layer's own alpha. The previous root-level path only used product-alpha clipping and normal alpha-over, which made edge alpha too high.
+- The isolated-folder hybrid clipping path was already a good approximation, so the loader now enables that path for root-level clipped layers as well.
+- `Test_ClippingEdge.clip/png` improves to max premultiplied diff `0.003906`, mean `0.000000285`, with the previously worst edge pixels exact.
+- `Test_ClippingEdge4K.clip/png` improves to max premultiplied diff `0.003568`, mean `0.000000128`, with the sampled edge pixels exact.
+- The `Test_RealArt.clip/png` summary remains stable after this change: max `0.0980`, mean `0.00000585`; previously fixed points `(1970, 977)`, `(2210, 1506)`, and `(1768, 1314)` remain exact.
+
+Follow-up on clipped Add Glow:
+
+- `Ref_Emuri_Live2D_2024.clip/png` exposed a bright violin/hair-ornament region where the loader was too dark: max premultiplied diff `0.305882`, mean `0.0000574`.
+- Layer tracing at `(2217, 268)` showed the stack under `*髪飾り > バイオリン`: normal base layer `220`, clipped `ADD_GLOW` layer `222`, clipped `MULTIPLY` layer `223`, then clipped `ADD_GLOW` layer `224`.
+- The hybrid clipped-layer path was still using generic blend interpolation for `ADD` / `ADD_GLOW`. CSP's isolated Add Glow samples already showed that Add Glow should add `src * alpha` into the destination with clamping.
+- The loader now uses that additive color update inside the clipped hybrid path while preserving the clipping base alpha.
+- On `Ref_Emuri_Live2D_2024.clip/png`, this lowers max premultiplied diff to `0.168627`, mean to `0.0000187`, and makes sampled bright points `(2217, 268)`, `(2290, 242)`, and `(2209, 90)` exact.
+- `Test_ClippingEdge.clip/png` and `Test_ClippingEdge4K.clip/png` remain stable after the Add Glow change, and `Test_RealArt.clip/png` remains stable at max `0.0980`, mean `0.00000585`.
+
+Follow-up on Add Glow + Multiply clipping stacks:
+
+- `Test_AddGlowMultiply.clip/png` isolates a stack with a Normal base, a non-clipped `ADD_GLOW` layer, then clipped `MULTIPLY` and clipped `NORMAL` layers.
+- The current loader output has max premultiplied diff `0.335840`, mean `0.028145`; the worst sampled point is reference `[187, 188, 237, 248]` vs loader `[106, 188, 146, 253]`.
+- Pixel tracing shows the loader first composites the non-clipped Add Glow layer into the global output, then applies the clipped Multiply and Normal layers over that global output. This makes the clipped layers too destructive.
+- A prototype that first composites the Add Glow base and its clipped siblings into an isolated clipping group, then blends that group back through the Add Glow base mode, improves the sample to max `0.207828`, mean `0.012130`, and changes the sampled point to `[187, 184, 255, 248]`.
+- That prototype proves the remaining issue is at least partly structural, but it still oversaturates blue. Do not land the grouping rewrite until clipped Multiply / Normal strength inside the group is understood from another targeted sample or a stronger formula.
+
+Follow-up on `Ref_Terra404_Live2D`:
+
+- `Ref_Terra404_Live2D.clip/png` is a new large real-art sample that exposes a different failure shape than `Ref_Emuri_Live2D_2024`.
+- A targeted comparison with the current loader showed max premultiplied diff `1.000000`, mean `0.010291082`, exact pixels `6564474 / 29280000`.
+- The worst sampled point is reference `[255, 255, 255, 0]` vs loader `[177, 165, 197, 255]` at `(1845, 1990)`, which means the loader is drawing opaque content where CSP exports full transparency.
+- This should be investigated as a structural visibility/mask/group/background issue before tuning color formulas; the error is not a small blend rounding mismatch.
+
 ## Known Bugs in Reference Code
 
 - `csp_tool.py._get_layer_thumbnail` matches `MainId` against the user-supplied `layer_id` but should match `LayerId`. Coincidence in single-layer files masks this. Patched locally for verification; another reason to write our own minimal decoder rather than vendor csp_tool.
 
 ## Open Questions
 
-1. **Z-order direction.** Whether `FirstChild → NextIndex` chain is bottom-up or top-down. Verify against PNG ground truth.
-2. **Grayscale / monochrome layers.** csp_tool says unsupported. Out of scope for MVP.
-3. **Vector / 3D / text layers.** Out of scope for MVP.
-4. **Color management.** CSP authoring color space vs Blender scene linear. Defer until MVP add-on lands.
-5. **Remaining blend modes.** Some `LayerComposite` values are still unmapped. Unknown integers warn and fall back to Normal until identified.
+1. **Terra transparency leak.** `Ref_Terra404_Live2D` draws opaque loader content where the CSP PNG is fully transparent. Check visibility bit handling, group/offscreen masks, paper/background behavior, and any unsupported layer kind before adjusting blend math.
+2. **Clipping group structure.** `Test_AddGlowMultiply` shows that CSP likely treats a base layer plus clipped siblings as a more isolated clipping group before applying the base layer's blend mode to the parent stack. A naive grouping prototype improves the sample but oversaturates blue, so clipped Multiply / Normal strength still needs a tighter formula before implementation.
+3. **Layer offsets.** The loader warns on non-zero `LayerOffsetX / LayerOffsetY`; no supplied sample has required offset support yet.
+4. **Grayscale / monochrome layers.** csp_tool says unsupported. Still out of scope until a real sample requires it.
+5. **Vector / 3D / text layers.** Still out of scope; decide later whether to skip silently, warn in Blender UI, or use fallback preview data.
+6. **Color management.** CSP authoring color space vs Blender scene linear may produce display differences even when raw decode is correct.
 
 ## Reusable Code
 
-`csp_tool.py` is MIT and works correctly. We can either:
-- (a) Vendor it inside the Blender add-on (clean attribution, single dep on numpy + cv2).
-- (b) Reimplement only the minimal decode path in pure Python + Pillow (no cv2 dep — Blender ships Python without cv2 by default).
+Current implementation choice:
+- Keep the Blender package self-contained with stdlib + NumPy only.
+- Keep `csp_tool.py` as prior-art/reference knowledge, not vendored runtime code.
+- Keep the project-root `clip_loader.py` and `clip_studio_importer/clip_loader.py` in sync until the package layout duplication is resolved.
 
-Recommendation: (b) for the add-on, since shipping cv2 inside a Blender add-on is heavy. Use csp_tool.py as the reference implementation; rewrite the ~300 lines we need against numpy + Pillow.
+Historical note: `csp_tool.py` is MIT and was useful while deriving the minimal implementation, but it is not part of the current runtime package.
