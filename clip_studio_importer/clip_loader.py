@@ -854,11 +854,19 @@ class ClipFile:
             if layer["LayerType"] == LAYER_TYPE_PAPER:
                 continue
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
-                child_last = self._render_chain(layer["LayerFirstChildIndex"], out)
-                if self._blend_mode_for_layer(layer) == "THROUGH":
+                mode = self._blend_mode_for_layer(layer)
+                if mode == "THROUGH":
+                    self._render_chain(layer["LayerFirstChildIndex"], out)
                     clip_base_alpha_u8 = None
-                elif child_last is not None:
-                    clip_base_alpha_u8 = child_last
+                else:
+                    group_out = np.zeros_like(out)
+                    self._render_chain(layer["LayerFirstChildIndex"], group_out)
+                    rgba, _ = self._premul_to_rgba_u8(group_out)
+                    mask = self._layer_mask_for_composite(layer)
+                    layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
+                    if self._composite_image(out, layer, rgba, layer_alpha_u8):
+                        if not layer["LayerClip"]:
+                            clip_base_alpha_u8 = layer_alpha_u8
                 continue
             if layer["LayerType"] == LAYER_TYPE_GROUP:
                 group_out = np.zeros_like(out)

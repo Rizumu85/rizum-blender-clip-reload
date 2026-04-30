@@ -234,6 +234,14 @@ Follow-up on consecutive clipping:
 - The loader now keeps a separate clipping base alpha. Non-clipped layers update the base; clipped layers use that base but do not replace it. `THROUGH` folders still clear the base at their boundary.
 - On `Test_RealArt.clip/png`, this lowers the premultiplied max diff from `0.5333` to `0.1490`, mean diff from `0.00000786` to `0.00000344`, and exact RGBA pixels improve from `10524499 / 24400000` to `10524997 / 24400000`.
 
+Follow-up on `LayerType=0` folder blend modes:
+
+- The next worst point was `(1768, 1314)`: reference `[200, 115, 110, 255]`, loader `[218, 151, 148, 255]`.
+- Raw layer inspection showed folder `314` (`前髪ｋ`) has `LayerType=0` and `LayerComposite=2` (`MULTIPLY`). The previous implementation treated every non-group folder as direct traversal unless it was `THROUGH`, so this folder's Multiply mode was ignored.
+- The loader now treats `LayerType=0` folders as pass-through only when their blend mode is `THROUGH`. Other folder modes are rendered to an offscreen buffer, then composited through the folder row's own blend mode, opacity, mask, and clipping flag.
+- On `Test_RealArt.clip/png`, this aligns the point exactly and lowers the premultiplied max diff from `0.1490` to `0.1117`, mean diff from `0.00000344` to `0.00000282`, and exact RGBA pixels improve from `10524997 / 24400000` to `10525646 / 24400000`.
+- The next largest remaining difference is a semi-transparent clipping edge at `(1842, 1013)`: reference `[203, 157, 149, 245]`, loader `[218, 176, 173, 253]`. The involved layers are `451` (`輪郭ベース`) and clipped layer `452` (`輪郭効果`). Table fields do not yet expose an obvious "base hidden" or special alpha flag, so this should be investigated separately before changing clipping edge semantics.
+
 ## Known Bugs in Reference Code
 
 - `csp_tool.py._get_layer_thumbnail` matches `MainId` against the user-supplied `layer_id` but should match `LayerId`. Coincidence in single-layer files masks this. Patched locally for verification; another reason to write our own minimal decoder rather than vendor csp_tool.
