@@ -242,6 +242,14 @@ Follow-up on `LayerType=0` folder blend modes:
 - On `Test_RealArt.clip/png`, this aligns the point exactly and lowers the premultiplied max diff from `0.1490` to `0.1117`, mean diff from `0.00000344` to `0.00000282`, and exact RGBA pixels improve from `10524997 / 24400000` to `10525646 / 24400000`.
 - The next largest remaining difference is a semi-transparent clipping edge at `(1842, 1013)`: reference `[203, 157, 149, 245]`, loader `[218, 176, 173, 253]`. The involved layers are `451` (`輪郭ベース`) and clipped layer `452` (`輪郭効果`). Table fields do not yet expose an obvious "base hidden" or special alpha flag, so this should be investigated separately before changing clipping edge semantics.
 
+Follow-up on clipped edge alpha inside offscreen folders:
+
+- Visual inspection showed the remaining `(1842, 1013)` difference was a very small color/alpha mismatch on the face outline edge rather than a structural layer-order problem.
+- At that point, folder `450` (`輪郭`) is rendered to an isolated offscreen buffer. Its base layer `451` has raw `[198, 198, 198, 191]`, and clipped layer `452` has raw `[231, 177, 175, 255]`. The old generic clipping path composited both as normal layers, producing offscreen `[224, 181, 180, 239]` and final `[218, 176, 173, 253]`, while CSP's export is `[203, 157, 149, 245]`.
+- CSP is better approximated there by letting the clipped layer recolor the clipping base while preserving the base edge alpha. Applying that rule globally is wrong: a lower-body point `(1966, 3577)` under `足衣装` has a base alpha of only `6` over already opaque artwork, and global alpha preservation incorrectly recolors it to the clipped layer color.
+- The loader now uses a hybrid clipped-layer path only inside isolated folder/group buffers: if the current destination alpha is effectively the clipping base alpha at that pixel, preserve alpha and repaint color; otherwise use the previous product-alpha clipping path. This keeps opaque-underpaint clipping cases stable.
+- On `Test_RealArt.clip/png`, this changes `(1842, 1013)` to `[203, 156, 148, 246]` (within 1/255 of the CSP export), keeps the previously fixed `(1768, 1314)`, `(1970, 977)`, and `(2210, 1506)` points exact, and lowers the full-image premultiplied max diff from `0.1117` to `0.0980`. Mean diff is `0.00000585`; exact RGBA pixels are `10525908 / 24400000`.
+
 ## Known Bugs in Reference Code
 
 - `csp_tool.py._get_layer_thumbnail` matches `MainId` against the user-supplied `layer_id` but should match `LayerId`. Coincidence in single-layer files masks this. Patched locally for verification; another reason to write our own minimal decoder rather than vendor csp_tool.

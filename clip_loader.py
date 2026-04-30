@@ -835,6 +835,54 @@ class ClipFile:
 
         return True
 
+    def _composite_clipped_image(
+        self,
+        out: np.ndarray,
+        layer: sqlite3.Row,
+        rgba: np.ndarray,
+        layer_alpha_u8: np.ndarray,
+        clip_base_alpha_u8: np.ndarray,
+    ) -> bool:
+        """Composite a clipped layer inside an isolated folder/group buffer.
+
+        CSP clipping preserves the clipping base's edge alpha when that base is
+        the visible destination. If there is already more opaque artwork below
+        the base at a pixel, the regular product-alpha path remains closer.
+        """
+        bbox = _alpha_bbox(layer_alpha_u8)
+        if bbox is None:
+            return False
+        y0, y1, x0, x1 = bbox
+
+        before = out[y0:y1, x0:x1].copy()
+        self._composite_image(out, layer, rgba, layer_alpha_u8)
+        regular = out[y0:y1, x0:x1].copy()
+        out[y0:y1, x0:x1] = before
+
+        mode = self._blend_mode_for_layer(layer)
+        opacity = min(layer["LayerOpacity"] / 256.0, 1.0)
+        src_rgb = rgba[y0:y1, x0:x1, :3].astype(np.float32) / 255.0
+        src_strength = (rgba[y0:y1, x0:x1, 3].astype(np.float32) / 255.0)[..., None] * opacity
+        visible = (layer_alpha_u8[y0:y1, x0:x1].astype(np.float32) > 0)[..., None]
+        src_strength = np.where(visible, src_strength, 0.0)
+
+        dst_a = before[..., 3:4]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            dst_rgb = np.where(dst_a > 1e-6, before[..., :3] / np.maximum(dst_a, 1e-6), 0.0)
+        if mode == "NORMAL":
+            blended = src_rgb
+        else:
+            blended = np.clip(_blend_func(mode, src_rgb, dst_rgb), 0.0, 1.0)
+
+        preserve = before.copy()
+        preserve_rgb = blended * src_strength + dst_rgb * (1.0 - src_strength)
+        preserve[..., :3] = preserve_rgb * dst_a
+
+        clip_a = clip_base_alpha_u8[y0:y1, x0:x1].astype(np.float32) / 255.0
+        use_preserve = ((clip_a > 0) & (dst_a[..., 0] <= clip_a + (1.5 / 255.0)))[..., None]
+        out[y0:y1, x0:x1] = np.where(use_preserve, preserve, regular)
+        return True
+
     def _premul_to_rgba_u8(self, premul: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         alpha = premul[..., 3:4]
         with np.errstate(invalid="ignore", divide="ignore"):
@@ -845,7 +893,12 @@ class ClipFile:
         rgba_u8 = np.clip(rgba * 255.0 + 0.5, 0, 255).astype(np.uint8)
         return rgba_u8, rgba_u8[..., 3]
 
-    def _render_chain(self, first_id: int, out: np.ndarray) -> Optional[np.ndarray]:
+    def _render_chain(
+        self,
+        first_id: int,
+        out: np.ndarray,
+        preserve_clipped_alpha: bool = False,
+    ) -> Optional[np.ndarray]:
         clip_base_alpha_u8 = None
         for lid in self._walk_chain(first_id):
             layer = self._layer_row(lid)
@@ -856,11 +909,11 @@ class ClipFile:
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
                 mode = self._blend_mode_for_layer(layer)
                 if mode == "THROUGH":
-                    self._render_chain(layer["LayerFirstChildIndex"], out)
+                    self._render_chain(layer["LayerFirstChildIndex"], out, preserve_clipped_alpha)
                     clip_base_alpha_u8 = None
                 else:
                     group_out = np.zeros_like(out)
-                    self._render_chain(layer["LayerFirstChildIndex"], group_out)
+                    self._render_chain(layer["LayerFirstChildIndex"], group_out, True)
                     rgba, _ = self._premul_to_rgba_u8(group_out)
                     mask = self._layer_mask_for_composite(layer)
                     layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
@@ -870,7 +923,7 @@ class ClipFile:
                 continue
             if layer["LayerType"] == LAYER_TYPE_GROUP:
                 group_out = np.zeros_like(out)
-                self._render_chain(layer["LayerFirstChildIndex"], group_out)
+                self._render_chain(layer["LayerFirstChildIndex"], group_out, True)
                 rgba, _ = self._premul_to_rgba_u8(group_out)
                 mask = self._layer_mask_for_composite(layer)
                 layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
@@ -895,7 +948,17 @@ class ClipFile:
 
             mask = self._layer_mask_for_composite(layer)
             layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
-            if self._composite_image(out, layer, rgba, layer_alpha_u8):
+            if (
+                layer["LayerClip"]
+                and preserve_clipped_alpha
+                and clip_base_alpha_u8 is not None
+            ):
+                did_composite = self._composite_clipped_image(
+                    out, layer, rgba, layer_alpha_u8, clip_base_alpha_u8
+                )
+            else:
+                did_composite = self._composite_image(out, layer, rgba, layer_alpha_u8)
+            if did_composite:
                 if not layer["LayerClip"]:
                     clip_base_alpha_u8 = layer_alpha_u8
 

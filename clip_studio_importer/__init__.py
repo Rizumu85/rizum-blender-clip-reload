@@ -30,7 +30,7 @@ Pure stdlib + numpy. No Pillow, no OpenCV.
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 18),
+    "version": (0, 8, 19),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
