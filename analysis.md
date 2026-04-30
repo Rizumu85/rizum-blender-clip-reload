@@ -250,6 +250,14 @@ Follow-up on clipped edge alpha inside offscreen folders:
 - The loader now uses a hybrid clipped-layer path only inside isolated folder/group buffers: if the current destination alpha is effectively the clipping base alpha at that pixel, preserve alpha and repaint color; otherwise use the previous product-alpha clipping path. This keeps opaque-underpaint clipping cases stable.
 - On `Test_RealArt.clip/png`, this changes `(1842, 1013)` to `[203, 156, 148, 246]` (within 1/255 of the CSP export), keeps the previously fixed `(1768, 1314)`, `(1970, 977)`, and `(2210, 1506)` points exact, and lowers the full-image premultiplied max diff from `0.1117` to `0.0980`. Mean diff is `0.00000585`; exact RGBA pixels are `10525908 / 24400000`.
 
+Follow-up on layer visibility bit flags:
+
+- `Ref_Wuwu_Live2D.clip/png` exposed large extra visible regions in the loader output: a pink necklace and dark Multiply patches on both wings.
+- Layer tracing showed these came from `LayerType=2` Multiply groups: `15` (`袖奥`), `26` (`袖左`), and `311` (`数珠ｋ`). The problematic groups/layers had `LayerVisibility` values `2` or were downstream of layers with value `2`.
+- CSP's `LayerVisibility` is a bit field, not a simple integer boolean. Bit 0 is the eye/visible state: `0` and `2` are hidden; `1` and `3` are visible. The previous loader only skipped exact `0`, so it incorrectly rendered hidden value-`2` layers.
+- The loader now uses `(LayerVisibility & 1) != 0` everywhere visibility is checked, including paper layers, hierarchy flattening, and recursive compositing.
+- On `Ref_Wuwu_Live2D.clip/png`, this removes the large extra regions and improves the full-image comparison to max premultiplied diff `0.007843`, mean `0.00000408`, and exact pixels `24374657 / 24400000`. The older `Test_RealArt.clip/png` result remains unchanged at max `0.0980`, mean `0.00000585`, exact `10525908 / 24400000`.
+
 ## Known Bugs in Reference Code
 
 - `csp_tool.py._get_layer_thumbnail` matches `MainId` against the user-supplied `layer_id` but should match `LayerId`. Coincidence in single-layer files masks this. Patched locally for verification; another reason to write our own minimal decoder rather than vendor csp_tool.

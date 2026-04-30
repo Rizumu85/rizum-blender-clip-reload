@@ -455,6 +455,11 @@ def _alpha_bbox(alpha: np.ndarray):
     return y0, y1, x0, x1
 
 
+def _layer_is_visible(layer: sqlite3.Row) -> bool:
+    """CSP stores layer visibility as a bit field; bit 0 is the eye state."""
+    return (int(layer["LayerVisibility"] or 0) & 1) != 0
+
+
 def _clip_color_component(value) -> int:
     """CSP may store color components as a repeated-byte 32-bit value."""
     value = int(value or 0)
@@ -548,7 +553,7 @@ class ClipFile:
         def visit_chain(first_id: int):
             for lid in self._walk_chain(first_id):
                 row = self._layer_row(lid)
-                if row["LayerVisibility"] == 0:
+                if not _layer_is_visible(row):
                     continue
                 if row["LayerType"] == LAYER_TYPE_PAPER:
                     continue
@@ -574,7 +579,7 @@ class ClipFile:
             return None
         for lid in self._walk_chain(root["LayerFirstChildIndex"]):
             row = self._layer_row(lid)
-            if row["LayerVisibility"] == 0 or row["LayerType"] != LAYER_TYPE_PAPER:
+            if not _layer_is_visible(row) or row["LayerType"] != LAYER_TYPE_PAPER:
                 continue
             keys = set(row.keys())
             if {"DrawColorMainRed", "DrawColorMainGreen", "DrawColorMainBlue"} <= keys:
@@ -902,7 +907,7 @@ class ClipFile:
         clip_base_alpha_u8 = None
         for lid in self._walk_chain(first_id):
             layer = self._layer_row(lid)
-            if layer["LayerVisibility"] == 0:
+            if not _layer_is_visible(layer):
                 continue
             if layer["LayerType"] == LAYER_TYPE_PAPER:
                 continue
