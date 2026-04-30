@@ -103,7 +103,7 @@ def _split_clip(path: str):
     return ext_to_body, sqlite_bytes
 
 
-def _parse_exta(body: bytes) -> tuple[str, bytes]:
+def _parse_exta(body: bytes, empty_fill: int = 0) -> tuple[str, bytes]:
     """Decompress the blocks of an Exta body. Returns (external_id, tile_blob).
 
     Two block-name framings exist:
@@ -170,7 +170,7 @@ def _parse_exta(body: bytes) -> tuple[str, bytes]:
                 out += decoded
                 block_end = inner_start + 24 + inner_len
             else:
-                out += bytes(uncomp)
+                out += bytes([empty_fill]) * uncomp
                 block_end = inner_start + 20
         elif name in ("BlockStatus", "BlockCheckSum"):
             block_end = inner_start + 24
@@ -463,6 +463,22 @@ def _clip_color_component(value) -> int:
     return min(max(value, 0), 255)
 
 
+def _offscreen_init_fill(attribute: bytes) -> int:
+    """Return the byte fill color for omitted single-channel offscreen chunks."""
+    marker = "InitColor".encode("utf-16-be")
+    pos = attribute.find(marker)
+    if pos < 0:
+        return 0
+    pos += len(marker)
+    if pos + 12 > len(attribute):
+        return 0
+    payload_len = struct.unpack_from(">L", attribute, pos)[0]
+    if payload_len < 8:
+        return 0
+    color = struct.unpack_from(">L", attribute, pos + 8)[0]
+    return color & 0xFF
+
+
 # --------------------------------------------------------------------------- #
 # High-level reader
 # --------------------------------------------------------------------------- #
@@ -471,7 +487,7 @@ class ClipFile:
     def __init__(self, path: str):
         self.path = path
         self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed
-        self._tile_blob_cache: dict[str, bytes] = {}
+        self._tile_blob_cache: dict[tuple[str, int], bytes] = {}
 
         fd, self._db_path = tempfile.mkstemp(suffix=".sqlite3")
         os.close(fd)
@@ -626,15 +642,16 @@ class ClipFile:
             return int(row["ThumbnailCanvasWidth"]), int(row["ThumbnailCanvasHeight"])
         return self.width, self.height
 
-    def _get_tile_blob(self, ext_id: str) -> Optional[bytes]:
-        cached = self._tile_blob_cache.get(ext_id)
+    def _get_tile_blob(self, ext_id: str, empty_fill: int = 0) -> Optional[bytes]:
+        cache_key = (ext_id, empty_fill)
+        cached = self._tile_blob_cache.get(cache_key)
         if cached is not None:
             return cached
         body = self._exta_bodies.get(ext_id)
         if body is None:
             return None
-        _, blob = _parse_exta(body)
-        self._tile_blob_cache[ext_id] = blob
+        _, blob = _parse_exta(body, empty_fill=empty_fill)
+        self._tile_blob_cache[cache_key] = blob
         return blob
 
     def decode_layer(self, layer_id: int) -> Optional[np.ndarray]:
@@ -673,12 +690,37 @@ class ClipFile:
             return None
         return off["BlockData"].decode("ascii")
 
+    def _mask_empty_fill(self, layer_id: int) -> int:
+        row = self._layer_row(layer_id)
+        if row is None or not row["LayerMasking"]:
+            return 0
+        mask_mipmap = row["LayerLayerMaskMipmap"]
+        if not mask_mipmap:
+            return 0
+        mip = self._db.execute(
+            "SELECT BaseMipmapInfo FROM Mipmap WHERE MainId=?", (mask_mipmap,)
+        ).fetchone()
+        if mip is None:
+            return 0
+        info = self._db.execute(
+            "SELECT Offscreen FROM MipmapInfo WHERE MainId=?",
+            (mip["BaseMipmapInfo"],),
+        ).fetchone()
+        if info is None:
+            return 0
+        off = self._db.execute(
+            "SELECT Attribute FROM Offscreen WHERE MainId=?", (info["Offscreen"],)
+        ).fetchone()
+        if off is None:
+            return 0
+        return _offscreen_init_fill(off["Attribute"])
+
     def decode_layer_mask(self, layer_id: int) -> Optional[np.ndarray]:
         """Returns (H, W) uint8 mask at canvas size, or None if no mask / failure."""
         ext_id = self._resolve_mask_external_id(layer_id)
         if ext_id is None:
             return None
-        blob = self._get_tile_blob(ext_id)
+        blob = self._get_tile_blob(ext_id, empty_fill=self._mask_empty_fill(layer_id))
         if blob is None:
             return None
         try:
@@ -720,18 +762,8 @@ class ClipFile:
             ).astype(np.uint8)
         return layer_alpha_u8
 
-    def _layer_mask_for_composite(
-        self,
-        layer: sqlite3.Row,
-        inside_through_folder: bool = False,
-    ) -> Optional[np.ndarray]:
+    def _layer_mask_for_composite(self, layer: sqlite3.Row) -> Optional[np.ndarray]:
         if not layer["LayerMasking"]:
-            return None
-        # Real CSP files can store LayerType=3 rows under LayerComposite=30
-        # pass-through folders where the mask blob is present but not applied
-        # in the flattened export. Standalone masked rasters and masked layers
-        # inside normal/group-composited folders still use the mask.
-        if inside_through_folder and layer["LayerType"] == LAYER_TYPE_RASTER_MASKED:
             return None
         return self.decode_layer_mask(layer["MainId"])
 
@@ -813,13 +845,8 @@ class ClipFile:
         rgba_u8 = np.clip(rgba * 255.0 + 0.5, 0, 255).astype(np.uint8)
         return rgba_u8, rgba_u8[..., 3]
 
-    def _render_chain(
-        self,
-        first_id: int,
-        out: np.ndarray,
-        inside_through_folder: bool = False,
-    ) -> Optional[np.ndarray]:
-        last_layer_alpha_u8 = None
+    def _render_chain(self, first_id: int, out: np.ndarray) -> Optional[np.ndarray]:
+        clip_base_alpha_u8 = None
         for lid in self._walk_chain(first_id):
             layer = self._layer_row(lid)
             if layer["LayerVisibility"] == 0:
@@ -827,22 +854,21 @@ class ClipFile:
             if layer["LayerType"] == LAYER_TYPE_PAPER:
                 continue
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
-                child_last = self._render_chain(
-                    layer["LayerFirstChildIndex"],
-                    out,
-                    inside_through_folder or layer["LayerComposite"] == 30,
-                )
-                if child_last is not None:
-                    last_layer_alpha_u8 = child_last
+                child_last = self._render_chain(layer["LayerFirstChildIndex"], out)
+                if self._blend_mode_for_layer(layer) == "THROUGH":
+                    clip_base_alpha_u8 = None
+                elif child_last is not None:
+                    clip_base_alpha_u8 = child_last
                 continue
             if layer["LayerType"] == LAYER_TYPE_GROUP:
                 group_out = np.zeros_like(out)
                 self._render_chain(layer["LayerFirstChildIndex"], group_out)
                 rgba, _ = self._premul_to_rgba_u8(group_out)
                 mask = self._layer_mask_for_composite(layer)
-                layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, last_layer_alpha_u8)
+                layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
                 if self._composite_image(out, layer, rgba, layer_alpha_u8):
-                    last_layer_alpha_u8 = layer_alpha_u8
+                    if not layer["LayerClip"]:
+                        clip_base_alpha_u8 = layer_alpha_u8
                 continue
             if layer["LayerType"] not in RASTER_LAYER_TYPES:
                 log.warning("Skipping layer %d (%r): unsupported type %d",
@@ -859,12 +885,13 @@ class ClipFile:
                             layer["MainId"], layer["LayerName"])
                 continue
 
-            mask = self._layer_mask_for_composite(layer, inside_through_folder)
-            layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, last_layer_alpha_u8)
+            mask = self._layer_mask_for_composite(layer)
+            layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
             if self._composite_image(out, layer, rgba, layer_alpha_u8):
-                last_layer_alpha_u8 = layer_alpha_u8
+                if not layer["LayerClip"]:
+                    clip_base_alpha_u8 = layer_alpha_u8
 
-        return last_layer_alpha_u8
+        return clip_base_alpha_u8
 
     def _composite_recursive(self) -> np.ndarray:
         out = np.zeros((self.height, self.width, 4), dtype=np.float32)

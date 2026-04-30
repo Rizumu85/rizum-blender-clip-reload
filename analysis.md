@@ -214,11 +214,25 @@ Additional `LayerType=2` group validation:
 
 Follow-up on the localized real-art difference:
 
-- The worst pixel after group compositing was under `LayerType=0` folders with `LayerComposite=30`. This value appears to be CSP's folder pass-through mode.
-- At the worst point, the CSP export matched masked raster layer 204's raw pixel `[255, 246, 242, 255]`, but the decoded mask for that layer was `0`, causing the loader to hide it and reveal a darker lower layer.
-- Layer 204 is a `LayerType=3` masked raster under pass-through folders. Layer 29 is also `LayerType=3`, but it lives under a `LayerType=2` Multiply group and still needs its mask applied. `Test_Mask.clip/png` also still requires normal mask application.
-- The loader now maps `LayerComposite=30` to `THROUGH` and skips `LayerType=3` mask application only when the masked raster is inside a pass-through `LayerType=0` folder. `Test_Mask` remains bit-perfect.
-- On `Test_RealArt.clip/png`, this lowers premultiplied mean diff from `0.0012807` to `0.0000531`, and exact RGBA pixels improve from `10445084 / 24400000` to `10518698 / 24400000`. Median, 90th, and 99th percentile per-pixel premultiplied max diff remain `0.0`.
+- The worst pixel after group compositing was under `LayerType=0` folders with `LayerComposite=30`. This value appears to be CSP's folder pass-through mode, but it was not the root cause of the pixel error.
+- At the worst point, the CSP export matched masked raster layer 204's raw pixel `[255, 246, 242, 255]`, while the loader's decoded mask value was `0`, causing the layer to be hidden and a darker lower layer to show through.
+- The mask is enabled in CSP. The actual bug was that `_parse_exta()` filled omitted `exist=0` mask chunks with black (`0`). The mask offscreen attribute contains `InitColor = 0xffffffff`, so omitted mask chunks must default to white (`255`, fully visible).
+- The loader now reads the mask offscreen `InitColor` and uses it as the fill byte for omitted single-channel mask chunks. `Test_Mask` remains bit-perfect.
+- On `Test_RealArt.clip/png`, this lowers premultiplied mean diff from `0.0012807` to `0.0000324`, and exact RGBA pixels improve from `10445084 / 24400000` to `10520542 / 24400000`. Median, 90th, and 99th percentile per-pixel premultiplied max diff remain `0.0`.
+
+Follow-up on the next worst real-art pixel:
+
+- The next worst point was `(2210, 1506)`: reference `[190, 198, 217, 255]`, loader `[4, 3, 3, 255]`.
+- Raw layer inspection showed the reference color exists on layer `375` (`耳奥髪９`) and inside group `376` (`数珠ｋ`) under folder `363` (`インナー`). Layer `375` has `LayerClip=1`.
+- The immediate lower siblings before layer `375` are `LayerComposite=30` / `THROUGH` folders whose effective alpha at that pixel is `0`. Treating those through folders as clipping bases incorrectly hides layer `375`.
+- The loader now renders `THROUGH` folders directly into the parent buffer but clears the clipping target after such a folder. This matches the observed CSP output for the pixel and improves `Test_RealArt` to premultiplied mean diff `0.00000786`, max diff `0.5333`, and exact RGBA pixels `10524499 / 24400000`.
+
+Follow-up on consecutive clipping:
+
+- The next worst point was `(1970, 977)`: reference `[255, 255, 255, 255]`, loader `[187, 119, 119, 255]`.
+- Raw layer inspection showed the reference color exists on layer `509` (`歯`), with `LayerClip=1`. The previous sibling `508` (`舌`) is also clipped and has alpha `0` at that pixel; both should clip to the same non-clipped base layer `507` (`効果`).
+- The loader now keeps a separate clipping base alpha. Non-clipped layers update the base; clipped layers use that base but do not replace it. `THROUGH` folders still clear the base at their boundary.
+- On `Test_RealArt.clip/png`, this lowers the premultiplied max diff from `0.5333` to `0.1490`, mean diff from `0.00000786` to `0.00000344`, and exact RGBA pixels improve from `10524499 / 24400000` to `10524997 / 24400000`.
 
 ## Known Bugs in Reference Code
 
