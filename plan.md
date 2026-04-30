@@ -75,7 +75,7 @@ Goal: Expand fidelity to cover what real-world `.clip` files actually use.
 - [x] Verify recursive traversal for non-empty folders.
 - [x] Add first-pass clipping layer support with alpha clipping.
 - [x] Implement offscreen group compositing for `LayerType=2` grouped layers.
-- [ ] Investigate remaining localized `Test_RealArt` differences after Multiply group support.
+- [x] Investigate remaining localized `Test_RealArt` differences after Multiply group support.
 
 ## Direction 7 (Post-MVP): Live-Reload UX
 

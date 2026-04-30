@@ -212,6 +212,14 @@ Additional `LayerType=2` group validation:
 - On `Test_RealArt.clip/png`, this improves premultiplied mean diff from `0.0032566` to `0.0012807`, and exact RGBA pixels from `10136539 / 24400000` to `10445084 / 24400000`.
 - The largest remaining difference is still localized: reference `[255, 246, 242, 255]` vs loader `[107, 28, 16, 255]` at `(1822, 3328)`. The next boundary is likely group-edge behavior, group masks, or still-unhandled layer data rather than the basic Multiply group model.
 
+Follow-up on the localized real-art difference:
+
+- The worst pixel after group compositing was under `LayerType=0` folders with `LayerComposite=30`. This value appears to be CSP's folder pass-through mode.
+- At the worst point, the CSP export matched masked raster layer 204's raw pixel `[255, 246, 242, 255]`, but the decoded mask for that layer was `0`, causing the loader to hide it and reveal a darker lower layer.
+- Layer 204 is a `LayerType=3` masked raster under pass-through folders. Layer 29 is also `LayerType=3`, but it lives under a `LayerType=2` Multiply group and still needs its mask applied. `Test_Mask.clip/png` also still requires normal mask application.
+- The loader now maps `LayerComposite=30` to `THROUGH` and skips `LayerType=3` mask application only when the masked raster is inside a pass-through `LayerType=0` folder. `Test_Mask` remains bit-perfect.
+- On `Test_RealArt.clip/png`, this lowers premultiplied mean diff from `0.0012807` to `0.0000531`, and exact RGBA pixels improve from `10445084 / 24400000` to `10518698 / 24400000`. Median, 90th, and 99th percentile per-pixel premultiplied max diff remain `0.0`.
+
 ## Known Bugs in Reference Code
 
 - `csp_tool.py._get_layer_thumbnail` matches `MainId` against the user-supplied `layer_id` but should match `LayerId`. Coincidence in single-layer files masks this. Patched locally for verification; another reason to write our own minimal decoder rather than vendor csp_tool.

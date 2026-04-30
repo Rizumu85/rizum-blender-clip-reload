@@ -289,6 +289,7 @@ _BLEND_MAPPING = {
     24: "SATURATION",
     25: "COLOR",
     26: "BRIGHTNESS",
+    30: "THROUGH",
     36: "DIVIDE",
     # Gaps (1, 4, 6, 7, 10, 12, 13, 17鈥?0, 22+) likely belong to:
 }
@@ -719,6 +720,21 @@ class ClipFile:
             ).astype(np.uint8)
         return layer_alpha_u8
 
+    def _layer_mask_for_composite(
+        self,
+        layer: sqlite3.Row,
+        inside_through_folder: bool = False,
+    ) -> Optional[np.ndarray]:
+        if not layer["LayerMasking"]:
+            return None
+        # Real CSP files can store LayerType=3 rows under LayerComposite=30
+        # pass-through folders where the mask blob is present but not applied
+        # in the flattened export. Standalone masked rasters and masked layers
+        # inside normal/group-composited folders still use the mask.
+        if inside_through_folder and layer["LayerType"] == LAYER_TYPE_RASTER_MASKED:
+            return None
+        return self.decode_layer_mask(layer["MainId"])
+
     def _composite_image(self, out: np.ndarray, layer: sqlite3.Row, rgba: np.ndarray,
                          layer_alpha_u8: np.ndarray) -> bool:
         mode = self._blend_mode_for_layer(layer)
@@ -797,7 +813,12 @@ class ClipFile:
         rgba_u8 = np.clip(rgba * 255.0 + 0.5, 0, 255).astype(np.uint8)
         return rgba_u8, rgba_u8[..., 3]
 
-    def _render_chain(self, first_id: int, out: np.ndarray) -> Optional[np.ndarray]:
+    def _render_chain(
+        self,
+        first_id: int,
+        out: np.ndarray,
+        inside_through_folder: bool = False,
+    ) -> Optional[np.ndarray]:
         last_layer_alpha_u8 = None
         for lid in self._walk_chain(first_id):
             layer = self._layer_row(lid)
@@ -806,7 +827,11 @@ class ClipFile:
             if layer["LayerType"] == LAYER_TYPE_PAPER:
                 continue
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
-                child_last = self._render_chain(layer["LayerFirstChildIndex"], out)
+                child_last = self._render_chain(
+                    layer["LayerFirstChildIndex"],
+                    out,
+                    inside_through_folder or layer["LayerComposite"] == 30,
+                )
                 if child_last is not None:
                     last_layer_alpha_u8 = child_last
                 continue
@@ -814,7 +839,7 @@ class ClipFile:
                 group_out = np.zeros_like(out)
                 self._render_chain(layer["LayerFirstChildIndex"], group_out)
                 rgba, _ = self._premul_to_rgba_u8(group_out)
-                mask = self.decode_layer_mask(layer["MainId"]) if layer["LayerMasking"] else None
+                mask = self._layer_mask_for_composite(layer)
                 layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, last_layer_alpha_u8)
                 if self._composite_image(out, layer, rgba, layer_alpha_u8):
                     last_layer_alpha_u8 = layer_alpha_u8
@@ -834,7 +859,7 @@ class ClipFile:
                             layer["MainId"], layer["LayerName"])
                 continue
 
-            mask = self.decode_layer_mask(layer["MainId"]) if layer["LayerMasking"] else None
+            mask = self._layer_mask_for_composite(layer, inside_through_folder)
             layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, last_layer_alpha_u8)
             if self._composite_image(out, layer, rgba, layer_alpha_u8):
                 last_layer_alpha_u8 = layer_alpha_u8
