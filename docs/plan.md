@@ -62,7 +62,17 @@ Goal: Match CSP flattened PNG exports for real-world raster artwork as closely a
 - [x] Run another `Ref_Terra404_Live2D` full-image follow-up to confirm the next remaining error.
 - [x] Investigate the follow-up `Ref_Terra404_Live2D` worst point at `(2287, 1311)`.
 - [x] Widen the clipped preserve tolerance to `2.25/255` after targeted scalar replay and regression checks.
-- [ ] Run another `Ref_Terra404_Live2D` full-image follow-up after the `2.25/255` clipped preserve tolerance.
+- [x] Baseline new samples from 2026-05-04: `Ref_Kabi_Live2D`, `Ref_MXL_Idol1`, `Ref_绫音Aya_Live2D`, `Test_AddGlowMultiply`.
+- [x] Discover and document `LayerFolder` integer field (1=organizational folder, 17=layer folder) in SQLite schema.
+- [x] Verify type=0 folder semantics: offscreen rendering is correct; pass-through variants all cause regressions.
+- [x] Fix GLOW_DODGE producing invisible output on transparent/semi-transparent backgrounds. CSP describes Glow Dodge as "stronger in semi-transparent areas." Fix blends smoothly between Color Dodge (opaque dst) and source colour (transparent dst) in premultiplied space: `dodge_pm * dst_blend + src_pm * (1 - dst_blend)`. No regressions on any sample; Kabi max Δ improved from 233→53 (77%). Test_GlowDodge remains 100%.
+- [x] Fix tile-grid detection: when layer tile blob has more tiles than expected from thumbnail dimensions, infer grid from actual blob size instead of erroring.
+- [x] Investigate Kabi layer-ordering root cause — folder 232 (蝴蝶结, LayerFolder=17) renders after folder 107 (身体, LayerFolder=1), which is correct bottom-up. The dark overlay was caused by GLOW_DODGE layers invisible in offscreen buffer, now fixed.
+- [x] Investigate MXL ADD highlight layer over-brightening (L432/L434 restoring base colour). Root cause still open — likely mask or folder-context issue.
+- [x] Investigate Aya systemic colour differences (minor, unchanged by fixes).
+- [ ] Run full-image Terra follow-up after `2.25/255` clipped preserve threshold.
+- [ ] Trace Kabi new worst pixel at `(1455,1103)` — likely Multiply/clipping interaction, distinct from GLOW_DODGE fix.
+- [ ] Resolve MXL ADD highlight layers: check if L432/L434 have masks or folder-context restrictions.
 - [ ] Resolve clipping group semantics for Add Glow + Multiply stacks using `Test_AddGlowMultiply`.
 - [ ] Add support for non-zero layer offsets when a sample requires it.
 - [ ] Decide how unsupported vector, text, 3D, monochrome, and grayscale layers should be surfaced to Blender users.

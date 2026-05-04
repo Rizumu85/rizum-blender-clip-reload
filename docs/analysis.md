@@ -309,14 +309,118 @@ Follow-up on `Ref_Terra404_Live2D`:
 
 - `csp_tool.py._get_layer_thumbnail` matches `MainId` against the user-supplied `layer_id` but should match `LayerId`. Coincidence in single-layer files masks this. Patched locally for verification; another reason to write our own minimal decoder rather than vendor csp_tool.
 
+## New Sample Baselines (2026-05-04)
+
+Measured with the current compositor (v0.8.22, clipped preserve threshold `2.25/255`):
+
+| Sample | Canvas | Layers | Premul max Δ | Mean Δ | Exact pixels |
+|---|---|---|---|---|---|
+| `Ref_Kabi_Live2D.clip` | 2894×4093 | 839 | **233.0** | 0.0101 | 98.49% |
+| `Ref_MXL_Idol1.clip` | 5877×8326 | 719 | **65.0** | 0.0556 | 95.25% |
+| `Ref_绫音Aya_Live2D.clip` | 3288×6176 | 303 | **16.0** | 0.0061 | 99.17% |
+| `Test_AddGlowMultiply.clip` | 4096×4096 | 5 | **85.6** | 4.47 | 74.68% |
+
+## `LayerFolder` Field Discovery
+
+The `Layer` SQLite table has a `LayerFolder` integer column, previously unused. It is orthogonal to `LayerType`:
+
+- **`LayerFolder=0`**: raster-like layers (type 1, 3)
+- **`LayerFolder=1`**: organizational folders
+- **`LayerFolder=17`**: layer folders (special compositing behaviour)
+
+Distribution across samples:
+
+| Sample | LayerFolder=1 (type=0) | LayerFolder=17 (type=0) |
+|---|---|---|
+| Kabi | 58 | 120 |
+| MXL | 2 | 121 |
+| Aya | 15 | 54 |
+| RealArt | 18 | 64 |
+
+A global sort (`LayerFolder=17` first / rendered below, `LayerFolder=1` last / rendered on top) was tested on Kabi. It improved the previously-worst dark pixel `(1461,1158)` from `[22,21,21]` to `[251,245,242]` (ref `[255,212,205]`), but caused widespread new white-pixel errors (mean diff 0.010→6.0, exact 98.49%→94.05%). The sort must be scoped more narrowly — likely only within specific parent contexts.
+
+## Kabi Layer Ordering Root Cause
+
+Pixel `(1461, 1158)`: reference `[255,212,205,255]`, loader `[22,21,21,255]`.
+
+The compositor trace shows the correct layer stack rendering bottom-up:
+
+1. L3 (底色, Normal, `[194,193,193,255]`) → canvas gray
+2. Folder 47 (头纱奥) → shadow layers darken canvas
+3. Folder 54 (体) → L73 (`[217,181,226,255]`) brightens
+4. **Folder 107** (表情, `LayerFolder=1`, inside folder 100) → L143 (`[251,245,242,255]`) near-white, composites to canvas `[0.984, 0.961, 0.949, 1.0]`
+5. **Folder 232** (明暗線, `LayerFolder=17`, inside folder 100) → L259 (`[0,0,0,101]`) dark overlay, composites to canvas `[0.086, 0.082, 0.082, 1.0]`
+
+In CSP's bottom-up chain, folder 232 (NextIndex=265) renders AFTER folder 107 (NextIndex=149), so dark content appears on top — covering the bright layers. The CSP reference however shows the bright content `[255,212,205]`, meaning the dark overlay is either masked out at this pixel in CSP, or CSP's layer ordering differs from the chain order within certain folder contexts.
+
+**Neither reversing the chain nor treating type=0 comp=0 folders as pass-through fixes this** — both approaches cause large regressions in Aya, RealArt, and other samples.
+
+## MXL ADD Layer Over-Brightening
+
+Pixel `(2484, 3492)`: reference `[190,73,107,255]`, loader `[255,73,107,255]`.
+
+Only the red channel differs. The compositor trace shows:
+
+1. L3 (base) → canvas `[255,73,107]`
+2. Multiply/darken layers → reduce to `[44,24,27]`
+3. Several normal layers → various intermediate colors
+4. **L432** (hl3, ADD) → brightens `[0.557, 0.098, 0.137]` → `[0.690, 0.219, 0.208]`
+5. **L434** (hl, ADD) → `[0.690, 0.219, 0.208]` → `[1.000, 0.285, 0.420]` = `[255,73,107]` — exactly L3's base color
+
+The ADD highlight layers restore L3's exact original color. In CSP's reference, these ADD layers must be masked or have reduced effect at this pixel. Possible causes:
+- The ADD layers have `LayerLayerMaskMipmap` set (mask data present but may decode differently)
+- These layers are inside a folder structure that limits their contribution in CSP
+- The ADD compositing formula may differ when the layer has a mask
+
+## Type=0 Folder Semantics (Verified)
+
+**Confirmed through regression testing:**
+
+- Type=0 folders MUST render offscreen (not pass-through) when their composite mode is not THROUGH. Pass-through variants (all-comp-0, LayerFolder-based, NORMAL-only) all cause regressions in Aya (max diff 16→97 or worse) and/or RealArt (max diff 25→38).
+- The offscreen buffer approach is structurally correct. The remaining per-sample issues (Kabi ordering, MXL ADD layers) are about specific layer interactions within that framework, not the folder model itself.
+- Type=0 THROUGH folders are handled correctly by `_render_through_group` with mask/opacity blending and clip chain reset.
+
+## AddGlowMultiply Current State
+
+The pixel trace at `(2161, 748)` confirms the known structural issue:
+
+- Layer stack: L5 (Normal base), L6 (Add Glow, non-clipped), L7 (Multiply, clipped), L8 (Normal, clipped)
+- Reference: `[187,188,237,248]`, Loader: `[106,188,146,253]`
+- The isolated-group prototype gives `[197,204,255,253]` — close but blue-oversaturated (255 vs 237)
+
+The remaining gap is the clipped Multiply/Normal strength formula within the isolated group. The group approach (composite L6+L7+L8 offscreen, blend back through Add Glow) has the right structure but over-brightens because the clipped Multiply darkens the group content less than CSP does.
+
+## GLOW_DODGE on Transparent Backgrounds Fix (2026-05-04)
+
+GLOW_DODGE on a fully transparent destination produced `[0,0,0,alpha]` — invisible colour — because Color Dodge with `dst=0` always yields zero. CSP Glow Dodge is documented as "stronger in semi-transparent areas," meaning it should still show source colour on transparent backgrounds.
+
+**Fix:** When `dst_a < 1/255` (effectively transparent), the GLOW_DODGE output adds the source's own premultiplied colour contribution. On opaque or semi-transparent backgrounds, the original Color Dodge formula is preserved unchanged.
+
+**Validation (no regressions):**
+
+| Sample | Before fix | After fix |
+|---|---|---|
+| `Test_GlowDodge.clip` | 100% exact | 100% exact |
+| `Test_RealArt.clip` | max≈25, mean≈0.0015 | max=25, mean=0.00085 |
+| `Ref_Aya_Live2D.clip` | max=16, mean=0.0061 | identical |
+| `Ref_Kabi_Live2D.clip` | max=233, mean=0.010 | **max=112, mean=0.010** |
+| `Test_AddGlowMultiplyClipping.clip` | max=1 | max=1 |
+
+The Kabi improvement is concentrated at previously-worst pixels: `(1461,1158)` went from `[22,21,21]` (near-black) to `[255,239,252]` (ref `[255,212,205]`), and the offscreen-buffer darkening at `(1444,1166)` became pixel-exact.
+
+The fix also exposed a tile-grid auto-detection improvement: when a layer's tile blob has more tiles than expected from `ThumbnailCanvasWidth/Height`, the tile grid is now inferred from the actual blob size rather than erroring.
+
 ## Open Questions
 
 1. **Terra localized color follow-up.** The original opaque-content worst point is fixed by honoring `LayerLayerMaskMipmap` on `LayerType=3`; the dark-line overwrite is fixed by masked THROUGH group rendering; the sampled clipped Add Glow over-brightening is reduced by using effective alpha for Add Glow strength; and the `(2190, 1319)` / `(2287, 1311)` darkening is improved by a slightly wider clipped preserve threshold. `Ref_Terra404_Live2D` still needs another full-image pass to confirm the new worst point after the `2.25/255` threshold.
 2. **Clipping group structure.** `Test_AddGlowMultiply` shows that CSP likely treats a base layer plus clipped siblings as a more isolated clipping group before applying the base layer's blend mode to the parent stack. A naive grouping prototype improves the sample but oversaturates blue, so clipped Multiply / Normal strength still needs a tighter formula before implementation.
-3. **Layer offsets.** The loader warns on non-zero `LayerOffsetX / LayerOffsetY`; no supplied sample has required offset support yet.
-4. **Grayscale / monochrome layers.** csp_tool says unsupported. Still out of scope until a real sample requires it.
-5. **Vector / 3D / text layers.** Still out of scope; decide later whether to skip silently, warn in Blender UI, or use fallback preview data.
-6. **Color management.** CSP authoring color space vs Blender scene linear may produce display differences even when raw decode is correct.
+3. **Kabi remaining dark pixels.** The GLOW_DODGE fix resolved the worst offscreen-buffer darkening. The new worst pixel at `(1455,1103)` shows a different darkening pattern (ref `[176,154,221]` vs loader `[112,109,109]`). Likely a Multiply-layer or clipping interaction at a folder boundary — distinct from the GLOW_DODGE issue.
+4. **MXL ADD highlight layers.** L432/L434 (ADD mode) restore the canvas to L3's base color. These layers likely have masks or folder-context limitations not yet detected. Investigate their `LayerLayerMaskMipmap` values and parent folder hierarchy.
+5. **Aya systemic differences.** Small color differences (max Δ=16, mean=0.006) concentrated around a specific image region. Likely a blend formula edge case or minor mask interaction. Lowest priority.
+6. **Layer offsets.** The loader warns on non-zero `LayerOffsetX / LayerOffsetY`; no supplied sample has required offset support yet.
+7. **Grayscale / monochrome layers.** csp_tool says unsupported. Still out of scope until a real sample requires it.
+8. **Vector / 3D / text layers.** Still out of scope; decide later whether to skip silently, warn in Blender UI, or use fallback preview data.
+9. **Color management.** CSP authoring color space vs Blender scene linear may produce display differences even when raw decode is correct.
 
 ## Reusable Code
 

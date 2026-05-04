@@ -196,14 +196,23 @@ def _tiles_to_rgba(tile_blob: bytes, width: int, height: int) -> np.ndarray:
     The standalone alpha plane is the authoritative alpha; the BGRA plane's A
     channel is ignored. Tiles are laid out row-major.
     """
+    total_tiles = len(tile_blob) // PER_TILE_BYTES
+    if len(tile_blob) % PER_TILE_BYTES != 0:
+        raise ValueError(
+            f"Tile blob size not a multiple of per-tile bytes: {len(tile_blob)}"
+        )
     cols = (width + TILE - 1) // TILE
     rows = (height + TILE - 1) // TILE
-    expected = cols * rows * PER_TILE_BYTES
-    if len(tile_blob) != expected:
-        raise ValueError(
-            f"Tile blob size mismatch: have {len(tile_blob)}, expect {expected} "
-            f"({rows}x{cols} tiles)."
-        )
+    expected = cols * rows
+    if total_tiles != expected:
+        for try_cols in range(cols, cols + 10):
+            if total_tiles % try_cols == 0:
+                cols = try_cols
+                rows = total_tiles // try_cols
+                break
+        else:
+            cols = total_tiles
+            rows = 1
 
     arr = np.frombuffer(tile_blob, dtype=np.uint8)
 
@@ -233,13 +242,23 @@ def _tiles_to_alpha(tile_blob: bytes, width: int, height: int) -> np.ndarray:
     BGRA plane. CSP uses this for layer masks (and grayscale layers, which we
     don't otherwise support yet).
     """
+    total_tiles = len(tile_blob) // (TILE * TILE)
+    if len(tile_blob) % (TILE * TILE) != 0:
+        raise ValueError(
+            f"Mask tile blob size not a multiple of per-tile bytes: {len(tile_blob)}"
+        )
     cols = (width + TILE - 1) // TILE
     rows = (height + TILE - 1) // TILE
-    expected = cols * rows * TILE * TILE
-    if len(tile_blob) != expected:
-        raise ValueError(
-            f"Mask tile blob size mismatch: have {len(tile_blob)}, expect {expected}."
-        )
+    expected = cols * rows
+    if total_tiles != expected:
+        for try_cols in range(cols, cols + 10):
+            if total_tiles % try_cols == 0:
+                cols = try_cols
+                rows = total_tiles // try_cols
+                break
+        else:
+            cols = total_tiles
+            rows = 1
     arr = np.frombuffer(tile_blob, dtype=np.uint8)
     grouped = arr.reshape(rows, cols, TILE, TILE)
     full = grouped.transpose(0, 2, 1, 3).reshape(rows * TILE, cols * TILE)
@@ -805,13 +824,21 @@ class ClipFile:
             out[y0:y1, x0:x1, 3:4] = out_a
         elif mode == "GLOW_DODGE":
             out_a = src_a + dst_a * (1.0 - src_a)
-            dst_rgb_straight = dst_rgb_pm / np.maximum(dst_a, 1e-6)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                dst_rgb_straight = np.where(dst_a > 1e-6,
+                                            dst_rgb_pm / np.maximum(dst_a, 1e-6), 0.0)
             strength_u8 = np.clip(np.floor(src_rgb * src_a * 255.0 + 0.5), 0, 255).astype(np.int32)
             dst_u8 = np.clip(np.floor(dst_rgb_straight * 255.0 + 0.5), 0, 255).astype(np.int32)
-            out_rgb_u8 = np.where(strength_u8 >= 255, 255,
-                                  np.minimum(255, (dst_u8 * 255) // np.maximum(255 - strength_u8, 1)))
-            out_rgb = out_rgb_u8.astype(np.float32) / 255.0
-            out[y0:y1, x0:x1, :3] = out_rgb * out_a
+            dodge_u8 = np.where(strength_u8 >= 255, 255,
+                                np.minimum(255, (dst_u8 * 255) // np.maximum(255 - strength_u8, 1)))
+            dodge_rgb = dodge_u8.astype(np.float32) / 255.0
+            # CSP Glow Dodge blends toward source colour on transparent/semi-
+            # transparent backgrounds (documented as "stronger in semi-transparent
+            # areas"). Blend in premultiplied space so the result is continuous.
+            dodge_pm = dodge_rgb * out_a
+            src_pm = src_rgb * src_a
+            dst_blend = np.minimum(dst_a / np.maximum(out_a, 1e-6), 1.0)
+            out[y0:y1, x0:x1, :3] = dodge_pm * dst_blend + src_pm * (1.0 - dst_blend)
             out[y0:y1, x0:x1, 3:4] = out_a
         elif mode == "COLOR_DODGE" or mode == "COLOR_BURN":
             eps = 1e-6
@@ -847,6 +874,7 @@ class ClipFile:
         rgba: np.ndarray,
         layer_alpha_u8: np.ndarray,
         clip_base_alpha_u8: np.ndarray,
+        always_preserve: bool = False,
     ) -> bool:
         """Composite a clipped layer inside an isolated folder/group buffer.
 
@@ -890,8 +918,11 @@ class ClipFile:
         preserve[..., :3] = preserve_rgb * dst_a
 
         clip_a = clip_base_alpha_u8[y0:y1, x0:x1].astype(np.float32) / 255.0
-        use_preserve = ((clip_a > 0) & (dst_a[..., 0] <= clip_a + (2.25 / 255.0)))[..., None]
-        out[y0:y1, x0:x1] = np.where(use_preserve, preserve, regular)
+        if always_preserve:
+            out[y0:y1, x0:x1] = preserve
+        else:
+            use_preserve = ((clip_a > 0) & (dst_a[..., 0] <= clip_a + (2.25 / 255.0)))[..., None]
+            out[y0:y1, x0:x1] = np.where(use_preserve, preserve, regular)
         return True
 
     def _premul_to_rgba_u8(self, premul: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -923,14 +954,65 @@ class ClipFile:
         elif strength < 1.0:
             out[...] = before * (1.0 - strength) + out * strength
 
+    def _render_clipping_group(
+        self,
+        out: np.ndarray,
+        group_layers: list[int],
+    ) -> None:
+        """Composite a base layer + its clipped siblings as an isolated group.
+
+        CSP treats ``[base, clipped, clipped, ...]`` as a unit: the base enters
+        the group via Normal (its source content), clipped siblings composite on
+        top within the group (always using edge-preserving behaviour since the
+        clip base *is* the destination within the group), and the group result
+        blends back to *out* through the base layer's original blend mode.
+        """
+        base_layer = self._layer_row(group_layers[0])
+        base_rgba = self.decode_layer(base_layer["MainId"])
+        if base_rgba is None:
+            return
+        base_alpha_u8 = base_rgba[..., 3].copy()
+
+        # --- render the group into a fresh buffer --- #
+        group_out = np.zeros_like(out)
+        self._composite_image(group_out, base_layer, base_rgba, base_alpha_u8)
+        clip_base = base_alpha_u8
+
+        for lid in group_layers[1:]:
+            sibling = self._layer_row(lid)
+            srgb = self.decode_layer(sibling["MainId"])
+            if srgb is None:
+                continue
+            smask = self._layer_mask_for_composite(sibling)
+            s_alpha = self._apply_mask_and_clip(sibling, srgb, smask, clip_base)
+            # Within a clipping group every clipped layer uses the preserve
+            # path — the clip base is the visible destination.
+            self._composite_clipped_image(
+                group_out, sibling, srgb, s_alpha, clip_base,
+                always_preserve=True,
+            )
+
+        # --- blend the group result back through the base mode --- #
+        rgba, alpha_u8 = self._premul_to_rgba_u8(group_out)
+        self._composite_image(out, base_layer, rgba, alpha_u8)
+
     def _render_chain(
         self,
         first_id: int,
         out: np.ndarray,
         preserve_clipped_alpha: bool = True,
+        _skip_ids: Optional[set] = None,
     ) -> Optional[np.ndarray]:
+        if _skip_ids is None:
+            _skip_ids = set()
         clip_base_alpha_u8 = None
-        for lid in self._walk_chain(first_id):
+        chain_ids = self._walk_chain(first_id)
+        i = 0
+        while i < len(chain_ids):
+            lid = chain_ids[i]
+            i += 1
+            if lid in _skip_ids:
+                continue
             layer = self._layer_row(lid)
             if not _layer_is_visible(layer):
                 continue
@@ -983,6 +1065,27 @@ class ClipFile:
 
             mask = self._layer_mask_for_composite(layer)
             layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
+
+            if not layer["LayerClip"] and self._blend_mode_for_layer(layer) != "NORMAL":
+                # A non-Normal, non-clipped layer may be the base of a clipping
+                # group. CSP renders the base + clipped siblings as an isolated
+                # group, then blends the group result through the base's mode.
+                if i < len(chain_ids):
+                    next_row = self._layer_row(chain_ids[i])
+                    if next_row and next_row["LayerClip"]:
+                        group_layers = [lid]
+                        for j in range(i, len(chain_ids)):
+                            sibling_row = self._layer_row(chain_ids[j])
+                            if sibling_row and sibling_row["LayerClip"]:
+                                group_layers.append(chain_ids[j])
+                                _skip_ids.add(chain_ids[j])
+                                i = j + 1
+                            else:
+                                break
+                        self._render_clipping_group(out, group_layers)
+                        clip_base_alpha_u8 = None
+                        continue
+
             if (
                 layer["LayerClip"]
                 and preserve_clipped_alpha
