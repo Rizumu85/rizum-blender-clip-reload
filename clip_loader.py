@@ -792,7 +792,8 @@ class ClipFile:
         return self.decode_layer_mask(layer["MainId"])
 
     def _composite_image(self, out: np.ndarray, layer: sqlite3.Row, rgba: np.ndarray,
-                         layer_alpha_u8: np.ndarray) -> bool:
+                         layer_alpha_u8: np.ndarray,
+                         blend_strength: np.ndarray = None) -> bool:
         mode = self._blend_mode_for_layer(layer)
 
         bbox = _alpha_bbox(layer_alpha_u8)
@@ -806,6 +807,8 @@ class ClipFile:
 
         src_rgb = src_rgb_u8.astype(np.float32) / 255.0
         src_a = (src_a_u8.astype(np.float32) / 255.0)[..., None] * opacity
+        # blend_a: alpha for blend strength (base alpha for clipped Multiply etc.)
+        blend_a = src_a if blend_strength is None else blend_strength[y0:y1, x0:x1][..., None]
 
         dst_rgb_pm = out[y0:y1, x0:x1, :3]
         dst_a = out[y0:y1, x0:x1, 3:4]
@@ -853,13 +856,13 @@ class ClipFile:
             out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
         else:
             # CSP two-stage pipeline: blend at full strength, then alpha composite.
-            # This matches CSPixelBlender (blend) + RenderBlendModeCall (alpha over).
             eps = 1e-6
             dst_rgb_straight = dst_rgb_pm / np.maximum(dst_a, eps)
             blended = np.clip(_blend_func(mode, src_rgb, dst_rgb_straight), 0.0, 1.0)
 
-            # Porter-Duff "over": blended * src_a + dst * (1 - src_a)
-            blended_pm = blended * src_a
+            # blend_a controls blend contribution weight (base alpha for clipped,
+            # src_a otherwise). Porter-Duff always uses src_a.
+            blended_pm = blended * blend_a
             inv_sa = 1.0 - src_a
             out[y0:y1, x0:x1, :3] = blended_pm + dst_rgb_pm * inv_sa
             out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
@@ -1071,9 +1074,32 @@ class ClipFile:
 
             mask = self._layer_mask_for_composite(layer)
             layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
-            did_composite = self._composite_image(out, layer, rgba, layer_alpha_u8)
-            if did_composite:
-                if not layer["LayerClip"]:
+
+            # CSP transparent export: clipped layers don't increase coverage.
+            # Blend strength: Normal uses masked alpha; Multiply/Overlay/etc.
+            # use the base's alpha (full strength within the clip area).
+            # After compositing, restore alpha to the pre-composite coverage level.
+            mask = self._layer_mask_for_composite(layer)
+            layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
+
+            if layer["LayerClip"] and clip_base_alpha_u8 is not None:
+                saved_a = out[..., 3].copy()
+                mode = self._blend_mode_for_layer(layer)
+                if mode == "NORMAL":
+                    did_composite = self._composite_image(out, layer, rgba, layer_alpha_u8)
+                else:
+                    # Non-Normal clipped: blend at base-alpha strength
+                    blend_a = clip_base_alpha_u8.astype(np.float32) / 255.0
+                    did_composite = self._composite_image(
+                        out, layer, rgba, layer_alpha_u8, blend_strength=blend_a)
+
+                if did_composite:
+                    new_a = out[..., 3:4]
+                    out[..., :3] *= np.where(new_a > 1e-6, saved_a[..., None] / np.maximum(new_a, 1e-6), 0.0)
+                    out[..., 3:4] = saved_a[..., None]
+            else:
+                did_composite = self._composite_image(out, layer, rgba, layer_alpha_u8)
+                if did_composite:
                     clip_base_alpha_u8 = layer_alpha_u8
 
         return clip_base_alpha_u8
