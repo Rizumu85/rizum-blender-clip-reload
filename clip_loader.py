@@ -984,8 +984,17 @@ class ClipFile:
         base_alpha_u8 = base_rgba[..., 3].copy()
 
         # --- render the group into a fresh buffer --- #
+        # The base enters the group via Normal (source content).
+        # The group result blends back through the base's blend mode.
         group_out = np.zeros_like(out)
-        self._composite_image(group_out, base_layer, base_rgba, base_alpha_u8)
+        # Composite base as Normal onto black buffer
+        bbox = _alpha_bbox(base_alpha_u8)
+        if bbox is not None:
+            y0, y1, x0, x1 = bbox
+            src_a = base_alpha_u8[y0:y1, x0:x1].astype(np.float32)[..., None] / 255.0
+            src_rgb = base_rgba[y0:y1, x0:x1, :3].astype(np.float32) / 255.0
+            group_out[y0:y1, x0:x1, :3] = src_rgb * src_a
+            group_out[y0:y1, x0:x1, 3:4] = src_a
         clip_base = base_alpha_u8
 
         for lid in group_layers[1:]:
@@ -995,12 +1004,7 @@ class ClipFile:
                 continue
             smask = self._layer_mask_for_composite(sibling)
             s_alpha = self._apply_mask_and_clip(sibling, srgb, smask, clip_base)
-            # Within a clipping group every clipped layer uses the preserve
-            # path — the clip base is the visible destination.
-            self._composite_clipped_image(
-                group_out, sibling, srgb, s_alpha, clip_base,
-                always_preserve=True,
-            )
+            self._composite_image(group_out, sibling, srgb, s_alpha)
 
         # --- blend the group result back through the base mode --- #
         rgba, alpha_u8 = self._premul_to_rgba_u8(group_out)
