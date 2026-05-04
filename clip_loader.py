@@ -672,7 +672,7 @@ class ClipFile:
     def _resolve_mask_external_id(self, layer_id: int) -> Optional[str]:
         """Resolve the highest-res mask blob's external_id for a layer, or None."""
         row = self._layer_row(layer_id)
-        if row is None or not row["LayerMasking"]:
+        if row is None:
             return None
         mask_mipmap = row["LayerLayerMaskMipmap"]
         if not mask_mipmap:
@@ -697,7 +697,7 @@ class ClipFile:
 
     def _mask_empty_fill(self, layer_id: int) -> int:
         row = self._layer_row(layer_id)
-        if row is None or not row["LayerMasking"]:
+        if row is None:
             return 0
         mask_mipmap = row["LayerLayerMaskMipmap"]
         if not mask_mipmap:
@@ -768,7 +768,7 @@ class ClipFile:
         return layer_alpha_u8
 
     def _layer_mask_for_composite(self, layer: sqlite3.Row) -> Optional[np.ndarray]:
-        if not layer["LayerMasking"]:
+        if not layer["LayerLayerMaskMipmap"]:
             return None
         return self.decode_layer_mask(layer["MainId"])
 
@@ -868,8 +868,12 @@ class ClipFile:
         opacity = min(layer["LayerOpacity"] / 256.0, 1.0)
         src_rgb = rgba[y0:y1, x0:x1, :3].astype(np.float32) / 255.0
         src_strength = (rgba[y0:y1, x0:x1, 3].astype(np.float32) / 255.0)[..., None] * opacity
+        effective_strength = (
+            layer_alpha_u8[y0:y1, x0:x1].astype(np.float32) / 255.0
+        )[..., None] * opacity
         visible = (layer_alpha_u8[y0:y1, x0:x1].astype(np.float32) > 0)[..., None]
         src_strength = np.where(visible, src_strength, 0.0)
+        effective_strength = np.where(visible, effective_strength, 0.0)
 
         dst_a = before[..., 3:4]
         with np.errstate(invalid="ignore", divide="ignore"):
@@ -877,7 +881,7 @@ class ClipFile:
         if mode == "NORMAL":
             preserve_rgb = src_rgb * src_strength + dst_rgb * (1.0 - src_strength)
         elif mode == "ADD" or mode == "ADD_GLOW":
-            preserve_rgb = np.minimum(dst_rgb + src_rgb * src_strength, 1.0)
+            preserve_rgb = np.minimum(dst_rgb + src_rgb * effective_strength, 1.0)
         else:
             blended = np.clip(_blend_func(mode, src_rgb, dst_rgb), 0.0, 1.0)
             preserve_rgb = blended * src_strength + dst_rgb * (1.0 - src_strength)
@@ -900,6 +904,25 @@ class ClipFile:
         rgba_u8 = np.clip(rgba * 255.0 + 0.5, 0, 255).astype(np.uint8)
         return rgba_u8, rgba_u8[..., 3]
 
+    def _render_through_group(
+        self,
+        layer: sqlite3.Row,
+        out: np.ndarray,
+        preserve_clipped_alpha: bool,
+    ) -> None:
+        before = out.copy()
+        self._render_chain(layer["LayerFirstChildIndex"], out, preserve_clipped_alpha)
+        mask = self._layer_mask_for_composite(layer)
+        opacity = min(layer["LayerOpacity"] / 256.0, 1.0)
+        if mask is not None:
+            strength = (mask.astype(np.float32) / 255.0)[..., None] * opacity
+        else:
+            strength = opacity
+        if isinstance(strength, np.ndarray):
+            out[...] = before * (1.0 - strength) + out * strength
+        elif strength < 1.0:
+            out[...] = before * (1.0 - strength) + out * strength
+
     def _render_chain(
         self,
         first_id: int,
@@ -916,7 +939,7 @@ class ClipFile:
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
                 mode = self._blend_mode_for_layer(layer)
                 if mode == "THROUGH":
-                    self._render_chain(layer["LayerFirstChildIndex"], out, preserve_clipped_alpha)
+                    self._render_through_group(layer, out, preserve_clipped_alpha)
                     clip_base_alpha_u8 = None
                 else:
                     group_out = np.zeros_like(out)
@@ -929,6 +952,11 @@ class ClipFile:
                             clip_base_alpha_u8 = layer_alpha_u8
                 continue
             if layer["LayerType"] == LAYER_TYPE_GROUP:
+                mode = self._blend_mode_for_layer(layer)
+                if mode == "THROUGH":
+                    self._render_through_group(layer, out, preserve_clipped_alpha)
+                    clip_base_alpha_u8 = None
+                    continue
                 group_out = np.zeros_like(out)
                 self._render_chain(layer["LayerFirstChildIndex"], group_out, True)
                 rgba, _ = self._premul_to_rgba_u8(group_out)

@@ -290,6 +290,15 @@ Follow-up on `Ref_Terra404_Live2D`:
 - A targeted comparison with the current loader showed max premultiplied diff `1.000000`, mean `0.010291082`, exact pixels `6564474 / 29280000`.
 - The worst sampled point is reference `[255, 255, 255, 0]` vs loader `[177, 165, 197, 255]` at `(1845, 1990)`, which means the loader is drawing opaque content where CSP exports full transparency.
 - This should be investigated as a structural visibility/mask/group/background issue before tuning color formulas; the error is not a small blend rounding mismatch.
+- Pixel tracing showed the opaque pixel came from layer `489` (`落影`), a `LayerType=3` layer with `LayerLayerMaskMipmap=515` but `LayerMasking=0`.
+- Decoding that mask mipmap directly showed mask value `0` at `(1845, 1990)`. The loader previously ignored the mask because it gated mask decoding on `LayerMasking`; `LayerType=3` can carry an active mask mipmap even when that flag is `0`.
+- The loader now applies a layer mask whenever `LayerLayerMaskMipmap` is present. `Test_Mask.clip/png` remains bit-perfect, and the Terra sampled point now decodes as transparent `[0, 0, 0, 0]`.
+- Full-image follow-up then exposed `(2162, 1449)`: reference `[41, 4, 9, 255]` vs loader `[234, 204, 218, 255]`.
+- Pixel tracing showed the loader produced the correct dark value after folder `540` (`線`), then overwrote it through `LayerType=2` group `545` (`影`) with `LayerComposite=30` (`THROUGH`). Rendering `LayerType=2` THROUGH children directly into the parent buffer makes the dark-line points exact, but also bypasses the group mask and leaks opaque pixels outside the masked region.
+- The loader now renders THROUGH children into the parent, then blends the before/after contribution back through the THROUGH group's own mask and opacity. Sampled Terra points now match both sides: mask-inside dark-line points `(2162, 1449)` and `(2636, 1449)` decode as `[41, 4, 9, 255]`, while mask-outside points `(2162, 1453)`, `(2165, 1458)`, and `(2587, 1597)` remain transparent.
+- A later follow-up exposed clipped Add Glow over-brightening around `(2397, 559)`: reference `[71, 68, 80, 255]` vs loader `[144, 170, 177, 255]`. The involved clipped `ADD_GLOW` layer had high raw alpha but an effective layer alpha near zero after mask/clip application.
+- The clipped preserve path now keeps raw source alpha for Normal/other blend recoloring, but uses effective layer alpha for `ADD` / `ADD_GLOW` strength. This keeps `Test_ClippingEdge.clip/png` at max premultiplied diff `0.003906`, `Test_ClippingEdge4K.clip/png` at max `0.003568`, preserves exact `Ref_Emuri_Live2D_2024` sampled Add Glow points, and reduces the Terra sampled point `(2397, 559)` to `[75, 114, 124, 255]`.
+- Full-image Terra follow-up after the mask, THROUGH, and clipped Add Glow fixes: max premultiplied diff `0.349019617`, mean `0.000395088`, exact pixels `7054122 / 29280000`. Previously fixed samples remain exact: `(1845, 1990)`, `(2162, 1449)`, `(2636, 1449)`, and `(2162, 1453)`. The next worst point is `(2190, 1319)`, reference `[223, 164, 201, 255]` vs loader `[154, 75, 137, 255]`.
 
 ## Known Bugs in Reference Code
 
@@ -297,7 +306,7 @@ Follow-up on `Ref_Terra404_Live2D`:
 
 ## Open Questions
 
-1. **Terra transparency leak.** `Ref_Terra404_Live2D` draws opaque loader content where the CSP PNG is fully transparent. Check visibility bit handling, group/offscreen masks, paper/background behavior, and any unsupported layer kind before adjusting blend math.
+1. **Terra localized color follow-up.** The original opaque-content worst point is fixed by honoring `LayerLayerMaskMipmap` on `LayerType=3`; the dark-line overwrite is fixed by masked THROUGH group rendering; and the sampled clipped Add Glow over-brightening is reduced by using effective alpha for Add Glow strength. The next largest remaining error is `(2190, 1319)`, where the loader is too dark/saturated compared with CSP.
 2. **Clipping group structure.** `Test_AddGlowMultiply` shows that CSP likely treats a base layer plus clipped siblings as a more isolated clipping group before applying the base layer's blend mode to the parent stack. A naive grouping prototype improves the sample but oversaturates blue, so clipped Multiply / Normal strength still needs a tighter formula before implementation.
 3. **Layer offsets.** The loader warns on non-zero `LayerOffsetX / LayerOffsetY`; no supplied sample has required offset support yet.
 4. **Grayscale / monochrome layers.** csp_tool says unsupported. Still out of scope until a real sample requires it.
@@ -312,3 +321,28 @@ Current implementation choice:
 - Keep the project-root `clip_loader.py` and `clip_studio_importer/clip_loader.py` in sync until the package layout duplication is resolved.
 
 Historical note: `csp_tool.py` is MIT and was useful while deriving the minimal implementation, but it is not part of the current runtime package.
+
+## OIIO Native Loader Spike
+
+Goal: check whether an external OpenImageIO `ImageInput` plugin could eventually make Blender load `.clip` through the normal image-loading path, without building a custom Blender.
+
+Findings from Blender 5.0.1 on this machine:
+
+- Blender 5.0.1 includes dynamic OIIO runtime files:
+  - `blender.shared/openimageio.dll`
+  - `blender.shared/openimageio_util.dll`
+  - `5.0/python/lib/site-packages/OpenImageIO/OpenImageIO.pyd`
+- Blender's bundled OIIO reports version `3.0.9.1`.
+- OIIO reports `psd` in `format_list` and `psd,pdd,psb` in `extension_list`, matching the existing PSD-style load path we want to emulate.
+- `bpy.data.images.load()` does not hard-reject unknown extensions: a valid PNG renamed to `.fakeclip` and `.clip` loads successfully as `PNG`.
+- The Python OIIO binding can set the global `plugin_searchpath` attribute, e.g. `OpenImageIO.attribute("plugin_searchpath", r"C:\tmp\oiio_plugins")`.
+
+Current blocker:
+
+- The installed Blender package does not include OIIO C++ headers or an import library for building an `ImageInput` plugin.
+- The machine currently exposes MinGW `g++`, but not MSVC `cl`. A plugin meant to load into Blender's MSVC-built OIIO DLL should be built with a compatible MSVC toolchain and matching OIIO headers/import libs.
+
+Conclusion:
+
+- The Blender-side extension gate looks promising: if a `.clip` OIIO plugin can be built and discovered, Blender should at least attempt to load `.clip` through the image path.
+- Do not spend more time on the native plugin until the Python decoder/compositor semantics are stable. When ready, run a focused C++/Rust spike with Blender-matched OIIO 3.0.9 headers/libs and MSVC.

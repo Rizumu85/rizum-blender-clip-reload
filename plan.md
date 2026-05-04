@@ -53,7 +53,11 @@ Goal: Match CSP flattened PNG exports for real-world raster artwork as closely a
 - [x] Validate against `Illustration4K`, isolated blend/mask/folder samples, `Test_RealArt`, and `Ref_Wuwu_Live2D`.
 - [x] Fix root-level clipped-layer edge alpha behavior using `Test_ClippingEdge` and `Test_ClippingEdge4K`.
 - [x] Fix clipped Add Glow color update using `Ref_Emuri_Live2D_2024`.
-- [ ] Investigate the opaque-content transparency leak in `Ref_Terra404_Live2D`.
+- [x] Fix the sampled opaque-content transparency leak in `Ref_Terra404_Live2D` by applying present mask mipmaps on `LayerType=3`.
+- [x] Fix the sampled dark-line overwrite in `Ref_Terra404_Live2D` with masked THROUGH group rendering.
+- [x] Fix the sampled masked clipped Add Glow over-brightening in `Ref_Terra404_Live2D` without regressing clipped edge samples.
+- [x] Run another full-image follow-up on `Ref_Terra404_Live2D` to identify the next remaining error.
+- [ ] Investigate the next `Ref_Terra404_Live2D` worst point at `(2190, 1319)`.
 - [ ] Resolve clipping group semantics for Add Glow + Multiply stacks using `Test_AddGlowMultiply`.
 - [ ] Add support for non-zero layer offsets when a sample requires it.
 - [ ] Decide how unsupported vector, text, 3D, monochrome, and grayscale layers should be surfaced to Blender users.
@@ -64,6 +68,7 @@ Goal: Make the current add-on easy to test and iterate on in Blender.
 
 - [x] Build `clip_studio_importer.zip` from the add-on package.
 - [x] Refresh package after the root-level clipping edge fix.
+- [x] Refresh package after the Terra mask / THROUGH / clipped Add Glow fixes.
 - [x] Write a short install/test handoff for Blender in `README.md`.
 - [ ] Decide whether to keep project-root `clip_loader.py` as a development copy or remove duplication after confirming package layout.
 
@@ -75,6 +80,20 @@ Goal: Improve the add-on after current raster fidelity and reload behavior are s
 - [ ] Add a cache-location preference if sidecar PNG files next to `.clip` become undesirable.
 - [ ] Explore lower-resolution preview mode using mipmap chains for faster iteration.
 - [ ] Evaluate color-management behavior between CSP exports and Blender texture display.
+
+## Direction 7: Native Image Loading
+
+Goal: Eventually let Blender load `.clip` through the normal image path, reducing or removing the sidecar PNG workflow.
+
+- [x] Run an initial OIIO feasibility check on installed Blender builds.
+- [x] Verify Blender can load image content from unknown extensions such as `.clip`.
+- [x] Verify OIIO `plugin_searchpath` can be set from Blender Python.
+- [ ] Finish Python decoder/compositor semantics before porting native code.
+- [ ] Prepare Blender-matched OIIO 3.0.9 headers/libs and an MSVC build environment.
+- [ ] Build a minimal fake OIIO `ImageInput` plugin that returns a known test image.
+- [ ] If fake plugin loading works, port the verified `.clip` decoder/compositor core to C++ or Rust.
+- [ ] Keep sidecar PNG as fallback/debug output until native `.clip` loading and reload behavior are proven stable.
+- [ ] Test whether generic image auto-reload add-ons can monitor `.clip` as `Image.filepath` and trigger `image.reload()`.
 
 ## Out of Scope
 
