@@ -832,9 +832,6 @@ class ClipFile:
             dodge_u8 = np.where(strength_u8 >= 255, 255,
                                 np.minimum(255, (dst_u8 * 255) // np.maximum(255 - strength_u8, 1)))
             dodge_rgb = dodge_u8.astype(np.float32) / 255.0
-            # CSP Glow Dodge blends toward source colour on transparent/semi-
-            # transparent backgrounds (documented as "stronger in semi-transparent
-            # areas"). Blend in premultiplied space so the result is continuous.
             dodge_pm = dodge_rgb * out_a
             src_pm = src_rgb * src_a
             dst_blend = np.minimum(dst_a / np.maximum(out_a, 1e-6), 1.0)
@@ -1071,12 +1068,7 @@ class ClipFile:
                 continue
 
             mask = self._layer_mask_for_composite(layer)
-            # CSP: clipping mask is simple alpha multiplication (IsBelowClipping is
-            # binary at offset 0x1c8). GetBelowClippingBase/Target confirm CSP does
-            # NOT use isolated group rendering — each layer composites individually
-            # with the pre-masked alpha.
             layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
-
             did_composite = self._composite_image(out, layer, rgba, layer_alpha_u8)
             if did_composite:
                 if not layer["LayerClip"]:
