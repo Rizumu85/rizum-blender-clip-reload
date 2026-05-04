@@ -852,14 +852,16 @@ class ClipFile:
             )
             out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
         else:
+            # CSP two-stage pipeline: blend at full strength, then alpha composite.
+            # This matches CSPixelBlender (blend) + RenderBlendModeCall (alpha over).
             eps = 1e-6
             dst_rgb_straight = dst_rgb_pm / np.maximum(dst_a, eps)
             blended = np.clip(_blend_func(mode, src_rgb, dst_rgb_straight), 0.0, 1.0)
 
+            # Porter-Duff "over": blended * src_a + dst * (1 - src_a)
+            blended_pm = blended * src_a
             inv_sa = 1.0 - src_a
-            inv_da = 1.0 - dst_a
-            src_pm = src_rgb * src_a
-            out[y0:y1, x0:x1, :3] = inv_da * src_pm + inv_sa * dst_rgb_pm + src_a * dst_a * blended
+            out[y0:y1, x0:x1, :3] = blended_pm + dst_rgb_pm * inv_sa
             out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
 
         # CSP uses an 8-bit integer compositing pipeline. Quantize after each
