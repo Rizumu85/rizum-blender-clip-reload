@@ -977,56 +977,37 @@ class ClipFile:
         clip base *is* the destination within the group), and the group result
         blends back to *out* through the base layer's original blend mode.
         """
-        base_layer = self._layer_row(group_layers[0])
-        base_rgba = self.decode_layer(base_layer["MainId"])
-        if base_rgba is None:
-            return
-        base_alpha_u8 = base_rgba[..., 3].copy()
-
-        # --- render the group into a fresh buffer --- #
-        # The base enters the group via Normal (source content).
-        # The group result blends back through the base's blend mode.
-        group_out = np.zeros_like(out)
-        # Composite base as Normal onto black buffer
-        bbox = _alpha_bbox(base_alpha_u8)
-        if bbox is not None:
-            y0, y1, x0, x1 = bbox
-            src_a = base_alpha_u8[y0:y1, x0:x1].astype(np.float32)[..., None] / 255.0
-            src_rgb = base_rgba[y0:y1, x0:x1, :3].astype(np.float32) / 255.0
-            group_out[y0:y1, x0:x1, :3] = src_rgb * src_a
-            group_out[y0:y1, x0:x1, 3:4] = src_a
-        clip_base = base_alpha_u8
-
-        for lid in group_layers[1:]:
-            sibling = self._layer_row(lid)
-            srgb = self.decode_layer(sibling["MainId"])
-            if srgb is None:
+        # CSP's GetBelowClippingBase/GetBelowClippingTarget shows clipping is a
+        # chain, not an isolated group. Each layer composites individually:
+        #   base → canvas with its own blend mode,
+        #   clipped layers → canvas with alpha masked by base, own blend mode.
+        #
+        # The base layer's blend mode is already set correctly in the SQLite row.
+        # Clipped layers already have their alpha pre-masked by the base.
+        # No group isolation or blend-back is needed.
+        for lid in group_layers:
+            layer = self._layer_row(lid)
+            rgba = self.decode_layer(lid)
+            if rgba is None:
                 continue
-            smask = self._layer_mask_for_composite(sibling)
-            s_alpha = self._apply_mask_and_clip(sibling, srgb, smask, clip_base)
-            self._composite_image(group_out, sibling, srgb, s_alpha)
-
-        # --- blend the group result back through the base mode --- #
-        rgba, alpha_u8 = self._premul_to_rgba_u8(group_out)
-        self._composite_image(out, base_layer, rgba, alpha_u8)
+            mask = self._layer_mask_for_composite(layer)
+            # Track clip_base for the render chain downstream
+            layer_alpha_u8 = self._apply_mask_and_clip(
+                layer, rgba, mask,
+                clip_base_alpha_u8 if layer["LayerClip"] else None)
+            self._composite_image(out, layer, rgba, layer_alpha_u8)
+            if not layer["LayerClip"]:
+                clip_base_alpha_u8 = layer_alpha_u8
 
     def _render_chain(
         self,
         first_id: int,
         out: np.ndarray,
         preserve_clipped_alpha: bool = True,
-        _skip_ids: Optional[set] = None,
     ) -> Optional[np.ndarray]:
-        if _skip_ids is None:
-            _skip_ids = set()
         clip_base_alpha_u8 = None
         chain_ids = self._walk_chain(first_id)
-        i = 0
-        while i < len(chain_ids):
-            lid = chain_ids[i]
-            i += 1
-            if lid in _skip_ids:
-                continue
+        for lid in chain_ids:
             layer = self._layer_row(lid)
             if not _layer_is_visible(layer):
                 continue
@@ -1090,33 +1071,12 @@ class ClipFile:
                 continue
 
             mask = self._layer_mask_for_composite(layer)
+            # CSP: clipping mask is simple alpha multiplication (IsBelowClipping is
+            # binary at offset 0x1c8). GetBelowClippingBase/Target confirm CSP does
+            # NOT use isolated group rendering — each layer composites individually
+            # with the pre-masked alpha.
             layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
 
-            if not layer["LayerClip"] and self._blend_mode_for_layer(layer) != "NORMAL":
-                # A non-Normal, non-clipped layer may be the base of a clipping
-                # group. CSP renders the base + clipped siblings as an isolated
-                # group, then blends the group result through the base's mode.
-                if i < len(chain_ids):
-                    next_row = self._layer_row(chain_ids[i])
-                    if next_row and next_row["LayerClip"]:
-                        group_layers = [lid]
-                        for j in range(i, len(chain_ids)):
-                            sibling_row = self._layer_row(chain_ids[j])
-                            if sibling_row and sibling_row["LayerClip"]:
-                                group_layers.append(chain_ids[j])
-                                _skip_ids.add(chain_ids[j])
-                                i = j + 1
-                            else:
-                                break
-                        self._render_clipping_group(out, group_layers)
-                        clip_base_alpha_u8 = None
-                        continue
-
-            # CSP: clipping mask is applied before compositing (IsBelowClipping is binary).
-            # _apply_mask_and_clip already multiplied alpha by the clip base mask.
-            # The pre-masked alpha corrects Porter-Duff compositing automatically.
-            # _composite_clipped_image is only needed for isolated group renders
-            # (always_preserve path) where edge behavior differs.
             did_composite = self._composite_image(out, layer, rgba, layer_alpha_u8)
             if did_composite:
                 if not layer["LayerClip"]:
