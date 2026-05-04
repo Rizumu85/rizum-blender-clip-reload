@@ -57,7 +57,12 @@ Goal: Match CSP flattened PNG exports for real-world raster artwork as closely a
 - [x] Fix the sampled dark-line overwrite in `Ref_Terra404_Live2D` with masked THROUGH group rendering.
 - [x] Fix the sampled masked clipped Add Glow over-brightening in `Ref_Terra404_Live2D` without regressing clipped edge samples.
 - [x] Run another full-image follow-up on `Ref_Terra404_Live2D` to identify the next remaining error.
-- [ ] Investigate the next `Ref_Terra404_Live2D` worst point at `(2190, 1319)`.
+- [x] Investigate the next `Ref_Terra404_Live2D` worst point at `(2190, 1319)`.
+- [x] Improve the `(2190, 1319)` clipped preserve miss with a one-step quantization tolerance adjustment.
+- [x] Run another `Ref_Terra404_Live2D` full-image follow-up to confirm the next remaining error.
+- [x] Investigate the follow-up `Ref_Terra404_Live2D` worst point at `(2287, 1311)`.
+- [x] Widen the clipped preserve tolerance to `2.25/255` after targeted scalar replay and regression checks.
+- [ ] Run another `Ref_Terra404_Live2D` full-image follow-up after the `2.25/255` clipped preserve tolerance.
 - [ ] Resolve clipping group semantics for Add Glow + Multiply stacks using `Test_AddGlowMultiply`.
 - [ ] Add support for non-zero layer offsets when a sample requires it.
 - [ ] Decide how unsupported vector, text, 3D, monochrome, and grayscale layers should be surfaced to Blender users.

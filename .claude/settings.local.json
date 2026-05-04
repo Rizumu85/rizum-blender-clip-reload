@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python trace_pixel.py)",
+      "Bash(python trace_pixel2.py)",
+      "Bash(python trace_fast.py)",
+      "Bash(python trace_pixel_analysis.py)",
+      "Bash(python check_masks.py)",
+      "Bash(python check_chains.py)"
+    ]
+  }
+}

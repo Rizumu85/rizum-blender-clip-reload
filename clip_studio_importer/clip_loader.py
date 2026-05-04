@@ -890,7 +890,7 @@ class ClipFile:
         preserve[..., :3] = preserve_rgb * dst_a
 
         clip_a = clip_base_alpha_u8[y0:y1, x0:x1].astype(np.float32) / 255.0
-        use_preserve = ((clip_a > 0) & (dst_a[..., 0] <= clip_a + (1.5 / 255.0)))[..., None]
+        use_preserve = ((clip_a > 0) & (dst_a[..., 0] <= clip_a + (2.25 / 255.0)))[..., None]
         out[y0:y1, x0:x1] = np.where(use_preserve, preserve, regular)
         return True
 
