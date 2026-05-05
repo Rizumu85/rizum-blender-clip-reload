@@ -412,6 +412,14 @@ The fix also exposed a tile-grid auto-detection improvement: when a layer's tile
 
 ## Open Questions
 
+## Filter Layer Follow-Up (2026-05-05)
+
+`test_Filters_Vector_Text.clip` is currently the only supplied clip with non-null `Layer.FilterLayerInfo`. Type `2` Level Correction payload is a compact big-endian 16-bit table: the sample has 32 records of five `uint16` values, and only record 0 differs from identity: `(0, 32767, 65535, 0, 42130)`. Treating this as the master level record `(input low, input high, mid, output low, output high)` and applying a `MakeTableLevelWithMid`-style 8-bit LUT improves the filter sample from max=255 / mean=77.490076 to max=182 / mean=75.725048.
+
+Tone Curve type `3` payload length is 4160 bytes, exactly 16 blocks of `0x104`. In the current sample, only block 0 is non-default with points `(0,16075)`, `(47014,60236)`, `(35459,65535)`, `(65535,0)`; blocks 1-15 are default `(0,65535) -> (65535,0)`. Linear, Catmull-Rom, and Bezier approximations of block 0 did not improve the full-image score once Level Correction is enabled, so Tone Curve remains disabled until the exact CSP B-spline / application ordering is confirmed.
+
+Gradient Map type `9` payload starts with header `(220, 24, 28, 7, 16, 0, 3)` followed by seven 28-byte nodes. The first three words of each node are repeated 16-bit RGB components, and the sixth word is the stop position. A direct luminance-to-gradient LUT based on `CreateLookUpTableGRAD` worsened the current mixed sample, so do not enable it until color space/application ordering is isolated in a pure gradient-map sample.
+
 1. **Terra localized color follow-up.** The original opaque-content worst point is fixed by honoring `LayerLayerMaskMipmap` on `LayerType=3`; the dark-line overwrite is fixed by masked THROUGH group rendering; the sampled clipped Add Glow over-brightening is reduced by using effective alpha for Add Glow strength; and the `(2190, 1319)` / `(2287, 1311)` darkening is improved by a slightly wider clipped preserve threshold. `Ref_Terra404_Live2D` still needs another full-image pass to confirm the new worst point after the `2.25/255` threshold.
 2. **Clipping group structure.** `Test_AddGlowMultiply` shows that CSP likely treats a base layer plus clipped siblings as a more isolated clipping group before applying the base layer's blend mode to the parent stack. A naive grouping prototype improves the sample but oversaturates blue, so clipped Multiply / Normal strength still needs a tighter formula before implementation.
 3. **Kabi remaining dark pixels.** The GLOW_DODGE fix resolved the worst offscreen-buffer darkening. The new worst pixel at `(1455,1103)` shows a different darkening pattern (ref `[176,154,221]` vs loader `[112,109,109]`). Likely a Multiply-layer or clipping interaction at a folder boundary — distinct from the GLOW_DODGE issue.

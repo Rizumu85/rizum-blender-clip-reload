@@ -685,7 +685,38 @@ def _contrast_lut(amount: int) -> np.ndarray:
 
 
 def _apply_level_adjust(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None:
-    return None
+    if len(payload) < 10:
+        return None
+
+    groups = [
+        struct.unpack_from(">5H", payload, off)
+        for off in range(0, len(payload) - 9, 10)
+    ]
+    if not groups:
+        return None
+
+    def make_lut(group: tuple[int, int, int, int, int]) -> np.ndarray:
+        in_low, in_high, mid, out_low, out_high = (
+            value * 255.0 / 65535.0 for value in group
+        )
+        if in_high <= in_low:
+            return np.arange(256, dtype=np.uint8)
+
+        x = np.arange(256, dtype=np.float32)
+        t = np.clip((x - in_low) / (in_high - in_low), 0.0, 1.0)
+        mid_t = np.clip((mid - in_low) / (in_high - in_low), 1e-4, 0.9999)
+        gamma = np.log(0.5) / np.log(mid_t)
+        y = out_low + np.power(t, 1.0 / max(gamma, 1e-4)) * (out_high - out_low)
+        return np.clip(np.floor(y + 0.5), 0, 255).astype(np.uint8)
+
+    # SQLite FilterLayerInfo stores compact 16-bit level records. The sample
+    # payload's first record is the master curve; channel records are identity
+    # unless CSP writes per-channel values later.
+    master = make_lut(groups[0])
+    out = rgb_u8.copy()
+    for channel in range(3):
+        out[..., channel] = master[out[..., channel]]
+    return out
 
 
 def _apply_tone_curve(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None:

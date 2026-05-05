@@ -70,10 +70,12 @@ Goal: Match CSP flattened PNG exports for real-world raster artwork as closely a
 - [x] Investigate Kabi layer-ordering root cause — folder 232 (蝴蝶结, LayerFolder=17) renders after folder 107 (身体, LayerFolder=1), which is correct bottom-up. The dark overlay was caused by GLOW_DODGE layers invisible in offscreen buffer, now fixed.
 - [x] Investigate MXL ADD highlight layer over-brightening (L432/L434 restoring base colour). Root cause still open — likely mask or folder-context issue.
 - [x] Investigate Aya systemic colour differences (minor, unchanged by fixes).
+- [x] Add first-pass Level Correction filter support for `test_Filters_Vector_Text.clip`. The SQLite `FilterLayerInfo` type 2 payload is compact 16-bit records; the sample only changes the master record's output-high value. Verification improved from max=255 / mean=77.490076 to max=182 / mean=75.725048 while preserving `Test_AddGlow`, `Test_ColorBurn`, `Test_Brightness`, `Test_ColorDodge`, and `Test_GlowDodge`.
 - [ ] Run full-image Terra follow-up after `2.25/255` clipped preserve threshold.
 - [ ] Trace Kabi new worst pixel at `(1455,1103)` — likely Multiply/clipping interaction, distinct from GLOW_DODGE fix.
 - [ ] Resolve MXL ADD highlight layers: check if L432/L434 have masks or folder-context restrictions.
 - [ ] Resolve clipping group semantics for Add Glow + Multiply stacks using `Test_AddGlowMultiply`.
+- [ ] Finish filter layer support for `test_Filters_Vector_Text.clip`: exact Tone Curve (type 3), Gradient Map (type 9), and remaining non-raster text/vector/frame/gradation-fill layers.
 - [ ] Add support for non-zero layer offsets when a sample requires it.
 - [ ] Decide how unsupported vector, text, 3D, monochrome, and grayscale layers should be surfaced to Blender users.
 
