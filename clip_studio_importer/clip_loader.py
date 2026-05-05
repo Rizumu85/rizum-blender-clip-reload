@@ -104,7 +104,11 @@ def _split_clip(path: str):
     return ext_to_body, sqlite_bytes
 
 
-def _parse_exta(body: bytes, empty_fill: int = 0) -> tuple[str, bytes]:
+def _parse_exta(
+    body: bytes,
+    empty_fill: int = 0,
+    expected_len: Optional[int] = None,
+) -> tuple[str, bytes]:
     """Decompress the blocks of an Exta body. Returns (external_id, tile_blob).
 
     Two block-name framings exist:
@@ -169,9 +173,13 @@ def _parse_exta(body: bytes, empty_fill: int = 0) -> tuple[str, bytes]:
                     log.warning("Tile uncompressed size mismatch: %d vs %d",
                                 len(decoded), uncomp)
                 out += decoded
+                if expected_len is not None and len(out) >= expected_len:
+                    break
                 block_end = inner_start + 24 + inner_len
             else:
                 out += bytes([empty_fill]) * uncomp
+                if expected_len is not None and len(out) >= expected_len:
+                    break
                 block_end = inner_start + 20
         elif name in ("BlockStatus", "BlockCheckSum"):
             block_end = inner_start + 24
@@ -821,7 +829,7 @@ class ClipFile:
     def __init__(self, path: str):
         self.path = path
         self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed
-        self._tile_blob_cache: dict[tuple[str, int], bytes] = {}
+        self._tile_blob_cache: dict[tuple[str, int, Optional[int]], bytes] = {}
 
         fd, self._db_path = tempfile.mkstemp(suffix=".sqlite3")
         os.close(fd)
@@ -976,15 +984,20 @@ class ClipFile:
             return int(row["ThumbnailCanvasWidth"]), int(row["ThumbnailCanvasHeight"])
         return self.width, self.height
 
-    def _get_tile_blob(self, ext_id: str, empty_fill: int = 0) -> Optional[bytes]:
-        cache_key = (ext_id, empty_fill)
+    def _get_tile_blob(
+        self,
+        ext_id: str,
+        empty_fill: int = 0,
+        expected_len: Optional[int] = None,
+    ) -> Optional[bytes]:
+        cache_key = (ext_id, empty_fill, expected_len)
         cached = self._tile_blob_cache.get(cache_key)
         if cached is not None:
             return cached
         body = self._exta_bodies.get(ext_id)
         if body is None:
             return None
-        _, blob = _parse_exta(body, empty_fill=empty_fill)
+        _, blob = _parse_exta(body, empty_fill=empty_fill, expected_len=expected_len)
         self._tile_blob_cache[cache_key] = blob
         return blob
 
@@ -1137,6 +1150,102 @@ class ClipFile:
             outline=(line_rgb[0], line_rgb[1], line_rgb[2], 255),
             width=6,
         )
+        return rgba
+
+    def _tlv_records_le(self, blob: bytes, start: int = 0) -> dict[int, bytes]:
+        records: dict[int, bytes] = {}
+        pos = start
+        while pos + 8 <= len(blob):
+            rec_id, rec_len = struct.unpack_from("<II", blob, pos)
+            pos += 8
+            if rec_id > 10000 or rec_len > len(blob) - pos:
+                break
+            records[rec_id] = blob[pos:pos + rec_len]
+            pos += rec_len
+        return records
+
+    def _offscreen_pixel_size(self, offscreen_id: int) -> Optional[tuple[int, int]]:
+        row = self._db.execute(
+            "SELECT Attribute FROM Offscreen WHERE MainId=?",
+            (offscreen_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        attr = row["Attribute"]
+        if not isinstance(attr, bytes) or len(attr) < 20:
+            return None
+        try:
+            _kind, _scheme, _label, payload_len, name_len = struct.unpack_from(">IIIII", attr, 0)
+            name_start = 20
+            payload_start = name_start + name_len * 2
+            payload_end = payload_start + payload_len
+            if name_len <= 0 or payload_end > len(attr):
+                return None
+            name = attr[name_start:payload_start].decode("utf-16-be")
+            if name != "Parameter" or payload_len < 8:
+                return None
+            width, height = struct.unpack_from(">II", attr, payload_start)
+        except (struct.error, UnicodeDecodeError):
+            return None
+        if width <= 0 or height <= 0 or width > self.width * 4 or height > self.height * 4:
+            return None
+        return int(width), int(height)
+
+    def _decode_offscreen_rgba(self, offscreen_id: int) -> Optional[np.ndarray]:
+        size = self._offscreen_pixel_size(offscreen_id)
+        if size is None:
+            return None
+        row = self._db.execute(
+            "SELECT BlockData FROM Offscreen WHERE MainId=?",
+            (offscreen_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        ext_id = row["BlockData"]
+        if isinstance(ext_id, bytes):
+            ext_id = ext_id.decode("ascii")
+        cols = (size[0] + TILE - 1) // TILE
+        rows = (size[1] + TILE - 1) // TILE
+        expected_len = cols * rows * PER_TILE_BYTES
+        blob = self._get_tile_blob(ext_id, expected_len=expected_len)
+        if blob is None:
+            return None
+        try:
+            return _tiles_to_rgba(blob, size[0], size[1])
+        except ValueError as exc:
+            log.warning("Offscreen decode failed for %d: %s", offscreen_id, exc)
+            return None
+
+    def _text_cache_fallback_image(self, layer: sqlite3.Row) -> Optional[np.ndarray]:
+        attrs = layer["TextLayerAttributes"]
+        if not isinstance(attrs, bytes):
+            return None
+        records = self._tlv_records_le(attrs)
+        cache_id_blob = records.get(50)
+        rect_blob = records.get(42)
+        if cache_id_blob is None or rect_blob is None:
+            return None
+        if len(cache_id_blob) < 4 or len(rect_blob) < 16:
+            return None
+        offscreen_id = struct.unpack_from("<I", cache_id_blob, 0)[0]
+        x0, y0, x1, y1 = struct.unpack_from("<IIII", rect_blob, 0)
+        cache = self._decode_offscreen_rgba(offscreen_id)
+        if cache is None:
+            return None
+        if not cache[..., 3].any():
+            return None
+        x0 = max(0, min(int(x0), self.width))
+        y0 = max(0, min(int(y0), self.height))
+        x1 = max(0, min(int(x1), self.width))
+        y1 = max(0, min(int(y1), self.height))
+        if x1 <= x0 or y1 <= y0:
+            return None
+        paste_w = min(cache.shape[1], self.width - x0)
+        paste_h = min(cache.shape[0], self.height - y0)
+        if paste_w <= 0 or paste_h <= 0:
+            return None
+        rgba = np.zeros((self.height, self.width, 4), dtype=np.uint8)
+        rgba[y0:y0 + paste_h, x0:x0 + paste_w] = cache[:paste_h, :paste_w]
         return rgba
 
     # ----- composite ----- #
@@ -1514,6 +1623,8 @@ class ClipFile:
                     continue
                 if not layer["LayerFirstChildIndex"]:
                     rgba = self.decode_layer(layer["MainId"])
+                    if rgba is None:
+                        rgba = self._text_cache_fallback_image(layer)
                     if rgba is not None:
                         mask = self._layer_mask_for_composite(layer)
                         layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
