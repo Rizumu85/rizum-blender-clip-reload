@@ -457,6 +457,141 @@ def _blend_func(mode: str, s: np.ndarray, d: np.ndarray) -> np.ndarray:
     return s
 
 
+def _blend_add_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int = 0) -> np.ndarray:
+    """CSP RenderBlendModeCall internal mode 0x201 for 8-bit straight RGBA."""
+    dst = dst_rgba.astype(np.int32, copy=True)
+    src = src_rgba.astype(np.int32, copy=False)
+    sa = src[..., 3]
+    da = dst[..., 3]
+    out = dst.copy()
+
+    if not np.any(sa):
+        return out.astype(np.uint8)
+
+    empty = da == 0
+    if param3 == 0:
+        out = np.where((empty & (sa > 0))[..., None], src, out)
+    active = (sa > 0) & ((da > 0) | (param3 == 0))
+    if not np.any(active):
+        return np.clip(out, 0, 255).astype(np.uint8)
+
+    work_da = np.where(param3 > 1, 255, da)
+    summed = np.minimum(dst[..., :3] + src[..., :3], 255)
+    rgb = summed.copy()
+
+    partial_src = active & (sa < 255)
+    if np.any(partial_src):
+        inv_sa = 255 - sa
+        partial_transparent_dst = partial_src & (work_da < 255)
+        if np.any(partial_transparent_dst):
+            b = (work_da * inv_sa) // 255
+            denom = np.maximum(b + sa, 1)
+            rgb = np.where(
+                partial_transparent_dst[..., None],
+                (b[..., None] * dst[..., :3] + summed * sa[..., None]) // denom[..., None],
+                rgb,
+            )
+        partial_opaque_dst = partial_src & (work_da >= 255)
+        if np.any(partial_opaque_dst):
+            rgb = np.where(
+                partial_opaque_dst[..., None],
+                (inv_sa[..., None] * dst[..., :3] + summed * sa[..., None]) // 255,
+                rgb,
+            )
+
+    out_a = dst[..., 3].copy()
+    if param3 == 0:
+        b = ((255 - sa) * work_da) // 255
+        out_a = np.minimum(b + sa, 255)
+
+    tail = active & (work_da <= 254)
+    if np.any(tail):
+        inv_da = 255 - work_da
+        src_opaque = tail & (sa == 255)
+        if np.any(src_opaque):
+            rgb = np.where(
+                src_opaque[..., None],
+                (inv_da[..., None] * src[..., :3] + rgb * work_da[..., None]) // 255,
+                rgb,
+            )
+        src_partial = tail & (sa < 255)
+        if np.any(src_partial):
+            b = (inv_da * sa) // 255
+            denom = np.maximum(work_da + b, 1)
+            rgb = np.where(
+                src_partial[..., None],
+                (b[..., None] * src[..., :3] + rgb * work_da[..., None]) // denom[..., None],
+                rgb,
+            )
+
+    out[..., :3] = np.where(active[..., None], np.minimum(rgb, 255), out[..., :3])
+    out[..., 3] = np.where(active, out_a, out[..., 3])
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def _blend_add_glow_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int = 0) -> np.ndarray:
+    """CSP RenderBlendModeCall internal mode 0x206 for 8-bit straight RGBA."""
+    dst = dst_rgba.astype(np.int32, copy=True)
+    src = src_rgba.astype(np.int32, copy=False)
+    sa = src[..., 3]
+    da = dst[..., 3]
+    out = dst.copy()
+
+    if not np.any(sa):
+        return out.astype(np.uint8)
+
+    empty = da == 0
+    if param3 == 0:
+        out = np.where((empty & (sa > 0))[..., None], src, out)
+    active = (sa > 0) & ((da > 0) | (param3 == 0))
+    if not np.any(active):
+        return np.clip(out, 0, 255).astype(np.uint8)
+
+    work_da = np.where(param3 > 1, 255, da)
+    summed = dst[..., :3] + src[..., :3]
+    rgb = summed.copy()
+
+    partial_src = active & (sa < 255)
+    if np.any(partial_src):
+        b = (work_da * (255 - sa)) // 255
+        denom = np.maximum(b + sa, 1)
+        rgb = np.where(
+            partial_src[..., None],
+            (b[..., None] * dst[..., :3] + summed * sa[..., None]) // denom[..., None],
+            rgb,
+        )
+    rgb = np.minimum(rgb, 255)
+
+    out_a = dst[..., 3].copy()
+    if param3 == 0:
+        b = ((255 - sa) * work_da) // 255
+        out_a = np.minimum(b + sa, 255)
+
+    tail = active & (work_da <= 254)
+    if np.any(tail):
+        inv_da = 255 - work_da
+        src_opaque = tail & (sa == 255)
+        if np.any(src_opaque):
+            rgb = np.where(
+                src_opaque[..., None],
+                (inv_da[..., None] * src[..., :3] + rgb * work_da[..., None]) // 255,
+                rgb,
+            )
+        src_partial = tail & (sa < 255)
+        if np.any(src_partial):
+            b = (inv_da * sa) // 255
+            denom = np.maximum(work_da + b, 1)
+            rgb = np.where(
+                src_partial[..., None],
+                (b[..., None] * src[..., :3] + rgb * work_da[..., None]) // denom[..., None],
+                rgb,
+            )
+
+    out[..., :3] = np.where(active[..., None], np.minimum(rgb, 255), out[..., :3])
+    out[..., 3] = np.where(active, out_a, out[..., 3])
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
 def _alpha_bbox(alpha: np.ndarray):
     """Return (y0, y1, x0, x1) tightly enclosing all alpha>0 pixels, else None.
 
@@ -820,10 +955,29 @@ class ClipFile:
             out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
 
         elif mode == "ADD" or mode == "ADD_GLOW":
-            src_rgb_pm = src_rgb * src_a
-            inv_sa = 1.0 - src_a
-            out_a = src_a + dst_a * inv_sa
-            out[y0:y1, x0:x1, :3] = np.minimum(src_rgb_pm + dst_rgb_pm, out_a)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                dst_rgb_straight = np.where(dst_a > 1e-6,
+                                            dst_rgb_pm / np.maximum(dst_a, 1e-6), 0.0)
+            dst_rgba = np.empty((y1 - y0, x1 - x0, 4), dtype=np.uint8)
+            dst_rgba[..., :3] = np.clip(
+                np.floor(dst_rgb_straight * 255.0 + 0.5), 0, 255
+            ).astype(np.uint8)
+            dst_rgba[..., 3] = np.clip(
+                np.floor(dst_a[..., 0] * 255.0 + 0.5), 0, 255
+            ).astype(np.uint8)
+            src_rgba = np.empty_like(dst_rgba)
+            src_rgba[..., :3] = src_rgb_u8
+            src_rgba[..., 3] = np.clip(
+                np.floor(src_a[..., 0] * 255.0 + 0.5), 0, 255
+            ).astype(np.uint8)
+            if mode == "ADD_GLOW":
+                blended_u8 = _blend_add_glow_u8(dst_rgba, src_rgba)
+            else:
+                blended_u8 = _blend_add_u8(dst_rgba, src_rgba)
+            out_a = src_a + dst_a * (1.0 - src_a)
+            out[y0:y1, x0:x1, :3] = (
+                blended_u8[..., :3].astype(np.float32) / 255.0
+            ) * out_a
             out[y0:y1, x0:x1, 3:4] = out_a
         elif mode == "GLOW_DODGE":
             out_a = src_a + dst_a * (1.0 - src_a)

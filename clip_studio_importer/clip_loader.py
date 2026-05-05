@@ -45,6 +45,7 @@ LAYER_TYPE_RASTER_MASKED = 3
 LAYER_TYPE_LAYER_FOLDER = 0
 LAYER_TYPE_FOLDER = 256
 LAYER_TYPE_PAPER = 1584
+LAYER_TYPE_FILTER = 4098
 COMPOSITE_NORMAL = 0
 RASTER_LAYER_TYPES = {LAYER_TYPE_RASTER, LAYER_TYPE_RASTER_MASKED}
 
@@ -457,6 +458,141 @@ def _blend_func(mode: str, s: np.ndarray, d: np.ndarray) -> np.ndarray:
     return s
 
 
+def _blend_add_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int = 0) -> np.ndarray:
+    """CSP RenderBlendModeCall internal mode 0x201 for 8-bit straight RGBA."""
+    dst = dst_rgba.astype(np.int32, copy=True)
+    src = src_rgba.astype(np.int32, copy=False)
+    sa = src[..., 3]
+    da = dst[..., 3]
+    out = dst.copy()
+
+    if not np.any(sa):
+        return out.astype(np.uint8)
+
+    empty = da == 0
+    if param3 == 0:
+        out = np.where((empty & (sa > 0))[..., None], src, out)
+    active = (sa > 0) & ((da > 0) | (param3 == 0))
+    if not np.any(active):
+        return np.clip(out, 0, 255).astype(np.uint8)
+
+    work_da = np.where(param3 > 1, 255, da)
+    summed = np.minimum(dst[..., :3] + src[..., :3], 255)
+    rgb = summed.copy()
+
+    partial_src = active & (sa < 255)
+    if np.any(partial_src):
+        inv_sa = 255 - sa
+        partial_transparent_dst = partial_src & (work_da < 255)
+        if np.any(partial_transparent_dst):
+            b = (work_da * inv_sa) // 255
+            denom = np.maximum(b + sa, 1)
+            rgb = np.where(
+                partial_transparent_dst[..., None],
+                (b[..., None] * dst[..., :3] + summed * sa[..., None]) // denom[..., None],
+                rgb,
+            )
+        partial_opaque_dst = partial_src & (work_da >= 255)
+        if np.any(partial_opaque_dst):
+            rgb = np.where(
+                partial_opaque_dst[..., None],
+                (inv_sa[..., None] * dst[..., :3] + summed * sa[..., None]) // 255,
+                rgb,
+            )
+
+    out_a = dst[..., 3].copy()
+    if param3 == 0:
+        b = ((255 - sa) * work_da) // 255
+        out_a = np.minimum(b + sa, 255)
+
+    tail = active & (work_da <= 254)
+    if np.any(tail):
+        inv_da = 255 - work_da
+        src_opaque = tail & (sa == 255)
+        if np.any(src_opaque):
+            rgb = np.where(
+                src_opaque[..., None],
+                (inv_da[..., None] * src[..., :3] + rgb * work_da[..., None]) // 255,
+                rgb,
+            )
+        src_partial = tail & (sa < 255)
+        if np.any(src_partial):
+            b = (inv_da * sa) // 255
+            denom = np.maximum(work_da + b, 1)
+            rgb = np.where(
+                src_partial[..., None],
+                (b[..., None] * src[..., :3] + rgb * work_da[..., None]) // denom[..., None],
+                rgb,
+            )
+
+    out[..., :3] = np.where(active[..., None], np.minimum(rgb, 255), out[..., :3])
+    out[..., 3] = np.where(active, out_a, out[..., 3])
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def _blend_add_glow_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int = 0) -> np.ndarray:
+    """CSP RenderBlendModeCall internal mode 0x206 for 8-bit straight RGBA."""
+    dst = dst_rgba.astype(np.int32, copy=True)
+    src = src_rgba.astype(np.int32, copy=False)
+    sa = src[..., 3]
+    da = dst[..., 3]
+    out = dst.copy()
+
+    if not np.any(sa):
+        return out.astype(np.uint8)
+
+    empty = da == 0
+    if param3 == 0:
+        out = np.where((empty & (sa > 0))[..., None], src, out)
+    active = (sa > 0) & ((da > 0) | (param3 == 0))
+    if not np.any(active):
+        return np.clip(out, 0, 255).astype(np.uint8)
+
+    work_da = np.where(param3 > 1, 255, da)
+    summed = dst[..., :3] + src[..., :3]
+    rgb = summed.copy()
+
+    partial_src = active & (sa < 255)
+    if np.any(partial_src):
+        b = (work_da * (255 - sa)) // 255
+        denom = np.maximum(b + sa, 1)
+        rgb = np.where(
+            partial_src[..., None],
+            (b[..., None] * dst[..., :3] + summed * sa[..., None]) // denom[..., None],
+            rgb,
+        )
+    rgb = np.minimum(rgb, 255)
+
+    out_a = dst[..., 3].copy()
+    if param3 == 0:
+        b = ((255 - sa) * work_da) // 255
+        out_a = np.minimum(b + sa, 255)
+
+    tail = active & (work_da <= 254)
+    if np.any(tail):
+        inv_da = 255 - work_da
+        src_opaque = tail & (sa == 255)
+        if np.any(src_opaque):
+            rgb = np.where(
+                src_opaque[..., None],
+                (inv_da[..., None] * src[..., :3] + rgb * work_da[..., None]) // 255,
+                rgb,
+            )
+        src_partial = tail & (sa < 255)
+        if np.any(src_partial):
+            b = (inv_da * sa) // 255
+            denom = np.maximum(work_da + b, 1)
+            rgb = np.where(
+                src_partial[..., None],
+                (b[..., None] * src[..., :3] + rgb * work_da[..., None]) // denom[..., None],
+                rgb,
+            )
+
+    out[..., :3] = np.where(active[..., None], np.minimum(rgb, 255), out[..., :3])
+    out[..., 3] = np.where(active, out_a, out[..., 3])
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
 def _alpha_bbox(alpha: np.ndarray):
     """Return (y0, y1, x0, x1) tightly enclosing all alpha>0 pixels, else None.
 
@@ -501,6 +637,149 @@ def _offscreen_init_fill(attribute: bytes) -> int:
         return 0
     color = struct.unpack_from(">L", attribute, pos + 8)[0]
     return color & 0xFF
+
+
+def _filter_info(layer: sqlite3.Row) -> tuple[int, bytes] | None:
+    blob = layer["FilterLayerInfo"]
+    if not blob or len(blob) < 8:
+        return None
+    filter_type, payload_len = struct.unpack_from(">II", blob, 0)
+    payload = blob[8:8 + min(payload_len, max(0, len(blob) - 8))]
+    return filter_type, payload
+
+
+def _linear_lut(start_x: int, start_y: int, end_x: int, end_y: int) -> np.ndarray:
+    lut = np.empty(256, dtype=np.uint8)
+    if start_x > 0:
+        lut[:min(start_x, 256)] = np.clip(start_y, 0, 255)
+    span = end_x - start_x
+    if span != 0:
+        slope = (end_y - start_y) / span
+    else:
+        slope = 0.0
+    lo = max(start_x, 0)
+    hi = min(end_x, 256)
+    if lo < hi:
+        x = np.arange(lo, hi, dtype=np.float32)
+        lut[lo:hi] = np.clip(np.floor(x * slope + (start_y - start_x * slope) + 0.5), 0, 255).astype(np.uint8)
+    if end_x < 256:
+        lut[max(end_x, 0):] = np.clip(end_y, 0, 255)
+    return lut
+
+
+def _brightness_lut(amount: int) -> np.ndarray:
+    amount = min(max(amount, -127), 127)
+    if amount == 0:
+        return np.arange(256, dtype=np.uint8)
+    if amount > 0:
+        return _linear_lut(amount, 0, 255, 255 - amount)
+    return _linear_lut(0, -amount, 255 + amount, 255)
+
+
+def _contrast_lut(amount: int) -> np.ndarray:
+    if amount == 0 or not (-127 < amount < 128):
+        return np.arange(256, dtype=np.uint8)
+    if amount > 0:
+        return _linear_lut(amount, 0, 255 - amount, 255)
+    return _linear_lut(0, -amount, 255, 255 + amount)
+
+
+def _apply_level_adjust(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None:
+    return None
+
+
+def _apply_tone_curve(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None:
+    return None
+
+
+def _rgb_to_hsv_u8(rgb_u8: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    rgb = rgb_u8.astype(np.float32) / 255.0
+    r = rgb[..., 0]
+    g = rgb[..., 1]
+    b = rgb[..., 2]
+    mx = rgb.max(axis=-1)
+    mn = rgb.min(axis=-1)
+    delta = mx - mn
+    h = np.zeros_like(mx)
+    nonzero = delta > 1e-6
+    rmax = nonzero & (mx == r)
+    gmax = nonzero & (mx == g)
+    bmax = nonzero & (mx == b)
+    h = np.where(rmax, ((g - b) / np.maximum(delta, 1e-6)) % 6.0, h)
+    h = np.where(gmax, ((b - r) / np.maximum(delta, 1e-6)) + 2.0, h)
+    h = np.where(bmax, ((r - g) / np.maximum(delta, 1e-6)) + 4.0, h)
+    h /= 6.0
+    s = np.where(mx > 1e-6, delta / np.maximum(mx, 1e-6), 0.0)
+    return h, s, mx
+
+
+def _hsv_to_rgb_u8(h: np.ndarray, s: np.ndarray, v: np.ndarray) -> np.ndarray:
+    h = (h % 1.0) * 6.0
+    i = np.floor(h).astype(np.int32)
+    f = h - i
+    p = v * (1.0 - s)
+    q = v * (1.0 - s * f)
+    t = v * (1.0 - s * (1.0 - f))
+    i = i % 6
+    r = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [v, q, p, p, t], default=v)
+    g = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [t, v, v, q, p], default=p)
+    b = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [p, p, t, v, v], default=q)
+    return np.clip(np.floor(np.stack([r, g, b], axis=-1) * 255.0 + 0.5), 0, 255).astype(np.uint8)
+
+
+def _apply_hsl_adjust(rgb_u8: np.ndarray, hue: int, saturation: int, luminosity: int) -> np.ndarray:
+    h, s, v = _rgb_to_hsv_u8(rgb_u8)
+    h = h + hue / 360.0
+    if saturation >= 0:
+        s = s + (1.0 - s) * min(saturation, 100) / 100.0
+    else:
+        s = s * (1.0 + max(saturation, -100) / 100.0)
+    if luminosity >= 0:
+        v = v + (1.0 - v) * min(luminosity, 100) / 100.0
+    else:
+        v = v * (1.0 + max(luminosity, -100) / 100.0)
+    return _hsv_to_rgb_u8(h, np.clip(s, 0.0, 1.0), np.clip(v, 0.0, 1.0))
+
+
+def _gradient_map(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None:
+    if len(payload) < 28:
+        return None
+    header = struct.unpack_from(">7i", payload, 0)
+    count = header[3]
+    if count <= 0:
+        return None
+    nodes = []
+    pos = 28
+    for _ in range(count):
+        if pos + 28 > len(payload):
+            break
+        raw = struct.unpack_from(">7I", payload, pos)
+        color_word = raw[1:5]
+        r = (color_word[0] >> 16) & 0xFFFF
+        g = (color_word[1] >> 16) & 0xFFFF
+        b = (color_word[2] >> 16) & 0xFFFF
+        stop = raw[6] / 65535.0
+        nodes.append((stop, np.array([r >> 8, g >> 8, b >> 8], dtype=np.float32)))
+        pos += 28
+    if not nodes:
+        return None
+    nodes.sort(key=lambda item: item[0])
+    lum = (
+        0.299 * rgb_u8[..., 0].astype(np.float32)
+        + 0.587 * rgb_u8[..., 1].astype(np.float32)
+        + 0.114 * rgb_u8[..., 2].astype(np.float32)
+    ) / 255.0
+    out = np.zeros_like(rgb_u8, dtype=np.float32)
+    first_pos, first_color = nodes[0]
+    last_pos, last_color = nodes[-1]
+    out[...] = first_color
+    for (p0, c0), (p1, c1) in zip(nodes, nodes[1:]):
+        mask = (lum >= p0) & (lum <= p1)
+        t = np.clip((lum - p0) / max(p1 - p0, 1e-6), 0.0, 1.0)[..., None]
+        out = np.where(mask[..., None], c0 * (1.0 - t) + c1 * t, out)
+    out = np.where((lum >= last_pos)[..., None], last_color, out)
+    out = np.where((lum <= first_pos)[..., None], first_color, out)
+    return np.clip(np.floor(out + 0.5), 0, 255).astype(np.uint8)
 
 
 # --------------------------------------------------------------------------- #
@@ -792,7 +1071,7 @@ class ClipFile:
         return self.decode_layer_mask(layer["MainId"])
 
     def _composite_image(self, out: np.ndarray, layer: sqlite3.Row, rgba: np.ndarray,
-                         layer_alpha_u8: np.ndarray) -> bool:
+                         layer_alpha_u8: np.ndarray, apply_opacity: bool = True) -> bool:
         mode = self._blend_mode_for_layer(layer)
 
         bbox = _alpha_bbox(layer_alpha_u8)
@@ -800,7 +1079,7 @@ class ClipFile:
             return False
         y0, y1, x0, x1 = bbox
 
-        opacity = min(layer["LayerOpacity"] / 256.0, 1.0)
+        opacity = min(layer["LayerOpacity"] / 256.0, 1.0) if apply_opacity else 1.0
         src_rgb_u8 = rgba[y0:y1, x0:x1, :3]
         src_a_u8 = layer_alpha_u8[y0:y1, x0:x1]
 
@@ -817,10 +1096,29 @@ class ClipFile:
             out[y0:y1, x0:x1, 3:4] = src_a + dst_a * inv_sa
 
         elif mode == "ADD" or mode == "ADD_GLOW":
-            src_rgb_pm = src_rgb * src_a
-            inv_sa = 1.0 - src_a
-            out_a = src_a + dst_a * inv_sa
-            out[y0:y1, x0:x1, :3] = np.minimum(src_rgb_pm + dst_rgb_pm, out_a)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                dst_rgb_straight = np.where(dst_a > 1e-6,
+                                            dst_rgb_pm / np.maximum(dst_a, 1e-6), 0.0)
+            dst_rgba = np.empty((y1 - y0, x1 - x0, 4), dtype=np.uint8)
+            dst_rgba[..., :3] = np.clip(
+                np.floor(dst_rgb_straight * 255.0 + 0.5), 0, 255
+            ).astype(np.uint8)
+            dst_rgba[..., 3] = np.clip(
+                np.floor(dst_a[..., 0] * 255.0 + 0.5), 0, 255
+            ).astype(np.uint8)
+            src_rgba = np.empty_like(dst_rgba)
+            src_rgba[..., :3] = src_rgb_u8
+            src_rgba[..., 3] = np.clip(
+                np.floor(src_a[..., 0] * 255.0 + 0.5), 0, 255
+            ).astype(np.uint8)
+            if mode == "ADD_GLOW":
+                blended_u8 = _blend_add_glow_u8(dst_rgba, src_rgba)
+            else:
+                blended_u8 = _blend_add_u8(dst_rgba, src_rgba)
+            out_a = src_a + dst_a * (1.0 - src_a)
+            out[y0:y1, x0:x1, :3] = (
+                blended_u8[..., :3].astype(np.float32) / 255.0
+            ) * out_a
             out[y0:y1, x0:x1, 3:4] = out_a
         elif mode == "GLOW_DODGE":
             out_a = src_a + dst_a * (1.0 - src_a)
@@ -935,6 +1233,73 @@ class ClipFile:
         rgba_u8 = np.clip(rgba * 255.0 + 0.5, 0, 255).astype(np.uint8)
         return rgba_u8, rgba_u8[..., 3]
 
+    def _apply_filter_layer(self, out: np.ndarray, layer: sqlite3.Row) -> bool:
+        info = _filter_info(layer)
+        if info is None:
+            log.warning("Layer %d (%r): filter layer missing FilterLayerInfo; skipping.",
+                        layer["MainId"], layer["LayerName"])
+            return False
+        filter_type, payload = info
+        alpha = out[..., 3:4]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            rgb = np.where(alpha > 0, out[..., :3] / np.maximum(alpha, 1e-6), 0.0)
+        rgb_u8 = np.clip(np.floor(rgb * 255.0 + 0.5), 0, 255).astype(np.uint8)
+
+        if filter_type == 1 and len(payload) >= 8:  # Brightness/Contrast
+            brightness, contrast = struct.unpack_from(">ii", payload, 0)
+            lut = _contrast_lut(contrast)[_brightness_lut(brightness)]
+            rgb_u8 = lut[rgb_u8]
+        elif filter_type == 2 and len(payload) >= 0x40:  # Level Correction
+            adjusted = _apply_level_adjust(rgb_u8, payload)
+            if adjusted is not None:
+                rgb_u8 = adjusted
+            else:
+                log.warning("Layer %d (%r): malformed level payload; skipping.",
+                            layer["MainId"], layer["LayerName"])
+                return False
+        elif filter_type == 3 and len(payload) >= 0x104:  # Tone Curve
+            adjusted = _apply_tone_curve(rgb_u8, payload)
+            if adjusted is not None:
+                rgb_u8 = adjusted
+            else:
+                log.warning("Layer %d (%r): malformed tone curve payload; skipping.",
+                            layer["MainId"], layer["LayerName"])
+                return False
+        elif filter_type == 4 and len(payload) >= 12:  # Hue/Saturation/Luminosity
+            hue, saturation, luminosity = struct.unpack_from(">iii", payload, 0)
+            rgb_u8 = _apply_hsl_adjust(rgb_u8, hue, saturation, luminosity)
+        elif filter_type == 5 and len(payload) >= 40:  # Color balance
+            vals = struct.unpack_from(">iiiiiiiiii", payload, 0)
+            # Payload stores shadow/midtone/highlight RGB offsets. CSP's sample
+            # adjustment uses the midtone triplet; keep alpha/coverage unchanged.
+            r_off, g_off, b_off = vals[3], vals[4], vals[5]
+            offsets = np.array([r_off, g_off, b_off], dtype=np.int16)
+            rgb_u8 = np.clip(rgb_u8.astype(np.int16) + offsets, 0, 255).astype(np.uint8)
+        elif filter_type == 6:  # Reverse Gradient / Invert
+            rgb_u8 = 255 - rgb_u8
+        elif filter_type == 7 and len(payload) >= 4:  # Posterization
+            levels = max(2, struct.unpack_from(">i", payload, 0)[0])
+            x = np.arange(256, dtype=np.float32)
+            lut = np.clip(np.floor(np.round(x * (levels - 1) / 255.0) * 255.0 / (levels - 1) + 0.5), 0, 255).astype(np.uint8)
+            rgb_u8 = lut[rgb_u8]
+        elif filter_type == 8 and len(payload) >= 4:  # Threshold
+            threshold = struct.unpack_from(">i", payload, 0)[0]
+            lum = (
+                0.299 * rgb_u8[..., 0].astype(np.float32)
+                + 0.587 * rgb_u8[..., 1].astype(np.float32)
+                + 0.114 * rgb_u8[..., 2].astype(np.float32)
+            )
+            bw = np.where(lum >= threshold, 255, 0).astype(np.uint8)
+            rgb_u8 = np.repeat(bw[..., None], 3, axis=-1)
+        else:
+            log.warning("Layer %d (%r): unsupported filter type %d; skipping.",
+                        layer["MainId"], layer["LayerName"], filter_type)
+            return False
+
+        out[..., :3] = (rgb_u8.astype(np.float32) / 255.0) * alpha
+        out[...] = np.clip(np.floor(out * 255.0 + 0.5), 0, 255) / 255.0
+        return True
+
     def _render_through_group(
         self,
         layer: sqlite3.Row,
@@ -994,7 +1359,7 @@ class ClipFile:
 
         # --- blend the group result back through the base mode --- #
         rgba, alpha_u8 = self._premul_to_rgba_u8(group_out)
-        self._composite_image(out, base_layer, rgba, alpha_u8)
+        self._composite_image(out, base_layer, rgba, alpha_u8, apply_opacity=False)
 
     def _render_chain(
         self,
@@ -1018,7 +1383,19 @@ class ClipFile:
                 continue
             if layer["LayerType"] == LAYER_TYPE_PAPER:
                 continue
+            if layer["LayerType"] == LAYER_TYPE_FILTER:
+                self._apply_filter_layer(out, layer)
+                clip_base_alpha_u8 = None
+                continue
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
+                if not layer["LayerFirstChildIndex"]:
+                    rgba = self.decode_layer(layer["MainId"])
+                    if rgba is not None:
+                        mask = self._layer_mask_for_composite(layer)
+                        layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
+                        if self._composite_image(out, layer, rgba, layer_alpha_u8):
+                            clip_base_alpha_u8 = layer_alpha_u8
+                        continue
                 mode = self._blend_mode_for_layer(layer)
                 if mode == "THROUGH":
                     self._render_through_group(layer, out, preserve_clipped_alpha)
