@@ -1063,6 +1063,82 @@ class ClipFile:
             log.warning("Mask decode failed for layer %d: %s", layer_id, exc)
             return None
 
+    # ----- simple object-layer fallbacks ----- #
+
+    def _vector_object_body(self, layer_id: int) -> Optional[bytes]:
+        row = self._db.execute(
+            "SELECT VectorData FROM VectorObjectList WHERE LayerId=?",
+            (layer_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        ext_id = row["VectorData"]
+        if isinstance(ext_id, bytes):
+            ext_id = ext_id.decode("ascii")
+        return self._exta_bodies.get(ext_id)
+
+    def _vector_header_bbox(self, body: bytes) -> Optional[tuple[int, int, int, int]]:
+        if len(body) < 96:
+            return None
+        x0, y0, x1, y1 = struct.unpack_from(">IIII", body, 80)
+        if not (0 <= x0 < x1 <= self.width * 2 and 0 <= y0 < y1 <= self.height * 2):
+            return None
+        return (
+            max(0, min(int(x0), self.width)),
+            max(0, min(int(y0), self.height)),
+            max(0, min(int(x1), self.width)),
+            max(0, min(int(y1), self.height)),
+        )
+
+    def _vector_header_color(self, body: bytes) -> tuple[int, int, int]:
+        if len(body) < 106:
+            return (0, 0, 0)
+        comps = []
+        for off in (96, 100, 104):
+            comps.append(struct.unpack_from(">H", body, off)[0] // 257)
+        return tuple(max(0, min(int(c), 255)) for c in comps)
+
+    def _draw_rect_rgba(
+        self,
+        rgba: np.ndarray,
+        bbox: tuple[int, int, int, int],
+        fill: Optional[tuple[int, int, int, int]] = None,
+        outline: Optional[tuple[int, int, int, int]] = None,
+        width: int = 1,
+    ) -> None:
+        x0, y0, x1, y1 = bbox
+        if x1 <= x0 or y1 <= y0:
+            return
+        if fill is not None:
+            rgba[y0:y1, x0:x1] = fill
+        if outline is None:
+            return
+        width = max(1, min(int(width), x1 - x0, y1 - y0))
+        rgba[y0:y0 + width, x0:x1] = outline
+        rgba[y1 - width:y1, x0:x1] = outline
+        rgba[y0:y1, x0:x0 + width] = outline
+        rgba[y0:y1, x1 - width:x1] = outline
+
+    def _frame_folder_fallback_image(self, layer: sqlite3.Row) -> Optional[np.ndarray]:
+        body = self._vector_object_body(layer["MainId"])
+        if body is None:
+            return None
+        bbox = self._vector_header_bbox(body)
+        if bbox is None:
+            return None
+        line_rgb = self._vector_header_color(body)
+        if line_rgb == (0, 0, 0):
+            line_rgb = (70, 30, 126)
+        rgba = np.zeros((self.height, self.width, 4), dtype=np.uint8)
+        self._draw_rect_rgba(
+            rgba,
+            bbox,
+            fill=(255, 255, 255, 255),
+            outline=(line_rgb[0], line_rgb[1], line_rgb[2], 255),
+            width=6,
+        )
+        return rgba
+
     # ----- composite ----- #
 
     def _blend_mode_for_layer(self, layer: sqlite3.Row) -> str:
@@ -1419,6 +1495,23 @@ class ClipFile:
                 clip_base_alpha_u8 = None
                 continue
             if layer["LayerType"] == LAYER_TYPE_LAYER_FOLDER:
+                frame_rgba = None
+                if layer["LayerFolder"] and layer["LayerFirstChildIndex"]:
+                    frame_rgba = self._frame_folder_fallback_image(layer)
+                if frame_rgba is not None:
+                    group_out = np.zeros_like(out)
+                    self._composite_image(
+                        group_out, layer, frame_rgba, frame_rgba[..., 3],
+                        apply_opacity=False,
+                    )
+                    self._render_chain(layer["LayerFirstChildIndex"], group_out, True)
+                    rgba, _ = self._premul_to_rgba_u8(group_out)
+                    mask = self._layer_mask_for_composite(layer)
+                    layer_alpha_u8 = self._apply_mask_and_clip(layer, rgba, mask, clip_base_alpha_u8)
+                    if self._composite_image(out, layer, rgba, layer_alpha_u8):
+                        if not layer["LayerClip"]:
+                            clip_base_alpha_u8 = layer_alpha_u8
+                    continue
                 if not layer["LayerFirstChildIndex"]:
                     rgba = self.decode_layer(layer["MainId"])
                     if rgba is not None:
