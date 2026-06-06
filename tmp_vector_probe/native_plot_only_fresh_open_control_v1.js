@@ -24,6 +24,8 @@ let firstSizepressureCallIndex = null;
 let lastSizepressureCallIndex = null;
 const countOtherStyleFlags = {};
 const activeByThread = new Map();
+const maxStackDepthByThread = {};
+let unpairedRadiusWrittenCount = 0;
 
 function makeTimestamp() {
   const d = new Date();
@@ -100,6 +102,14 @@ function writeJson(row) {
   out.flush();
 }
 
+function activeStackDepths() {
+  const depths = {};
+  for (const item of activeByThread.entries()) {
+    depths[item[0]] = item[1].length;
+  }
+  return depths;
+}
+
 function summary(reason) {
   writeJson({
     event: 'summary',
@@ -114,7 +124,9 @@ function summary(reason) {
     last_sizepressure_call_index: lastSizepressureCallIndex,
     count_styleFlag_0x1C240: totalSizepressurePlotCalls,
     count_other_styleFlags: countOtherStyleFlags,
-    active_threads_with_unpaired_entries: Array.from(activeByThread.keys()),
+    active_stack_depths: activeStackDepths(),
+    max_stack_depth_by_thread: maxStackDepthByThread,
+    unpaired_radius_written_count: unpairedRadiusWrittenCount,
   });
 }
 
@@ -165,7 +177,14 @@ Interceptor.attach(addr(RVA_PLOT_ENTRY), {
       sample_center_x_guess: readDouble(samplePtr, 0x00),
       sample_center_y_guess: readDouble(samplePtr, 0x08),
     };
-    activeByThread.set(tidKey(), rec);
+    const key = tidKey();
+    let stack = activeByThread.get(key);
+    if (stack === undefined) {
+      stack = [];
+      activeByThread.set(key, stack);
+    }
+    stack.push(rec);
+    maxStackDepthByThread[key] = Math.max(maxStackDepthByThread[key] || 0, stack.length);
     writeJson(Object.assign({ event: 'plot_entry' }, rec));
   },
 });
@@ -173,7 +192,10 @@ Interceptor.attach(addr(RVA_PLOT_ENTRY), {
 Interceptor.attach(addr(RVA_PLOT_RADIUS_WRITTEN), {
   onEnter() {
     const key = tidKey();
-    const rec = activeByThread.get(key);
+    const stack = activeByThread.get(key);
+    const rec = stack && stack.length > 0 ? stack.pop() : undefined;
+    if (stack && stack.length === 0) activeByThread.delete(key);
+    if (rec === undefined) unpairedRadiusWrittenCount++;
     const plotPtr = this.context.rbp;
     const row = {
       event: 'plot_radius_written',
@@ -194,7 +216,6 @@ Interceptor.attach(addr(RVA_PLOT_RADIUS_WRITTEN), {
       paired_entry_found: rec !== undefined,
     };
     writeJson(row);
-    activeByThread.delete(key);
   },
 });
 

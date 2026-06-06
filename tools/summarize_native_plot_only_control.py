@@ -71,7 +71,11 @@ def main(argv: list[str]) -> int:
     rows = load_jsonl(trace_path)
     plot_entries = [row for row in rows if row.get("event") == "plot_entry"]
     radius_rows = [row for row in rows if row.get("event") == "plot_radius_written"]
+    summary_events = [row for row in rows if row.get("event") == "summary"]
     parse_errors = [row for row in rows if row.get("event") == "parse_error"]
+    unpaired_radius_rows = [
+        row for row in radius_rows if row.get("paired_entry_found") is False
+    ]
 
     style_hist = Counter(
         str(row.get("styleFlag_0x78_hex") or row.get("styleFlag_0x78"))
@@ -128,6 +132,20 @@ def main(argv: list[str]) -> int:
     suspect_unpaired = sorted(idx for idx in unpaired_entry_indices if idx in suspect_indices)
     suspect_missing = sorted(idx for idx in suspect_indices if idx not in entry_indices)
 
+    max_stack_depth_by_thread: dict[str, int] = {}
+    for row in summary_events:
+        depths = row.get("max_stack_depth_by_thread")
+        if not isinstance(depths, dict):
+            continue
+        for key, value in depths.items():
+            if isinstance(value, int):
+                max_stack_depth_by_thread[str(key)] = max(
+                    max_stack_depth_by_thread.get(str(key), 0),
+                    value,
+                )
+
+    latest_summary = summary_events[-1] if summary_events else {}
+
     positive_control_passed = (
         len(sizepressure_entries) == 213
         and not suspect_unpaired
@@ -139,6 +157,7 @@ def main(argv: list[str]) -> int:
         "file_path": str(trace_path),
         "total_raw_plot_entries": len(plot_entries),
         "total_radius_written_records": len(radius_rows),
+        "total_unpaired_radius_written_records": len(unpaired_radius_rows),
         "total_sizepressure_records": len(sizepressure_entries),
         "total_sizepressure_radius_records": len(sizepressure_radius_rows),
         "styleFlag_histogram": dict(style_hist),
@@ -147,8 +166,16 @@ def main(argv: list[str]) -> int:
         "records_203_209": records_for(range(203, 210)),
         "unpaired_entry_indices": unpaired_entry_indices,
         "unpaired_radius_indices": unpaired_radius_indices,
+        "radius_rows_with_paired_entry_found_false": [
+            compact_record(row) for row in unpaired_radius_rows
+        ],
         "unpaired_entries_in_suspect_ranges": suspect_unpaired,
         "missing_entries_in_suspect_ranges": suspect_missing,
+        "max_stack_depth_by_thread": max_stack_depth_by_thread,
+        "latest_active_stack_depths": latest_summary.get("active_stack_depths", {}),
+        "latest_unpaired_radius_written_count": latest_summary.get(
+            "unpaired_radius_written_count"
+        ),
         "parse_errors": parse_errors[:20],
         "positive_control_passed": positive_control_passed,
         "positive_control_criteria": {
