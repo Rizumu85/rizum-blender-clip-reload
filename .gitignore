@@ -1,2 +1,6 @@
 __pycache__/
 *.py[cod]
+
+# Large reference fixtures exceed GitHub's 100 MB file limit.
+img/Ref_MXL_Idol1.clip
+img/Ref_Terra404_Live2D.clip
