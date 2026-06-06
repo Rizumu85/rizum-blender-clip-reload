@@ -245,6 +245,28 @@ def main() -> int:
             }
         )
 
+    native_rows_by_dab = {
+        str(item["global_dab_index"]): item["native_rows"]
+        for item in comparisons
+    }
+    importer_rows_by_dab = {
+        str(item["global_dab_index"]): item["importer_rows"]
+        for item in comparisons
+    }
+    dabs_missing_native_rows = [
+        item["global_dab_index"]
+        for item in comparisons
+        if item["native_rows"] == 0
+    ]
+    total_rows_with_delta = sum(len(item["rows_with_delta"]) for item in comparisons)
+    total_importer_only_rows = sum(len(item["importer_only_rows"]) for item in comparisons)
+    total_native_only_rows = sum(
+        1
+        for item in comparisons
+        for row in item["rows"]
+        if row["native_len"] > 0 and row["importer_len"] == 0
+    )
+
     payload = {
         "version": 1,
         "inputs": {
@@ -253,10 +275,22 @@ def main() -> int:
         },
         "summary": {
             "native_trace_rows": len(native_rows),
-            "suspect_dabs": suspect_ids,
+            "expected_suspect_dabs": suspect_ids,
             "dabs_with_native_rows": sum(1 for item in comparisons if item["native_rows"] > 0),
-            "total_extra_pixels_explained_by_span_delta": sum(int(item["extra_pixels_explained"]) for item in comparisons),
-            "total_missing_pixels_explained_by_span_delta": sum(int(item["missing_pixels_explained"]) for item in comparisons),
+            "dabs_missing_native_rows": dabs_missing_native_rows,
+            "native_rows_by_dab": native_rows_by_dab,
+            "importer_rows_by_dab": importer_rows_by_dab,
+            "total_rows_with_delta": total_rows_with_delta,
+            "total_importer_only_rows": total_importer_only_rows,
+            "total_native_only_rows": total_native_only_rows,
+            "total_extra_pixels_explained_by_span_delta": sum(
+                int(item["extra_pixels_explained"])
+                for item in comparisons
+            ),
+            "total_missing_pixels_explained_by_span_delta": sum(
+                int(item["missing_pixels_explained"])
+                for item in comparisons
+            ),
         },
         "comparisons": comparisons,
     }

@@ -11,7 +11,6 @@ const RVA_PLOT_ENTRY = 0x22D8550;
 const RVA_PLOT_RADIUS_WRITTEN = 0x22D8B3B;
 const RVA_ROWSPAN_ENTRY = 0x2640150;
 const RVA_ROW_WRITE = 0x2640352;  // before mov [rsp+0x20],0x8000 and call 0x14263ac30.
-const RVA_ROWSPAN_LEAVE = 0x2640417;
 
 const STYLE_FLAG_SIZEPRESSURE = 0x1C240;
 const SUSPECT_DABS = new Set([
@@ -23,8 +22,13 @@ const MAX_ROWS = 200000;
 
 const moduleBase = Process.getModuleByName(MODULE_NAME).base;
 const out = new File(OUT_PATH, 'w');
-let nextCallIndex = 0;
+let nextRawCallIndex = 0;
+let nextSizepressureCallIndex = 0;
 let writtenRows = 0;
+let totalRawPlotCalls = 0;
+let totalSizepressurePlotCalls = 0;
+let pendingSuspectDabsAdded = 0;
+let pendingSuspectDabsMatched = 0;
 const activePlotByThread = new Map();
 const pendingSuspectDabs = [];
 const activeRowspanByThread = new Map();
@@ -90,6 +94,23 @@ function writeJson(row) {
   out.flush();
 }
 
+function statsPayload(event) {
+  return {
+    event,
+    total_raw_plot_calls: totalRawPlotCalls,
+    total_sizepressure_plot_calls: totalSizepressurePlotCalls,
+    pending_suspect_dabs_added: pendingSuspectDabsAdded,
+    pending_suspect_dabs_matched: pendingSuspectDabsMatched,
+    unmatched_suspect_dabs: pendingSuspectDabs
+      .filter((dab) => !dab.used)
+      .map((dab) => dab.global_dab_index),
+  };
+}
+
+function writeStats(event) {
+  writeJson(statsPayload(event));
+}
+
 function finite(v) {
   return typeof v === 'number' && Number.isFinite(v);
 }
@@ -147,9 +168,16 @@ Interceptor.attach(addr(RVA_PLOT_ENTRY), {
     const stylePtr = args[0];
     const samplePtr = args[1];
     const styleFlag = readU32(stylePtr, 0x78);
-    const callIndex = nextCallIndex++;
+    const rawCallIndex = nextRawCallIndex++;
+    totalRawPlotCalls++;
+    let sizepressureCallIndex = null;
+    if (styleFlag === STYLE_FLAG_SIZEPRESSURE) {
+      sizepressureCallIndex = nextSizepressureCallIndex++;
+      totalSizepressurePlotCalls++;
+    }
     activePlotByThread.set(tidKey(), {
-      call_index: callIndex,
+      raw_call_index: rawCallIndex,
+      sizepressure_call_index: sizepressureCallIndex,
       style_flag_0x78: styleFlag,
       style_flag_matches_sizepressure: styleFlag === STYLE_FLAG_SIZEPRESSURE,
       sample_ptr: safePtr(samplePtr),
@@ -168,19 +196,23 @@ Interceptor.attach(addr(RVA_PLOT_RADIUS_WRITTEN), {
     rec.radius = readDouble(plotPtr, 0x00);
     if (
       rec.style_flag_matches_sizepressure &&
-      SUSPECT_DABS.has(rec.call_index) &&
+      SUSPECT_DABS.has(rec.sizepressure_call_index) &&
       finite(rec.cx) &&
       finite(rec.cy) &&
       finite(rec.radius)
     ) {
       pendingSuspectDabs.push({
-        global_dab_index: rec.call_index,
+        global_dab_index: rec.sizepressure_call_index,
+        raw_call_index: rec.raw_call_index,
+        sizepressure_call_index: rec.sizepressure_call_index,
         cx: rec.cx,
         cy: rec.cy,
         radius: rec.radius,
         plot_ptr: rec.plot_ptr,
         used: false,
       });
+      pendingSuspectDabsAdded++;
+      writeStats('suspect_dab_added');
     }
     activePlotByThread.delete(tidKey());
   },
@@ -194,9 +226,13 @@ Interceptor.attach(addr(RVA_ROWSPAN_ENTRY), {
     const radius = readDouble(contextPtr, 0x1C0);
     const matched = matchPendingDab(cx, cy, radius);
     if (!matched) return;
+    pendingSuspectDabsMatched++;
+    writeStats('suspect_dab_matched');
 
     activeRowspanByThread.set(tidKey(), {
       global_dab_index: matched.global_dab_index,
+      raw_call_index: matched.raw_call_index,
+      sizepressure_call_index: matched.sizepressure_call_index,
       thread_id: Process.getCurrentThreadId(),
       context_ptr: safePtr(contextPtr),
       plot_ptr: matched.plot_ptr,
@@ -209,6 +245,9 @@ Interceptor.attach(addr(RVA_ROWSPAN_ENTRY), {
       clip_right_exclusive: null,
       clip_bottom_exclusive: null,
     });
+  },
+  onLeave() {
+    activeRowspanByThread.delete(tidKey());
   },
 });
 
@@ -229,6 +268,8 @@ Interceptor.attach(addr(RVA_ROW_WRITE), {
     writeJson(Object.assign({
       event: 'row_span',
       global_dab_index: rec.global_dab_index,
+      raw_call_index: rec.raw_call_index,
+      sizepressure_call_index: rec.sizepressure_call_index,
       thread_id: rec.thread_id,
       row_y: rowY,
       cx: rec.cx,
@@ -249,14 +290,9 @@ Interceptor.attach(addr(RVA_ROW_WRITE), {
   },
 });
 
-Interceptor.attach(addr(RVA_ROWSPAN_LEAVE), {
-  onEnter() {
-    activeRowspanByThread.delete(tidKey());
-  },
-});
-
 Script.bindWeak(out, function () {
   try {
+    writeStats('trace_summary');
     out.flush();
     out.close();
   } catch (_) {
