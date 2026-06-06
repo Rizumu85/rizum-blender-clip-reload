@@ -1,0 +1,290 @@
+// Row writer family split: ctx+0x268 decides coverage-only vs color/material writer path; ctx+0x274 handles mode==2, ctx+0x270 handles mode==3. ctx+0x1d4/0x1d8 enable hardness profile sampling; ctx+0x1dc is StyleFlag&0x1000 accumulation selector.
+// Row writer water-color split: ctx+0x268 means UseWaterColor-derived mode is active; ctx+0x274 is WaterColorType 1, ctx+0x270 is WaterColorType 2, and the remaining ctx+0x268-only branch is type 0. Default vector pressure samples stay on mode 0.
+__int16 __fastcall sub_14263AC30(__int64 a1, __int64 a2, unsigned int a3, unsigned int a4, int a5)
+{
+  unsigned int v6; // esi
+  __int64 v7; // rdi
+  unsigned int v9; // r14d
+  __int64 v10; // r8
+  __int64 v11; // rax
+  char v12; // al
+  __int64 v13; // rcx
+  __int64 v14; // r8
+  _WORD *v15; // rdi
+  int v16; // ebp
+  __int64 v17; // r15
+  __int64 v18; // r12
+  unsigned int v19; // ebp
+  int v20; // ecx
+  unsigned int v21; // ecx
+  _WORD *v22; // rdi
+  int v23; // ebp
+  __int64 v24; // r11
+  __int64 v25; // r15
+  unsigned int v26; // r9d
+  unsigned int v27; // r8d
+  __int64 v28; // r10
+  signed int v29; // ecx
+  unsigned __int16 v30; // ax
+  unsigned __int16 *v31; // rdi
+  int v32; // ebp
+  __int64 v33; // rdx
+  __int64 v34; // r8
+  unsigned int v35; // ecx
+  unsigned __int16 v36; // ax
+  unsigned __int16 v37; // ax
+  unsigned int v38; // ecx
+
+  v6 = a2; /*0x14263ac52*/
+  v7 = (int)a4; /*0x14263ac54*/
+  v9 = (unsigned int)(*(_DWORD *)(a1 + 484) * a5) >> 15;// Row writer starts with effective coverage = (ctx+0x1e4 flow * geometric coverage) >> 15; ctx+0x1e0 is the opacity cap used by accumulation branches. /*0x14263ac5a*/
+  if ( !*(_DWORD *)(a1 + 616) )
+  {
+    if ( *(_DWORD *)(a1 + 672) ) /*0x14263af1d*/
+      sub_1432C58D0(*(_QWORD *)(a1 + 240), a2, a4); /*0x14263af30*/
+    sub_1432C58D0(*(_QWORD *)(a1 + 328), v6, (unsigned int)v7); /*0x14263af41*/
+    v13 = *(_QWORD *)(a1 + 336); /*0x14263af46*/
+    if ( v13 ) /*0x14263af50*/
+    {
+      if ( *(_DWORD *)(a1 + 672) ) /*0x14263af52*/
+      {
+        sub_1432C58D0(*(_QWORD *)(a1 + 288), v6, (unsigned int)v7); /*0x14263af67*/
+        v13 = *(_QWORD *)(a1 + 336); /*0x14263af6c*/
+      }
+      sub_1432C58D0(v13, v6, (unsigned int)v7); /*0x14263af78*/
+      LOWORD(v11) = sub_14263C060(a1, v6, a3, v7, v9); /*0x14263af8d*/
+      return v11; /*0x14263af92*/
+    }
+    if ( *(_DWORD *)(a1 + 488) || *(_QWORD *)(a1 + 344) ) /*0x14263afa4*/
+    {
+      LOWORD(v11) = sub_14263C5C0(a1, v6, a3, v7, v9); /*0x14263b261*/
+      return v11; /*0x14263b261*/
+    }
+    if ( !*(_DWORD *)(a1 + 468) ) /*0x14263afb9*/
+    {
+      v31 = (unsigned __int16 *)sub_1419D5CD0(*(_QWORD *)(a1 + 328)); /*0x14263b1a8*/
+      v11 = sub_1419D5CD0(*(_QWORD *)(a1 + 240)); /*0x14263b1ab*/
+      v32 = a3 - v6 + 1; /*0x14263b1b5*/
+      v33 = v32; /*0x14263b1b7*/
+      if ( v32 > 0 ) /*0x14263b1bc*/
+      {
+        v34 = v11 - (_QWORD)v31; /*0x14263b1c2*/
+        if ( *(_DWORD *)(a1 + 476) ) // ctx+0x1dc nonzero selects direct/max alpha accumulation: candidate=(opacity_cap*flow_coverage)>>15, then max with existing pixel. /*0x14263b1c5*/
+        {
+          do /*0x14263b205*/
+          {
+            v35 = (*(_DWORD *)(a1 + 480) * v9) >> 15; /*0x14263b1da*/
+            if ( *(_DWORD *)(a1 + 672) ) /*0x14263b1dd*/
+            {
+              v36 = *(unsigned __int16 *)((char *)v31 + v34); /*0x14263b1e6*/
+              if ( *v31 < v36 ) /*0x14263b1ee*/
+                *v31 = v36; /*0x14263b1f0*/
+            }
+            LODWORD(v11) = *v31; /*0x14263b1f3*/
+            if ( (unsigned int)v11 < v35 ) /*0x14263b1f8*/
+              *v31 = v35; /*0x14263b1fa*/
+            ++v31; /*0x14263b1fd*/
+            --v33; /*0x14263b201*/
+          }
+          while ( v33 ); /*0x14263b205*/
+        }
+        else
+        {
+          do /*0x14263b24a*/
+          {
+            if ( *(_DWORD *)(a1 + 672) ) /*0x14263b210*/
+            {
+              v37 = *(unsigned __int16 *)((char *)v31 + v34); /*0x14263b219*/
+              if ( *v31 < v37 ) /*0x14263b221*/
+                *v31 = v37; /*0x14263b223*/
+            }
+            v38 = *v31; // ctx+0x1dc zero uses build-up accumulation: old + flow_coverage * (opacity_cap - old). /*0x14263b226*/
+            LODWORD(v11) = *(_DWORD *)(a1 + 480); /*0x14263b229*/
+            if ( v38 < (unsigned int)v11 ) /*0x14263b231*/
+            {
+              LOWORD(v11) = v38 + ((v9 * ((_DWORD)v11 - v38)) >> 15); /*0x14263b23c*/
+              *v31 = v11; /*0x14263b23f*/
+            }
+            ++v31; /*0x14263b242*/
+            --v33; /*0x14263b246*/
+          }
+          while ( v33 ); /*0x14263b24a*/
+        }
+      }
+      return v11; /*0x14263b205*/
+    }
+    v14 = *(_QWORD *)(a1 + 8); /*0x14263afc6*/
+    if ( *(_DWORD *)(a1 + 472) ) /*0x14263afbf*/
+    {
+      sub_142663A60(v14, v7); /*0x14263afdf*/
+      v15 = (_WORD *)sub_1419D5CD0(*(_QWORD *)(a1 + 328)); /*0x14263aff7*/
+      v11 = sub_1419D5CD0(*(_QWORD *)(a1 + 240)); /*0x14263affa*/
+      v16 = a3 - v6 + 1; /*0x14263b004*/
+      v17 = v16; /*0x14263b006*/
+      if ( v16 <= 0 ) /*0x14263b00b*/
+        return v11; /*0x14263b00b*/
+      v18 = v11 - (_QWORD)v15; /*0x14263b00d*/
+      while ( 1 ) /*0x14263b010*/
+      {
+        if ( *(_DWORD *)(a1 + 672) ) /*0x14263b010*/
+        {
+          LOWORD(v11) = *(_WORD *)((char *)v15 + v18); /*0x14263b019*/
+          if ( *v15 < (unsigned __int16)v11 ) /*0x14263b021*/
+            *v15 = v11; /*0x14263b023*/
+        }
+        v19 = (unsigned __int16)*v15; /*0x14263b026*/
+        if ( v19 >= *(_DWORD *)(a1 + 480) ) /*0x14263b02f*/
+          goto LABEL_63; /*0x14263b02f*/
+        v20 = (unsigned __int16)sub_142663960(*(_QWORD *)(a1 + 8), v6); /*0x14263b03c*/
+        LODWORD(v11) = *(_DWORD *)(a1 + 480); /*0x14263b03f*/
+        v21 = (v9 * v20) >> 15; /*0x14263b049*/
+        if ( !*(_DWORD *)(a1 + 476) ) /*0x14263b04c*/
+          break; /*0x14263b04c*/
+        LODWORD(v11) = (v21 * (unsigned int)v11) >> 15; /*0x14263b058*/
+        if ( v19 < (unsigned int)v11 ) /*0x14263b05d*/
+          goto LABEL_62; /*0x14263b05d*/
+LABEL_63:
+        ++v6; /*0x14263b06f*/
+        ++v15; /*0x14263b071*/
+        if ( !--v17 ) /*0x14263b079*/
+          return v11; /*0x14263b079*/
+      }
+      LOWORD(v11) = v19 + ((v21 * ((_DWORD)v11 - v19)) >> 15); /*0x14263b069*/
+LABEL_62:
+      *v15 = v11; /*0x14263b06c*/
+      goto LABEL_63; /*0x14263b06c*/
+    }
+    LODWORD(v11) = abs32((*(_QWORD *)(v14 + 48) * v7 - *(_QWORD *)(v14 + 64)) >> 8); /*0x14263b0ab*/
+    if ( (int)v11 >= *(_DWORD *)(v14 + 16) ) /*0x14263b0b1*/
+      return v11; /*0x14263b0b1*/
+    *(_DWORD *)(v14 + 72) = (_DWORD)v11 << *(_DWORD *)(v14 + 20); /*0x14263b0b9*/
+    v22 = (_WORD *)sub_1419D5CD0(*(_QWORD *)(a1 + 328)); /*0x14263b0d0*/
+    v11 = sub_1419D5CD0(*(_QWORD *)(a1 + 240)); /*0x14263b0d3*/
+    v23 = a3 - v6 + 1; /*0x14263b0dd*/
+    v24 = v23; /*0x14263b0df*/
+    if ( v23 <= 0 ) /*0x14263b0e4*/
+      return v11; /*0x14263b0e4*/
+    v25 = v11 - (_QWORD)v22; /*0x14263b0e6*/
+    while ( 1 )
+    {
+      if ( *(_DWORD *)(a1 + 672) ) /*0x14263b0f0*/
+      {
+        LOWORD(v11) = *(_WORD *)((char *)v22 + v25); /*0x14263b0f8*/
+        if ( *v22 < (unsigned __int16)v11 ) /*0x14263b100*/
+          *v22 = v11; /*0x14263b102*/
+      }
+      v26 = (unsigned __int16)*v22; /*0x14263b105*/
+      v27 = *(_DWORD *)(a1 + 480); /*0x14263b109*/
+      if ( v26 >= v27 ) /*0x14263b113*/
+        goto LABEL_80; /*0x14263b113*/
+      v28 = *(_QWORD *)(a1 + 8); /*0x14263b115*/
+      v29 = abs32((*(_QWORD *)(v28 + 48) * (int)v6 - *(_QWORD *)(v28 + 56)) >> 8); /*0x14263b12e*/
+      v30 = v29 < *(_DWORD *)(v28 + 16) ? *(_WORD *)(*(_QWORD *)(v28 + 8) + 2LL * (v29 + *(_DWORD *)(v28 + 72))) : 0;
+      LODWORD(v11) = (v9 * v30) >> 15; /*0x14263b153*/
+      if ( !*(_DWORD *)(a1 + 476) ) /*0x14263b156*/
+        break; /*0x14263b156*/
+      v27 = ((unsigned int)v11 * v27) >> 15; /*0x14263b162*/
+      if ( v26 < v27 ) /*0x14263b169*/
+        goto LABEL_79; /*0x14263b169*/
+LABEL_80:
+      ++v6; /*0x14263b180*/
+      ++v22; /*0x14263b182*/
+      if ( !--v24 ) /*0x14263b18a*/
+        return v11; /*0x14263b18a*/
+    }
+    LOWORD(v27) = v26 + (((unsigned int)v11 * (v27 - v26)) >> 15); /*0x14263b178*/
+LABEL_79:
+    *v22 = v27; /*0x14263b17c*/
+    goto LABEL_80; /*0x14263b17c*/
+  }
+  if ( *(_DWORD *)(a1 + 492) || *(_DWORD *)(a1 + 624) ) /*0x14263ac74*/
+    sub_1432C58D0(*(_QWORD *)(a1 + 328), a2, a4); /*0x14263ac87*/
+  if ( *(_DWORD *)(a1 + 628) ) /*0x14263ac8c*/
+  {
+    sub_1432C58D0(*(_QWORD *)(a1 + 336), v6, (unsigned int)v7); /*0x14263aca5*/
+    if ( *(_DWORD *)(a1 + 468) ) /*0x14263acaa*/
+    {
+      v10 = *(_QWORD *)(a1 + 8); /*0x14263acba*/
+      if ( *(_DWORD *)(a1 + 472) ) /*0x14263acb3*/
+      {
+        sub_142663A60(*(_QWORD *)(a1 + 8), v7); /*0x14263acc5*/
+      }
+      else
+      {
+        LODWORD(v11) = abs32((*(_QWORD *)(v10 + 48) * v7 - *(_QWORD *)(v10 + 64)) >> 8); /*0x14263acdf*/
+        if ( (int)v11 >= *(_DWORD *)(v10 + 16) ) /*0x14263ace5*/
+          return v11; /*0x14263ace5*/
+        *(_DWORD *)(v10 + 72) = (_DWORD)v11 << *(_DWORD *)(v10 + 20); /*0x14263acf1*/
+      }
+    }
+    LODWORD(v11) = sub_140F5C620(*(_QWORD *)(a1 + 336)); /*0x14263acfc*/
+    if ( (v11 & 0x20) != 0 ) /*0x14263ad03*/
+    {
+      LOWORD(v11) = sub_142638F10(a1, v6, a3, v7, v9); /*0x14263ad15*/
+    }
+    else if ( (v11 & 0x10) != 0 ) /*0x14263ad21*/
+    {
+      LOWORD(v11) = sub_142638B90(a1, v6, a3, v7, v9); /*0x14263ad33*/
+    }
+    else if ( (_DWORD)v11 == 1 ) /*0x14263ad40*/
+    {
+      LOWORD(v11) = sub_1426388D0(a1, v6, a3, v7, v9); /*0x14263ad56*/
+    }
+  }
+  else if ( *(_DWORD *)(a1 + 624) ) /*0x14263ad60*/
+  {
+    if ( *(_DWORD *)(a1 + 672) ) /*0x14263ad6d*/
+      sub_1432C58D0(*(_QWORD *)(a1 + 288), v6, (unsigned int)v7); /*0x14263ad82*/
+    sub_1432C58D0(*(_QWORD *)(a1 + 336), v6, (unsigned int)v7); /*0x14263ad93*/
+    sub_1432C58D0(*(_QWORD *)(a1 + 320), v6, (unsigned int)v7); /*0x14263ada4*/
+    if ( *(_DWORD *)(a1 + 620) ) /*0x14263ada9*/
+    {
+      LOWORD(v11) = sub_1426432E0(a1, v6, a3, (unsigned int)v7); /*0x14263adbd*/
+    }
+    else
+    {
+      v12 = sub_140F5C620(*(_QWORD *)(a1 + 320)); /*0x14263adce*/
+      if ( *(_DWORD *)(a1 + 468) /*0x14263adfa*/
+        || *(_QWORD *)(a1 + 344)
+        || *(_DWORD *)(a1 + 488)
+        || *(_DWORD *)(a1 + 476)
+        || (v12 & 0x20) == 0 )
+      {
+        LOWORD(v11) = sub_142639FB0(a1, v6, a3, v7, v9); /*0x14263ae26*/
+      }
+      else
+      {
+        LOWORD(v11) = sub_14263A4C0(a1, v6, a3, v7, v9); /*0x14263ae0c*/
+      }
+    }
+  }
+  else
+  {
+    sub_142638340(a1, v6, v7, 1); /*0x14263ae3e*/
+    sub_1432C58D0(*(_QWORD *)(a1 + 336), v6, (unsigned int)v7); /*0x14263ae4f*/
+    if ( *(_DWORD *)(a1 + 620) ) /*0x14263ae54*/
+    {
+      LOWORD(v11) = sub_142643460(a1, v6, a3, (unsigned int)v7); /*0x14263ae68*/
+    }
+    else
+    {
+      LODWORD(v11) = sub_140F5C620(*(_QWORD *)(a1 + 336)); /*0x14263ae79*/
+      if ( (v11 & 0x20) != 0 ) /*0x14263ae80*/
+      {
+        if ( *(_DWORD *)(a1 + 468) || *(_QWORD *)(a1 + 328) || *(_QWORD *)(a1 + 344) || *(_DWORD *)(a1 + 488) ) /*0x14263ae9f*/
+          LOWORD(v11) = sub_14263CE60(a1, v6, a3, v7, v9); /*0x14263aed2*/
+        else
+          LOWORD(v11) = sub_14263D2F0(a1, v6, a3, (unsigned int)v7, v9); /*0x14263aeb8*/
+      }
+      else if ( (v11 & 0x10) != 0 ) /*0x14263aede*/
+      {
+        LOWORD(v11) = sub_14263CB20(a1, v6, a3, v7, v9); /*0x14263aef0*/
+      }
+      else if ( (_DWORD)v11 == 1 ) /*0x14263aefd*/
+      {
+        LOWORD(v11) = sub_14263C870(a1, v6, a3, v7, v9); /*0x14263af13*/
+      }
+    }
+  }
+  return v11; /*0x14263b085*/
+}

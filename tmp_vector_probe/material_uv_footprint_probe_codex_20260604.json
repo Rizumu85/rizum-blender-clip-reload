@@ -1,0 +1,222 @@
+{
+  "current_halfx_halfy": {
+    "Vector_BrushTip_Material_Gap.clip": {
+      "max": 10,
+      "mean": 0.023456,
+      "visible": 258,
+      "visible0": 1274
+    },
+    "Vector_BrushTip_Material.clip": {
+      "max": 11,
+      "mean": 0.061113,
+      "visible": 663,
+      "visible0": 2985
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Texture.clip": {
+      "max": 4,
+      "mean": 0.018159,
+      "visible": 6952,
+      "visible0": 10956
+    },
+    "Vector_Texture_50.clip": {
+      "max": 2,
+      "mean": 0.020188,
+      "visible": 3,
+      "visible0": 3059
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    }
+  },
+  "old_fullx_halfy": {
+    "Vector_BrushTip_Material_Gap.clip": {
+      "max": 39,
+      "mean": 0.113162,
+      "visible": 775,
+      "visible0": 1568
+    },
+    "Vector_BrushTip_Material.clip": {
+      "max": 39,
+      "mean": 0.259887,
+      "visible": 1334,
+      "visible0": 3211
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Texture.clip": {
+      "max": 4,
+      "mean": 0.018159,
+      "visible": 6952,
+      "visible0": 10956
+    },
+    "Vector_Texture_50.clip": {
+      "max": 2,
+      "mean": 0.020188,
+      "visible": 3,
+      "visible0": 3059
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    }
+  },
+  "full_square": {
+    "Vector_BrushTip_Material_Gap.clip": {
+      "max": 67,
+      "mean": 0.261325,
+      "visible": 1531,
+      "visible0": 1836
+    },
+    "Vector_BrushTip_Material.clip": {
+      "max": 66,
+      "mean": 0.541713,
+      "visible": 2521,
+      "visible0": 3295
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Texture.clip": {
+      "max": 4,
+      "mean": 0.018159,
+      "visible": 6952,
+      "visible0": 10956
+    },
+    "Vector_Texture_50.clip": {
+      "max": 2,
+      "mean": 0.020188,
+      "visible": 3,
+      "visible0": 3059
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    }
+  },
+  "centered_quarter_square": {
+    "Vector_BrushTip_Material_Gap.clip": {
+      "max": 80,
+      "mean": 0.243113,
+      "visible": 1440,
+      "visible0": 1735
+    },
+    "Vector_BrushTip_Material.clip": {
+      "max": 92,
+      "mean": 0.485869,
+      "visible": 2343,
+      "visible0": 3272
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Texture.clip": {
+      "max": 4,
+      "mean": 0.018159,
+      "visible": 6952,
+      "visible0": 10956
+    },
+    "Vector_Texture_50.clip": {
+      "max": 2,
+      "mean": 0.020188,
+      "visible": 3,
+      "visible0": 3059
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    }
+  },
+  "same_lane_double_x": {
+    "Vector_BrushTip_Material_Gap.clip": {
+      "max": 43,
+      "mean": 0.224844,
+      "visible": 985,
+      "visible0": 1653
+    },
+    "Vector_BrushTip_Material.clip": {
+      "max": 43,
+      "mean": 0.375812,
+      "visible": 2094,
+      "visible0": 3370
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Texture.clip": {
+      "max": 4,
+      "mean": 0.018159,
+      "visible": 6952,
+      "visible0": 10956
+    },
+    "Vector_Texture_50.clip": {
+      "max": 2,
+      "mean": 0.020188,
+      "visible": 3,
+      "visible0": 3059
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    }
+  }
+}

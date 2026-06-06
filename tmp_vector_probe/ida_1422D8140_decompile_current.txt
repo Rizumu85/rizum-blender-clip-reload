@@ -1,0 +1,208 @@
+// Current corpus note: importer diagnostics v31 show all recognized vector styles keep SubColor/Hue/Saturation/Value and Blur at defaults, with ChangeDrawColorTarget=1 but zero deltas/effectors. These paths are real consumers but not the current vector residual source.
+void __fastcall sub_1422D8140(
+        __int64 a1,
+        __int64 a2,
+        int a3,
+        double a4,
+        double a5,
+        double a6,
+        double a7,
+        __int64 a8,
+        unsigned int *a9)
+{
+  int v9; // ebp
+  BOOL v10; // r15d
+  double v14; // xmm8_8
+  int v15; // eax
+  double v17; // xmm6_8
+  unsigned __int64 v18; // xmm1_8
+  int v19; // eax
+  double v20; // xmm1_8
+  unsigned __int64 v21; // xmm0_8
+  int v22; // eax
+  unsigned __int64 v23; // xmm1_8
+  int v24; // eax
+  int v25; // eax
+  double v26; // xmm2_8
+  double v27; // xmm3_8
+  double v28; // xmm2_8
+  int v29; // eax
+  int v30; // eax
+  double v31; // xmm3_8
+  double v32; // xmm2_8
+  double v33; // xmm2_8
+  int v34; // eax
+  double v35; // xmm7_8
+  int v36; // eax
+  __int64 v37; // xmm0_8
+  int v38; // eax
+
+  v9 = 0; /*0x1422d815e*/
+  v10 = (*(_DWORD *)(a1 + 1564) & 1) == 0; /*0x1422d8171*/
+  v14 = 1.0; /*0x1422d8196*/
+  *(_DWORD *)(a8 + 32) = *(_DWORD *)(a1 + 1560); /*0x1422d819f*/
+  v15 = *(_DWORD *)(a1 + 120); /*0x1422d81a2*/
+  if ( (v15 & 0x20000) == 0 && (v15 & 0x10000) != 0 ) /*0x1422d81b9*/
+  {
+    *(_QWORD *)(a8 + 8) = 0; /*0x1422d81bb*/
+    v17 = 0.0; /*0x1422d81bf*/
+    *(_QWORD *)(a8 + 16) = 0; /*0x1422d81c2*/
+    v18 = 0; /*0x1422d81c6*/
+    *(_QWORD *)a8 = 0; /*0x1422d81c9*/
+    goto LABEL_32; /*0x1422d81cc*/
+  }
+  v19 = *(_DWORD *)(a1 + 1192); /*0x1422d81d1*/
+  v17 = 0.0; /*0x1422d81d7*/
+  v20 = 0.0; /*0x1422d81da*/
+  if ( (v19 & 1) != 0 ) /*0x1422d81df*/
+  {
+    v20 = *(double *)(a1 + 1176); /*0x1422d81e1*/
+    if ( v19 != 1 ) /*0x1422d81ec*/
+      v20 = fmin(1.0, *(double *)sub_142568040(a1 + 1184, v20, v10, a2, a9).m128_u64);// Evaluate SubColorBase/Effector (style+0x498/+0x4a0) into descriptor+0; clamped to <=1. /*0x1422d8209*/
+  }
+  *(double *)a8 = v20; /*0x1422d820d*/
+  v21 = 0; /*0x1422d8211*/
+  v22 = *(_DWORD *)(a1 + 1288); /*0x1422d8214*/
+  if ( (v22 & 1) != 0 ) /*0x1422d8224*/
+  {
+    v21 = *(_QWORD *)(a1 + 1272); /*0x1422d8226*/
+    if ( v22 != 1 ) /*0x1422d8231*/
+    {
+      v21 = sub_142568040(a1 + 1280, *(double *)&v21, 0, a2, a9).m128_u64[0];// Evaluate HueChangeBase/Effector (style+0x4f8/+0x500) into descriptor+8. /*0x1422d8248*/
+      if ( v10 ) /*0x1422d8250*/
+      {
+        if ( *(char *)(a1 + 1288) < 0 ) /*0x1422d8259*/
+          v21 = sub_1425681D0(a1 + 1280, *(double *)&v21, a9).m128_u64[0]; /*0x1422d8268*/
+      }
+    }
+  }
+  v23 = 0; /*0x1422d8275*/
+  *(_QWORD *)(a8 + 8) = v21; /*0x1422d8278*/
+  v24 = *(_DWORD *)(a1 + 1384); /*0x1422d827d*/
+  if ( (v24 & 1) != 0 ) /*0x1422d8285*/
+  {
+    v23 = *(_QWORD *)(a1 + 1368); /*0x1422d828b*/
+    if ( v24 != 1 ) /*0x1422d8296*/
+    {
+      v23 = sub_142568040(a1 + 1376, *(double *)&v23, 0, a2, a9).m128_u64[0];// Evaluate SaturationChangeBase/Effector (style+0x558/+0x560) into descriptor+16. /*0x1422d82b3*/
+      if ( v10 ) /*0x1422d82b9*/
+      {
+        if ( *(char *)(a1 + 1384) < 0 ) /*0x1422d82c2*/
+        {
+          v25 = *(_DWORD *)(a1 + 1560); /*0x1422d82c4*/
+          v26 = -a4; /*0x1422d82d2*/
+          v27 = 1.0 - a4; /*0x1422d82d5*/
+          if ( v25 == 2 ) /*0x1422d82dd*/
+          {
+            v28 = a6; /*0x1422d82df*/
+            v27 = 1.0 - a6; /*0x1422d82ec*/
+          }
+          else
+          {
+            if ( v25 ) /*0x1422d82f4*/
+            {
+LABEL_21:
+              v23 = sub_142568230(a1 + 1376, *(double *)&v23, v26, v27, a9).m128_u64[0]; /*0x1422d8319*/
+              goto LABEL_22; /*0x1422d832a*/
+            }
+            v28 = fmax(a4, a6); /*0x1422d8308*/
+            v27 = 1.0 - fmin(a4, a6); /*0x1422d8311*/
+          }
+          v26 = -v28; /*0x1422d8316*/
+          goto LABEL_21; /*0x1422d8316*/
+        }
+      }
+    }
+  }
+LABEL_22:
+  *(_QWORD *)(a8 + 16) = v23; /*0x1422d832d*/
+  v18 = 0; /*0x1422d8332*/
+  v29 = *(_DWORD *)(a1 + 1480); /*0x1422d8335*/
+  if ( (v29 & 1) != 0 ) /*0x1422d833d*/
+  {
+    v18 = *(_QWORD *)(a1 + 1464); /*0x1422d8343*/
+    if ( v29 != 1 ) /*0x1422d834e*/
+    {
+      v18 = sub_142568040(a1 + 1472, *(double *)&v18, 0, a2, a9).m128_u64[0];// Evaluate ValueChangeBase/Effector (style+0x5b8/+0x5c0) into descriptor+24. /*0x1422d836b*/
+      if ( v10 ) /*0x1422d8371*/
+      {
+        if ( *(char *)(a1 + 1480) < 0 ) /*0x1422d837a*/
+        {
+          v30 = *(_DWORD *)(a1 + 1560); /*0x1422d8389*/
+          v31 = 1.0 - a5; /*0x1422d838f*/
+          v32 = -a5; /*0x1422d8396*/
+          if ( v30 == 2 ) /*0x1422d839c*/
+          {
+            v33 = a7; /*0x1422d839e*/
+            v31 = 1.0 - a7; /*0x1422d83ab*/
+          }
+          else
+          {
+            if ( v30 ) /*0x1422d83b3*/
+            {
+LABEL_31:
+              v18 = sub_142568230(a1 + 1472, *(double *)&v18, v32, v31, a9).m128_u64[0]; /*0x1422d83d5*/
+              goto LABEL_32; /*0x1422d83e6*/
+            }
+            v33 = fmax(a5, a7); /*0x1422d83c5*/
+            v31 = 1.0 - fmin(a5, a7); /*0x1422d83ce*/
+          }
+          v32 = -v33; /*0x1422d83d2*/
+          goto LABEL_31; /*0x1422d83d2*/
+        }
+      }
+    }
+  }
+LABEL_32:
+  *(_QWORD *)(a8 + 24) = v18; /*0x1422d83f1*/
+  if ( !a3 ) /*0x1422d83ff*/
+  {
+    *(_DWORD *)(a8 + 36) = *(_DWORD *)(a1 + 864); /*0x1422d8407*/
+    *(_DWORD *)(a8 + 40) = *(_DWORD *)(a1 + 868); /*0x1422d8410*/
+  }
+  if ( !*(_DWORD *)(a1 + 856) || a3 ) /*0x1422d8422*/
+  {
+    v37 = 0; /*0x1422d84bd*/
+    *(_QWORD *)(a8 + 48) = 0x3FF0000000000000LL; /*0x1422d84c0*/
+    *(_QWORD *)(a8 + 56) = 0x3FF0000000000000LL; /*0x1422d84c4*/
+  }
+  else
+  {
+    v34 = *(_DWORD *)(a1 + 888); /*0x1422d8428*/
+    v35 = 1.0; /*0x1422d842e*/
+    if ( (v34 & 1) != 0 ) /*0x1422d8434*/
+    {
+      v35 = *(double *)(a1 + 872); /*0x1422d8436*/
+      if ( v34 != 1 ) /*0x1422d8441*/
+        v35 = fmin(1.0, *(double *)sub_142568040(a1 + 880, v35, v10, a2, a9).m128_u64);// Evaluate MixColorBase/Effector (style+0x368/+0x370) into descriptor+48; only when UseWaterColor active and not suppressed. /*0x1422d8461*/
+    }
+    v36 = *(_DWORD *)(a1 + 984); /*0x1422d8465*/
+    if ( (v36 & 1) != 0 ) /*0x1422d846d*/
+    {
+      if ( v36 == 1 ) /*0x1422d847a*/
+        v14 = *(double *)(a1 + 968); /*0x1422d847c*/
+      else
+        v14 = fmin(1.0, *(double *)sub_142568040(a1 + 976, *(double *)(a1 + 968), v10, a2, a9).m128_u64);// Evaluate MixAlphaBase/Effector (style+0x3c8/+0x3d0) into descriptor+56; only when UseWaterColor active and not suppressed. /*0x1422d8499*/
+    }
+    *(double *)(a8 + 48) = v35; /*0x1422d849e*/
+    *(double *)(a8 + 56) = v14; /*0x1422d84a3*/
+    v37 = *(_QWORD *)(a1 + 1064); /*0x1422d84a9*/
+  }
+  *(_QWORD *)(a8 + 64) = v37; /*0x1422d84c8*/
+  v38 = *(_DWORD *)(a1 + 1096); /*0x1422d84cd*/
+  if ( (v38 & 1) != 0 && !a3 && *(_DWORD *)(a1 + 860) == 1 ) /*0x1422d84ee*/
+  {
+    if ( (*(_DWORD *)(a1 + 120) & 0x2000) != 0 ) /*0x1422d84f7*/
+    {
+      v9 = 1; /*0x1422d84f9*/
+    }
+    else
+    {
+      v17 = *(double *)(a1 + 1080); /*0x1422d84ff*/
+      if ( v38 != 1 ) /*0x1422d850a*/
+        *(_QWORD *)&v17 = sub_142568040(a1 + 1088, v17, v10, a2, a9).m128_u64[0]; /*0x1422d8526*/
+    }
+  }
+  *(double *)(a8 + 80) = v17; /*0x1422d852e*/
+  *(_DWORD *)(a8 + 72) = v9; /*0x1422d853c*/
+}

@@ -1,0 +1,394 @@
+{
+  "current": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.036532,
+      "visible": 226,
+      "visible0": 226
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 162,
+      "mean": 0.036818,
+      "visible": 1163,
+      "visible0": 1282
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 114,
+      "mean": 0.016958,
+      "visible": 1560,
+      "visible0": 1958
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 128,
+      "mean": 0.020742,
+      "visible": 2070,
+      "visible0": 2577
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  },
+  "ss2": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.036532,
+      "visible": 226,
+      "visible0": 226
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 224,
+      "mean": 0.080569,
+      "visible": 1335,
+      "visible0": 1426
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 209,
+      "mean": 0.079495,
+      "visible": 1846,
+      "visible0": 2058
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 199,
+      "mean": 0.082027,
+      "visible": 2269,
+      "visible0": 2595
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  },
+  "ss4": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.036532,
+      "visible": 226,
+      "visible0": 226
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 220,
+      "mean": 0.08003,
+      "visible": 1439,
+      "visible0": 1535
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 200,
+      "mean": 0.076334,
+      "visible": 1857,
+      "visible0": 2059
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 191,
+      "mean": 0.079029,
+      "visible": 2260,
+      "visible0": 2588
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  },
+  "ss8": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.036532,
+      "visible": 226,
+      "visible0": 226
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 217,
+      "mean": 0.07976,
+      "visible": 1487,
+      "visible0": 1591
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 197,
+      "mean": 0.075848,
+      "visible": 1862,
+      "visible0": 2069
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 186,
+      "mean": 0.078476,
+      "visible": 2246,
+      "visible0": 2584
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  },
+  "ss4_rminus0.15": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.062073,
+      "visible": 384,
+      "visible0": 384
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 224,
+      "mean": 0.082887,
+      "visible": 1473,
+      "visible0": 1564
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 209,
+      "mean": 0.084443,
+      "visible": 1885,
+      "visible0": 2081
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 201,
+      "mean": 0.085542,
+      "visible": 2254,
+      "visible0": 2592
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  },
+  "ss4_alpha0.85": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.036532,
+      "visible": 226,
+      "visible0": 226
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 220,
+      "mean": 0.084073,
+      "visible": 2247,
+      "visible0": 2657
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 200,
+      "mean": 0.079055,
+      "visible": 2364,
+      "visible0": 2641
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 191,
+      "mean": 0.079055,
+      "visible": 2326,
+      "visible0": 2584
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  },
+  "ss4_alpha1.15": {
+    "Vector_AA_None.clip": {
+      "max": 226,
+      "mean": 0.036532,
+      "visible": 226,
+      "visible0": 226
+    },
+    "Vector_AA_Weak.clip": {
+      "max": 220,
+      "mean": 0.07988,
+      "visible": 1403,
+      "visible0": 1499
+    },
+    "Vector_AA_Medium.clip": {
+      "max": 200,
+      "mean": 0.075679,
+      "visible": 1831,
+      "visible0": 2049
+    },
+    "Vector_AA_Strong.clip": {
+      "max": 191,
+      "mean": 0.079286,
+      "visible": 2252,
+      "visible0": 2590
+    },
+    "Vector_Baseline.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_OpacityPressure.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_Hardness_50.clip": {
+      "max": 0,
+      "mean": 0.0,
+      "visible": 0,
+      "visible0": 0
+    },
+    "Vector_SizePressure.clip": {
+      "max": 226,
+      "mean": 0.024732,
+      "visible": 153,
+      "visible0": 153
+    },
+    "Test_Vector.clip": {
+      "max": 187,
+      "mean": 0.610175,
+      "visible": 24477,
+      "visible0": 28073
+    }
+  }
+}

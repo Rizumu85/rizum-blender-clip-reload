@@ -1,0 +1,247 @@
+// Current corpus note: color-change and blur descriptor consumers are inactive for recognized vector styles in v31 diagnostics; MixColor/MixAlpha also stay default because UseWaterColor=0.
+// Hidden C++ exception states: #wind=1
+__int64 __fastcall sub_1425597A0(__int64 a1, __int64 a2, unsigned int a3, __int64 a4, __int64 a5, __int64 a6)
+{
+  __int64 v6; // r15
+  __int64 v9; // rdi
+  double v10; // xmm3_8
+  double v11; // xmm1_8
+  double v12; // xmm1_8
+  int v13; // eax
+  double v14; // xmm0_8
+  unsigned __int64 v15; // rax
+  unsigned __int64 v16; // rbx
+  __int64 v17; // rax
+  __int64 v18; // rsi
+  __int64 v19; // r14
+  __int64 v20; // r15
+  __int64 v21; // rbx
+  __int64 v22; // rdi
+  unsigned __int64 v23; // r9
+  __int64 v24; // rdx
+  __int64 result; // rax
+  int v26; // esi
+  int v27; // eax
+  double v28; // xmm10_8
+  unsigned int v29; // ebx
+  double v30; // xmm6_8
+  double v31; // xmm6_8
+  double v32; // xmm7_8
+  double v33; // xmm6_8
+  double v34; // xmm8_8
+  unsigned int v35; // edi
+  unsigned int v36; // ebx
+  unsigned __int16 v37; // ax
+  __int64 v38; // rax
+  __int64 v39; // r9
+  __int64 v40; // r8
+  __int64 v41; // rdx
+  int v42; // ebx
+  int v43; // edi
+  int v44; // eax
+  volatile signed __int32 *v45; // rbx
+  unsigned int v46; // [rsp+40h] [rbp-C0h] BYREF
+  __int64 v47; // [rsp+48h] [rbp-B8h] BYREF
+  __int64 v48; // [rsp+50h] [rbp-B0h] BYREF
+  unsigned __int64 v49; // [rsp+58h] [rbp-A8h] BYREF
+  __int64 v50; // [rsp+60h] [rbp-A0h]
+  __int64 v51; // [rsp+70h] [rbp-90h] BYREF
+  volatile signed __int32 *v52; // [rsp+78h] [rbp-88h]
+  char v53; // [rsp+80h] [rbp-80h] BYREF
+  char v54; // [rsp+90h] [rbp-70h] BYREF
+  unsigned __int64 v55; // [rsp+A0h] [rbp-60h] BYREF
+  int v56; // [rsp+A8h] [rbp-58h]
+  unsigned __int64 v57; // [rsp+B0h] [rbp-50h] BYREF
+  int v58; // [rsp+B8h] [rbp-48h]
+  __int64 v59; // [rsp+C0h] [rbp-40h] BYREF
+  int v60; // [rsp+C8h] [rbp-38h]
+  _DWORD v61[4]; // [rsp+D0h] [rbp-30h] BYREF
+
+  v6 = a4; /*0x1425597e6*/
+  v59 = a4; /*0x1425597e9*/
+  v46 = a3; /*0x1425597f0*/
+  v48 = a5; /*0x142559802*/
+  v9 = a6; /*0x142559807*/
+  v47 = a6; /*0x14255980e*/
+  *(_QWORD *)a4 = *(_QWORD *)(a1 + 120); /*0x142559818*/
+  *(_DWORD *)(a4 + 8) = *(_DWORD *)(a1 + 128); /*0x142559823*/
+  *(_QWORD *)a5 = *(_QWORD *)(a1 + 132); /*0x14255982f*/
+  *(_DWORD *)(a5 + 8) = *(_DWORD *)(a1 + 140); /*0x142559839*/
+  v10 = *(double *)(a2 + 8); /*0x14255983c*/
+  if ( v10 < -0.00000001 /*0x14255987d*/
+    || v10 > 0.00000001
+    || (v11 = *(double *)(a2 + 16), v11 < -0.00000001)
+    || v11 > 0.00000001
+    || (v12 = *(double *)(a2 + 24), v12 < -0.00000001)
+    || v12 > 0.00000001 )
+  {
+    v13 = *(_DWORD *)(a2 + 32); /*0x14255987f*/
+    if ( v13 != 2 ) /*0x142559885*/
+    {
+      sub_14255A020( /*0x1425598ad*/
+        *(double *)(a1 + 144),
+        *(double *)(a1 + 152),
+        *(double *)(a1 + 160),
+        v10,
+        *(double *)(a2 + 16),
+        *(double *)(a2 + 24),
+        a4);
+      v13 = *(_DWORD *)(a2 + 32); /*0x1425598b2*/
+    }
+    if ( v13 != 1 ) /*0x1425598ba*/
+      sub_14255A020( /*0x1425598ee*/
+        *(double *)(a1 + 168),
+        *(double *)(a1 + 176),
+        *(double *)(a1 + 184),
+        *(double *)(a2 + 8),
+        *(double *)(a2 + 16),
+        *(double *)(a2 + 24),
+        a5);
+  }
+  if ( *(double *)a2 > 0.00000001 ) /*0x142559906*/
+  {
+    v14 = *(double *)a2 * 32768.0 + 0.5000000100000001; /*0x142559914*/
+    v15 = 0; /*0x142559919*/
+    if ( v14 >= 9.223372036854776e18 ) /*0x142559927*/
+    {
+      v14 = v14 - 9.223372036854776e18; /*0x142559929*/
+      if ( v14 < 9.223372036854776e18 ) /*0x142559931*/
+        v15 = 0x8000000000000000uLL; /*0x14255993d*/
+    }
+    v16 = v15 + (unsigned int)(int)v14; /*0x142559945*/
+    v49 = v16; /*0x142559948*/
+    v57 = 0x8000 - v16; /*0x142559955*/
+    if ( (*(_BYTE *)(a1 + 224) & 0x20) != 0 && *(_DWORD *)(a2 + 36) == 1 ) /*0x14255996d*/
+    {
+      LODWORD(v57) = (unsigned __int16)sub_14206BEC0(v6); /*0x14255997e*/
+      HIDWORD(v57) = (unsigned __int16)sub_14206BEB0(v6); /*0x14255998c*/
+      v58 = (unsigned __int16)sub_14206BEA0(v6); /*0x14255999a*/
+      LODWORD(v59) = (unsigned __int16)sub_14206BEC0(a5); /*0x1425599a8*/
+      HIDWORD(v59) = (unsigned __int16)sub_14206BEB0(a5); /*0x1425599b6*/
+      v60 = (unsigned __int16)sub_14206BEA0(a5); /*0x1425599c4*/
+      v17 = sub_14256DF40( /*0x1425599ed*/
+              (unsigned int)&v53,
+              (unsigned int)&v57,
+              (unsigned int)&v59,
+              0x8000 - (int)v16,
+              v16,
+              *(_DWORD *)(a1 + 220),
+              1);
+      v55 = *(_QWORD *)v17; /*0x1425599f6*/
+      sub_14206C350( /*0x142559a1c*/
+        v6,
+        (unsigned int)(65537 * v55),
+        (unsigned int)(65537 * HIDWORD(v55)),
+        (unsigned int)(65537 * *(_DWORD *)(v17 + 8)));
+    }
+    else
+    {
+      v18 = (unsigned int)sub_14206BEF0(v6); /*0x142559a2e*/
+      v19 = (unsigned int)sub_14206BEE0(v6); /*0x142559a38*/
+      v20 = (unsigned int)sub_14206BED0(v6); /*0x142559a43*/
+      v21 = (unsigned int)sub_14206BEF0(v48); /*0x142559a50*/
+      v22 = (unsigned int)sub_14206BEE0(v48); /*0x142559a5c*/
+      v23 = (v49 * (unsigned int)sub_14206BED0(v48) + 0x4000 + v20 * v57) >> 15; /*0x142559ab0*/
+      v6 = v59; /*0x142559ab7*/
+      sub_14206C350( /*0x142559abe*/
+        v59,
+        (v49 * v21 + v57 * v18 + 0x4000) >> 15,
+        (unsigned int)((v57 * v19 + v49 * v22 + 0x4000) >> 15),
+        v23);
+    }
+    v9 = v47; /*0x142559ac8*/
+  }
+  if ( *(_DWORD *)(a1 + 192) != 1 ) /*0x142559ad7*/
+  {
+    v24 = 0xFFFFFFFFLL; /*0x142559adf*/
+    if ( *(_DWORD *)(a1 + 192) == 2 ) /*0x142559ae4*/
+    {
+      if ( *(_DWORD *)(a1 + 204) ) /*0x142559ae8*/
+        v24 = 0; /*0x142559aef*/
+    }
+    return sub_1408E5840(v9, v24); /*0x142559af7*/
+  }
+  LODWORD(v49) = 0; /*0x142559afe*/
+  v46 = 0; /*0x142559b02*/
+  LODWORD(v48) = 0; /*0x142559b06*/
+  LODWORD(v47) = 0; /*0x142559b0a*/
+  sub_14260D3D0(*(_QWORD *)(a1 + 320), &v51); /*0x142559b1d*/
+  result = sub_1426155F0(v51, (unsigned int)&v49, (unsigned int)&v46, (unsigned int)&v48, (__int64)&v47); /*0x142559b41*/
+  if ( (_DWORD)result ) /*0x142559b48*/
+  {
+    v26 = *(_DWORD *)(a1 + 204); /*0x142559b4e*/
+    v27 = -1; /*0x142559b55*/
+    if ( v26 ) /*0x142559b5c*/
+      v27 = 0; /*0x142559b5c*/
+    v28 = (double)v27; /*0x142559b63*/
+    v29 = (int)((1.0 - *(double *)(a2 + 56)) * (double)(int)v49 + (double)v27 * *(double *)(a2 + 56) + 0.5000000100000001);// MixAlpha consumer: output alpha is lerped between sampled canvas alpha and configured fallback using descriptor+56. /*0x142559ba0*/
+    result = sub_1408E5840(v9, v29); /*0x142559baa*/
+    if ( v29 ) /*0x142559bb1*/
+    {
+      v30 = *(double *)(a2 + 48); // MixColor consumer: descriptor+48 controls RGB back-mixing; partial values use squared mixColor as the foreground/source weight. /*0x142559bb7*/
+      if ( v30 < 0.9999999899999999 ) /*0x142559bca*/
+      {
+        if ( v30 > 0.00000001 && !v26 ) /*0x142559bdc*/
+        {
+          v31 = v30 * v30; /*0x142559be2*/
+          v32 = (1.0 - v31) * (double)(int)v49; /*0x142559bfa*/
+          v33 = v31 * v28; /*0x142559bfe*/
+          v34 = 1.0 / (v32 + v33); /*0x142559c0a*/
+          if ( (*(_BYTE *)(a1 + 224) & 0x20) != 0 && *(_DWORD *)(a2 + 36) == 1 ) /*0x142559c23*/
+          {
+            v35 = (unsigned __int16)sub_14206BEC0(v6); /*0x142559c31*/
+            v36 = (unsigned __int16)sub_14206BEB0(v6); /*0x142559c3c*/
+            v37 = sub_14206BEA0(v6); /*0x142559c42*/
+            v55 = __PAIR64__(v36, v35); /*0x142559c4a*/
+            v56 = v37; /*0x142559c50*/
+            v61[0] = HIWORD(v46); /*0x142559c5a*/
+            v61[1] = WORD1(v48); /*0x142559c64*/
+            v61[2] = WORD1(v47); /*0x142559c6e*/
+            v38 = sub_14256DF40( /*0x142559cb6*/
+                    (unsigned int)&v54,
+                    (unsigned int)&v55,
+                    (unsigned int)v61,
+                    (int)(v34 * v33 * 65535.0 + 0.5000000100000001),
+                    0xFFFF - (int)(v34 * v33 * 65535.0 + 0.5000000100000001),
+                    *(_DWORD *)(a1 + 220),
+                    1);
+            v50 = *(_QWORD *)v38; /*0x142559cbf*/
+            v39 = (unsigned int)(65537 * *(_DWORD *)(v38 + 8)); /*0x142559cc5*/
+            v40 = (unsigned int)(65537 * HIDWORD(v50)); /*0x142559cd6*/
+            v41 = (unsigned int)(65537 * v50); /*0x142559cdd*/
+          }
+          else
+          {
+            v42 = sub_14206BEF0(v6); /*0x142559cf2*/
+            v43 = sub_14206BEE0(v6); /*0x142559cfc*/
+            v44 = sub_14206BED0(v6); /*0x142559d01*/
+            v39 = (unsigned int)(int)(((double)v44 * v33 + (double)(int)v47 * v32) * v34 + 0.5000000100000001); /*0x142559d7c*/
+            v40 = (unsigned int)(int)(((double)v43 * v33 + (double)(int)v48 * v32) * v34 + 0.5000000100000001); /*0x142559d86*/
+            v41 = (unsigned int)(int)(((double)v42 * v33 + (double)(int)v46 * v32) * v34 + 0.5000000100000001); /*0x142559d90*/
+          }
+          goto LABEL_38; /*0x142559ce5*/
+        }
+        if ( (_DWORD)v49 ) /*0x142559d9c*/
+        {
+          v39 = (unsigned int)v47; /*0x142559d9e*/
+          v40 = (unsigned int)v48; /*0x142559da3*/
+          v41 = v46; /*0x142559da8*/
+LABEL_38:
+          result = sub_14206C350(v6, v41, v40, v39); /*0x142559dac*/
+        }
+      }
+    }
+  }
+  v45 = v52; /*0x142559db5*/
+  if ( v52 ) /*0x142559dbd*/
+  {
+    result = (unsigned int)_InterlockedExchangeAdd(v52 + 2, 0xFFFFFFFF); /*0x142559dc6*/
+    if ( (_DWORD)result == 1 ) /*0x142559dce*/
+    {
+      result = (*(__int64 (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v45 + 8LL))(v45); /*0x142559dd6*/
+      if ( _InterlockedExchangeAdd(v45 + 3, 0xFFFFFFFF) == 1 ) /*0x142559de1*/
+        return (*(__int64 (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v45 + 16LL))(v45); /*0x142559de9*/
+    }
+  }
+  return result; /*0x142559dec*/
+}

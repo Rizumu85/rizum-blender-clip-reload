@@ -1,0 +1,243 @@
+{
+  "path": "img\\Test_ToneCurve.psd",
+  "version": 1,
+  "channels": 3,
+  "width": 1024,
+  "height": 1024,
+  "depth": 8,
+  "color_mode": 3,
+  "layer_count_raw": 3,
+  "layers": [
+    {
+      "index": 0,
+      "name": "Layer 1",
+      "bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "blend_mode": "norm",
+      "opacity": 255,
+      "clipping": 0,
+      "flags": 0,
+      "tags": {
+        "lspf": {
+          "length": 4
+        },
+        "luni": "Layer 1",
+        "tsly": {
+          "length": 4
+        }
+      },
+      "channels": [
+        {
+          "id": -1,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 255,
+          "max": 255,
+          "mean": 255.0,
+          "nonzero": 1048576
+        },
+        {
+          "id": 0,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 255,
+          "max": 255,
+          "mean": 255.0,
+          "nonzero": 1048576
+        },
+        {
+          "id": 1,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 214,
+          "max": 214,
+          "mean": 214.0,
+          "nonzero": 1048576
+        },
+        {
+          "id": 2,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 160,
+          "max": 160,
+          "mean": 160.0,
+          "nonzero": 1048576
+        }
+      ],
+      "alpha_nonzero": 1048576,
+      "rgba_mean_visible": [
+        255.0,
+        214.0,
+        160.0,
+        255.0
+      ],
+      "export": "tmp_vector_probe\\psd_layers_test_tonecurve_latest\\00_Layer 1.png"
+    },
+    {
+      "index": 1,
+      "name": "Layer 2",
+      "bbox": [
+        26,
+        63,
+        662,
+        350
+      ],
+      "blend_mode": "norm",
+      "opacity": 255,
+      "clipping": 0,
+      "flags": 0,
+      "tags": {
+        "lspf": {
+          "length": 4
+        },
+        "luni": "Layer 2",
+        "tsly": {
+          "length": 4
+        }
+      },
+      "channels": [
+        {
+          "id": -1,
+          "length": 81968,
+          "shape": [
+            287,
+            636
+          ],
+          "min": 0,
+          "max": 255,
+          "mean": 69.975626,
+          "nonzero": 65925
+        },
+        {
+          "id": 0,
+          "length": 27049,
+          "shape": [
+            287,
+            636
+          ],
+          "min": 0,
+          "max": 255,
+          "mean": 59.130848,
+          "nonzero": 62315
+        },
+        {
+          "id": 1,
+          "length": 26875,
+          "shape": [
+            287,
+            636
+          ],
+          "min": 0,
+          "max": 255,
+          "mean": 56.854672,
+          "nonzero": 62315
+        },
+        {
+          "id": 2,
+          "length": 23923,
+          "shape": [
+            287,
+            636
+          ],
+          "min": 0,
+          "max": 255,
+          "mean": 50.497595,
+          "nonzero": 62315
+        }
+      ],
+      "alpha_nonzero": 65925,
+      "rgba_mean_visible": [
+        161.521835,
+        155.407645,
+        137.995783,
+        193.747304
+      ],
+      "export": "tmp_vector_probe\\psd_layers_test_tonecurve_latest\\01_Layer 2.png"
+    },
+    {
+      "index": 2,
+      "name": "Tone Curve 1",
+      "bbox": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "blend_mode": "norm",
+      "opacity": 255,
+      "clipping": 0,
+      "flags": 0,
+      "tags": {
+        "curv": {
+          "length": 94
+        },
+        "lspf": {
+          "length": 4
+        },
+        "luni": "Tone Curve 1",
+        "tsly": {
+          "length": 4
+        }
+      },
+      "channels": [
+        {
+          "id": -1,
+          "length": 2,
+          "shape": [
+            0,
+            0
+          ]
+        },
+        {
+          "id": 0,
+          "length": 2,
+          "shape": [
+            0,
+            0
+          ]
+        },
+        {
+          "id": 1,
+          "length": 2,
+          "shape": [
+            0,
+            0
+          ]
+        },
+        {
+          "id": 2,
+          "length": 2,
+          "shape": [
+            0,
+            0
+          ]
+        },
+        {
+          "id": -2,
+          "length": 2,
+          "shape": [
+            0,
+            0
+          ]
+        }
+      ],
+      "alpha_nonzero": 0
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "seq_original_points": true,
+    "exp": false,
+    "step": 5.0,
+    "mean": 1.894669,
+    "visible": 3691,
+    "max": 198
+  },
+  {
+    "seq_original_points": true,
+    "exp": true,
+    "step": 1.0,
+    "mean": 1.545656,
+    "visible": 3608,
+    "max": 96
+  },
+  {
+    "seq_original_points": true,
+    "exp": true,
+    "step": 2.0,
+    "mean": 1.729969,
+    "visible": 3603,
+    "max": 119
+  },
+  {
+    "seq_original_points": true,
+    "exp": true,
+    "step": 5.0,
+    "mean": 2.182313,
+    "visible": 3633,
+    "max": 136
+  }
+]

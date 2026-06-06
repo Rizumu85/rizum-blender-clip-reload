@@ -1,0 +1,56 @@
+// Vector draw-context bridge to PWVectorStroke render helper. In the non-cache path it calls sub_1425A4100 to submit stroke geometry, then reads output bounds from draw buffers at +0x140/+0x150.
+_OWORD *__fastcall sub_14255A7E0(__int64 a1, _OWORD *a2, __int64 a3, __int64 a4, __int64 a5, int a6)
+{
+  __int64 v8; // rbp
+  __int64 v9; // rsi
+  __int64 v11; // rcx
+  __int64 v12; // rax
+  __int128 v13; // [rsp+30h] [rbp-48h] BYREF
+
+  *a2 = 0; /*0x14255a807*/
+  if ( *(_DWORD *)(a1 + 212) ) /*0x14255a80a*/
+  {
+    v8 = *(_QWORD *)(a3 + 56); /*0x14255a822*/
+    v9 = *(_QWORD *)(v8 + 48); /*0x14255a82b*/
+    if ( v9 ) /*0x14255a832*/
+    {
+      v13 = *(_OWORD *)(v9 + 24); /*0x14255a841*/
+      if ( (unsigned int)sub_14206CBF0(&v13, a1 + 8) ) /*0x14255a846*/
+      {
+        sub_1422CA9A0((double *)v9, (__int64 *)a1, 0, 1); /*0x14255a85e*/
+        sub_14206CEF0(&v13, (unsigned int)-*(_DWORD *)(a1 + 24), (unsigned int)-*(_DWORD *)(a1 + 28)); /*0x14255a874*/
+        *a2 = v13; /*0x14255a87e*/
+      }
+    }
+    if ( a6 ) /*0x14255a88e*/
+    {
+      v13 = *(_OWORD *)(v8 + 24); /*0x14255a89d*/
+      if ( (unsigned int)sub_14206CBF0(&v13, a1 + 8) ) /*0x14255a8a2*/
+      {
+        sub_1422CA9A0((double *)v8, (__int64 *)a1, 0, 1); /*0x14255a8ba*/
+        sub_14206CEF0(&v13, (unsigned int)-*(_DWORD *)(a1 + 24), (unsigned int)-*(_DWORD *)(a1 + 28)); /*0x14255a8d0*/
+        sub_14206D160(a2, &v13); /*0x14255a8dd*/
+      }
+    }
+    return a2; /*0x14255a8e7*/
+  }
+  else
+  {
+    sub_1425A4100(a3, (__int64 *)a1, a4, a5, a6); /*0x14255a912*/
+    v11 = *(_QWORD *)(a1 + 320); /*0x14255a91e*/
+    if ( *(_DWORD *)(a1 + 352) == 2 ) /*0x14255a925*/
+    {
+      sub_14260FC50(v11); /*0x14255a927*/
+      sub_14260FC50(*(_QWORD *)(a1 + 336)); /*0x14255a933*/
+      *a2 = *(_OWORD *)sub_14260D270(*(_QWORD *)(a1 + 320), &v13, 1); /*0x14255a95d*/
+      v12 = sub_14260D270(*(_QWORD *)(a1 + 336), &v13, 1); /*0x14255a967*/
+      sub_14206D160(a2, v12); /*0x14255a972*/
+    }
+    else
+    {
+      *a2 = *(_OWORD *)sub_14260D270(v11, &v13, 1); /*0x14255a98c*/
+    }
+    sub_14206CF80(a2, *(unsigned int *)(a1 + 280)); /*0x14255a998*/
+    return a2; /*0x14255a99d*/
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "identity": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "radius_float32": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "center_float32": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "both_float32": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "radius_next_down": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "radius_floor_1_256": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "radius_round_1_256": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "radius_floor_1_1024": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "radius_floor_1_65536": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "center_floor_1_256": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "center_round_1_256": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  },
+  "all_floor_1_256": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra": 151,
+    "missing": 0,
+    "max": 226
+  }
+}

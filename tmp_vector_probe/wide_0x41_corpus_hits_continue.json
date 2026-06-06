@@ -1,0 +1,67 @@
+[
+  {
+    "clip": "Test_Vector.clip",
+    "layer": 5,
+    "layer_type": 0,
+    "name": "Layer 1",
+    "off": 8104,
+    "width": 163.6,
+    "brush": 6,
+    "aa": 3,
+    "pattern": 0,
+    "texture": 0,
+    "wide_active": true
+  },
+  {
+    "clip": "Vector_AA_Medium.clip",
+    "layer": 18,
+    "layer_type": 0,
+    "name": "Medium",
+    "off": 56,
+    "width": 3.0,
+    "brush": 10,
+    "aa": 2,
+    "pattern": 0,
+    "texture": 0,
+    "wide_active": false
+  },
+  {
+    "clip": "Vector_AA_None.clip",
+    "layer": 16,
+    "layer_type": 0,
+    "name": "None",
+    "off": 56,
+    "width": 3.0,
+    "brush": 10,
+    "aa": 0,
+    "pattern": 0,
+    "texture": 0,
+    "wide_active": false
+  },
+  {
+    "clip": "Vector_AA_Strong.clip",
+    "layer": 19,
+    "layer_type": 0,
+    "name": "Strong",
+    "off": 56,
+    "width": 3.0,
+    "brush": 10,
+    "aa": 3,
+    "pattern": 0,
+    "texture": 0,
+    "wide_active": false
+  },
+  {
+    "clip": "Vector_AA_Weak.clip",
+    "layer": 17,
+    "layer_type": 0,
+    "name": "Weak",
+    "off": 56,
+    "width": 3.0,
+    "brush": 10,
+    "aa": 1,
+    "pattern": 0,
+    "texture": 0,
+    "wide_active": false
+  }
+]

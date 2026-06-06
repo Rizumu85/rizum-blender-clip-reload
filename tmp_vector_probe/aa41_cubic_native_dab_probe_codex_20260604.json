@@ -1,0 +1,224 @@
+{
+  "experiment_env": {
+    "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING": "1"
+  },
+  "guard_preset": null,
+  "run_config": {
+    "clips": [
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_None.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_Weak.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_Medium.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_Strong.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_Baseline.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_OpacityPressure.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_Hardness_50.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_SizePressure.clip"
+    ],
+    "duplicate_clip_basenames": {},
+    "experiment_env": {
+      "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING": "1"
+    },
+    "adaptive_spacing_gate": false,
+    "fail_on_regression": false,
+    "fail_on_error": false,
+    "max_mean_regression": 0.0,
+    "max_visible_regression": null,
+    "min_improved": 0,
+    "require_improved": [],
+    "require_unchanged": [],
+    "expected_directions": {}
+  },
+  "summary": {
+    "counts_by_mean_direction": {
+      "improved": 0,
+      "unchanged": 0,
+      "regressed": 0,
+      "unknown": 8
+    },
+    "thresholds": {
+      "max_mean_regression": 0.0,
+      "max_visible_regression": null,
+      "min_improved": 0,
+      "require_improved": [],
+      "require_unchanged": [],
+      "fail_on_error": false
+    },
+    "duplicate_clip_basenames": {},
+    "expected_directions": {},
+    "failure_count": 0,
+    "failure_counts_by_type": {},
+    "passed": true,
+    "warnings": [],
+    "failures": []
+  },
+  "clips": [
+    {
+      "name": "Vector_AA_None.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_None.clip",
+      "default": {
+        "name": "Vector_AA_None.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_None.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_AA_None.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_None.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_AA_Weak.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_Weak.clip",
+      "default": {
+        "name": "Vector_AA_Weak.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_Weak.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_AA_Weak.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_Weak.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_AA_Medium.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_Medium.clip",
+      "default": {
+        "name": "Vector_AA_Medium.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_Medium.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_AA_Medium.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_Medium.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_AA_Strong.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_AA_Strong.clip",
+      "default": {
+        "name": "Vector_AA_Strong.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_Strong.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_AA_Strong.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_AA_Strong.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_Baseline.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_Baseline.clip",
+      "default": {
+        "name": "Vector_Baseline.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_Baseline.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_Baseline.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_Baseline.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_OpacityPressure.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_OpacityPressure.clip",
+      "default": {
+        "name": "Vector_OpacityPressure.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_OpacityPressure.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_OpacityPressure.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_OpacityPressure.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_Hardness_50.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_Hardness_50.clip",
+      "default": {
+        "name": "Vector_Hardness_50.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_Hardness_50.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_Hardness_50.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_Hardness_50.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_SizePressure.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\Vector_SizePressure.clip",
+      "default": {
+        "name": "Vector_SizePressure.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_SizePressure.clip'",
+        "stdout": ""
+      },
+      "experiment": {
+        "name": "Vector_SizePressure.clip",
+        "rendered": false,
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 201, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\verify_one_clip.py\", line 166, in main\n    clip = mod.ClipFile(str(clip_path))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 1335, in __init__\n    self._exta_bodies, sqlite_bytes = _split_clip(path)   # raw, NOT decompressed\n                                      ^^^^^^^^^^^^^^^^^\n  File \"E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\clip_studio_importer\\clip_loader.py\", line 223, in _split_clip\n    with open(path, \"rb\") as f:\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'E:\\\\Documents\\\\Claude\\\\Projects\\\\rizum-blender-clip-reload\\\\Vector_SizePressure.clip'",
+        "stdout": ""
+      },
+      "delta": {},
+      "expected_direction": null,
+      "matches_expected": null
+    }
+  ]
+}

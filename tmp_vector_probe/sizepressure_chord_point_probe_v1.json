@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Vector_SizePressure.clip",
+    "max": 226,
+    "mean": 0.024086,
+    "visible": 149,
+    "diff_px": 149
+  },
+  {
+    "name": "Vector_OpacityPressure.clip",
+    "max": 207,
+    "mean": 0.001347,
+    "visible": 147,
+    "diff_px": 225
+  },
+  {
+    "name": "Vector_OpacityRandom_50.clip",
+    "max": 7,
+    "mean": 0.010294,
+    "visible": 67,
+    "diff_px": 463
+  },
+  {
+    "name": "Vector_FlowPressure_50.clip",
+    "max": 4,
+    "mean": 0.003863,
+    "visible": 32,
+    "diff_px": 288
+  },
+  {
+    "name": "Vector_Flow_50.clip",
+    "max": 3,
+    "mean": 0.00675,
+    "visible": 49,
+    "diff_px": 514
+  },
+  {
+    "name": "Vector_Baseline.clip",
+    "max": 3,
+    "mean": 0.002969,
+    "visible": 16,
+    "diff_px": 225
+  }
+]

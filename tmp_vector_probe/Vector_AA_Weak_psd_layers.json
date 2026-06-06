@@ -1,0 +1,255 @@
+{
+  "path": "img\\Vector_AA_Weak.psd",
+  "version": 1,
+  "channels": 3,
+  "width": 1024,
+  "height": 1024,
+  "depth": 8,
+  "color_mode": 3,
+  "layer_count_raw": 3,
+  "layers": [
+    {
+      "index": 0,
+      "name": "Paper",
+      "bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "blend_mode": "norm",
+      "opacity": 255,
+      "clipping": 0,
+      "flags": 0,
+      "tags": {
+        "lspf": {
+          "length": 4
+        },
+        "luni": "Paper",
+        "tsly": {
+          "length": 4
+        }
+      },
+      "channels": [
+        {
+          "id": -1,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 255,
+          "max": 255,
+          "mean": 255.0,
+          "nonzero": 1048576
+        },
+        {
+          "id": 0,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 226,
+          "max": 226,
+          "mean": 226.0,
+          "nonzero": 1048576
+        },
+        {
+          "id": 1,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 226,
+          "max": 226,
+          "mean": 226.0,
+          "nonzero": 1048576
+        },
+        {
+          "id": 2,
+          "length": 18434,
+          "shape": [
+            1024,
+            1024
+          ],
+          "min": 226,
+          "max": 226,
+          "mean": 226.0,
+          "nonzero": 1048576
+        }
+      ],
+      "alpha_nonzero": 1048576,
+      "rgba_mean_visible": [
+        226.0,
+        226.0,
+        226.0,
+        255.0
+      ],
+      "export": "tmp_vector_probe\\Vector_AA_Weak_psd_layers_png\\00_Paper.png"
+    },
+    {
+      "index": 1,
+      "name": "Weak",
+      "bbox": [
+        210,
+        438,
+        416,
+        685
+      ],
+      "blend_mode": "norm",
+      "opacity": 255,
+      "clipping": 0,
+      "flags": 0,
+      "tags": {
+        "lspf": {
+          "length": 4
+        },
+        "luni": "Weak",
+        "tsly": {
+          "length": 4
+        }
+      },
+      "channels": [
+        {
+          "id": -1,
+          "length": 3516,
+          "shape": [
+            247,
+            206
+          ],
+          "min": 0,
+          "max": 255,
+          "mean": 25.088597,
+          "nonzero": 5281
+        },
+        {
+          "id": 0,
+          "length": 1484,
+          "shape": [
+            247,
+            206
+          ],
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "nonzero": 0
+        },
+        {
+          "id": 1,
+          "length": 1484,
+          "shape": [
+            247,
+            206
+          ],
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "nonzero": 0
+        },
+        {
+          "id": 2,
+          "length": 1484,
+          "shape": [
+            247,
+            206
+          ],
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "nonzero": 0
+        }
+      ],
+      "alpha_nonzero": 5281,
+      "rgba_mean_visible": [
+        0.0,
+        0.0,
+        0.0,
+        241.726567
+      ],
+      "export": "tmp_vector_probe\\Vector_AA_Weak_psd_layers_png\\01_Weak.png"
+    },
+    {
+      "index": 2,
+      "name": "Weak",
+      "bbox": [
+        265,
+        383,
+        498,
+        646
+      ],
+      "blend_mode": "norm",
+      "opacity": 255,
+      "clipping": 0,
+      "flags": 0,
+      "tags": {
+        "lspf": {
+          "length": 4
+        },
+        "luni": "Weak",
+        "tsly": {
+          "length": 4
+        }
+      },
+      "channels": [
+        {
+          "id": -1,
+          "length": 4290,
+          "shape": [
+            263,
+            233
+          ],
+          "min": 0,
+          "max": 255,
+          "mean": 9.212716,
+          "nonzero": 2634
+        },
+        {
+          "id": 0,
+          "length": 1580,
+          "shape": [
+            263,
+            233
+          ],
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "nonzero": 0
+        },
+        {
+          "id": 1,
+          "length": 1580,
+          "shape": [
+            263,
+            233
+          ],
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "nonzero": 0
+        },
+        {
+          "id": 2,
+          "length": 1580,
+          "shape": [
+            263,
+            233
+          ],
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "nonzero": 0
+        }
+      ],
+      "alpha_nonzero": 2634,
+      "rgba_mean_visible": [
+        0.0,
+        0.0,
+        0.0,
+        214.330296
+      ],
+      "export": "tmp_vector_probe\\Vector_AA_Weak_psd_layers_png\\02_Weak.png"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+// Copies bridge packet sample doubles into internal vector/sample context: packet +0/+8 copied to ctx+8/+16; packet +0x10..+0x40 converted to floats at ctx+0x44..+0x5c; packet +0x50 bit0/bit1 control ctx flags 0x1000/0x2000.
+unsigned int __fastcall sub_1422CD520(__int64 a1, __int64 a2)
+{
+  float v3; // xmm1_4
+  float v4; // xmm0_4
+  float v5; // xmm1_4
+  float v6; // xmm0_4
+  float v7; // xmm1_4
+  double v8; // xmm1_8
+  unsigned int v9; // eax
+  int v10; // edx
+  unsigned int result; // eax
+  int v12; // edx
+
+  *(_OWORD *)(a1 + 8) = *(_OWORD *)a2; /*0x1422cd529*/
+  v3 = *(double *)(a2 + 16); /*0x1422cd532*/
+  *(float *)(a1 + 68) = v3; /*0x1422cd536*/
+  v4 = *(double *)(a2 + 24); /*0x1422cd540*/
+  *(float *)(a1 + 72) = v4; /*0x1422cd544*/
+  v5 = *(double *)(a2 + 32); /*0x1422cd54e*/
+  *(float *)(a1 + 76) = v5; /*0x1422cd552*/
+  v6 = *(double *)(a2 + 40); /*0x1422cd55c*/
+  *(float *)(a1 + 80) = v6; /*0x1422cd560*/
+  v7 = *(double *)(a2 + 48); /*0x1422cd56a*/
+  *(float *)(a1 + 84) = v7; /*0x1422cd56e*/
+  *(float *)(a1 + 88) = *(double *)(a2 + 56); /*0x1422cd57c*/
+  v8 = *(double *)(a2 + 64); /*0x1422cd581*/
+  v9 = *(_DWORD *)(a1 + 64) & 0xFFFFEFFF; /*0x1422cd58b*/
+  v10 = *(_DWORD *)(a1 + 64) | 0x1000; /*0x1422cd58f*/
+  *(float *)(a1 + 92) = v8; /*0x1422cd597*/
+  if ( (*(_DWORD *)(a2 + 80) & 1) == 0 ) /*0x1422cd5a3*/
+    v10 = v9; /*0x1422cd5a3*/
+  *(_DWORD *)(a1 + 64) = v10; /*0x1422cd5a6*/
+  result = v10 & 0xFFFFDFFF; /*0x1422cd5b0*/
+  v12 = v10 | 0x2000; /*0x1422cd5b4*/
+  if ( (*(_DWORD *)(a2 + 80) & 2) == 0 ) /*0x1422cd5bb*/
+    v12 = result; /*0x1422cd5bb*/
+  *(_DWORD *)(a1 + 64) = v12; /*0x1422cd5be*/
+  return result; /*0x1422cd5c2*/
+}

@@ -1,0 +1,50 @@
+{
+  "raw": {
+    "visible": 151,
+    "mean": 0.024409,
+    "extra_like": 151,
+    "missing_like": 0
+  },
+  "int": {
+    "visible": 335,
+    "mean": 0.054152,
+    "extra_like": 281,
+    "missing_like": 54
+  },
+  "floor": {
+    "visible": 335,
+    "mean": 0.054152,
+    "extra_like": 281,
+    "missing_like": 54
+  },
+  "round": {
+    "visible": 310,
+    "mean": 0.050111,
+    "extra_like": 270,
+    "missing_like": 40
+  },
+  "half_floor": {
+    "visible": 320,
+    "mean": 0.051727,
+    "extra_like": 271,
+    "missing_like": 49
+  },
+  "x_int": {
+    "visible": 431,
+    "mean": 0.06967,
+    "extra_like": 299,
+    "missing_like": 132
+  },
+  "y_int": {
+    "visible": 391,
+    "mean": 0.063204,
+    "extra_like": 290,
+    "missing_like": 101
+  },
+  "native_aa_center": {
+    "visible": 411,
+    "mean": 0.066437,
+    "extra_like": 265,
+    "missing_like": 146
+  }
+}

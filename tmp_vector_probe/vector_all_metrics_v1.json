@@ -1,0 +1,176 @@
+[
+  {
+    "name": "Vector_Thickness_50_Angle_90.clip",
+    "mean": 1.2435125,
+    "max": 177,
+    "visible": 1025
+  },
+  {
+    "name": "Vector_BrushTip_Material_Gap.clip",
+    "mean": 1.1067375,
+    "max": 132,
+    "visible": 1997
+  },
+  {
+    "name": "Vector_Thickness_50_Angle_45.clip",
+    "mean": 0.9869375,
+    "max": 177,
+    "visible": 944
+  },
+  {
+    "name": "Vector_AA_None.clip",
+    "mean": 0.8642978668212891,
+    "max": 226,
+    "visible": 5859
+  },
+  {
+    "name": "Vector_BrushTip_Material.clip",
+    "mean": 0.84294375,
+    "max": 127,
+    "visible": 3364
+  },
+  {
+    "name": "Vector_Texture.clip",
+    "mean": 0.8334310054779053,
+    "max": 226,
+    "visible": 25911
+  },
+  {
+    "name": "Vector_Texture_50.clip",
+    "mean": 0.79764375,
+    "max": 182,
+    "visible": 3402
+  },
+  {
+    "name": "Vector_FlowVelocity_50.clip",
+    "mean": 0.73531875,
+    "max": 177,
+    "visible": 1279
+  },
+  {
+    "name": "Vector_AA_Weak.clip",
+    "mean": 0.7314691543579102,
+    "max": 226,
+    "visible": 6369
+  },
+  {
+    "name": "Vector_Gap_Fixed_50.clip",
+    "mean": 0.6721125,
+    "max": 170,
+    "visible": 982
+  },
+  {
+    "name": "Vector_AA_Medium.clip",
+    "mean": 0.663973331451416,
+    "max": 226,
+    "visible": 6770
+  },
+  {
+    "name": "Vector_AA_Strong.clip",
+    "mean": 0.6218855381011963,
+    "max": 226,
+    "visible": 7146
+  },
+  {
+    "name": "Vector_Thickness_50.clip",
+    "mean": 0.5945375,
+    "max": 177,
+    "visible": 773
+  },
+  {
+    "name": "Vector_Flow_50.clip",
+    "mean": 0.56144375,
+    "max": 150,
+    "visible": 2570
+  },
+  {
+    "name": "Vector_Baseline.clip",
+    "mean": 0.50900625,
+    "max": 177,
+    "visible": 827
+  },
+  {
+    "name": "Vector_StartEnd_20.clip",
+    "mean": 0.49315,
+    "max": 168,
+    "visible": 3506
+  },
+  {
+    "name": "Vector_Angle_90.clip",
+    "mean": 0.48980625,
+    "max": 177,
+    "visible": 858
+  },
+  {
+    "name": "Vector_FlowPressure_50.clip",
+    "mean": 0.4840875,
+    "max": 158,
+    "visible": 934
+  },
+  {
+    "name": "Vector_Angle_45.clip",
+    "mean": 0.4544,
+    "max": 177,
+    "visible": 818
+  },
+  {
+    "name": "Vector_StartEndSpeed_20.clip",
+    "mean": 0.4454625,
+    "max": 149,
+    "visible": 827
+  },
+  {
+    "name": "Vector_Taper_4.clip",
+    "mean": 0.41813125,
+    "max": 154,
+    "visible": 752
+  },
+  {
+    "name": "Vector_Hardness_50.clip",
+    "mean": 0.4085625,
+    "max": 95,
+    "visible": 1710
+  },
+  {
+    "name": "Vector_Gap_Wide.clip",
+    "mean": 0.3682875,
+    "max": 177,
+    "visible": 894
+  },
+  {
+    "name": "Vector_Opacity_50.clip",
+    "mean": 0.27215625,
+    "max": 89,
+    "visible": 3678
+  },
+  {
+    "name": "Vector_Gap_Narraw.clip",
+    "mean": 0.2412875,
+    "max": 144,
+    "visible": 637
+  },
+  {
+    "name": "Vector_NoTexture.clip",
+    "mean": 0.2351975440979004,
+    "max": 226,
+    "visible": 1455
+  },
+  {
+    "name": "Vector_Gap_Normal.clip",
+    "mean": 0.1929375,
+    "max": 121,
+    "visible": 652
+  },
+  {
+    "name": "Vector_OpacityPressure.clip",
+    "mean": 0.12278580665588379,
+    "max": 218,
+    "visible": 25152
+  },
+  {
+    "name": "Vector_SizePressure.clip",
+    "mean": 0.11557817459106445,
+    "max": 226,
+    "visible": 715
+  }
+]

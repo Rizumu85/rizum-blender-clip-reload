@@ -1,0 +1,16 @@
+{
+  "native_trunc": {
+    "max": 226,
+    "mean": 0.024409,
+    "visible": 151,
+    "extra": 151,
+    "missing": 0
+  },
+  "strict_ceil_floor": {
+    "max": 226,
+    "mean": 0.059648,
+    "visible": 369,
+    "extra": 84,
+    "missing": 285
+  }
+}

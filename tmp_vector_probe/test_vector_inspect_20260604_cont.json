@@ -1,0 +1,4845 @@
+{
+  "name": "Test_Vector.clip",
+  "path": "img\\Test_Vector.clip",
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "vector_layer_count": 1,
+  "vector_layers": [
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 1",
+      "vector_row": {
+        "_PW_ID": 1,
+        "CanvasId": 1,
+        "MainId": 2,
+        "LayerId": 5
+      },
+      "vector_data": "extrnlidFA0CD65CBBC043D6A9F9EB6748FF9590",
+      "vector_body_len": 8436,
+      "external_header": {
+        "header_len": 40,
+        "tag": "extrnlid",
+        "identifier": "FA0CD65CBBC043D6A9F9EB6748FF9590",
+        "external_id": "extrnlidFA0CD65CBBC043D6A9F9EB6748FF9590",
+        "payload_offset": 56,
+        "payload_size": 8380,
+        "payload_end": 8436,
+        "payload_size_matches_body": true,
+        "matches_vector_data": true
+      },
+      "compact_record_spans": [
+        {
+          "kind": "stroke_92",
+          "offset": 56,
+          "end": 7892,
+          "shape": [
+            92,
+            76,
+            88,
+            88
+          ],
+          "point_count": 88
+        },
+        {
+          "kind": "stroke_92",
+          "offset": 7892,
+          "end": 8104,
+          "shape": [
+            92,
+            76,
+            120,
+            88
+          ],
+          "point_count": 1
+        },
+        {
+          "kind": "stroke_92",
+          "offset": 8104,
+          "end": 8436,
+          "shape": [
+            92,
+            76,
+            120,
+            88
+          ],
+          "point_count": 2
+        }
+      ],
+      "compact_record_coverage": {
+        "record_count": 3,
+        "covered_bytes": 8380,
+        "body_len": 8436,
+        "prefix_len": 56,
+        "trailing_gap": 0,
+        "fully_covered_after_prefix": true,
+        "prefix_matches_external_header": true
+      },
+      "LayerType": 0,
+      "LayerFolder": 0,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 0,
+      "LayerVisibility": 1,
+      "LayerRenderMipmap": 9,
+      "LayerLayerMaskMipmap": 0,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "LayerColorTypeIndex": 0,
+      "LayerColorTypeBlackChecked": 1,
+      "LayerColorTypeWhiteChecked": 1,
+      "VectorNormalStrokeIndex": 2,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 0,
+      "VectorNormalType": 0,
+      "MixSubColorForEveryPlot": 1,
+      "mipmap_resources": {
+        "LayerRenderMipmap": {
+          "mipmap_id": 9,
+          "offscreen_id": 42,
+          "external_id": "extrnlid7D57AE18F1784DF591982153EEDAF235",
+          "external_present": false,
+          "external_len": null,
+          "pixel_size": [
+            1024,
+            1024
+          ],
+          "expected_rgba_tile_len": 4194304,
+          "raw_bytes_per_pixel": null,
+          "decoded_tile_blob_len": null,
+          "decoded_bytes_per_pixel": null
+        }
+      }
+    }
+  ],
+  "stroke_count": 3,
+  "object_100_count": 0,
+  "strokes": [
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 1",
+      "body_offset": 56,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "raw_header": {
+        "hex": "0000005c0000004c00000058000000580000005800002081000000f7000000c1000002110000019c75b375b3273b273b288a288ae4e4e4e4e0e0e0e0edededed3ff00000000000000000000000000004402400000000000000140b79",
+        "u32_be": {
+          "0": 92,
+          "4": 76,
+          "8": 88,
+          "12": 88,
+          "16": 88,
+          "20": 8321,
+          "24": 247,
+          "28": 193,
+          "32": 529,
+          "36": 412,
+          "40": 1974695347,
+          "44": 658188091,
+          "48": 680142986,
+          "52": 3840206052,
+          "56": 3772834016,
+          "60": 3991793133,
+          "64": 1072693248,
+          "68": 0,
+          "72": 0,
+          "76": 4,
+          "80": 1076101120,
+          "84": 0,
+          "88": 1313657
+        },
+        "f32_be": {
+          "0": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "12": 0.0,
+          "16": 0.0,
+          "20": 0.0,
+          "24": 0.0,
+          "28": 0.0,
+          "32": 0.0,
+          "36": 0.0,
+          "44": 0.0,
+          "48": 0.0,
+          "64": 1.875,
+          "68": 0.0,
+          "72": 0.0,
+          "76": 0.0,
+          "80": 2.5625,
+          "84": 0.0,
+          "88": 0.0
+        },
+        "f64_be": {
+          "0": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "24": 0.0,
+          "32": 0.0,
+          "48": 0.0,
+          "64": 1.0,
+          "72": 0.0,
+          "80": 10.0
+        }
+      },
+      "compact_native_reader_probe": {
+        "valid": true,
+        "record_control": {
+          "object_header_len": 92,
+          "subclass_tail_offset": 76,
+          "point_record_stride": 88,
+          "point_record_tail_offset": 88,
+          "point_count": 88,
+          "object_flags_or_type": 8321
+        },
+        "common_object": {
+          "bbox": [
+            247,
+            193,
+            529,
+            412
+          ],
+          "line_color_triplet_u32": [
+            1974695347,
+            658188091,
+            680142986
+          ],
+          "line_rgb": [
+            117,
+            39,
+            40
+          ],
+          "fill_color_triplet_u32": [
+            3840206052,
+            3772834016,
+            3991793133
+          ],
+          "fill_rgb": [
+            228,
+            224,
+            237
+          ],
+          "opacity": 1.0,
+          "extra_u32_72": 0
+        },
+        "point_payload": {
+          "start": 148,
+          "end": 7892
+        },
+        "subclass_tail": {
+          "class": "PWVectorStroke",
+          "list_index_u32_76": 4,
+          "width_or_scale_f64_80": 10.0,
+          "extra_u32_88": 1313657
+        }
+      },
+      "compact_semantic_probe": {
+        "object_kind": "stroke_92",
+        "native_draw_flag_candidate_lens": {
+          "20": {
+            "value": 8321,
+            "bit0_line_lens": true,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 1
+          }
+        },
+        "argb_candidates_from_compact_color": {
+          "line": [
+            255,
+            117,
+            39,
+            40
+          ],
+          "fill": [
+            255,
+            228,
+            224,
+            237
+          ],
+          "opacity_alpha": 255
+        }
+      },
+      "point_count": 88,
+      "bbox": [
+        247,
+        193,
+        529,
+        412
+      ],
+      "line_rgb": [
+        117,
+        39,
+        40
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "width": 10.0,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          252,
+          196,
+          527,
+          408
+        ],
+        "xy": {
+          "x": {
+            "min": 252.230301,
+            "max": 526.810857,
+            "avg": 374.803319,
+            "uniq": 88
+          },
+          "y": {
+            "min": 196.573412,
+            "max": 407.706048,
+            "avg": 318.207388,
+            "uniq": 87
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 0.0,
+            "max": 0.537877,
+            "avg": 0.35279,
+            "uniq": 87
+          },
+          "40": {
+            "min": 0.411111,
+            "max": 0.455556,
+            "avg": 0.433018,
+            "uniq": 15
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.187725,
+            "avg": 0.081756,
+            "uniq": 88
+          },
+          "48": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "64": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "68": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "72": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.086053,
+            "avg": 0.515118,
+            "uniq": 88
+          }
+        },
+        "point_u32_stats": {
+          "16": [
+            {
+              "value": 247,
+              "count": 3
+            },
+            {
+              "value": 436,
+              "count": 3
+            },
+            {
+              "value": 248,
+              "count": 2
+            },
+            {
+              "value": 280,
+              "count": 2
+            },
+            {
+              "value": 278,
+              "count": 2
+            },
+            {
+              "value": 353,
+              "count": 2
+            },
+            {
+              "value": 437,
+              "count": 2
+            },
+            {
+              "value": 438,
+              "count": 2
+            },
+            {
+              "value": 486,
+              "count": 2
+            },
+            {
+              "value": 252,
+              "count": 1
+            },
+            {
+              "value": 250,
+              "count": 1
+            },
+            {
+              "value": 249,
+              "count": 1
+            }
+          ],
+          "20": [
+            {
+              "value": 256,
+              "count": 3
+            },
+            {
+              "value": 254,
+              "count": 3
+            },
+            {
+              "value": 288,
+              "count": 3
+            },
+            {
+              "value": 239,
+              "count": 3
+            },
+            {
+              "value": 343,
+              "count": 3
+            },
+            {
+              "value": 338,
+              "count": 2
+            },
+            {
+              "value": 241,
+              "count": 2
+            },
+            {
+              "value": 249,
+              "count": 2
+            },
+            {
+              "value": 362,
+              "count": 2
+            },
+            {
+              "value": 369,
+              "count": 2
+            },
+            {
+              "value": 355,
+              "count": 2
+            },
+            {
+              "value": 290,
+              "count": 2
+            }
+          ],
+          "24": [
+            {
+              "value": 259,
+              "count": 4
+            },
+            {
+              "value": 447,
+              "count": 4
+            },
+            {
+              "value": 260,
+              "count": 2
+            },
+            {
+              "value": 297,
+              "count": 2
+            },
+            {
+              "value": 288,
+              "count": 2
+            },
+            {
+              "value": 361,
+              "count": 2
+            },
+            {
+              "value": 445,
+              "count": 2
+            },
+            {
+              "value": 446,
+              "count": 2
+            },
+            {
+              "value": 496,
+              "count": 2
+            },
+            {
+              "value": 529,
+              "count": 2
+            },
+            {
+              "value": 258,
+              "count": 1
+            },
+            {
+              "value": 261,
+              "count": 1
+            }
+          ],
+          "28": [
+            {
+              "value": 379,
+              "count": 6
+            },
+            {
+              "value": 262,
+              "count": 4
+            },
+            {
+              "value": 299,
+              "count": 3
+            },
+            {
+              "value": 252,
+              "count": 3
+            },
+            {
+              "value": 348,
+              "count": 2
+            },
+            {
+              "value": 325,
+              "count": 2
+            },
+            {
+              "value": 258,
+              "count": 2
+            },
+            {
+              "value": 377,
+              "count": 2
+            },
+            {
+              "value": 298,
+              "count": 2
+            },
+            {
+              "value": 361,
+              "count": 2
+            },
+            {
+              "value": 364,
+              "count": 2
+            },
+            {
+              "value": 350,
+              "count": 2
+            }
+          ],
+          "32": [
+            {
+              "value": 0,
+              "count": 72
+            },
+            {
+              "value": 1,
+              "count": 16
+            }
+          ],
+          "80": [
+            {
+              "value": 1313657,
+              "count": 88
+            }
+          ],
+          "84": [
+            {
+              "value": 0,
+              "count": 88
+            }
+          ]
+        },
+        "native32_stats": {
+          "u32": {
+            "16": [
+              {
+                "value": 247,
+                "count": 3
+              },
+              {
+                "value": 436,
+                "count": 3
+              },
+              {
+                "value": 248,
+                "count": 2
+              },
+              {
+                "value": 280,
+                "count": 2
+              },
+              {
+                "value": 278,
+                "count": 2
+              },
+              {
+                "value": 353,
+                "count": 2
+              },
+              {
+                "value": 437,
+                "count": 2
+              },
+              {
+                "value": 438,
+                "count": 2
+              }
+            ],
+            "20": [
+              {
+                "value": 256,
+                "count": 3
+              },
+              {
+                "value": 254,
+                "count": 3
+              },
+              {
+                "value": 288,
+                "count": 3
+              },
+              {
+                "value": 239,
+                "count": 3
+              },
+              {
+                "value": 343,
+                "count": 3
+              },
+              {
+                "value": 338,
+                "count": 2
+              },
+              {
+                "value": 241,
+                "count": 2
+              },
+              {
+                "value": 249,
+                "count": 2
+              }
+            ],
+            "24": [
+              {
+                "value": 259,
+                "count": 4
+              },
+              {
+                "value": 447,
+                "count": 4
+              },
+              {
+                "value": 260,
+                "count": 2
+              },
+              {
+                "value": 297,
+                "count": 2
+              },
+              {
+                "value": 288,
+                "count": 2
+              },
+              {
+                "value": 361,
+                "count": 2
+              },
+              {
+                "value": 445,
+                "count": 2
+              },
+              {
+                "value": 446,
+                "count": 2
+              }
+            ],
+            "28": [
+              {
+                "value": 379,
+                "count": 6
+              },
+              {
+                "value": 262,
+                "count": 4
+              },
+              {
+                "value": 299,
+                "count": 3
+              },
+              {
+                "value": 252,
+                "count": 3
+              },
+              {
+                "value": 348,
+                "count": 2
+              },
+              {
+                "value": 325,
+                "count": 2
+              },
+              {
+                "value": 258,
+                "count": 2
+              },
+              {
+                "value": 377,
+                "count": 2
+              }
+            ]
+          }
+        },
+        "cubic64_stats": {
+          "f64": {
+            "0": {
+              "min": 252.230301,
+              "max": 526.810857,
+              "avg": 374.803319,
+              "uniq": 88
+            },
+            "8": {
+              "min": 196.573412,
+              "max": 407.706048,
+              "avg": 318.207388,
+              "uniq": 87
+            },
+            "16": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "24": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "32": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "40": {
+              "min": 4e-06,
+              "max": 1.2e-05,
+              "avg": 7e-06,
+              "uniq": 8
+            }
+          },
+          "u32": {
+            "48": [
+              {
+                "value": 0,
+                "count": 88
+              }
+            ],
+            "52": [
+              {
+                "value": 1065353216,
+                "count": 88
+              }
+            ],
+            "56": [
+              {
+                "value": 1065353216,
+                "count": 88
+              }
+            ],
+            "60": [
+              {
+                "value": 1065353216,
+                "count": 88
+              }
+            ]
+          }
+        },
+        "compact120_tail_f64_stats": {},
+        "pen_bbox_width": {
+          "min": 5.0,
+          "max": 28.0,
+          "avg": 11.772727,
+          "uniq": 16
+        },
+        "pen_bbox_height": {
+          "min": 5.0,
+          "max": 84.0,
+          "avg": 25.909091,
+          "uniq": 37
+        },
+        "first_points": [
+          {
+            "x": 255.85928,
+            "y": 196.573412,
+            "pen_bbox": [
+              252,
+              193,
+              259,
+              203
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 252,
+              "line_select_id_20": 193,
+              "is_vertex_selected_24": 259,
+              "unused_or_extra_28": 203
+            },
+            "float_fields": {
+              "36": 0.012697,
+              "40": 0.444444,
+              "44": 0.0,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 255.85928,
+              "y_f64_8": 196.573412,
+              "u32_16_28": {
+                "16": 252,
+                "20": 193,
+                "24": 259,
+                "28": 203
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.012697,
+                "40": 0.444444,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.012697,
+                  "40": 0.444444,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1313657,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                255.85928,
+                196.573412,
+                0.0,
+                0.0,
+                0.0,
+                9e-06
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 255.456568,
+            "y": 199.868355,
+            "pen_bbox": [
+              250,
+              195,
+              260,
+              212
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 250,
+              "line_select_id_20": 195,
+              "is_vertex_selected_24": 260,
+              "unused_or_extra_28": 212
+            },
+            "float_fields": {
+              "36": 0.287267,
+              "40": 0.444444,
+              "44": 0.018083,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.680358
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 255.456568,
+              "y_f64_8": 199.868355,
+              "u32_16_28": {
+                "16": 250,
+                "20": 195,
+                "24": 260,
+                "28": 212
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.287267,
+                "40": 0.444444,
+                "44": 0.018083,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.680358
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.287267,
+                  "40": 0.444444,
+                  "44": 0.018083,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.680358
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1313657,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                255.456568,
+                199.868355,
+                0.0,
+                0.0,
+                0.0,
+                9e-06
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 254.669451,
+            "y": 207.190451,
+            "pen_bbox": [
+              248,
+              202,
+              260,
+              243
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 248,
+              "line_select_id_20": 202,
+              "is_vertex_selected_24": 260,
+              "unused_or_extra_28": 243
+            },
+            "float_fields": {
+              "36": 0.446099,
+              "40": 0.433333,
+              "44": 0.026157,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.398952
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 254.669451,
+              "y_f64_8": 207.190451,
+              "u32_16_28": {
+                "16": 248,
+                "20": 202,
+                "24": 260,
+                "28": 243
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.446099,
+                "40": 0.433333,
+                "44": 0.026157,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.398952
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.446099,
+                  "40": 0.433333,
+                  "44": 0.026157,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.398952
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1313657,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                254.669451,
+                207.190451,
+                0.0,
+                0.0,
+                0.0,
+                7e-06
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 253.49335,
+            "y": 237.522233,
+            "pen_bbox": [
+              248,
+              232,
+              259,
+              299
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 248,
+              "line_select_id_20": 232,
+              "is_vertex_selected_24": 259,
+              "unused_or_extra_28": 299
+            },
+            "float_fields": {
+              "36": 0.517184,
+              "40": 0.433333,
+              "44": 0.093146,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.060647
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 253.49335,
+              "y_f64_8": 237.522233,
+              "u32_16_28": {
+                "16": 248,
+                "20": 232,
+                "24": 259,
+                "28": 299
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.517184,
+                "40": 0.433333,
+                "44": 0.093146,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.060647
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.517184,
+                  "40": 0.433333,
+                  "44": 0.093146,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.060647
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1313657,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                253.49335,
+                237.522233,
+                0.0,
+                0.0,
+                0.0,
+                7e-06
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          }
+        ]
+      },
+      "brush_style_effectors": {
+        "SizeEffector": {
+          "key": "12:17:000000113d8f5c2900000003",
+          "decoded": {
+            "form": "primary_graph_0x11",
+            "type": 17,
+            "native_runtime_branches": {
+              "value": 17,
+              "hex": "0x11",
+              "compiled_or_active_0x1": true,
+              "graph_context_primary_0x10": true,
+              "graph_context_primary_0x10_sample_f32_36": true,
+              "graph_context_secondary_0x20": false,
+              "graph_context_secondary_0x20_sample_f32_40": false,
+              "graph_context_aux_0x40": false,
+              "graph_context_aux_0x40_sample_f32_44": false,
+              "random_0x80": false,
+              "velocity_0x100": false,
+              "velocity_0x100_sample_f32_52": false,
+              "unknown_bits": 0
+            },
+            "floor": 0.07,
+            "scalar": 0.07,
+            "graph_refs": [
+              3
+            ],
+            "extra_scalars": [],
+            "payload_u32": [
+              1032805417,
+              3
+            ]
+          },
+          "graphs": {
+            "3": {
+              "control_number": 4,
+              "control_data_size": 16,
+              "points": [
+                [
+                  0.0,
+                  0.127273
+                ],
+                [
+                  0.354545,
+                  0.245455
+                ],
+                [
+                  0.827273,
+                  0.709091
+                ],
+                [
+                  1.0,
+                  1.0
+                ]
+              ],
+              "native_eval": {
+                "rule": "midpoint_quadratic",
+                "max_delta_vs_linear": 0.046377,
+                "max_delta_x": 0.354545,
+                "native_at_max": 0.291832,
+                "linear_at_max": 0.245455
+              }
+            }
+          }
+        },
+        "FlowEffector": {
+          "key": "12:17:000000110000000000000004",
+          "decoded": {
+            "form": "primary_graph_0x11",
+            "type": 17,
+            "native_runtime_branches": {
+              "value": 17,
+              "hex": "0x11",
+              "compiled_or_active_0x1": true,
+              "graph_context_primary_0x10": true,
+              "graph_context_primary_0x10_sample_f32_36": true,
+              "graph_context_secondary_0x20": false,
+              "graph_context_secondary_0x20_sample_f32_40": false,
+              "graph_context_aux_0x40": false,
+              "graph_context_aux_0x40_sample_f32_44": false,
+              "random_0x80": false,
+              "velocity_0x100": false,
+              "velocity_0x100_sample_f32_52": false,
+              "unknown_bits": 0
+            },
+            "floor": 0.0,
+            "scalar": 0.0,
+            "graph_refs": [
+              4
+            ],
+            "extra_scalars": [],
+            "payload_u32": [
+              0,
+              4
+            ]
+          },
+          "graphs": {
+            "4": {
+              "control_number": 2,
+              "control_data_size": 16,
+              "points": [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0
+                ]
+              ],
+              "native_eval": {
+                "rule": "linear",
+                "max_delta_vs_linear": 0.0,
+                "max_delta_x": 0.0,
+                "native_at_max": 0.0,
+                "linear_at_max": 0.0
+              }
+            }
+          }
+        },
+        "RotationEffector": {
+          "value": 3
+        }
+      },
+      "native_spacing_estimate": {
+        "kind": "stroke_92",
+        "style_id": 4,
+        "branch": "auto_interval_1_2_3",
+        "base_size_source": "compact stroke/object width; native a3 source is still treated as a best-effort estimate",
+        "base_width": 10.0,
+        "compact_f32_56_size_factor_range": [
+          1.0,
+          1.0
+        ],
+        "size_effector": "12:17:000000113d8f5c2900000003",
+        "size_effector_dynamic": true,
+        "size_effector_graph_output": {
+          "branches": [
+            {
+              "branch_bit": "0x10",
+              "compact_point_f32": 36,
+              "graph_id": 3,
+              "input_range": [
+                0.0,
+                0.537877
+              ],
+              "graph_output_range": [
+                0.127273,
+                0.427998
+              ]
+            }
+          ],
+          "combined_graph_output_range": [
+            0.127273,
+            0.427998
+          ],
+          "note": "Graph output range only; floor/random/velocity/native combination details are not folded into state+8 here."
+        },
+        "size_effector_multiplier_estimate": {
+          "combined_multiplier_range": [
+            0.188364,
+            0.468038
+          ],
+          "branches": [
+            {
+              "branch_bit": "0x10",
+              "factor_range": [
+                0.188364,
+                0.468038
+              ],
+              "graph_id": 3,
+              "compact_point_f32": 36,
+              "input_range": [
+                0.0,
+                0.537877
+              ],
+              "graph_output_range": [
+                0.127273,
+                0.427998
+              ]
+            }
+          ],
+          "note": "Best-effort 0x142568040 multiplier estimate; random branches are not sampled here."
+        },
+        "effective_size_without_size_effector_range": [
+          10.0,
+          10.0
+        ],
+        "interval_scalar": 0.135,
+        "thickness_guess": 1.0,
+        "state8_without_size_effector_range": [
+          2.7,
+          2.7
+        ],
+        "effective_size_with_estimated_size_effector_range": [
+          1.88364,
+          4.68038
+        ],
+        "state8_with_estimated_size_effector_range": [
+          0.508583,
+          1.263703
+        ]
+      },
+      "importer_spacing_comparison": {
+        "importer_sample_step": 5.0,
+        "sample_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "native_state8_range": [
+          0.508583,
+          1.263703
+        ],
+        "native_state8_bucket": {
+          "min_bucket": "small_0.5_to_2",
+          "max_bucket": "small_0.5_to_2",
+          "range_bucket": "small_0.5_to_2"
+        },
+        "native_state8_to_importer_step_ratio_range": [
+          0.101717,
+          0.252741
+        ],
+        "classification": "fallback_step_coarser_than_native_interval",
+        "note": "Diagnostic only: importer fallback draws continuous capsules, while native state+8 is the PWBrushDraw dab interval feedback value."
+      },
+      "experimental_adaptive_spacing_candidate": {
+        "enabled_by_env": "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING",
+        "candidate": true,
+        "candidate_rule": "ordinary no-pattern dab candidates only",
+        "size_effector_form": "primary_graph_0x11",
+        "fallback_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "fallback_step": 5.0,
+        "min_step": 0.5,
+        "native_state8_range": [
+          0.508583,
+          1.263703
+        ],
+        "estimated_adaptive_step_range": [
+          0.508583,
+          1.263703
+        ],
+        "would_reduce_step": true,
+        "note": "Diagnostic approximation of the default-off loader branch; exact segment steps are computed from endpoint taper/size-factor values at render time."
+      }
+    },
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 1",
+      "body_offset": 7892,
+      "shape": [
+        92,
+        76,
+        120,
+        88
+      ],
+      "flags": 65,
+      "raw_header": {
+        "hex": "0000005c0000004c00000078000000580000000100000041000002210000001f000003690000016775b375b3273b273b288a288ae4e4e4e4e0e0e0e0edededed3ff00000000000000000000000000005406473333333333400145f84",
+        "u32_be": {
+          "0": 92,
+          "4": 76,
+          "8": 120,
+          "12": 88,
+          "16": 1,
+          "20": 65,
+          "24": 545,
+          "28": 31,
+          "32": 873,
+          "36": 359,
+          "40": 1974695347,
+          "44": 658188091,
+          "48": 680142986,
+          "52": 3840206052,
+          "56": 3772834016,
+          "60": 3991793133,
+          "64": 1072693248,
+          "68": 0,
+          "72": 0,
+          "76": 5,
+          "80": 1080324915,
+          "84": 858993460,
+          "88": 1335172
+        },
+        "f32_be": {
+          "0": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "12": 0.0,
+          "16": 0.0,
+          "20": 0.0,
+          "24": 0.0,
+          "28": 0.0,
+          "32": 0.0,
+          "36": 0.0,
+          "44": 0.0,
+          "48": 0.0,
+          "64": 1.875,
+          "68": 0.0,
+          "72": 0.0,
+          "76": 0.0,
+          "80": 3.569531,
+          "84": 0.0,
+          "88": 0.0
+        },
+        "f64_be": {
+          "0": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "24": 0.0,
+          "32": 0.0,
+          "48": 0.0,
+          "64": 1.0,
+          "72": 0.0,
+          "80": 163.6
+        }
+      },
+      "compact_native_reader_probe": {
+        "valid": true,
+        "record_control": {
+          "object_header_len": 92,
+          "subclass_tail_offset": 76,
+          "point_record_stride": 120,
+          "point_record_tail_offset": 88,
+          "point_count": 1,
+          "object_flags_or_type": 65
+        },
+        "common_object": {
+          "bbox": [
+            545,
+            31,
+            873,
+            359
+          ],
+          "line_color_triplet_u32": [
+            1974695347,
+            658188091,
+            680142986
+          ],
+          "line_rgb": [
+            117,
+            39,
+            40
+          ],
+          "fill_color_triplet_u32": [
+            3840206052,
+            3772834016,
+            3991793133
+          ],
+          "fill_rgb": [
+            228,
+            224,
+            237
+          ],
+          "opacity": 1.0,
+          "extra_u32_72": 0
+        },
+        "point_payload": {
+          "start": 7984,
+          "end": 8104
+        },
+        "subclass_tail": {
+          "class": "PWVectorStroke",
+          "list_index_u32_76": 5,
+          "width_or_scale_f64_80": 163.6,
+          "extra_u32_88": 1335172
+        }
+      },
+      "compact_semantic_probe": {
+        "object_kind": "stroke_92",
+        "native_draw_flag_candidate_lens": {
+          "20": {
+            "value": 65,
+            "bit0_line_lens": true,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 1
+          }
+        },
+        "argb_candidates_from_compact_color": {
+          "line": [
+            255,
+            117,
+            39,
+            40
+          ],
+          "fill": [
+            255,
+            228,
+            224,
+            237
+          ],
+          "opacity_alpha": 255
+        }
+      },
+      "point_count": 1,
+      "bbox": [
+        545,
+        31,
+        873,
+        359
+      ],
+      "line_rgb": [
+        117,
+        39,
+        40
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 5,
+      "width": 163.6,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          709,
+          195,
+          709,
+          195
+        ],
+        "xy": {
+          "x": {
+            "min": 709.0,
+            "max": 709.0,
+            "avg": 709.0,
+            "uniq": 1
+          },
+          "y": {
+            "min": 195.0,
+            "max": 195.0,
+            "avg": 195.0,
+            "uniq": 1
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "48": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "64": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "68": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "72": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        },
+        "point_u32_stats": {
+          "16": [
+            {
+              "value": 545,
+              "count": 1
+            }
+          ],
+          "20": [
+            {
+              "value": 31,
+              "count": 1
+            }
+          ],
+          "24": [
+            {
+              "value": 873,
+              "count": 1
+            }
+          ],
+          "28": [
+            {
+              "value": 359,
+              "count": 1
+            }
+          ],
+          "32": [
+            {
+              "value": 0,
+              "count": 1
+            }
+          ],
+          "80": [
+            {
+              "value": 1335172,
+              "count": 1
+            }
+          ],
+          "84": [
+            {
+              "value": 0,
+              "count": 1
+            }
+          ]
+        },
+        "native32_stats": {
+          "u32": {
+            "16": [
+              {
+                "value": 545,
+                "count": 1
+              }
+            ],
+            "20": [
+              {
+                "value": 31,
+                "count": 1
+              }
+            ],
+            "24": [
+              {
+                "value": 873,
+                "count": 1
+              }
+            ],
+            "28": [
+              {
+                "value": 359,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "cubic64_stats": {
+          "f64": {
+            "0": {
+              "min": 709.0,
+              "max": 709.0,
+              "avg": 709.0,
+              "uniq": 1
+            },
+            "8": {
+              "min": 195.0,
+              "max": 195.0,
+              "avg": 195.0,
+              "uniq": 1
+            },
+            "16": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "24": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "32": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "40": {
+              "min": 0.007812,
+              "max": 0.007812,
+              "avg": 0.007812,
+              "uniq": 1
+            }
+          },
+          "u32": {
+            "48": [
+              {
+                "value": 0,
+                "count": 1
+              }
+            ],
+            "52": [
+              {
+                "value": 1065353216,
+                "count": 1
+              }
+            ],
+            "56": [
+              {
+                "value": 1065353216,
+                "count": 1
+              }
+            ],
+            "60": [
+              {
+                "value": 1065353216,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "compact120_tail_f64_stats": {
+          "88": {
+            "min": 707.0,
+            "max": 707.0,
+            "avg": 707.0,
+            "uniq": 1
+          },
+          "96": {
+            "min": 215.0,
+            "max": 215.0,
+            "avg": 215.0,
+            "uniq": 1
+          },
+          "104": {
+            "min": 709.0,
+            "max": 709.0,
+            "avg": 709.0,
+            "uniq": 1
+          },
+          "112": {
+            "min": 195.0,
+            "max": 195.0,
+            "avg": 195.0,
+            "uniq": 1
+          }
+        },
+        "pen_bbox_width": {
+          "min": 328.0,
+          "max": 328.0,
+          "avg": 328.0,
+          "uniq": 1
+        },
+        "pen_bbox_height": {
+          "min": 328.0,
+          "max": 328.0,
+          "avg": 328.0,
+          "uniq": 1
+        },
+        "first_points": [
+          {
+            "x": 709.0,
+            "y": 195.0,
+            "pen_bbox": [
+              545,
+              31,
+              873,
+              359
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 545,
+              "line_select_id_20": 31,
+              "is_vertex_selected_24": 873,
+              "unused_or_extra_28": 359
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 709.0,
+              "y_f64_8": 195.0,
+              "u32_16_28": {
+                "16": 545,
+                "20": 31,
+                "24": 873,
+                "28": 359
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1335172,
+                "84": 0
+              },
+              "subclass_tail_f64": {
+                "88": 707.0,
+                "96": 215.0,
+                "104": 709.0,
+                "112": 195.0
+              },
+              "compact120_curve_tail_candidate": {
+                "in_or_prev_control_xy_88_96": [
+                  707.0,
+                  215.0
+                ],
+                "out_or_next_control_xy_104_112": [
+                  709.0,
+                  195.0
+                ],
+                "renderer_status": "pixel_affecting for compact 120-byte dark curve preview: the importer uses current point +104/+112 as the second cubic control with the first control fixed at the current point"
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                709.0,
+                195.0,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          }
+        ]
+      },
+      "brush_style_effectors": {
+        "RotationEffector": {
+          "value": 3
+        }
+      },
+      "native_spacing_estimate": {
+        "kind": "stroke_92",
+        "style_id": 5,
+        "branch": "normal_interval",
+        "base_size_source": "compact stroke/object width; native a3 source is still treated as a best-effort estimate",
+        "base_width": 163.6,
+        "compact_f32_56_size_factor_range": [
+          1.0,
+          1.0
+        ],
+        "size_effector": "4:1:00000001",
+        "size_effector_dynamic": false,
+        "size_effector_graph_output": null,
+        "size_effector_multiplier_estimate": {
+          "combined_multiplier_range": [
+            1.0,
+            1.0
+          ],
+          "branches": [],
+          "note": "constant/default effector"
+        },
+        "effective_size_without_size_effector_range": [
+          163.6,
+          163.6
+        ],
+        "interval_scalar": 0.001,
+        "thickness_guess": 1.0,
+        "state8_without_size_effector_range": [
+          0.3272,
+          0.3272
+        ],
+        "effective_size_with_estimated_size_effector_range": [
+          163.6,
+          163.6
+        ],
+        "state8_with_estimated_size_effector_range": [
+          0.3272,
+          0.3272
+        ]
+      },
+      "importer_spacing_comparison": {
+        "importer_sample_step": 5.0,
+        "sample_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "native_state8_range": [
+          0.3272,
+          0.3272
+        ],
+        "native_state8_bucket": {
+          "min_bucket": "tiny_0.1_to_0.5",
+          "max_bucket": "tiny_0.1_to_0.5",
+          "range_bucket": "tiny_0.1_to_0.5"
+        },
+        "native_state8_to_importer_step_ratio_range": [
+          0.06544,
+          0.06544
+        ],
+        "classification": "fallback_step_coarser_than_native_interval",
+        "note": "Diagnostic only: importer fallback draws continuous capsules, while native state+8 is the PWBrushDraw dab interval feedback value."
+      },
+      "experimental_adaptive_spacing_candidate": {
+        "enabled_by_env": "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING",
+        "candidate": false,
+        "candidate_rule": "ordinary no-pattern dab candidates only",
+        "size_effector_form": "default_or_off_0x01",
+        "fallback_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "fallback_step": 5.0,
+        "min_step": 0.5,
+        "inactive_reason": "not an ordinary no-pattern dab candidate"
+      },
+      "pattern_material_resource": {
+        "pattern_style_id": 2,
+        "pattern_image_ids": [
+          2
+        ],
+        "pattern_image_names": [
+          "Koa_Lace1"
+        ],
+        "pattern_image_mipmaps": [
+          10
+        ],
+        "image_number": 1,
+        "order_type": 0,
+        "order_type_label": "sequence_modulo",
+        "reverse2": 0,
+        "reverse2_decoded": {
+          "value": 0,
+          "hex": "0x0",
+          "axis_a_invert_or_fixed_0x1": false,
+          "axis_a_random_0x2": false,
+          "axis_a_pingpong_parity_0x4": false,
+          "axis_b_invert_or_fixed_0x10": false,
+          "axis_b_random_0x20": false,
+          "axis_b_pingpong_parity_0x40": false,
+          "unknown_bits": 0
+        }
+      },
+      "compiled_line_style_note": {
+        "native_compile_chain": [
+          "0x1424A4450 line-style cache resolver",
+          "0x1422D9BE0 PWBrushStyle builder",
+          "0x1422DA100 clone/compile copier"
+        ],
+        "runtime_object": "PWBrushStyle 0x720 bytes",
+        "source_table_evidence": {
+          "has_pattern_material_list": true,
+          "has_texture_descriptor": false
+        },
+        "compiled_state_not_serialized_directly": [
+          "line/list secondary resource pair at runtime +0x60/+0x68",
+          "optional multi-entry list prepared by 0x1422DF860 -> 0x14256B190",
+          "deep cache equality over resolved effectors/resources via 0x1422DCAD0"
+        ]
+      }
+    },
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 1",
+      "body_offset": 8104,
+      "shape": [
+        92,
+        76,
+        120,
+        88
+      ],
+      "flags": 65,
+      "raw_header": {
+        "hex": "0000005c0000004c00000078000000580000000200000041000000d20000017a000003e2000002cb75b375b3273b273b288a288ae4e4e4e4e0e0e0e0edededed3ff000000000000000000000000000064064733333333334001486c1",
+        "u32_be": {
+          "0": 92,
+          "4": 76,
+          "8": 120,
+          "12": 88,
+          "16": 2,
+          "20": 65,
+          "24": 210,
+          "28": 378,
+          "32": 994,
+          "36": 715,
+          "40": 1974695347,
+          "44": 658188091,
+          "48": 680142986,
+          "52": 3840206052,
+          "56": 3772834016,
+          "60": 3991793133,
+          "64": 1072693248,
+          "68": 0,
+          "72": 0,
+          "76": 6,
+          "80": 1080324915,
+          "84": 858993460,
+          "88": 1345217
+        },
+        "f32_be": {
+          "0": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "12": 0.0,
+          "16": 0.0,
+          "20": 0.0,
+          "24": 0.0,
+          "28": 0.0,
+          "32": 0.0,
+          "36": 0.0,
+          "44": 0.0,
+          "48": 0.0,
+          "64": 1.875,
+          "68": 0.0,
+          "72": 0.0,
+          "76": 0.0,
+          "80": 3.569531,
+          "84": 0.0,
+          "88": 0.0
+        },
+        "f64_be": {
+          "0": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "24": 0.0,
+          "32": 0.0,
+          "48": 0.0,
+          "64": 1.0,
+          "72": 0.0,
+          "80": 163.6
+        }
+      },
+      "compact_native_reader_probe": {
+        "valid": true,
+        "record_control": {
+          "object_header_len": 92,
+          "subclass_tail_offset": 76,
+          "point_record_stride": 120,
+          "point_record_tail_offset": 88,
+          "point_count": 2,
+          "object_flags_or_type": 65
+        },
+        "common_object": {
+          "bbox": [
+            210,
+            378,
+            994,
+            715
+          ],
+          "line_color_triplet_u32": [
+            1974695347,
+            658188091,
+            680142986
+          ],
+          "line_rgb": [
+            117,
+            39,
+            40
+          ],
+          "fill_color_triplet_u32": [
+            3840206052,
+            3772834016,
+            3991793133
+          ],
+          "fill_rgb": [
+            228,
+            224,
+            237
+          ],
+          "opacity": 1.0,
+          "extra_u32_72": 0
+        },
+        "point_payload": {
+          "start": 8196,
+          "end": 8436
+        },
+        "subclass_tail": {
+          "class": "PWVectorStroke",
+          "list_index_u32_76": 6,
+          "width_or_scale_f64_80": 163.6,
+          "extra_u32_88": 1345217
+        }
+      },
+      "compact_semantic_probe": {
+        "object_kind": "stroke_92",
+        "native_draw_flag_candidate_lens": {
+          "20": {
+            "value": 65,
+            "bit0_line_lens": true,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 1
+          }
+        },
+        "argb_candidates_from_compact_color": {
+          "line": [
+            255,
+            117,
+            39,
+            40
+          ],
+          "fill": [
+            255,
+            228,
+            224,
+            237
+          ],
+          "opacity_alpha": 255
+        }
+      },
+      "point_count": 2,
+      "bbox": [
+        210,
+        378,
+        994,
+        715
+      ],
+      "line_rgb": [
+        117,
+        39,
+        40
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 6,
+      "width": 163.6,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          374,
+          542,
+          830,
+          551
+        ],
+        "xy": {
+          "x": {
+            "min": 374.0,
+            "max": 830.0,
+            "avg": 602.0,
+            "uniq": 2
+          },
+          "y": {
+            "min": 542.0,
+            "max": 551.0,
+            "avg": 546.5,
+            "uniq": 2
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "48": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "64": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "68": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "72": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 15.079193,
+            "avg": 7.539597,
+            "uniq": 2
+          }
+        },
+        "point_u32_stats": {
+          "16": [
+            {
+              "value": 210,
+              "count": 1
+            },
+            {
+              "value": 666,
+              "count": 1
+            }
+          ],
+          "20": [
+            {
+              "value": 378,
+              "count": 1
+            },
+            {
+              "value": 387,
+              "count": 1
+            }
+          ],
+          "24": [
+            {
+              "value": 994,
+              "count": 2
+            }
+          ],
+          "28": [
+            {
+              "value": 715,
+              "count": 2
+            }
+          ],
+          "32": [
+            {
+              "value": 3073,
+              "count": 1
+            },
+            {
+              "value": 1025,
+              "count": 1
+            }
+          ],
+          "80": [
+            {
+              "value": 1345217,
+              "count": 2
+            }
+          ],
+          "84": [
+            {
+              "value": 0,
+              "count": 2
+            }
+          ]
+        },
+        "native32_stats": {
+          "u32": {
+            "16": [
+              {
+                "value": 210,
+                "count": 1
+              },
+              {
+                "value": 666,
+                "count": 1
+              }
+            ],
+            "20": [
+              {
+                "value": 378,
+                "count": 1
+              },
+              {
+                "value": 387,
+                "count": 1
+              }
+            ],
+            "24": [
+              {
+                "value": 994,
+                "count": 2
+              }
+            ],
+            "28": [
+              {
+                "value": 715,
+                "count": 2
+              }
+            ]
+          }
+        },
+        "cubic64_stats": {
+          "f64": {
+            "0": {
+              "min": 374.0,
+              "max": 830.0,
+              "avg": 602.0,
+              "uniq": 2
+            },
+            "8": {
+              "min": 542.0,
+              "max": 551.0,
+              "avg": 546.5,
+              "uniq": 2
+            },
+            "16": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "24": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "32": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "40": {
+              "min": 0.007812,
+              "max": 0.007812,
+              "avg": 0.007812,
+              "uniq": 1
+            }
+          },
+          "u32": {
+            "48": [
+              {
+                "value": 0,
+                "count": 2
+              }
+            ],
+            "52": [
+              {
+                "value": 1065353216,
+                "count": 2
+              }
+            ],
+            "56": [
+              {
+                "value": 1065353216,
+                "count": 2
+              }
+            ],
+            "60": [
+              {
+                "value": 1065353216,
+                "count": 2
+              }
+            ]
+          }
+        },
+        "compact120_tail_f64_stats": {
+          "88": {
+            "min": 374.0,
+            "max": 830.0,
+            "avg": 602.0,
+            "uniq": 2
+          },
+          "96": {
+            "min": 542.0,
+            "max": 551.0,
+            "avg": 546.5,
+            "uniq": 2
+          },
+          "104": {
+            "min": 830.0,
+            "max": 830.0,
+            "avg": 830.0,
+            "uniq": 1
+          },
+          "112": {
+            "min": 551.0,
+            "max": 551.0,
+            "avg": 551.0,
+            "uniq": 1
+          }
+        },
+        "pen_bbox_width": {
+          "min": 328.0,
+          "max": 784.0,
+          "avg": 556.0,
+          "uniq": 2
+        },
+        "pen_bbox_height": {
+          "min": 328.0,
+          "max": 337.0,
+          "avg": 332.5,
+          "uniq": 2
+        },
+        "first_points": [
+          {
+            "x": 374.0,
+            "y": 542.0,
+            "pen_bbox": [
+              210,
+              378,
+              994,
+              715
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 210,
+              "line_select_id_20": 378,
+              "is_vertex_selected_24": 994,
+              "unused_or_extra_28": 715
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 374.0,
+              "y_f64_8": 542.0,
+              "u32_16_28": {
+                "16": 210,
+                "20": 378,
+                "24": 994,
+                "28": 715
+              },
+              "u32_32": 3073,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1345217,
+                "84": 0
+              },
+              "subclass_tail_f64": {
+                "88": 374.0,
+                "96": 542.0,
+                "104": 830.0,
+                "112": 551.0
+              },
+              "compact120_curve_tail_candidate": {
+                "in_or_prev_control_xy_88_96": [
+                  374.0,
+                  542.0
+                ],
+                "out_or_next_control_xy_104_112": [
+                  830.0,
+                  551.0
+                ],
+                "renderer_status": "pixel_affecting for compact 120-byte dark curve preview: the importer uses current point +104/+112 as the second cubic control with the first control fixed at the current point"
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                374.0,
+                542.0,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 830.0,
+            "y": 551.0,
+            "pen_bbox": [
+              666,
+              387,
+              994,
+              715
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 666,
+              "line_select_id_20": 387,
+              "is_vertex_selected_24": 994,
+              "unused_or_extra_28": 715
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 15.079193
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 830.0,
+              "y_f64_8": 551.0,
+              "u32_16_28": {
+                "16": 666,
+                "20": 387,
+                "24": 994,
+                "28": 715
+              },
+              "u32_32": 1025,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 15.079193
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 15.079193
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1345217,
+                "84": 0
+              },
+              "subclass_tail_f64": {
+                "88": 830.0,
+                "96": 551.0,
+                "104": 830.0,
+                "112": 551.0
+              },
+              "compact120_curve_tail_candidate": {
+                "in_or_prev_control_xy_88_96": [
+                  830.0,
+                  551.0
+                ],
+                "out_or_next_control_xy_104_112": [
+                  830.0,
+                  551.0
+                ],
+                "renderer_status": "pixel_affecting for compact 120-byte dark curve preview: the importer uses current point +104/+112 as the second cubic control with the first control fixed at the current point"
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                830.0,
+                551.0,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          }
+        ]
+      },
+      "brush_style_effectors": {
+        "RotationEffector": {
+          "value": 3
+        }
+      },
+      "native_spacing_estimate": {
+        "kind": "stroke_92",
+        "style_id": 6,
+        "branch": "auto_interval_1_2_3",
+        "base_size_source": "compact stroke/object width; native a3 source is still treated as a best-effort estimate",
+        "base_width": 163.6,
+        "compact_f32_56_size_factor_range": [
+          1.0,
+          1.0
+        ],
+        "size_effector": "4:1:00000001",
+        "size_effector_dynamic": false,
+        "size_effector_graph_output": null,
+        "size_effector_multiplier_estimate": {
+          "combined_multiplier_range": [
+            1.0,
+            1.0
+          ],
+          "branches": [],
+          "note": "constant/default effector"
+        },
+        "effective_size_without_size_effector_range": [
+          163.6,
+          163.6
+        ],
+        "interval_scalar": 0.08,
+        "thickness_guess": 1.0,
+        "state8_without_size_effector_range": [
+          26.176,
+          26.176
+        ],
+        "effective_size_with_estimated_size_effector_range": [
+          163.6,
+          163.6
+        ],
+        "state8_with_estimated_size_effector_range": [
+          26.176,
+          26.176
+        ]
+      },
+      "importer_spacing_comparison": {
+        "importer_sample_step": 5.0,
+        "sample_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "native_state8_range": [
+          26.176,
+          26.176
+        ],
+        "native_state8_bucket": {
+          "min_bucket": "large_gte_8",
+          "max_bucket": "large_gte_8",
+          "range_bucket": "large_gte_8"
+        },
+        "native_state8_to_importer_step_ratio_range": [
+          5.2352,
+          5.2352
+        ],
+        "classification": "fallback_step_finer_than_native_interval",
+        "note": "Diagnostic only: importer fallback draws continuous capsules, while native state+8 is the PWBrushDraw dab interval feedback value."
+      },
+      "experimental_adaptive_spacing_candidate": {
+        "enabled_by_env": "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING",
+        "candidate": true,
+        "candidate_rule": "ordinary no-pattern dab candidates only",
+        "size_effector_form": "default_or_off_0x01",
+        "fallback_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "fallback_step": 5.0,
+        "min_step": 0.5,
+        "native_state8_range": [
+          26.176,
+          26.176
+        ],
+        "estimated_adaptive_step_range": [
+          5.0,
+          5.0
+        ],
+        "would_reduce_step": false,
+        "note": "Diagnostic approximation of the default-off loader branch; exact segment steps are computed from endpoint taper/size-factor values at render time."
+      }
+    }
+  ],
+  "objects_100": [],
+  "brush_styles": {
+    "4": {
+      "MainId": 4,
+      "_PW_ID": 1,
+      "CanvasId": 1,
+      "NextIndex": 5,
+      "StyleFlag": {
+        "value": 115264,
+        "hex": "0x1c240",
+        "native_subpixel_min_size_0x8": false,
+        "native_retained_state_path_0x20": false,
+        "native_thickness_axis_split_0x40": true,
+        "native_segment_start_flag_0x200": true,
+        "direct_max_accum_0x1000": false,
+        "texture_or_water_family_0x10000": true,
+        "texture_or_water_family_0x20000": false,
+        "unknown_bits": 49152
+      },
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 12,
+        "hex": "000000113d8f5c2900000003",
+        "words": [
+          {
+            "u32": 17,
+            "f32": 0.0
+          },
+          {
+            "u32": 1032805417,
+            "f32": 0.07
+          },
+          {
+            "u32": 3,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "primary_graph_0x11",
+          "type": 17,
+          "native_runtime_branches": {
+            "value": 17,
+            "hex": "0x11",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": true,
+            "graph_context_primary_0x10_sample_f32_36": true,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "floor": 0.07,
+          "scalar": 0.07,
+          "graph_refs": [
+            3
+          ],
+          "extra_scalars": [],
+          "payload_u32": [
+            1032805417,
+            3
+          ]
+        }
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 12,
+        "hex": "000000110000000000000004",
+        "words": [
+          {
+            "u32": 17,
+            "f32": 0.0
+          },
+          {
+            "u32": 0,
+            "f32": 0.0
+          },
+          {
+            "u32": 4,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "primary_graph_0x11",
+          "type": 17,
+          "native_runtime_branches": {
+            "value": 17,
+            "hex": "0x11",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": true,
+            "graph_context_primary_0x10_sample_f32_36": true,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "floor": 0.0,
+          "scalar": 0.0,
+          "graph_refs": [
+            4
+          ],
+          "extra_scalars": [],
+          "payload_u32": [
+            0,
+            4
+          ]
+        }
+      },
+      "AntiAlias": 1,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 0.95,
+      "IntervalBase": 1.0,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AutoIntervalType": 1,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "RotationBase": 111.4,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 3,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 3,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 0,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureFlagDecoded": {
+        "value": 0,
+        "hex": "0x0",
+        "enabled_bit_0x1": false,
+        "density_effector_gate_0x10": false,
+        "invert_sample_0x100": false,
+        "average_baseline_remap_0x200": false,
+        "unknown_bits": 0
+      },
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0,
+      "importer_renderer_status": {
+        "coverage": "partial_preview",
+        "pixel_affecting_inputs": [
+          "AntiAlias ordinal -> fallback feather",
+          "AutoIntervalType 1/2/3 + AA>0 -> ordinary no-pattern radius/feather preview",
+          "Hardness < 1 -> ordinary no-pattern capsule softness preview"
+        ],
+        "preview_only_inputs": [
+          "SizeEffector primary_graph_0x11 -> simple-size branch selector/taper heuristic"
+        ],
+        "diagnostic_only_inputs": [
+          "FlowBase/FlowEffector",
+          "RotationEffector",
+          "StyleFlag texture_or_water_family_0x10000"
+        ]
+      }
+    },
+    "5": {
+      "MainId": 5,
+      "_PW_ID": 2,
+      "CanvasId": 1,
+      "NextIndex": 6,
+      "StyleFlag": {
+        "value": 115280,
+        "hex": "0x1c250",
+        "native_subpixel_min_size_0x8": false,
+        "native_retained_state_path_0x20": false,
+        "native_thickness_axis_split_0x40": true,
+        "native_segment_start_flag_0x200": true,
+        "direct_max_accum_0x1000": false,
+        "texture_or_water_family_0x10000": true,
+        "texture_or_water_family_0x20000": false,
+        "unknown_bits": 49168
+      },
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AntiAlias": 3,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 0.001,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AutoIntervalType": 0,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 3,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 3,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 2,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureFlagDecoded": {
+        "value": 0,
+        "hex": "0x0",
+        "enabled_bit_0x1": false,
+        "density_effector_gate_0x10": false,
+        "invert_sample_0x100": false,
+        "average_baseline_remap_0x200": false,
+        "unknown_bits": 0
+      },
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0,
+      "importer_renderer_status": {
+        "coverage": "partial_preview",
+        "pixel_affecting_inputs": [
+          "AntiAlias ordinal -> fallback feather",
+          "PatternStyle -> ordinary stroke material stamp preview"
+        ],
+        "preview_only_inputs": [],
+        "diagnostic_only_inputs": [
+          "IntervalBase/IntervalEffector/AutoIntervalType",
+          "PatternStyle/material list native-mapped; exact retained pattern rendering not implemented",
+          "RotationEffector",
+          "StyleFlag texture_or_water_family_0x10000"
+        ]
+      }
+    },
+    "6": {
+      "MainId": 6,
+      "_PW_ID": 3,
+      "CanvasId": 1,
+      "NextIndex": 0,
+      "StyleFlag": {
+        "value": 115264,
+        "hex": "0x1c240",
+        "native_subpixel_min_size_0x8": false,
+        "native_retained_state_path_0x20": false,
+        "native_thickness_axis_split_0x40": true,
+        "native_segment_start_flag_0x200": true,
+        "direct_max_accum_0x1000": false,
+        "texture_or_water_family_0x10000": true,
+        "texture_or_water_family_0x20000": false,
+        "unknown_bits": 49152
+      },
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AntiAlias": 3,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 1.0,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AutoIntervalType": 2,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 3,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 3,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 0,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureFlagDecoded": {
+        "value": 0,
+        "hex": "0x0",
+        "enabled_bit_0x1": false,
+        "density_effector_gate_0x10": false,
+        "invert_sample_0x100": false,
+        "average_baseline_remap_0x200": false,
+        "unknown_bits": 0
+      },
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0,
+      "importer_renderer_status": {
+        "coverage": "partial_preview",
+        "pixel_affecting_inputs": [
+          "AntiAlias ordinal -> fallback feather",
+          "AutoIntervalType 1/2/3 + AA>0 -> ordinary no-pattern radius/feather preview"
+        ],
+        "preview_only_inputs": [],
+        "diagnostic_only_inputs": [
+          "RotationEffector",
+          "StyleFlag texture_or_water_family_0x10000"
+        ]
+      }
+    }
+  },
+  "fill_styles": {},
+  "brush_resources": {
+    "pattern_styles": {
+      "2": {
+        "_PW_ID": 1,
+        "MainId": 2,
+        "CanvasId": 1,
+        "NextIndex": 0,
+        "ImageNumber": 1,
+        "ImageIndex": {
+          "len": 4,
+          "hex": "00000002"
+        },
+        "OrderType": 0,
+        "Reverse2": 0,
+        "decoded_image_indices": [
+          2
+        ]
+      }
+    },
+    "pattern_images": {
+      "2": {
+        "_PW_ID": 1,
+        "MainId": 2,
+        "CanvasId": 1,
+        "NextIndex": 0,
+        "Uuid": {
+          "len": 16,
+          "hex": "83a5e6a23e3f48f5854ea6820b7529b5"
+        },
+        "Mipmap": 10,
+        "Name": "Koa_Lace1",
+        "mipmap_probe": {
+          "mipmap_id": 10,
+          "offscreen_id": 48,
+          "external_id": "extrnlid1BDA0DF7E82A483EBC22DA1ACAD16DEA",
+          "external_present": true,
+          "external_len": 46169,
+          "pixel_size": [
+            732,
+            82
+          ],
+          "expected_rgba_tile_len": 786432,
+          "raw_bytes_per_pixel": 0.7691756630681061,
+          "decoded_tile_blob_len": 786432,
+          "decoded_bytes_per_pixel": 13.101959216313475,
+          "decoded_rgba_shape": [
+            732,
+            82,
+            4
+          ],
+          "decoded_alpha_nonzero": 40246,
+          "decoded_alpha_sum": 5547784
+        },
+        "decoded_rgba_shape": [
+          732,
+          82,
+          4
+        ],
+        "decoded_alpha_nonzero": 40246
+      }
+    }
+  },
+  "effector_graphs": {
+    "3": {
+      "control_number": 4,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          0.127273
+        ],
+        [
+          0.354545,
+          0.245455
+        ],
+        [
+          0.827273,
+          0.709091
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "native_eval": {
+        "rule": "midpoint_quadratic",
+        "max_delta_vs_linear": 0.046377,
+        "max_delta_x": 0.354545,
+        "native_at_max": 0.291832,
+        "linear_at_max": 0.245455
+      }
+    },
+    "4": {
+      "control_number": 2,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "native_eval": {
+        "rule": "linear",
+        "max_delta_vs_linear": 0.0,
+        "max_delta_x": 0.0,
+        "native_at_max": 0.0,
+        "linear_at_max": 0.0
+      }
+    }
+  }
+}

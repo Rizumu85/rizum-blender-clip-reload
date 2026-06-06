@@ -1,0 +1,470 @@
+﻿{
+  "name": "test_Filters_Vector_Text.clip",
+  "stroke_count": 4,
+  "strokes": [
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 2",
+      "body_offset": 56,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "point_count": 96,
+      "bbox": [
+        283,
+        323,
+        604,
+        541
+      ],
+      "brush_style_id": 5,
+      "width": 15.0,
+      "point_stats": {
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.055971,
+            "avg": 0.020622,
+            "uniq": 36
+          },
+          "52": {
+            "min": 0.0,
+            "max": 1.0,
+            "avg": 0.989583,
+            "uniq": 2
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.188589,
+            "avg": 0.549694,
+            "uniq": 96
+          }
+        },
+        "pen_bbox_width": {
+          "min": 31.0,
+          "max": 102.0,
+          "avg": 35.8125,
+          "uniq": 15
+        },
+        "pen_bbox_height": {
+          "min": 31.0,
+          "max": 44.0,
+          "avg": 33.145833,
+          "uniq": 10
+        }
+      }
+    },
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 2",
+      "body_offset": 8596,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "point_count": 209,
+      "bbox": [
+        54,
+        182,
+        633,
+        707
+      ],
+      "brush_style_id": 5,
+      "width": 15.0,
+      "point_stats": {
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.224311,
+            "avg": 0.037248,
+            "uniq": 99
+          },
+          "52": {
+            "min": 0.0,
+            "max": 1.0,
+            "avg": 0.990431,
+            "uniq": 2
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.19873,
+            "avg": 0.590781,
+            "uniq": 209
+          }
+        },
+        "pen_bbox_width": {
+          "min": 24.0,
+          "max": 140.0,
+          "avg": 38.019139,
+          "uniq": 32
+        },
+        "pen_bbox_height": {
+          "min": 23.0,
+          "max": 52.0,
+          "avg": 33.344498,
+          "uniq": 14
+        }
+      }
+    },
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 2",
+      "body_offset": 27080,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "point_count": 225,
+      "bbox": [
+        524,
+        284,
+        731,
+        804
+      ],
+      "brush_style_id": 5,
+      "width": 15.0,
+      "point_stats": {
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.131786,
+            "avg": 0.023517,
+            "uniq": 68
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.198431,
+            "avg": 0.597513,
+            "uniq": 225
+          }
+        },
+        "pen_bbox_width": {
+          "min": 30.0,
+          "max": 103.0,
+          "avg": 33.293333,
+          "uniq": 12
+        },
+        "pen_bbox_height": {
+          "min": 30.0,
+          "max": 74.0,
+          "avg": 34.053333,
+          "uniq": 20
+        }
+      }
+    },
+    {
+      "layer_id": 5,
+      "layer_name": "Layer 2",
+      "body_offset": 46972,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "point_count": 55,
+      "bbox": [
+        742,
+        220,
+        943,
+        927
+      ],
+      "brush_style_id": 5,
+      "width": 15.0,
+      "point_stats": {
+        "float_fields": {
+          "36": {
+            "min": 0.0,
+            "max": 0.590343,
+            "avg": 0.478671,
+            "uniq": 55
+          },
+          "40": {
+            "min": 0.611111,
+            "max": 0.744444,
+            "avg": 0.669975,
+            "uniq": 35
+          },
+          "44": {
+            "min": 0.0,
+            "max": 1.0,
+            "avg": 0.780852,
+            "uniq": 43
+          },
+          "52": {
+            "min": 0.0,
+            "max": 1.0,
+            "avg": 0.963636,
+            "uniq": 2
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.155986,
+            "avg": 0.5698,
+            "uniq": 55
+          }
+        },
+        "pen_bbox_width": {
+          "min": 22.0,
+          "max": 77.0,
+          "avg": 39.2,
+          "uniq": 23
+        },
+        "pen_bbox_height": {
+          "min": 23.0,
+          "max": 116.0,
+          "avg": 44.290909,
+          "uniq": 25
+        }
+      }
+    }
+  ],
+  "brush_styles": {
+    "5": {
+      "MainId": 5,
+      "StyleFlag": 115200,
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 16,
+        "hex": "000001113f733333000000043f400000",
+        "words": [
+          {
+            "u32": 273,
+            "f32": 0.0
+          },
+          {
+            "u32": 1064514355,
+            "f32": 0.95
+          },
+          {
+            "u32": 4,
+            "f32": 0.0
+          },
+          {
+            "u32": 1061158912,
+            "f32": 0.75
+          }
+        ]
+      },
+      "OpacityEffector": {
+        "len": 12,
+        "hex": "000000113e99999900000005",
+        "words": [
+          {
+            "u32": 17,
+            "f32": 0.0
+          },
+          {
+            "u32": 1050253721,
+            "f32": 0.3
+          },
+          {
+            "u32": 5,
+            "f32": 0.0
+          }
+        ]
+      },
+      "FlowBase": 0.5,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AntiAlias": 1,
+      "Hardness": 1.0,
+      "IntervalBase": 1.0,
+      "AutoIntervalType": 3,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "RotationBase": 0.0,
+      "RotationEffector": 3,
+      "PatternStyle": 0,
+      "TexturePattern": 3,
+      "TextureDensityBase": 0.4,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      }
+    }
+  },
+  "effector_graphs": {
+    "4": {
+      "control_number": 2,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ]
+    },
+    "5": {
+      "control_number": 6,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.229437,
+          0.091633
+        ],
+        [
+          0.281385,
+          0.944223
+        ],
+        [
+          0.47619,
+          1.0
+        ],
+        [
+          0.709957,
+          1.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ]
+    },
+    "6": {
+      "control_number": 2,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,5943 @@
+{
+  "summary": {
+    "clip_count": 1,
+    "vector_layer_count": 1,
+    "stroke_count": 1,
+    "object_100_count": 0,
+    "layer_vector_types": [
+      {
+        "count": 1,
+        "layer_type": 0,
+        "layer_folder": 0,
+        "vector_balloon_index": 0,
+        "vector_normal_type": 0
+      }
+    ],
+    "external_header_counts": [
+      {
+        "count": 1,
+        "header_len": 40,
+        "tag": "extrnlid",
+        "payload_offset": 56,
+        "payload_size_matches_body": true,
+        "matches_vector_data": true,
+        "fully_covered_after_prefix": true,
+        "record_count": 1,
+        "trailing_gap": 0
+      }
+    ],
+    "shape_counts": [
+      {
+        "count": 1,
+        "shape": [
+          92,
+          76,
+          88,
+          88
+        ],
+        "flags": 8321
+      }
+    ],
+    "object_100_shape_counts": [],
+    "object_100_layer_counts": [],
+    "object_100_fill_contexts": [],
+    "object_100_raw_u32": [],
+    "object_100_raw_f64": [],
+    "stroke_raw_u32": [
+      {
+        "offset": 0,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 92,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 4,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 76,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 8,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 88,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 12,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 88,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 16,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 25,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 20,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 8321,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 24,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 261,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 28,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 247,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 32,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 725,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 36,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 752,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 40,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 0,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 44,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 0,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 48,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 0,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 52,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 3840206052,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 56,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 3772834016,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 60,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 3991793133,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 64,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 1072693248,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 68,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 0,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 72,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 0,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 76,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 11,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 80,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 1077149696,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 84,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 0,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      },
+      {
+        "offset": 88,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "value": 45996258,
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "line_rgb": null,
+            "fill_rgb": null
+          }
+        ]
+      }
+    ],
+    "compact_draw_flag_candidate_lenses": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "shape": [
+          92,
+          76,
+          88,
+          88
+        ],
+        "family_or_flags": 8321,
+        "line_style_id": 11,
+        "fill_style_id": null,
+        "line_rgb": null,
+        "fill_rgb": null,
+        "candidate_offset": 20,
+        "value": 8321,
+        "low_nibble": 1,
+        "bit0_line_lens": true,
+        "bit1_fill_lens": false,
+        "bit2_special_lens": false
+      }
+    ],
+    "point_u32_stats": [
+      {
+        "offset": 16,
+        "unique": 12,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 262
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 261
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 265
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 270
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 288
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 306
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 325
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 344
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 366
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 386
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 408
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 430
+          }
+        ]
+      },
+      {
+        "offset": 20,
+        "unique": 12,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 248
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 247
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 249
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 254
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 275
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 295
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 314
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 334
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 359
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 384
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 411
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 435
+          }
+        ]
+      },
+      {
+        "offset": 24,
+        "unique": 12,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 304
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 725
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 303
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 306
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 311
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 329
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 347
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 366
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 385
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 407
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 427
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 449
+          }
+        ]
+      },
+      {
+        "offset": 28,
+        "unique": 12,
+        "values": [
+          {
+            "count": 3,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 289
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 752
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 290
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 295
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 316
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 336
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 355
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 375
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 400
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 425
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 452
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 476
+          }
+        ]
+      },
+      {
+        "offset": 32,
+        "unique": 2,
+        "values": [
+          {
+            "count": 24,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 0
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 1
+          }
+        ]
+      },
+      {
+        "offset": 80,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 45996258
+          }
+        ]
+      },
+      {
+        "offset": 84,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "point_native32_u32": [
+      {
+        "offset": 16,
+        "unique": 8,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 262
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 261
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 265
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 270
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 288
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 306
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 325
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 344
+          }
+        ]
+      },
+      {
+        "offset": 20,
+        "unique": 8,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 248
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 247
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 249
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 254
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 275
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 295
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 314
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 334
+          }
+        ]
+      },
+      {
+        "offset": 24,
+        "unique": 8,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 304
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 725
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 303
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 306
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 311
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 329
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 347
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 366
+          }
+        ]
+      },
+      {
+        "offset": 28,
+        "unique": 8,
+        "values": [
+          {
+            "count": 3,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 289
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 752
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 290
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 295
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 316
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 336
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 355
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 375
+          }
+        ]
+      }
+    ],
+    "point_cubic64_u32": [
+      {
+        "offset": 48,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "offset": 52,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 1065353216
+          }
+        ]
+      },
+      {
+        "offset": 56,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 1065353216
+          }
+        ]
+      },
+      {
+        "offset": 60,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "value": 1065353216
+          }
+        ]
+      }
+    ],
+    "point_cubic64_f64_stats": [
+      {
+        "offset": 0,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 281.915698,
+            "max": 704.959428,
+            "avg": 452.651395,
+            "uniq": 25
+          }
+        ]
+      },
+      {
+        "offset": 8,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 267.651525,
+            "max": 731.6405,
+            "avg": 455.947619,
+            "uniq": 25
+          }
+        ]
+      },
+      {
+        "offset": 16,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 24,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 32,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 40,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 5.2e-05,
+            "max": 0.000705,
+            "avg": 0.000191,
+            "uniq": 18
+          }
+        ]
+      }
+    ],
+    "point_float_stats": [
+      {
+        "offset": 36,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.005128,
+            "max": 0.526571,
+            "avg": 0.415767,
+            "uniq": 25
+          }
+        ]
+      },
+      {
+        "offset": 40,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.544444,
+            "max": 0.777778,
+            "avg": 0.617889,
+            "uniq": 18
+          }
+        ]
+      },
+      {
+        "offset": 44,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.134615,
+            "avg": 0.078644,
+            "uniq": 24
+          }
+        ]
+      },
+      {
+        "offset": 48,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 52,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 56,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 60,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 64,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 68,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 72,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 76,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "min": 0.0,
+            "max": 3.192898,
+            "avg": 1.88054,
+            "uniq": 25
+          }
+        ]
+      }
+    ],
+    "effector_point_float_stats": [
+      {
+        "offset": 36,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.005128,
+            "max": 0.526571,
+            "avg": 0.415767,
+            "uniq": 25
+          }
+        ]
+      },
+      {
+        "offset": 40,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.544444,
+            "max": 0.777778,
+            "avg": 0.617889,
+            "uniq": 18
+          }
+        ]
+      },
+      {
+        "offset": 44,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 0.134615,
+            "avg": 0.078644,
+            "uniq": 24
+          }
+        ]
+      },
+      {
+        "offset": 48,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 52,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 56,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 60,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 64,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 68,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 72,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          }
+        ]
+      },
+      {
+        "offset": 76,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 3.192898,
+            "avg": 1.88054,
+            "uniq": 25
+          }
+        ]
+      }
+    ],
+    "effector_point_float_varying_stats": [
+      {
+        "offset": 36,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.005128,
+            "max": 0.526571,
+            "avg": 0.415767,
+            "uniq": 25
+          }
+        ]
+      },
+      {
+        "offset": 40,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.544444,
+            "max": 0.777778,
+            "avg": 0.617889,
+            "uniq": 18
+          }
+        ]
+      },
+      {
+        "offset": 44,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 0.134615,
+            "avg": 0.078644,
+            "uniq": 24
+          }
+        ]
+      },
+      {
+        "offset": 48,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 52,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 56,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 60,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 64,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 68,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 72,
+        "unique": 1,
+        "values": []
+      },
+      {
+        "offset": 76,
+        "unique": 1,
+        "values": [
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "min": 0.0,
+            "max": 3.192898,
+            "avg": 1.88054,
+            "uniq": 25
+          }
+        ]
+      }
+    ],
+    "effector_point_u32_stats": [
+      {
+        "offset": 16,
+        "unique": 12,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 262
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 261
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 265
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 270
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 288
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 306
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 325
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 344
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 366
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 386
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 408
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 430
+          }
+        ]
+      },
+      {
+        "offset": 20,
+        "unique": 12,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 248
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 247
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 249
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 254
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 275
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 295
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 314
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 334
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 359
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 384
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 411
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 435
+          }
+        ]
+      },
+      {
+        "offset": 24,
+        "unique": 12,
+        "values": [
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 304
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 725
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 303
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 306
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 311
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 329
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 347
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 366
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 385
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 407
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 427
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 449
+          }
+        ]
+      },
+      {
+        "offset": 28,
+        "unique": 12,
+        "values": [
+          {
+            "count": 3,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 289
+          },
+          {
+            "count": 2,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 752
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 290
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 295
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 316
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 336
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 355
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 375
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 400
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 425
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 452
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 476
+          }
+        ]
+      },
+      {
+        "offset": 32,
+        "unique": 2,
+        "values": [
+          {
+            "count": 24,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 0
+          },
+          {
+            "count": 1,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 1
+          }
+        ]
+      },
+      {
+        "offset": 80,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 45996258
+          }
+        ]
+      },
+      {
+        "offset": 84,
+        "unique": 1,
+        "values": [
+          {
+            "count": 25,
+            "kind": "stroke_92",
+            "shape": [
+              92,
+              76,
+              88,
+              88
+            ],
+            "subtype_or_flags": 8321,
+            "brush_style_id": 11,
+            "effectors": [
+              "RotationEffector:mode=3"
+            ],
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "brush_usage": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "style_id": 11
+      }
+    ],
+    "style_usage": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "style_id": 11
+      }
+    ],
+    "style_combos": [
+      {
+        "count": 1,
+        "size": "4:1:00000001",
+        "opacity": "4:1:00000001",
+        "flow": "4:1:00000001",
+        "thickness": "4:1:00000001",
+        "flow_base": 1.0,
+        "hardness": 1.0,
+        "hardness_profile_active": false,
+        "hardness_threshold": 1.0,
+        "style_flag": [
+          "0x1c240",
+          false
+        ],
+        "texture": 2,
+        "pattern": 0,
+        "auto_interval": 2,
+        "anti_alias": 0,
+        "interval_base": "1.0",
+        "interval_effector": "4:0:00000000"
+      }
+    ],
+    "style_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "size": "4:1:00000001",
+        "opacity": "4:1:00000001",
+        "flow": "4:1:00000001",
+        "thickness": "4:1:00000001",
+        "flow_base": 1.0,
+        "hardness": 1.0,
+        "hardness_profile_active": false,
+        "hardness_threshold": 1.0,
+        "style_flag": [
+          "0x1c240",
+          false
+        ],
+        "texture": 2,
+        "pattern": 0,
+        "auto_interval": 2,
+        "anti_alias": 0,
+        "interval_base": "1.0",
+        "interval_effector": "4:0:00000000"
+      }
+    ],
+    "fill_style_combos_by_kind": [],
+    "color_mix_combos": [
+      {
+        "count": 1,
+        "use_water_color": 0,
+        "water_color_type": 0,
+        "water_writer_mode": 0,
+        "brush_color_mixing_mode": 0,
+        "brush_lms_linearity": 0,
+        "mix_color_base": "1.0",
+        "mix_color_effector": "4:0:00000000",
+        "mix_alpha_base": "1.0",
+        "mix_alpha_effector": "4:0:00000000",
+        "color_extension": 0.0,
+        "water_edge_flag": 0,
+        "water_edge_radius": "1.0",
+        "water_edge_alpha_power": "0.0",
+        "water_edge_value_power": "0.0",
+        "water_edge_blur": "0.0"
+      }
+    ],
+    "color_mix_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "use_water_color": 0,
+        "water_color_type": 0,
+        "water_writer_mode": 0,
+        "brush_color_mixing_mode": 0,
+        "brush_lms_linearity": 0,
+        "mix_color_base": "1.0",
+        "mix_color_effector": "4:0:00000000",
+        "mix_alpha_base": "1.0",
+        "mix_alpha_effector": "4:0:00000000",
+        "color_extension": 0.0,
+        "water_edge_flag": 0,
+        "water_edge_radius": "1.0",
+        "water_edge_alpha_power": "0.0",
+        "water_edge_value_power": "0.0",
+        "water_edge_blur": "0.0"
+      }
+    ],
+    "color_change_combos": [
+      {
+        "count": 1,
+        "sub_color_base": "0.0",
+        "sub_color_effector": "4:0:00000000",
+        "hue_change_base": "0.0",
+        "hue_change_effector": "4:0:00000000",
+        "saturation_change_base": "0.0",
+        "saturation_change_effector": "4:0:00000000",
+        "value_change_base": "0.0",
+        "value_change_effector": "4:0:00000000",
+        "change_draw_color_target": 1,
+        "color_extension": 0.0
+      }
+    ],
+    "color_change_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "sub_color_base": "0.0",
+        "sub_color_effector": "4:0:00000000",
+        "hue_change_base": "0.0",
+        "hue_change_effector": "4:0:00000000",
+        "saturation_change_base": "0.0",
+        "saturation_change_effector": "4:0:00000000",
+        "value_change_base": "0.0",
+        "value_change_effector": "4:0:00000000",
+        "change_draw_color_target": 1,
+        "color_extension": 0.0
+      }
+    ],
+    "blur_combos": [
+      {
+        "count": 1,
+        "blur_kind": 0,
+        "blur_base": "0.0",
+        "blur_effector": "4:0:00000000",
+        "use_water_color": 0,
+        "water_color_type": 0
+      }
+    ],
+    "blur_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "blur_kind": 0,
+        "blur_base": "0.0",
+        "blur_effector": "4:0:00000000",
+        "use_water_color": 0,
+        "water_color_type": 0
+      }
+    ],
+    "rotation_combos": [
+      {
+        "count": 1,
+        "rotation_base": "0.0",
+        "rotation_effector": "3",
+        "rotation_effector_bits": [
+          "active_0x01",
+          "unknown_0x02"
+        ],
+        "rotation_random": "1.0",
+        "rotation_in_spray_base": "0.0",
+        "rotation_effector_in_spray": "3",
+        "rotation_effector_in_spray_bits": [
+          "active_0x01",
+          "unknown_0x02"
+        ],
+        "rotation_random_in_spray": "1.0"
+      }
+    ],
+    "rotation_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "rotation_base": "0.0",
+        "rotation_effector": "3",
+        "rotation_effector_bits": [
+          "active_0x01",
+          "unknown_0x02"
+        ],
+        "rotation_random": "1.0",
+        "rotation_in_spray_base": "0.0",
+        "rotation_effector_in_spray": "3",
+        "rotation_effector_in_spray_bits": [
+          "active_0x01",
+          "unknown_0x02"
+        ],
+        "rotation_random_in_spray": "1.0"
+      }
+    ],
+    "texture_combos": [
+      {
+        "count": 1,
+        "texture_pattern": 2,
+        "texture_flag": 513,
+        "texture_composite": 0,
+        "texture_scale": "1.0",
+        "texture_rotate": "0.0",
+        "texture_offset_x": "0.0",
+        "texture_offset_y": "0.0",
+        "texture_brightness": "0.0",
+        "texture_contrast": "0.0",
+        "texture_density_base": "0.35",
+        "texture_density_effector": "4:1:00000001"
+      }
+    ],
+    "texture_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "texture_pattern": 2,
+        "texture_flag": 513,
+        "texture_composite": 0,
+        "texture_scale": "1.0",
+        "texture_rotate": "0.0",
+        "texture_offset_x": "0.0",
+        "texture_offset_y": "0.0",
+        "texture_brightness": "0.0",
+        "texture_contrast": "0.0",
+        "texture_density_base": "0.35",
+        "texture_density_effector": "4:1:00000001"
+      }
+    ],
+    "pattern_material_refs_by_kind": [],
+    "texture_resource_refs_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "style_id": 11,
+        "texture_pattern_id": 2,
+        "texture_image_name": "铅笔",
+        "texture_image_mipmap": 29,
+        "texture_flag": 513,
+        "texture_composite": 0,
+        "texture_density_base": "0.35",
+        "texture_density_effector": "4:1:00000001",
+        "texture_brightness": "0.0",
+        "texture_contrast": "0.0",
+        "texture_scale": "1.0",
+        "texture_rotate": "0.0",
+        "texture_offset_x": "0.0",
+        "texture_offset_y": "0.0"
+      }
+    ],
+    "compiled_line_style_notes_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "style_id": 11,
+        "runtime_object": "PWBrushStyle 0x720 bytes",
+        "has_pattern_material_list": false,
+        "has_texture_descriptor": true,
+        "compiled_state_not_serialized_directly": [
+          "line/list secondary resource pair at runtime +0x60/+0x68",
+          "optional multi-entry list prepared by 0x1422DF860 -> 0x14256B190",
+          "deep cache equality over resolved effectors/resources via 0x1422DCAD0"
+        ]
+      }
+    ],
+    "spray_combos": [
+      {
+        "count": 1,
+        "spray_flag": 0,
+        "spray_size_base": "1.0",
+        "spray_size_effector": "4:0:00000000",
+        "spray_density_base": "1.0",
+        "spray_density_effector": "4:0:00000000",
+        "spray_bias": "1.0",
+        "fixed_spray": "0"
+      }
+    ],
+    "spray_combos_by_kind": [
+      {
+        "count": 1,
+        "kind": "stroke_92",
+        "spray_flag": 0,
+        "spray_size_base": "1.0",
+        "spray_size_effector": "4:0:00000000",
+        "spray_density_base": "1.0",
+        "spray_density_effector": "4:0:00000000",
+        "spray_bias": "1.0",
+        "fixed_spray": "0"
+      }
+    ],
+    "effector_keys": [
+      {
+        "count": 1,
+        "kind": "SizeEffector",
+        "key": "4:1:00000001"
+      },
+      {
+        "count": 1,
+        "kind": "OpacityEffector",
+        "key": "4:1:00000001"
+      },
+      {
+        "count": 1,
+        "kind": "FlowEffector",
+        "key": "4:1:00000001"
+      },
+      {
+        "count": 1,
+        "kind": "IntervalEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "ThicknessEffector",
+        "key": "4:1:00000001"
+      },
+      {
+        "count": 1,
+        "kind": "RotationEffector",
+        "key": "3"
+      },
+      {
+        "count": 1,
+        "kind": "TextureDensityEffector",
+        "key": "4:1:00000001"
+      },
+      {
+        "count": 1,
+        "kind": "MixColorEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "MixAlphaEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "BlurEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "SubColorEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "HueChangeEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "SaturationChangeEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "ValueChangeEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "SpraySizeEffector",
+        "key": "4:0:00000000"
+      },
+      {
+        "count": 1,
+        "kind": "SprayDensityEffector",
+        "key": "4:0:00000000"
+      }
+    ],
+    "effector_decoded_forms": [
+      {
+        "count": 1,
+        "effector": "SizeEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "OpacityEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "FlowEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "IntervalEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "ThicknessEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "RotationEffector",
+        "form": "scalar_or_mode",
+        "type": 3,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "TextureDensityEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "MixColorEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "MixAlphaEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "BlurEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "SubColorEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "HueChangeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "SaturationChangeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "ValueChangeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "SpraySizeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      },
+      {
+        "count": 1,
+        "effector": "SprayDensityEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "graph_refs": [],
+        "scalars": [],
+        "scalar": null
+      }
+    ],
+    "effector_runtime_branches": [
+      {
+        "count": 1,
+        "effector": "SizeEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "OpacityEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "FlowEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "IntervalEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "ThicknessEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "TextureDensityEffector",
+        "form": "default_or_off_0x01",
+        "type": 1,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "MixColorEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "MixAlphaEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "BlurEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "SubColorEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "HueChangeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "SaturationChangeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "ValueChangeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "SpraySizeEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      },
+      {
+        "count": 1,
+        "effector": "SprayDensityEffector",
+        "form": "zero_or_disabled_0x00",
+        "type": 0,
+        "primary_graph": false,
+        "secondary_graph": false,
+        "aux_graph": false,
+        "random": false,
+        "velocity": false,
+        "unknown_bits": 0
+      }
+    ],
+    "effector_graph_signatures": [],
+    "effector_graph_refs": []
+  },
+  "clips": [
+    {
+      "name": "Vector_Texture.clip",
+      "path": "img\\Vector_Texture.clip",
+      "canvas": {
+        "width": 1024,
+        "height": 1024
+      },
+      "vector_layer_count": 1,
+      "vector_layers": [
+        {
+          "layer_id": 23,
+          "layer_name": "Layer 1",
+          "vector_row": {
+            "_PW_ID": 1,
+            "CanvasId": 1,
+            "MainId": 16,
+            "LayerId": 23
+          },
+          "vector_data": "extrnlidC537ED4688544024A8D8480C90718866",
+          "vector_body_len": 2348,
+          "external_header": {
+            "header_len": 40,
+            "tag": "extrnlid",
+            "identifier": "C537ED4688544024A8D8480C90718866",
+            "external_id": "extrnlidC537ED4688544024A8D8480C90718866",
+            "payload_offset": 56,
+            "payload_size": 2292,
+            "payload_end": 2348,
+            "payload_size_matches_body": true,
+            "matches_vector_data": true
+          },
+          "compact_record_spans": [
+            {
+              "kind": "stroke_92",
+              "offset": 56,
+              "end": 2348,
+              "shape": [
+                92,
+                76,
+                88,
+                88
+              ],
+              "point_count": 25
+            }
+          ],
+          "compact_record_coverage": {
+            "record_count": 1,
+            "covered_bytes": 2292,
+            "body_len": 2348,
+            "prefix_len": 56,
+            "trailing_gap": 0,
+            "fully_covered_after_prefix": true,
+            "prefix_matches_external_header": true
+          },
+          "LayerType": 0,
+          "LayerFolder": 0,
+          "LayerOpacity": 256,
+          "LayerComposite": 0,
+          "LayerClip": 0,
+          "LayerMasking": 0,
+          "LayerVisibility": 1,
+          "LayerRenderMipmap": 28,
+          "LayerLayerMaskMipmap": 0,
+          "LayerRenderOffscrOffsetX": 0,
+          "LayerRenderOffscrOffsetY": 0,
+          "LayerOffsetX": 0,
+          "LayerOffsetY": 0,
+          "LayerColorTypeIndex": 0,
+          "LayerColorTypeBlackChecked": 1,
+          "LayerColorTypeWhiteChecked": 1,
+          "VectorNormalStrokeIndex": 16,
+          "VectorNormalFillIndex": 0,
+          "VectorNormalBalloonIndex": 0,
+          "VectorNormalType": 0,
+          "MixSubColorForEveryPlot": 1,
+          "mipmap_resources": {
+            "LayerRenderMipmap": {
+              "mipmap_id": 28,
+              "offscreen_id": 152,
+              "external_id": "extrnlidE3B391BCD0394CCD9C2FAE50096030ED",
+              "external_present": false,
+              "external_len": null,
+              "pixel_size": [
+                1024,
+                1024
+              ],
+              "expected_rgba_tile_len": 4194304,
+              "raw_bytes_per_pixel": null,
+              "decoded_tile_blob_len": null,
+              "decoded_bytes_per_pixel": null
+            }
+          }
+        }
+      ],
+      "stroke_count": 1,
+      "object_100_count": 0,
+      "strokes": [
+        {
+          "layer_id": 23,
+          "layer_name": "Layer 1",
+          "body_offset": 56,
+          "shape": [
+            92,
+            76,
+            88,
+            88
+          ],
+          "flags": 8321,
+          "raw_header": {
+            "hex": "0000005c0000004c0000005800000058000000190000208100000105000000f7000002d5000002f0000000000000000000000000e4e4e4e4e0e0e0e0edededed3ff0000000000000000000000000000b403400000000000002bdd8e2",
+            "u32_be": {
+              "0": 92,
+              "4": 76,
+              "8": 88,
+              "12": 88,
+              "16": 25,
+              "20": 8321,
+              "24": 261,
+              "28": 247,
+              "32": 725,
+              "36": 752,
+              "40": 0,
+              "44": 0,
+              "48": 0,
+              "52": 3840206052,
+              "56": 3772834016,
+              "60": 3991793133,
+              "64": 1072693248,
+              "68": 0,
+              "72": 0,
+              "76": 11,
+              "80": 1077149696,
+              "84": 0,
+              "88": 45996258
+            },
+            "f32_be": {
+              "0": 0.0,
+              "4": 0.0,
+              "8": 0.0,
+              "12": 0.0,
+              "16": 0.0,
+              "20": 0.0,
+              "24": 0.0,
+              "28": 0.0,
+              "32": 0.0,
+              "36": 0.0,
+              "40": 0.0,
+              "44": 0.0,
+              "48": 0.0,
+              "64": 1.875,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.0,
+              "80": 2.8125,
+              "84": 0.0,
+              "88": 0.0
+            },
+            "f64_be": {
+              "0": 0.0,
+              "8": 0.0,
+              "16": 0.0,
+              "24": 0.0,
+              "32": 0.0,
+              "40": 0.0,
+              "48": 0.0,
+              "64": 1.0,
+              "72": 0.0,
+              "80": 20.0
+            }
+          },
+          "compact_native_reader_probe": {
+            "valid": true,
+            "record_control": {
+              "object_header_len": 92,
+              "subclass_tail_offset": 76,
+              "point_record_stride": 88,
+              "point_record_tail_offset": 88,
+              "point_count": 25,
+              "object_flags_or_type": 8321
+            },
+            "common_object": {
+              "bbox": [
+                261,
+                247,
+                725,
+                752
+              ],
+              "line_color_triplet_u32": [
+                0,
+                0,
+                0
+              ],
+              "line_rgb": [
+                0,
+                0,
+                0
+              ],
+              "fill_color_triplet_u32": [
+                3840206052,
+                3772834016,
+                3991793133
+              ],
+              "fill_rgb": [
+                228,
+                224,
+                237
+              ],
+              "opacity": 1.0,
+              "extra_u32_72": 0
+            },
+            "point_payload": {
+              "start": 148,
+              "end": 2348
+            },
+            "subclass_tail": {
+              "class": "PWVectorStroke",
+              "list_index_u32_76": 11,
+              "width_or_scale_f64_80": 20.0,
+              "extra_u32_88": 45996258
+            }
+          },
+          "compact_semantic_probe": {
+            "object_kind": "stroke_92",
+            "native_draw_flag_candidate_lens": {
+              "20": {
+                "value": 8321,
+                "bit0_line_lens": true,
+                "bit1_fill_lens": false,
+                "bit2_special_lens": false,
+                "low_nibble": 1
+              }
+            },
+            "argb_candidates_from_compact_color": {
+              "line": [
+                255,
+                0,
+                0,
+                0
+              ],
+              "fill": [
+                255,
+                228,
+                224,
+                237
+              ],
+              "opacity_alpha": 255
+            }
+          },
+          "point_count": 25,
+          "bbox": [
+            261,
+            247,
+            725,
+            752
+          ],
+          "line_rgb": [
+            0,
+            0,
+            0
+          ],
+          "fill_rgb": [
+            228,
+            224,
+            237
+          ],
+          "object_opacity": 1.0,
+          "brush_style_id": 11,
+          "width": 20.0,
+          "point_stats": {
+            "valid": true,
+            "point_bbox": [
+              281,
+              267,
+              705,
+              732
+            ],
+            "xy": {
+              "x": {
+                "min": 281.915698,
+                "max": 704.959428,
+                "avg": 452.651395,
+                "uniq": 25
+              },
+              "y": {
+                "min": 267.651525,
+                "max": 731.6405,
+                "avg": 455.947619,
+                "uniq": 25
+              }
+            },
+            "float_fields": {
+              "36": {
+                "min": 0.005128,
+                "max": 0.526571,
+                "avg": 0.415767,
+                "uniq": 25
+              },
+              "40": {
+                "min": 0.544444,
+                "max": 0.777778,
+                "avg": 0.617889,
+                "uniq": 18
+              },
+              "44": {
+                "min": 0.0,
+                "max": 0.134615,
+                "avg": 0.078644,
+                "uniq": 24
+              },
+              "48": {
+                "min": 0.0,
+                "max": 0.0,
+                "avg": 0.0,
+                "uniq": 1
+              },
+              "52": {
+                "min": 1.0,
+                "max": 1.0,
+                "avg": 1.0,
+                "uniq": 1
+              },
+              "56": {
+                "min": 1.0,
+                "max": 1.0,
+                "avg": 1.0,
+                "uniq": 1
+              },
+              "60": {
+                "min": 1.0,
+                "max": 1.0,
+                "avg": 1.0,
+                "uniq": 1
+              },
+              "64": {
+                "min": 0.0,
+                "max": 0.0,
+                "avg": 0.0,
+                "uniq": 1
+              },
+              "68": {
+                "min": 0.0,
+                "max": 0.0,
+                "avg": 0.0,
+                "uniq": 1
+              },
+              "72": {
+                "min": 0.0,
+                "max": 0.0,
+                "avg": 0.0,
+                "uniq": 1
+              },
+              "76": {
+                "min": 0.0,
+                "max": 3.192898,
+                "avg": 1.88054,
+                "uniq": 25
+              }
+            },
+            "point_u32_stats": {
+              "16": [
+                {
+                  "value": 262,
+                  "count": 2
+                },
+                {
+                  "value": 261,
+                  "count": 2
+                },
+                {
+                  "value": 265,
+                  "count": 1
+                },
+                {
+                  "value": 270,
+                  "count": 1
+                },
+                {
+                  "value": 288,
+                  "count": 1
+                },
+                {
+                  "value": 306,
+                  "count": 1
+                },
+                {
+                  "value": 325,
+                  "count": 1
+                },
+                {
+                  "value": 344,
+                  "count": 1
+                },
+                {
+                  "value": 366,
+                  "count": 1
+                },
+                {
+                  "value": 386,
+                  "count": 1
+                },
+                {
+                  "value": 408,
+                  "count": 1
+                },
+                {
+                  "value": 430,
+                  "count": 1
+                }
+              ],
+              "20": [
+                {
+                  "value": 248,
+                  "count": 2
+                },
+                {
+                  "value": 247,
+                  "count": 2
+                },
+                {
+                  "value": 249,
+                  "count": 1
+                },
+                {
+                  "value": 254,
+                  "count": 1
+                },
+                {
+                  "value": 275,
+                  "count": 1
+                },
+                {
+                  "value": 295,
+                  "count": 1
+                },
+                {
+                  "value": 314,
+                  "count": 1
+                },
+                {
+                  "value": 334,
+                  "count": 1
+                },
+                {
+                  "value": 359,
+                  "count": 1
+                },
+                {
+                  "value": 384,
+                  "count": 1
+                },
+                {
+                  "value": 411,
+                  "count": 1
+                },
+                {
+                  "value": 435,
+                  "count": 1
+                }
+              ],
+              "24": [
+                {
+                  "value": 304,
+                  "count": 2
+                },
+                {
+                  "value": 725,
+                  "count": 2
+                },
+                {
+                  "value": 303,
+                  "count": 1
+                },
+                {
+                  "value": 306,
+                  "count": 1
+                },
+                {
+                  "value": 311,
+                  "count": 1
+                },
+                {
+                  "value": 329,
+                  "count": 1
+                },
+                {
+                  "value": 347,
+                  "count": 1
+                },
+                {
+                  "value": 366,
+                  "count": 1
+                },
+                {
+                  "value": 385,
+                  "count": 1
+                },
+                {
+                  "value": 407,
+                  "count": 1
+                },
+                {
+                  "value": 427,
+                  "count": 1
+                },
+                {
+                  "value": 449,
+                  "count": 1
+                }
+              ],
+              "28": [
+                {
+                  "value": 289,
+                  "count": 3
+                },
+                {
+                  "value": 752,
+                  "count": 2
+                },
+                {
+                  "value": 290,
+                  "count": 1
+                },
+                {
+                  "value": 295,
+                  "count": 1
+                },
+                {
+                  "value": 316,
+                  "count": 1
+                },
+                {
+                  "value": 336,
+                  "count": 1
+                },
+                {
+                  "value": 355,
+                  "count": 1
+                },
+                {
+                  "value": 375,
+                  "count": 1
+                },
+                {
+                  "value": 400,
+                  "count": 1
+                },
+                {
+                  "value": 425,
+                  "count": 1
+                },
+                {
+                  "value": 452,
+                  "count": 1
+                },
+                {
+                  "value": 476,
+                  "count": 1
+                }
+              ],
+              "32": [
+                {
+                  "value": 0,
+                  "count": 24
+                },
+                {
+                  "value": 1,
+                  "count": 1
+                }
+              ],
+              "80": [
+                {
+                  "value": 45996258,
+                  "count": 25
+                }
+              ],
+              "84": [
+                {
+                  "value": 0,
+                  "count": 25
+                }
+              ]
+            },
+            "native32_stats": {
+              "u32": {
+                "16": [
+                  {
+                    "value": 262,
+                    "count": 2
+                  },
+                  {
+                    "value": 261,
+                    "count": 2
+                  },
+                  {
+                    "value": 265,
+                    "count": 1
+                  },
+                  {
+                    "value": 270,
+                    "count": 1
+                  },
+                  {
+                    "value": 288,
+                    "count": 1
+                  },
+                  {
+                    "value": 306,
+                    "count": 1
+                  },
+                  {
+                    "value": 325,
+                    "count": 1
+                  },
+                  {
+                    "value": 344,
+                    "count": 1
+                  }
+                ],
+                "20": [
+                  {
+                    "value": 248,
+                    "count": 2
+                  },
+                  {
+                    "value": 247,
+                    "count": 2
+                  },
+                  {
+                    "value": 249,
+                    "count": 1
+                  },
+                  {
+                    "value": 254,
+                    "count": 1
+                  },
+                  {
+                    "value": 275,
+                    "count": 1
+                  },
+                  {
+                    "value": 295,
+                    "count": 1
+                  },
+                  {
+                    "value": 314,
+                    "count": 1
+                  },
+                  {
+                    "value": 334,
+                    "count": 1
+                  }
+                ],
+                "24": [
+                  {
+                    "value": 304,
+                    "count": 2
+                  },
+                  {
+                    "value": 725,
+                    "count": 2
+                  },
+                  {
+                    "value": 303,
+                    "count": 1
+                  },
+                  {
+                    "value": 306,
+                    "count": 1
+                  },
+                  {
+                    "value": 311,
+                    "count": 1
+                  },
+                  {
+                    "value": 329,
+                    "count": 1
+                  },
+                  {
+                    "value": 347,
+                    "count": 1
+                  },
+                  {
+                    "value": 366,
+                    "count": 1
+                  }
+                ],
+                "28": [
+                  {
+                    "value": 289,
+                    "count": 3
+                  },
+                  {
+                    "value": 752,
+                    "count": 2
+                  },
+                  {
+                    "value": 290,
+                    "count": 1
+                  },
+                  {
+                    "value": 295,
+                    "count": 1
+                  },
+                  {
+                    "value": 316,
+                    "count": 1
+                  },
+                  {
+                    "value": 336,
+                    "count": 1
+                  },
+                  {
+                    "value": 355,
+                    "count": 1
+                  },
+                  {
+                    "value": 375,
+                    "count": 1
+                  }
+                ]
+              }
+            },
+            "cubic64_stats": {
+              "f64": {
+                "0": {
+                  "min": 281.915698,
+                  "max": 704.959428,
+                  "avg": 452.651395,
+                  "uniq": 25
+                },
+                "8": {
+                  "min": 267.651525,
+                  "max": 731.6405,
+                  "avg": 455.947619,
+                  "uniq": 25
+                },
+                "16": {
+                  "min": 0.0,
+                  "max": 0.0,
+                  "avg": 0.0,
+                  "uniq": 1
+                },
+                "24": {
+                  "min": 0.0,
+                  "max": 0.0,
+                  "avg": 0.0,
+                  "uniq": 1
+                },
+                "32": {
+                  "min": 0.0,
+                  "max": 0.0,
+                  "avg": 0.0,
+                  "uniq": 1
+                },
+                "40": {
+                  "min": 5.2e-05,
+                  "max": 0.000705,
+                  "avg": 0.000191,
+                  "uniq": 18
+                }
+              },
+              "u32": {
+                "48": [
+                  {
+                    "value": 0,
+                    "count": 25
+                  }
+                ],
+                "52": [
+                  {
+                    "value": 1065353216,
+                    "count": 25
+                  }
+                ],
+                "56": [
+                  {
+                    "value": 1065353216,
+                    "count": 25
+                  }
+                ],
+                "60": [
+                  {
+                    "value": 1065353216,
+                    "count": 25
+                  }
+                ]
+              }
+            },
+            "pen_bbox_width": {
+              "min": 41.0,
+              "max": 80.0,
+              "avg": 58.04,
+              "uniq": 14
+            },
+            "pen_bbox_height": {
+              "min": 41.0,
+              "max": 86.0,
+              "avg": 59.6,
+              "uniq": 15
+            },
+            "first_points": [
+              {
+                "x": 282.019885,
+                "y": 268.253947,
+                "pen_bbox": [
+                  262,
+                  248,
+                  303,
+                  289
+                ],
+                "native32_probe": {
+                  "vertex_select_id_16": 262,
+                  "line_select_id_20": 248,
+                  "is_vertex_selected_24": 303,
+                  "unused_or_extra_28": 289
+                },
+                "float_fields": {
+                  "36": 0.005128,
+                  "40": 0.544444,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0,
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "compact_point_reader_probe": {
+                  "x_f64_0": 282.019885,
+                  "y_f64_8": 268.253947,
+                  "u32_16_28": {
+                    "16": 262,
+                    "20": 248,
+                    "24": 303,
+                    "28": 289
+                  },
+                  "u32_32": 0,
+                  "f32_36_76": {
+                    "36": 0.005128,
+                    "40": 0.544444,
+                    "44": 0.0,
+                    "48": 0.0,
+                    "52": 1.0,
+                    "56": 1.0,
+                    "60": 1.0,
+                    "64": 0.0,
+                    "68": 0.0,
+                    "72": 0.0,
+                    "76": 0.0
+                  },
+                  "writer_grouped_f32": {
+                    "source_double_derived_36_60": {
+                      "36": 0.005128,
+                      "40": 0.544444,
+                      "44": 0.0,
+                      "48": 0.0,
+                      "52": 1.0,
+                      "56": 1.0,
+                      "60": 1.0
+                    },
+                    "native_channel_names_36_60": {
+                      "36": "sample_context_0x10_primary_scalar",
+                      "40": "sample_context_0x18_angle_over_90",
+                      "44": "sample_context_0x20_aux_scalar",
+                      "48": "sample_context_0x28_angle_like",
+                      "52": "sample_context_0x30_velocity_factor",
+                      "56": "sample_context_0x38_size_factor",
+                      "60": "sample_context_0x40_flow_factor"
+                    },
+                    "other_serialized_f32_64_76": {
+                      "64": 0.0,
+                      "68": 0.0,
+                      "72": 0.0,
+                      "76": 0.0
+                    },
+                    "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+                  },
+                  "u32_80_84": {
+                    "80": 45996258,
+                    "84": 0
+                  }
+                },
+                "cubic64_probe": {
+                  "f64_0_40": [
+                    282.019885,
+                    268.253947,
+                    0.0,
+                    0.0,
+                    0.0,
+                    5.2e-05
+                  ],
+                  "u32_48_60": {
+                    "48": 0,
+                    "52": 1065353216,
+                    "56": 1065353216,
+                    "60": 1065353216
+                  }
+                }
+              },
+              {
+                "x": 282.804308,
+                "y": 268.664839,
+                "pen_bbox": [
+                  262,
+                  248,
+                  304,
+                  289
+                ],
+                "native32_probe": {
+                  "vertex_select_id_16": 262,
+                  "line_select_id_20": 248,
+                  "is_vertex_selected_24": 304,
+                  "unused_or_extra_28": 289
+                },
+                "float_fields": {
+                  "36": 0.039556,
+                  "40": 0.544444,
+                  "44": 0.004822,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0,
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 2.314285
+                },
+                "compact_point_reader_probe": {
+                  "x_f64_0": 282.804308,
+                  "y_f64_8": 268.664839,
+                  "u32_16_28": {
+                    "16": 262,
+                    "20": 248,
+                    "24": 304,
+                    "28": 289
+                  },
+                  "u32_32": 0,
+                  "f32_36_76": {
+                    "36": 0.039556,
+                    "40": 0.544444,
+                    "44": 0.004822,
+                    "48": 0.0,
+                    "52": 1.0,
+                    "56": 1.0,
+                    "60": 1.0,
+                    "64": 0.0,
+                    "68": 0.0,
+                    "72": 0.0,
+                    "76": 2.314285
+                  },
+                  "writer_grouped_f32": {
+                    "source_double_derived_36_60": {
+                      "36": 0.039556,
+                      "40": 0.544444,
+                      "44": 0.004822,
+                      "48": 0.0,
+                      "52": 1.0,
+                      "56": 1.0,
+                      "60": 1.0
+                    },
+                    "native_channel_names_36_60": {
+                      "36": "sample_context_0x10_primary_scalar",
+                      "40": "sample_context_0x18_angle_over_90",
+                      "44": "sample_context_0x20_aux_scalar",
+                      "48": "sample_context_0x28_angle_like",
+                      "52": "sample_context_0x30_velocity_factor",
+                      "56": "sample_context_0x38_size_factor",
+                      "60": "sample_context_0x40_flow_factor"
+                    },
+                    "other_serialized_f32_64_76": {
+                      "64": 0.0,
+                      "68": 0.0,
+                      "72": 0.0,
+                      "76": 2.314285
+                    },
+                    "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+                  },
+                  "u32_80_84": {
+                    "80": 45996258,
+                    "84": 0
+                  }
+                },
+                "cubic64_probe": {
+                  "f64_0_40": [
+                    282.804308,
+                    268.664839,
+                    0.0,
+                    0.0,
+                    0.0,
+                    5.2e-05
+                  ],
+                  "u32_48_60": {
+                    "48": 0,
+                    "52": 1065353216,
+                    "56": 1065353216,
+                    "60": 1065353216
+                  }
+                }
+              },
+              {
+                "x": 283.429928,
+                "y": 268.830435,
+                "pen_bbox": [
+                  261,
+                  247,
+                  304,
+                  289
+                ],
+                "native32_probe": {
+                  "vertex_select_id_16": 261,
+                  "line_select_id_20": 247,
+                  "is_vertex_selected_24": 304,
+                  "unused_or_extra_28": 289
+                },
+                "float_fields": {
+                  "36": 0.318788,
+                  "40": 0.544444,
+                  "44": 0.01247,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0,
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 1.489037
+                },
+                "compact_point_reader_probe": {
+                  "x_f64_0": 283.429928,
+                  "y_f64_8": 268.830435,
+                  "u32_16_28": {
+                    "16": 261,
+                    "20": 247,
+                    "24": 304,
+                    "28": 289
+                  },
+                  "u32_32": 0,
+                  "f32_36_76": {
+                    "36": 0.318788,
+                    "40": 0.544444,
+                    "44": 0.01247,
+                    "48": 0.0,
+                    "52": 1.0,
+                    "56": 1.0,
+                    "60": 1.0,
+                    "64": 0.0,
+                    "68": 0.0,
+                    "72": 0.0,
+                    "76": 1.489037
+                  },
+                  "writer_grouped_f32": {
+                    "source_double_derived_36_60": {
+                      "36": 0.318788,
+                      "40": 0.544444,
+                      "44": 0.01247,
+                      "48": 0.0,
+                      "52": 1.0,
+                      "56": 1.0,
+                      "60": 1.0
+                    },
+                    "native_channel_names_36_60": {
+                      "36": "sample_context_0x10_primary_scalar",
+                      "40": "sample_context_0x18_angle_over_90",
+                      "44": "sample_context_0x20_aux_scalar",
+                      "48": "sample_context_0x28_angle_like",
+                      "52": "sample_context_0x30_velocity_factor",
+                      "56": "sample_context_0x38_size_factor",
+                      "60": "sample_context_0x40_flow_factor"
+                    },
+                    "other_serialized_f32_64_76": {
+                      "64": 0.0,
+                      "68": 0.0,
+                      "72": 0.0,
+                      "76": 1.489037
+                    },
+                    "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+                  },
+                  "u32_80_84": {
+                    "80": 45996258,
+                    "84": 0
+                  }
+                },
+                "cubic64_probe": {
+                  "f64_0_40": [
+                    283.429928,
+                    268.830435,
+                    0.0,
+                    0.0,
+                    0.0,
+                    5.2e-05
+                  ],
+                  "u32_48_60": {
+                    "48": 0,
+                    "52": 1065353216,
+                    "56": 1065353216,
+                    "60": 1065353216
+                  }
+                }
+              },
+              {
+                "x": 281.915698,
+                "y": 267.651525,
+                "pen_bbox": [
+                  261,
+                  247,
+                  306,
+                  290
+                ],
+                "native32_probe": {
+                  "vertex_select_id_16": 261,
+                  "line_select_id_20": 247,
+                  "is_vertex_selected_24": 306,
+                  "unused_or_extra_28": 290
+                },
+                "float_fields": {
+                  "36": 0.357737,
+                  "40": 0.544444,
+                  "44": 0.012239,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0,
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 2.769125
+                },
+                "compact_point_reader_probe": {
+                  "x_f64_0": 281.915698,
+                  "y_f64_8": 267.651525,
+                  "u32_16_28": {
+                    "16": 261,
+                    "20": 247,
+                    "24": 306,
+                    "28": 290
+                  },
+                  "u32_32": 1,
+                  "f32_36_76": {
+                    "36": 0.357737,
+                    "40": 0.544444,
+                    "44": 0.012239,
+                    "48": 0.0,
+                    "52": 1.0,
+                    "56": 1.0,
+                    "60": 1.0,
+                    "64": 0.0,
+                    "68": 0.0,
+                    "72": 0.0,
+                    "76": 2.769125
+                  },
+                  "writer_grouped_f32": {
+                    "source_double_derived_36_60": {
+                      "36": 0.357737,
+                      "40": 0.544444,
+                      "44": 0.012239,
+                      "48": 0.0,
+                      "52": 1.0,
+                      "56": 1.0,
+                      "60": 1.0
+                    },
+                    "native_channel_names_36_60": {
+                      "36": "sample_context_0x10_primary_scalar",
+                      "40": "sample_context_0x18_angle_over_90",
+                      "44": "sample_context_0x20_aux_scalar",
+                      "48": "sample_context_0x28_angle_like",
+                      "52": "sample_context_0x30_velocity_factor",
+                      "56": "sample_context_0x38_size_factor",
+                      "60": "sample_context_0x40_flow_factor"
+                    },
+                    "other_serialized_f32_64_76": {
+                      "64": 0.0,
+                      "68": 0.0,
+                      "72": 0.0,
+                      "76": 2.769125
+                    },
+                    "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+                  },
+                  "u32_80_84": {
+                    "80": 45996258,
+                    "84": 0
+                  }
+                },
+                "cubic64_probe": {
+                  "f64_0_40": [
+                    281.915698,
+                    267.651525,
+                    0.0,
+                    0.0,
+                    0.0,
+                    5.2e-05
+                  ],
+                  "u32_48_60": {
+                    "48": 0,
+                    "52": 1065353216,
+                    "56": 1065353216,
+                    "60": 1065353216
+                  }
+                }
+              }
+            ]
+          },
+          "brush_style_effectors": {
+            "RotationEffector": {
+              "value": 3
+            }
+          },
+          "texture_resource": {
+            "texture_pattern_id": 2,
+            "texture_image_name": "铅笔",
+            "texture_image_mipmap": 29,
+            "texture_flag": 513,
+            "texture_composite": 0,
+            "texture_density_base": "0.35",
+            "texture_density_effector": "4:1:00000001",
+            "texture_brightness": "0.0",
+            "texture_contrast": "0.0",
+            "texture_scale": "1.0",
+            "texture_rotate": "0.0",
+            "texture_offset_x": "0.0",
+            "texture_offset_y": "0.0"
+          },
+          "compiled_line_style_note": {
+            "native_compile_chain": [
+              "0x1424A4450 line-style cache resolver",
+              "0x1422D9BE0 PWBrushStyle builder",
+              "0x1422DA100 clone/compile copier"
+            ],
+            "runtime_object": "PWBrushStyle 0x720 bytes",
+            "source_table_evidence": {
+              "has_pattern_material_list": false,
+              "has_texture_descriptor": true
+            },
+            "compiled_state_not_serialized_directly": [
+              "line/list secondary resource pair at runtime +0x60/+0x68",
+              "optional multi-entry list prepared by 0x1422DF860 -> 0x14256B190",
+              "deep cache equality over resolved effectors/resources via 0x1422DCAD0"
+            ]
+          }
+        }
+      ],
+      "objects_100": [],
+      "brush_styles": {
+        "11": {
+          "MainId": 11,
+          "_PW_ID": 1,
+          "CanvasId": 1,
+          "NextIndex": 0,
+          "StyleFlag": {
+            "value": 115264,
+            "hex": "0x1c240",
+            "direct_max_accum_0x1000": false,
+            "texture_or_water_family_0x10000": true,
+            "texture_or_water_family_0x20000": false
+          },
+          "PenRadius": 0.0,
+          "SizeEffector": {
+            "len": 4,
+            "hex": "00000001",
+            "words": [
+              {
+                "u32": 1,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "default_or_off_0x01",
+              "type": 1,
+              "native_runtime_branches": {
+                "value": 1,
+                "hex": "0x1",
+                "compiled_or_active_0x1": true,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "OpacityEffector": {
+            "len": 4,
+            "hex": "00000001",
+            "words": [
+              {
+                "u32": 1,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "default_or_off_0x01",
+              "type": 1,
+              "native_runtime_branches": {
+                "value": 1,
+                "hex": "0x1",
+                "compiled_or_active_0x1": true,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "FlowBase": 1.0,
+          "FlowEffector": {
+            "len": 4,
+            "hex": "00000001",
+            "words": [
+              {
+                "u32": 1,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "default_or_off_0x01",
+              "type": 1,
+              "native_runtime_branches": {
+                "value": 1,
+                "hex": "0x1",
+                "compiled_or_active_0x1": true,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "AntiAlias": 0,
+          "MipmapIndexToPlot": 0,
+          "Hardness": 1.0,
+          "IntervalBase": 1.0,
+          "IntervalEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "AutoIntervalType": 2,
+          "ThicknessBase": 1.0,
+          "ThicknessEffector": {
+            "len": 4,
+            "hex": "00000001",
+            "words": [
+              {
+                "u32": 1,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "default_or_off_0x01",
+              "type": 1,
+              "native_runtime_branches": {
+                "value": 1,
+                "hex": "0x1",
+                "compiled_or_active_0x1": true,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "RotationBase": 0.0,
+          "RotationInSprayBase": 0.0,
+          "RotationEffector": 3,
+          "RotationRandom": 1.0,
+          "RotationEffectorInSpray": 3,
+          "RotationRandomInSpray": 1.0,
+          "PatternStyle": 0,
+          "CompositeMode": 0,
+          "DualCompositeMode": 1,
+          "TexturePattern": 2,
+          "TextureFlag": 513,
+          "TextureFlagDecoded": {
+            "value": 513,
+            "hex": "0x201",
+            "enabled_bit_0x1": true,
+            "density_effector_gate_0x10": false,
+            "invert_sample_0x100": false,
+            "average_baseline_remap_0x200": true,
+            "unknown_bits": 0
+          },
+          "TextureComposite": 0,
+          "TextureScale": 1.0,
+          "TextureRotate": 0.0,
+          "TextureOffsetX": 0.0,
+          "TextureOffsetY": 0.0,
+          "TextureBrightness": 0.0,
+          "TextureContrast": 0.0,
+          "TextureDensityBase": 0.35,
+          "TextureDensityEffector": {
+            "len": 4,
+            "hex": "00000001",
+            "words": [
+              {
+                "u32": 1,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "default_or_off_0x01",
+              "type": 1,
+              "native_runtime_branches": {
+                "value": 1,
+                "hex": "0x1",
+                "compiled_or_active_0x1": true,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "UseWaterColor": 0,
+          "WaterColorType": 0,
+          "MixColorBase": 1.0,
+          "MixColorEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "MixAlphaBase": 1.0,
+          "MixAlphaEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "ColorExtension": 0.0,
+          "BrushColorMixingMode": 0,
+          "BrushLMSLinearity": 0,
+          "BlurKind": 0,
+          "BlurBase": 0.0,
+          "BlurEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "SubColorBase": 0.0,
+          "SubColorEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "HueChangeBase": 0.0,
+          "HueChangeEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "SaturationChangeBase": 0.0,
+          "SaturationChangeEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "ValueChangeBase": 0.0,
+          "ValueChangeEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "ChangeDrawColorTarget": 1,
+          "SprayFlag": 0,
+          "SpraySizeBase": 1.0,
+          "SpraySizeEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "SprayDensityBase": 1.0,
+          "SprayDensityEffector": {
+            "len": 4,
+            "hex": "00000000",
+            "words": [
+              {
+                "u32": 0,
+                "f32": 0.0
+              }
+            ],
+            "decoded": {
+              "form": "zero_or_disabled_0x00",
+              "type": 0,
+              "native_runtime_branches": {
+                "value": 0,
+                "hex": "0x0",
+                "compiled_or_active_0x1": false,
+                "graph_context_primary_0x10": false,
+                "graph_context_secondary_0x20": false,
+                "graph_context_aux_0x40": false,
+                "random_0x80": false,
+                "velocity_0x100": false,
+                "unknown_bits": 0
+              },
+              "graph_refs": [],
+              "scalars": []
+            }
+          },
+          "SprayBias": 1.0,
+          "FixedSpray": 0,
+          "WaterEdgeFlag": 0,
+          "WaterEdgeRadius": 1.0,
+          "WaterEdgeAlphaPower": 0.0,
+          "WaterEdgeValuePower": 0.0,
+          "WaterEdgeBlur": 0.0
+        }
+      },
+      "fill_styles": {},
+      "brush_resources": {
+        "pattern_styles": {},
+        "pattern_images": {
+          "2": {
+            "_PW_ID": 1,
+            "MainId": 2,
+            "CanvasId": 1,
+            "NextIndex": 0,
+            "Uuid": {
+              "len": 16,
+              "hex": "0b101c4e411b4480ab49f763bb7b446a"
+            },
+            "Mipmap": 29,
+            "Name": "铅笔",
+            "mipmap_probe": {
+              "mipmap_id": 29,
+              "offscreen_id": 158,
+              "external_id": "extrnlidDAAA778BC3B94827BD5FC22B829BE13E",
+              "external_present": true,
+              "external_len": 225997,
+              "pixel_size": [
+                512,
+                512
+              ],
+              "expected_rgba_tile_len": 1048576,
+              "raw_bytes_per_pixel": 0.8621101379394531,
+              "decoded_tile_blob_len": 262144,
+              "decoded_bytes_per_pixel": 1.0,
+              "decoded_byte_lane_stats": {
+                "0": {
+                  "min": 0,
+                  "max": 255,
+                  "avg": 169.652912,
+                  "nonzero": 258903,
+                  "count": 262144
+                }
+              },
+              "native_material_selector_guess": {
+                "selector": 1,
+                "selector_hex": "0x1",
+                "selector_family": "single_lane",
+                "coverage_lane": 0,
+                "native_initializer": "0x1432BDA20 selector family 0x1",
+                "reason": "one decoded byte per pixel"
+              },
+              "native_material_format_note": {
+                "observed_selector_guess": "0x1",
+                "observed_coverage_lane": 0,
+                "source": "decoded material bytes-per-pixel",
+                "native_selector_getter": "0x1419BCBD0 reads material image object+0x98",
+                "native_storage_getter": "0x1419BCDA0 reads material image object+0x9c",
+                "native_material_image_builder": "0x1432BDE10 -> 0x1432BBA90 PWVOffscreen/material image",
+                "native_copy_or_convert_path": "0x14251C280 direct-copies compatible storage with 0x1432BE2F0, otherwise initializes 0x1432BDA20 and converts pixels with 0x1432CD910.",
+                "native_region_copy_convert": "0x1432D4260 fast-paths matching selector/storage by memcpy, otherwise dispatches 0x1432D4100 -> 0x1432CDA40 per-pixel conversion.",
+                "native_pixel_format_flags": "0x1432CDA40 reads unit size from object+0x84 and flags from object+0x80; flag 0x10 is a single extra/material lane and 0x20 is RGB-like lanes.",
+                "native_channel_helpers": "0x14206C3A0/0x14206C300/0x14206C350 build packed 3-channel values from 8/16/32-bit lanes; 0x142085BA0 converts RGB-like lanes to luminance with weights 0.298912/0.586611/0.114478.",
+                "native_stamp_buffer_bridge": "0x142642E90 initializes draw-time material/stamp buffers with 0x141AA4BD0, then copies/resamples through 0x141AA5730 or 0x141AA6130 and publishes pixel base/strides to draw context +0x238/+0x240/+0x244.",
+                "native_stamp_buffer_copy_paths": "0x141AA5730 is the general multi-lane path: 0x1 copies base lane, 0x11 writes extra/material lane plus base lane, and 0x21 writes three RGB-like extra lanes plus base lane. 0x141AA6130 is a fast matching-format path for base-lane-only buffers.",
+                "native_sampler_lane_rule": "0x142637930 samples draw context +0x228: flag 0x20 uses pixel byte 3, flag 0x10 uses byte 1, otherwise byte 0, then multiplies coverage by that byte / 255 before row accumulation.",
+                "native_row_writer_dispatch": "0x14263B7F0 dispatches material rows by the same flags: 0x20 to RGB-like row writers, 0x10 to two-lane/material-mix writers, and 1 to base-lane writers.",
+                "native_four_sample_material_helpers": "Cached-buffer helpers 0x14263E5D0/0x14263E970/0x14263EE20 sample four material pixels and scale coverage by sum(alpha)/(4*255). For 0x10, byte1 is alpha and byte0 is averaged mix; for 0x20, byte3 is alpha and bytes2/1/0 are averaged RGB-like channels. 0x14263E700/0x14263EB10/0x14263F070 are the source-image/block-accessor variants.",
+                "native_final_material_writer": "0x14263DDB0 writes final 16-bit coverage plus BGR bytes: candidate coverage is min(0x40000000, sampledCoverage * opacityCap(ctx+0x1e0)) >> 15; ctx+0x1dc selects direct/max versus build-up color blending.",
+                "native_row_accumulator_variants": "0x14263C060 resolves brush profile/mask/texture coverage then calls 0x14263DDB0; 0x14263C3A0 resolves dynamic material color through 0x142637A70/0x142637C70 before the same final writer; 0x14263C5C0 is coverage-only. 0x1426388D0/0x142638F10 read source coverage/BGR from the ctx+0x50 temp-buffer span and blend it with brush flow/color weights.",
+                "native_texture_coverage_modifier": "0x142664760 is the texture/coverage modifier used by row writers: it samples a wrapped, rotated 8-bit texture (0x142664550 is the bilinear path), optional invert/remap/density scaling converts it to 0..0x8000, then mode ctx+0x48 selects one of ten coverage blend formulas before clamping.",
+                "native_texture_descriptor_source": "0x1422DC680 copies the 72-byte BrushStyle texture descriptor from runtime style+0x2b0 when style+0x2c0 bit0 is set. 0x14255D810 stores it in writer-state +0x88..+0xc8, 0x14260F8B0 passes it to 0x142664C00, and 0x142644180 enables the row modifier.",
+                "native_texture_descriptor_sqlite_map": "The 72-byte descriptor matches BrushStyle texture columns: resource pair +0/+8 from TexturePattern, TextureFlag at +0x10, TextureComposite at +0x14, TextureScale/+Rotate/+OffsetX/+OffsetY at +0x18/+0x20/+0x28/+0x30, and TextureBrightness/+Contrast at +0x38/+0x40. Flag 0x200 enables the remap path using whole-texture average helper 0x1426642D0.",
+                "native_texture_composite_modes": "TextureComposite feeds 0x142664760 mode ctx+0x48. Modes 0..9 apply distinct coverage formulas using input coverage, sampled texture coverage, baseline, and density fields; 0x142664260 stores density at ctx+0x4c and scales it by 10 for remap or mode 9. Current samples only exercise mode 0.",
+                "native_texture_density_effector_path": "0x1422D8550 writes plot +72 from runtime style+0x2f8/+0x300 (TextureDensityBase/Effector area) only when texture flags include both 0x1 and 0x10; queue +0x170 then becomes 0x14263F410 a11 and is passed to 0x142664260(textureCtx, density, flowFixed). Current 0x101/0x201 samples do not set 0x10.",
+                "native_boundary": "Exact rendering should use the resolved material-image selector/storage pair initialized by native 0x1432BDA20, not TextureFlag alone."
+              },
+              "decoded_rgba_shape": null
+            }
+          }
+        }
+      },
+      "effector_graphs": {}
+    }
+  ]
+}

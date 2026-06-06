@@ -1,0 +1,17 @@
+{
+  "mid_inclusive": {
+    "max": 226,
+    "mean": 0.024409,
+    "visible_px": 151
+  },
+  "polyline": {
+    "max": 226,
+    "mean": 0.039765,
+    "visible_px": 246
+  },
+  "triple": {
+    "max": 226,
+    "mean": 0.047363,
+    "visible_px": 293
+  }
+}

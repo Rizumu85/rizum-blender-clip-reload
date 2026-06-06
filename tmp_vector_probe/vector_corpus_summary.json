@@ -1,0 +1,118 @@
+{
+  "clip_count": 38,
+  "stroke_count": 7,
+  "shape_counts": [
+    {
+      "count": 5,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321
+    },
+    {
+      "count": 2,
+      "shape": [
+        92,
+        76,
+        120,
+        88
+      ],
+      "flags": 65
+    }
+  ],
+  "style_combos": [
+    {
+      "count": 4,
+      "size": "16:273:000001113f733333000000043f400000",
+      "opacity": "12:17:000000113e99999900000005",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 0.5,
+      "texture": 3,
+      "pattern": 0,
+      "auto_interval": 3,
+      "anti_alias": 1
+    },
+    {
+      "count": 1,
+      "size": "12:17:000000113d8f5c2900000003",
+      "opacity": "4:1:00000001",
+      "flow": "12:17:000000110000000000000004",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 1,
+      "anti_alias": 1
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 2,
+      "auto_interval": 0,
+      "anti_alias": 3
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 3
+    }
+  ],
+  "effector_keys": [
+    {
+      "count": 7,
+      "kind": "ThicknessEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 6,
+      "kind": "FlowEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 4,
+      "kind": "SizeEffector",
+      "key": "16:273:000001113f733333000000043f400000"
+    },
+    {
+      "count": 4,
+      "kind": "OpacityEffector",
+      "key": "12:17:000000113e99999900000005"
+    },
+    {
+      "count": 3,
+      "kind": "OpacityEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 2,
+      "kind": "SizeEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 1,
+      "kind": "SizeEffector",
+      "key": "12:17:000000113d8f5c2900000003"
+    },
+    {
+      "count": 1,
+      "kind": "FlowEffector",
+      "key": "12:17:000000110000000000000004"
+    }
+  ]
+}

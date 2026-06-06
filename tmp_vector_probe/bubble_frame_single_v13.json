@@ -1,0 +1,1056 @@
+{
+  "name": "Bubble_Frame.clip",
+  "path": "img\\Bubble_Frame.clip",
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "vector_layer_count": 1,
+  "vector_layers": [
+    {
+      "layer_id": 8,
+      "layer_name": "Frame 1",
+      "vector_data": "extrnlidC5B1C4D923074F8D91146F6261EC8C93",
+      "vector_body_len": 508,
+      "external_header": {
+        "header_len": 40,
+        "tag": "extrnlid",
+        "identifier": "C5B1C4D923074F8D91146F6261EC8C93",
+        "external_id": "extrnlidC5B1C4D923074F8D91146F6261EC8C93",
+        "payload_offset": 56,
+        "payload_size": 452,
+        "payload_end": 508,
+        "payload_size_matches_body": true,
+        "matches_vector_data": true
+      },
+      "compact_record_spans": [
+        {
+          "kind": "object_100",
+          "offset": 56,
+          "end": 508,
+          "shape": [
+            100,
+            76,
+            88,
+            88
+          ],
+          "point_count": 4
+        }
+      ],
+      "compact_record_coverage": {
+        "record_count": 1,
+        "covered_bytes": 452,
+        "body_len": 508,
+        "prefix_len": 56,
+        "trailing_gap": 0,
+        "fully_covered_after_prefix": true,
+        "prefix_matches_external_header": true
+      },
+      "LayerType": 0,
+      "LayerFolder": 17,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 114,
+      "LayerVisibility": 3,
+      "LayerRenderMipmap": 17,
+      "LayerLayerMaskMipmap": 18,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "VectorNormalStrokeIndex": 0,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 4,
+      "VectorNormalType": 3,
+      "MixSubColorForEveryPlot": 1,
+      "ComicFrameLineMipmap": 19,
+      "ComicFrameColorTypeIndex": 0,
+      "ComicFrameColorTypeBlackChecked": 1,
+      "ComicFrameColorTypeWhiteChecked": 1,
+      "mipmap_resources": {
+        "LayerRenderMipmap": {
+          "mipmap_id": 17,
+          "offscreen_id": 85,
+          "external_id": "extrnlidDFDB076622484385BFD074C658EE63A5",
+          "external_present": false,
+          "external_len": null
+        },
+        "LayerLayerMaskMipmap": {
+          "mipmap_id": 18,
+          "offscreen_id": 91,
+          "external_id": "extrnlid5EAFCB079A8B4EE086AE8F3268152F16",
+          "external_present": false,
+          "external_len": null
+        },
+        "ComicFrameLineMipmap": {
+          "mipmap_id": 19,
+          "offscreen_id": 97,
+          "external_id": "extrnlidD028903EF532478985B305BAC7C41BBB",
+          "external_present": false,
+          "external_len": null
+        }
+      }
+    }
+  ],
+  "stroke_count": 0,
+  "object_100_count": 1,
+  "strokes": [],
+  "objects_100": [
+    {
+      "layer_id": 8,
+      "layer_name": "Frame 1",
+      "layer_first_child": 0,
+      "body_offset": 56,
+      "shape": [
+        100,
+        76,
+        88,
+        88
+      ],
+      "raw_header": {
+        "hex": "000000640000004c0000005800000058000000040000011800000121000000ad000003200000019a000000000000000000000000ffffffffffffffffffffffff3ff000000000000000000000000004100000000600000003400400000000000002c25a75",
+        "u32_be": {
+          "0": 100,
+          "4": 76,
+          "8": 88,
+          "12": 88,
+          "16": 4,
+          "20": 280,
+          "24": 289,
+          "28": 173,
+          "32": 800,
+          "36": 410,
+          "40": 0,
+          "44": 0,
+          "48": 0,
+          "52": 4294967295,
+          "56": 4294967295,
+          "60": 4294967295,
+          "64": 1072693248,
+          "68": 0,
+          "72": 0,
+          "76": 1040,
+          "80": 6,
+          "84": 3,
+          "88": 1074003968,
+          "92": 0,
+          "96": 46291573
+        },
+        "f32_be": {
+          "0": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "12": 0.0,
+          "16": 0.0,
+          "20": 0.0,
+          "24": 0.0,
+          "28": 0.0,
+          "32": 0.0,
+          "36": 0.0,
+          "40": 0.0,
+          "44": 0.0,
+          "48": 0.0,
+          "64": 1.875,
+          "68": 0.0,
+          "72": 0.0,
+          "76": 0.0,
+          "80": 0.0,
+          "84": 0.0,
+          "88": 2.0625,
+          "92": 0.0,
+          "96": 0.0
+        },
+        "f64_be": {
+          "0": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "24": 0.0,
+          "32": 0.0,
+          "40": 0.0,
+          "48": 0.0,
+          "64": 1.0,
+          "72": 0.0,
+          "80": 0.0,
+          "88": 2.5
+        }
+      },
+      "compact_native_reader_probe": {
+        "valid": true,
+        "record_control": {
+          "object_header_len": 100,
+          "subclass_tail_offset": 76,
+          "point_record_stride": 88,
+          "point_record_tail_offset": 88,
+          "point_count": 4,
+          "object_flags_or_type": 280
+        },
+        "common_object": {
+          "bbox": [
+            289,
+            173,
+            800,
+            410
+          ],
+          "line_color_triplet_u32": [
+            0,
+            0,
+            0
+          ],
+          "line_rgb": [
+            0,
+            0,
+            0
+          ],
+          "fill_color_triplet_u32": [
+            4294967295,
+            4294967295,
+            4294967295
+          ],
+          "fill_rgb": [
+            255,
+            255,
+            255
+          ],
+          "opacity": 1.0,
+          "extra_u32_72": 0
+        },
+        "point_payload": {
+          "start": 156,
+          "end": 508
+        },
+        "subclass_tail": {
+          "class": "PWVectorBalloon",
+          "family_u32_76": 1040,
+          "list1_index_u32_80": 6,
+          "list2_index_u32_84": 3,
+          "width_or_scale_f64_88": 2.5,
+          "extra_u32_96": 46291573
+        }
+      },
+      "compact_semantic_probe": {
+        "object_kind": "object_100",
+        "native_draw_flag_candidate_lens": {
+          "20": {
+            "value": 280,
+            "bit0_line_lens": false,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 8
+          },
+          "72": {
+            "value": 0,
+            "bit0_line_lens": false,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 0
+          },
+          "76": {
+            "value": 1040,
+            "bit0_line_lens": false,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 0
+          }
+        },
+        "argb_candidates_from_compact_color": {
+          "line": [
+            255,
+            0,
+            0,
+            0
+          ],
+          "fill": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "opacity_alpha": 255
+        },
+        "known_100_fields": {
+          "point_count": 4,
+          "unknown_u32_20": 280,
+          "unknown_u32_72": 0,
+          "family_u32_76": 1040,
+          "brush_style_id": 6,
+          "subtype": 3,
+          "width": 2.5,
+          "object_id_like_u32_96": 46291573
+        }
+      },
+      "point_count": 4,
+      "bbox": [
+        289,
+        173,
+        800,
+        410
+      ],
+      "line_rgb": [
+        0,
+        0,
+        0
+      ],
+      "fill_rgb": [
+        255,
+        255,
+        255
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 6,
+      "subtype": 3,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          292,
+          176,
+          798,
+          408
+        ],
+        "xy": {
+          "x": {
+            "min": 292.001,
+            "max": 797.001,
+            "avg": 544.501,
+            "uniq": 2
+          },
+          "y": {
+            "min": 176.001,
+            "max": 407.001,
+            "avg": 291.501,
+            "uniq": 2
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 9.0,
+            "avg": 4.5,
+            "uniq": 4
+          }
+        },
+        "native32_stats": {
+          "u32": {
+            "16": [
+              {
+                "value": 289,
+                "count": 3
+              },
+              {
+                "value": 794,
+                "count": 1
+              }
+            ],
+            "20": [
+              {
+                "value": 173,
+                "count": 3
+              },
+              {
+                "value": 404,
+                "count": 1
+              }
+            ],
+            "24": [
+              {
+                "value": 800,
+                "count": 3
+              },
+              {
+                "value": 295,
+                "count": 1
+              }
+            ],
+            "28": [
+              {
+                "value": 410,
+                "count": 3
+              },
+              {
+                "value": 179,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "cubic64_stats": {
+          "f64": {
+            "0": {
+              "min": 292.001,
+              "max": 797.001,
+              "avg": 544.501,
+              "uniq": 2
+            },
+            "8": {
+              "min": 176.001,
+              "max": 407.001,
+              "avg": 291.501,
+              "uniq": 2
+            },
+            "16": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "24": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "32": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "40": {
+              "min": 0.007812,
+              "max": 0.007812,
+              "avg": 0.007812,
+              "uniq": 1
+            }
+          },
+          "u32": {
+            "48": [
+              {
+                "value": 0,
+                "count": 4
+              }
+            ],
+            "52": [
+              {
+                "value": 1065353216,
+                "count": 4
+              }
+            ],
+            "56": [
+              {
+                "value": 1065353216,
+                "count": 4
+              }
+            ],
+            "60": [
+              {
+                "value": 1065353216,
+                "count": 4
+              }
+            ]
+          }
+        },
+        "pen_bbox_width": {
+          "min": 6.0,
+          "max": 511.0,
+          "avg": 258.5,
+          "uniq": 2
+        },
+        "pen_bbox_height": {
+          "min": 6.0,
+          "max": 237.0,
+          "avg": 121.5,
+          "uniq": 2
+        },
+        "first_points": [
+          {
+            "x": 292.001,
+            "y": 176.001,
+            "pen_bbox": [
+              289,
+              173,
+              800,
+              179
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 289,
+              "line_select_id_20": 173,
+              "is_vertex_selected_24": 800,
+              "unused_or_extra_28": 179
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 292.001,
+              "y_f64_8": 176.001,
+              "u32_16_28": {
+                "16": 289,
+                "20": 173,
+                "24": 800,
+                "28": 179
+              },
+              "u32_32": 1,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 46291573,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                292.001,
+                176.001,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 797.001,
+            "y": 176.001,
+            "pen_bbox": [
+              794,
+              173,
+              800,
+              410
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 794,
+              "line_select_id_20": 173,
+              "is_vertex_selected_24": 800,
+              "unused_or_extra_28": 410
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 5.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 797.001,
+              "y_f64_8": 176.001,
+              "u32_16_28": {
+                "16": 794,
+                "20": 173,
+                "24": 800,
+                "28": 410
+              },
+              "u32_32": 1,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 5.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 5.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 2575638538,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                797.001,
+                176.001,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 797.001,
+            "y": 407.001,
+            "pen_bbox": [
+              289,
+              404,
+              800,
+              410
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 289,
+              "line_select_id_20": 404,
+              "is_vertex_selected_24": 800,
+              "unused_or_extra_28": 410
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 4.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 797.001,
+              "y_f64_8": 407.001,
+              "u32_16_28": {
+                "16": 289,
+                "20": 404,
+                "24": 800,
+                "28": 410
+              },
+              "u32_32": 1,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 4.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 4.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 1818694151,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                797.001,
+                407.001,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 292.001,
+            "y": 407.001,
+            "pen_bbox": [
+              289,
+              173,
+              295,
+              410
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 289,
+              "line_select_id_20": 173,
+              "is_vertex_selected_24": 295,
+              "unused_or_extra_28": 410
+            },
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 9.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 292.001,
+              "y_f64_8": 407.001,
+              "u32_16_28": {
+                "16": 289,
+                "20": 173,
+                "24": 295,
+                "28": 410
+              },
+              "u32_32": 1,
+              "f32_36_76": {
+                "36": 1.0,
+                "40": 1.0,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 9.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 1.0,
+                  "40": 1.0,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 9.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 3616213444,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                292.001,
+                407.001,
+                0.0,
+                0.0,
+                0.0,
+                0.007812
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "brush_styles": {
+    "6": {
+      "MainId": 6,
+      "StyleFlag": 115200,
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AntiAlias": 1,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 2.0,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AutoIntervalType": 0,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 131,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 1,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 0,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0
+    }
+  },
+  "brush_resources": {
+    "pattern_styles": {},
+    "pattern_images": {}
+  },
+  "effector_graphs": {}
+}

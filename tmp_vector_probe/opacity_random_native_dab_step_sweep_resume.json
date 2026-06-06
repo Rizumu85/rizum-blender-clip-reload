@@ -1,0 +1,100 @@
+[
+  {
+    "step": 0.75,
+    "lcg_original_points": false,
+    "mean": 0.9426,
+    "visible": 2906,
+    "max": 82
+  },
+  {
+    "step": 1.0,
+    "lcg_original_points": false,
+    "mean": 0.915225,
+    "visible": 2916,
+    "max": 82
+  },
+  {
+    "step": 1.5,
+    "lcg_original_points": false,
+    "mean": 0.946631,
+    "visible": 2900,
+    "max": 116
+  },
+  {
+    "step": 2.0,
+    "lcg_original_points": false,
+    "mean": 1.002581,
+    "visible": 2922,
+    "max": 119
+  },
+  {
+    "step": 2.5,
+    "lcg_original_points": false,
+    "mean": 1.051481,
+    "visible": 2957,
+    "max": 115
+  },
+  {
+    "step": 3.0,
+    "lcg_original_points": false,
+    "mean": 1.132406,
+    "visible": 2920,
+    "max": 140
+  },
+  {
+    "step": 4.0,
+    "lcg_original_points": false,
+    "mean": 1.268794,
+    "visible": 2945,
+    "max": 124
+  },
+  {
+    "step": 5.0,
+    "lcg_original_points": false,
+    "mean": 1.372256,
+    "visible": 2966,
+    "max": 129
+  },
+  {
+    "step": 6.0,
+    "lcg_original_points": false,
+    "mean": 1.5117,
+    "visible": 3016,
+    "max": 146
+  },
+  {
+    "step": 8.0,
+    "lcg_original_points": false,
+    "mean": 1.788263,
+    "visible": 3086,
+    "max": 168
+  },
+  {
+    "step": 1.0,
+    "lcg_original_points": true,
+    "mean": 2.075325,
+    "visible": 3417,
+    "max": 100
+  },
+  {
+    "step": 2.0,
+    "lcg_original_points": true,
+    "mean": 2.316225,
+    "visible": 3431,
+    "max": 123
+  },
+  {
+    "step": 3.0,
+    "lcg_original_points": true,
+    "mean": 2.519119,
+    "visible": 3432,
+    "max": 140
+  },
+  {
+    "step": 5.0,
+    "lcg_original_points": true,
+    "mean": 2.80455,
+    "visible": 3445,
+    "max": 141
+  }
+]

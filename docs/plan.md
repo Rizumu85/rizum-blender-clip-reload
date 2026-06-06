@@ -1,127 +1,61 @@
-# plan.md - Blender `.clip` Native Loader
+# Plan
 
-## Working Agreement
+Last reconciled: 2026-06-05
 
-- Rizum Guidelines are active for this project/thread until the user says otherwise.
-- Karpathy Guidelines are active for this project/thread until the user says otherwise.
+## Purpose
 
-## Project Goal
+This file records durable project directions only. Do not update it for every probe, rejected hypothesis, address trace, or metric change.
 
-Build a Blender add-on that reads Clip Studio Paint `.clip` files directly as image textures, reproducing the canvas at full resolution without requiring manual PNG/PSD export.
+- Current compact state: `docs/AI_MEMORY.md`
+- Full evidence and rejected hypotheses: `docs/analysis.md`
+- User-facing design context: `docs/design.md`
+- Native-analysis workflow: `E:\Documents\Claude\Projects\rizum-clip-studio-paint\R2_COMMANDLINE_WORKFLOW.md`
+- Windows/WSL decompiler split: `E:\Documents\Claude\Projects\rizum-clip-studio-paint\R2_HYBRID_DECOMP_WORKFLOW.md`
 
-## MVP Success Criterion
+## Direction 1: Native Vector Fidelity
 
-A `.clip` file containing a single Normal-blend raster layer at canvas size can be opened in Blender and the resulting image, pixel-compared against the same file's CSP-exported PNG, matches within a small tolerance.
+Goal: Match CSP's native no-pattern vector rendering for the isolated vector samples without sample-specific overfits.
 
-Status: delivered. The implementation has moved beyond MVP into multi-layer fidelity and live-reload behavior.
+Current focus:
 
-## Direction 1: Format Research
+- Improve isolated vector fixtures first; `Vector_SizePressure.clip` remains
+  paused while other non-exact semantics are harvested.
+- For rough balloon/frame/material objects, keep the current native-backed
+  point-family and interval-dab previews narrow; exactness needs the native
+  retained material quad/row writer, not broader fallback outline tuning.
+- Current native target: `Test_Vector` wide-`0x41` V4 pen-head rendering. The
+  16 half-cap point bridge is native-backed for the large capsule; the next
+  useful boundary is native `FillPolygon` fixed-point scan conversion and
+  alpha/composite behavior.
+- Preserve the exact native guards already solved for baseline, flow, opacity random, and opacity pressure.
 
-Goal: Find and catalogue what is already publicly known about the `.clip` format so we do not redo solved work.
+Update this direction only when the active blocker changes or a major native-rendering milestone is reached.
 
-- [x] Search public repos and writeups on `.clip` reverse engineering.
-- [x] Record findings in `analysis.md` under prior art and reusable-code sections.
-- [x] Identify the solved pieces: chunk container, SQLite schema, tile decode, and full-color raster layers.
+## Direction 2: General `.clip` Fidelity
 
-## Direction 2: Raster Decode
+Goal: Keep improving flattened `.clip` output while preserving verified raster, layer, mask, clipping, blend, adjustment, and vector behavior.
 
-Goal: Decode raster layer tile data into a correct full-resolution RGBA bitmap.
+Current policy:
 
-- [x] Map the relevant SQLite tables for canvas, layers, mipmaps, offscreens, thumbnails, and previews.
-- [x] Locate external chunk IDs for layer and mask pixel data.
-- [x] Decode zlib-compressed 256x256 tiles into RGBA arrays.
-- [x] Verify `Illustration.clip` against CSP-exported PNG with alpha-aware exact matching.
+- Prefer recovered CSP data and native-backed rules over tuned constants.
+- For new native evidence, use the adjacent workspace's hybrid workflow:
+  IDA/Hex-Rays for decompilation, xrefs, structure recovery, and database notes
+  when useful; Windows/WSL r2 for stable CLI evidence and decompiler comparison.
+  Arkana remains optional only.
+- Treat WSL `pdg`/`pdd` and Windows `pdc` as reading aids; confirm behavior with disassembly/xrefs/strings or importer probes before changing semantics.
+- Keep unsupported features conservative until a targeted sample or native trace supports them.
+- Treat text/frame/material/gradation fallbacks as preview layers unless their native renderer path is proven.
 
-## Direction 3: Blender Add-on Integration
+Update this direction only when the project changes scope or a broad class of `.clip` features becomes supported.
 
-Goal: Tie the verified decoder and compositor into a Blender add-on.
+## Direction 3: Agent Handoff Hygiene
 
-- [x] Package the decoder and compositor as a Blender add-on with `File > Import > Clip Studio (.clip)`.
-- [x] On import, create a file-backed Blender Image from a decoded sidecar PNG.
-- [x] Add a `Reload from .clip` operator in the Image Editor N-panel.
-- [x] Add non-blocking auto-reload with a background decode worker and main-thread image refresh.
-- [x] User-side verification: install the add-on, import a sample `.clip`, edit/save in CSP, and confirm Blender refreshes.
+Goal: Make new conversations start from the right state quickly.
 
-## Direction 4: Multi-Layer Fidelity
+Current policy:
 
-Goal: Match CSP flattened PNG exports for real-world raster artwork as closely as possible.
+- Keep `docs/AI_MEMORY.md` as the short current-state memory.
+- Keep `docs/analysis.md` as the evidence log.
+- Keep this file as durable direction, not a running checklist.
 
-- [x] Composite visible raster layers bottom-up with opacity.
-- [x] Support paper layers as opaque background color.
-- [x] Support mapped CSP blend modes observed in supplied samples.
-- [x] Support masks, masked raster layers, folder traversal, layer visibility bit flags, clipping groups, and offscreen group compositing.
-- [x] Validate against `Illustration4K`, isolated blend/mask/folder samples, `Test_RealArt`, and `Ref_Wuwu_Live2D`.
-- [x] Fix root-level clipped-layer edge alpha behavior using `Test_ClippingEdge` and `Test_ClippingEdge4K`.
-- [x] Fix clipped Add Glow color update using `Ref_Emuri_Live2D_2024`.
-- [x] Fix the sampled opaque-content transparency leak in `Ref_Terra404_Live2D` by applying present mask mipmaps on `LayerType=3`.
-- [x] Fix the sampled dark-line overwrite in `Ref_Terra404_Live2D` with masked THROUGH group rendering.
-- [x] Fix the sampled masked clipped Add Glow over-brightening in `Ref_Terra404_Live2D` without regressing clipped edge samples.
-- [x] Run another full-image follow-up on `Ref_Terra404_Live2D` to identify the next remaining error.
-- [x] Investigate the next `Ref_Terra404_Live2D` worst point at `(2190, 1319)`.
-- [x] Improve the `(2190, 1319)` clipped preserve miss with a one-step quantization tolerance adjustment.
-- [x] Run another `Ref_Terra404_Live2D` full-image follow-up to confirm the next remaining error.
-- [x] Investigate the follow-up `Ref_Terra404_Live2D` worst point at `(2287, 1311)`.
-- [x] Widen the clipped preserve tolerance to `2.25/255` after targeted scalar replay and regression checks.
-- [x] Baseline new samples from 2026-05-04: `Ref_Kabi_Live2D`, `Ref_MXL_Idol1`, `Ref_绫音Aya_Live2D`, `Test_AddGlowMultiply`.
-- [x] Discover and document `LayerFolder` integer field (1=organizational folder, 17=layer folder) in SQLite schema.
-- [x] Verify type=0 folder semantics: offscreen rendering is correct; pass-through variants all cause regressions.
-- [x] Fix GLOW_DODGE producing invisible output on transparent/semi-transparent backgrounds. CSP describes Glow Dodge as "stronger in semi-transparent areas." Fix blends smoothly between Color Dodge (opaque dst) and source colour (transparent dst) in premultiplied space: `dodge_pm * dst_blend + src_pm * (1 - dst_blend)`. No regressions on any sample; Kabi max Δ improved from 233→53 (77%). Test_GlowDodge remains 100%.
-- [x] Fix tile-grid detection: when layer tile blob has more tiles than expected from thumbnail dimensions, infer grid from actual blob size instead of erroring.
-- [x] Investigate Kabi layer-ordering root cause — folder 232 (蝴蝶结, LayerFolder=17) renders after folder 107 (身体, LayerFolder=1), which is correct bottom-up. The dark overlay was caused by GLOW_DODGE layers invisible in offscreen buffer, now fixed.
-- [x] Investigate MXL ADD highlight layer over-brightening (L432/L434 restoring base colour). Root cause still open — likely mask or folder-context issue.
-- [x] Investigate Aya systemic colour differences (minor, unchanged by fixes).
-- [x] Add first-pass Level Correction filter support for `test_Filters_Vector_Text.clip`. The SQLite `FilterLayerInfo` type 2 payload is compact 16-bit records; the sample only changes the master record's output-high value. Verification improved from max=255 / mean=77.490076 to max=182 / mean=75.725048 while preserving `Test_AddGlow`, `Test_ColorBurn`, `Test_Brightness`, `Test_ColorDodge`, and `Test_GlowDodge`.
-- [ ] Run full-image Terra follow-up after `2.25/255` clipped preserve threshold.
-- [ ] Trace Kabi new worst pixel at `(1455,1103)` — likely Multiply/clipping interaction, distinct from GLOW_DODGE fix.
-- [ ] Resolve MXL ADD highlight layers: check if L432/L434 have masks or folder-context restrictions.
-- [ ] Resolve clipping group semantics for Add Glow + Multiply stacks using `Test_AddGlowMultiply`.
-- [ ] Finish filter layer support for `test_Filters_Vector_Text.clip`: exact Tone Curve (type 3), Gradient Map (type 9), and remaining non-raster text/vector/frame/gradation-fill layers.
-- [ ] Add support for non-zero layer offsets when a sample requires it.
-- [ ] Decide how unsupported vector, text, 3D, monochrome, and grayscale layers should be surfaced to Blender users.
-
-## Direction 5: Packaging and Handoff
-
-Goal: Make the current add-on easy to test and iterate on in Blender.
-
-- [x] Build `clip_studio_importer.zip` from the add-on package.
-- [x] Refresh package after the root-level clipping edge fix.
-- [x] Refresh package after the Terra mask / THROUGH / clipped Add Glow fixes.
-- [x] Write a short install/test handoff for Blender in `README.md`.
-- [ ] Decide whether to keep project-root `clip_loader.py` as a development copy or remove duplication after confirming package layout.
-
-## Direction 6: Future Enhancements
-
-Goal: Improve the add-on after current raster fidelity and reload behavior are stable.
-
-- [ ] Improve background decode status in Blender's UI.
-- [ ] Add a cache-location preference if sidecar PNG files next to `.clip` become undesirable.
-- [ ] Explore lower-resolution preview mode using mipmap chains for faster iteration.
-- [ ] Evaluate color-management behavior between CSP exports and Blender texture display.
-
-## Direction 7: Native Image Loading
-
-Goal: Eventually let Blender load `.clip` through the normal image path, reducing or removing the sidecar PNG workflow.
-
-- [x] Run an initial OIIO feasibility check on installed Blender builds.
-- [x] Verify Blender can load image content from unknown extensions such as `.clip`.
-- [x] Verify OIIO `plugin_searchpath` can be set from Blender Python.
-- [ ] Finish Python decoder/compositor semantics before porting native code.
-- [ ] Prepare Blender-matched OIIO 3.0.9 headers/libs and an MSVC build environment.
-- [ ] Build a minimal fake OIIO `ImageInput` plugin that returns a known test image.
-- [ ] If fake plugin loading works, port the verified `.clip` decoder/compositor core to C++ or Rust.
-- [ ] Keep sidecar PNG as fallback/debug output until native `.clip` loading and reload behavior are proven stable.
-- [ ] Test whether generic image auto-reload add-ons can monitor `.clip` as `Image.filepath` and trigger `image.reload()`.
-
-## Out of Scope
-
-- Writing `.clip` files.
-- Vector layers, 3D layers, text layers, frame animation timelines, and brush metadata.
-- Round-tripping CSP-specific effects.
-- Supporting CSP versions we have no sample from.
-
-## Risks
-
-- **CSP version drift.** We only verify against versions the user provides samples from.
-- **Color management.** CSP authoring color space vs. Blender scene linear may produce visible diffs even when the raw decode is correct.
-- **Unsupported layer kinds.** Vector, text, 3D, grayscale, monochrome, and timeline-specific data are intentionally out of scope until a real sample needs them.
-- **Behavioral edge cases.** The remaining fidelity work is likely dominated by localized CSP group/clipping semantics rather than the basic tile or blend-mode decode.
+Update this direction only when the documentation structure changes.

@@ -1,0 +1,301 @@
+[
+  {
+    "dx": 0,
+    "dy": 0,
+    "score_mean_sum": 0.12015,
+    "visible_sum": 1694,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 12,
+        "mean": 0.017019,
+        "visible": 318
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 35,
+        "mean": 0.050444,
+        "visible": 651
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 21,
+        "mean": 0.052687,
+        "visible": 725
+      }
+    }
+  },
+  {
+    "dx": -0.25,
+    "dy": 0,
+    "score_mean_sum": 0.141175,
+    "visible_sum": 1622,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 25,
+        "mean": 0.0156,
+        "visible": 223
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 60,
+        "mean": 0.066869,
+        "visible": 751
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 55,
+        "mean": 0.058706,
+        "visible": 648
+      }
+    }
+  },
+  {
+    "dx": -0.5,
+    "dy": 0,
+    "score_mean_sum": 0.228218,
+    "visible_sum": 2029,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 43,
+        "mean": 0.034506,
+        "visible": 411
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 72,
+        "mean": 0.088931,
+        "visible": 792
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 71,
+        "mean": 0.104781,
+        "visible": 826
+      }
+    }
+  },
+  {
+    "dx": 0.25,
+    "dy": 0,
+    "score_mean_sum": 0.236063,
+    "visible_sum": 2153,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 56,
+        "mean": 0.042044,
+        "visible": 507
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 43,
+        "mean": 0.071081,
+        "visible": 715
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 56,
+        "mean": 0.122938,
+        "visible": 931
+      }
+    }
+  },
+  {
+    "dx": 0.5,
+    "dy": 0,
+    "score_mean_sum": 0.333625,
+    "visible_sum": 2325,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 56,
+        "mean": 0.067344,
+        "visible": 583
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 58,
+        "mean": 0.094762,
+        "visible": 764
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 75,
+        "mean": 0.171519,
+        "visible": 978
+      }
+    }
+  },
+  {
+    "dx": 0,
+    "dy": 0.125,
+    "score_mean_sum": 0.356831,
+    "visible_sum": 2515,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 37,
+        "mean": 0.110887,
+        "visible": 709
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 62,
+        "mean": 0.121769,
+        "visible": 882
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 50,
+        "mean": 0.124175,
+        "visible": 924
+      }
+    }
+  },
+  {
+    "dx": 0,
+    "dy": -0.125,
+    "score_mean_sum": 0.36875,
+    "visible_sum": 2485,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 39,
+        "mean": 0.110944,
+        "visible": 702
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 87,
+        "mean": 0.138612,
+        "visible": 889
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 45,
+        "mean": 0.119194,
+        "visible": 894
+      }
+    }
+  },
+  {
+    "dx": 0,
+    "dy": -0.25,
+    "score_mean_sum": 0.709156,
+    "visible_sum": 2733,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 59,
+        "mean": 0.213781,
+        "visible": 763
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 93,
+        "mean": 0.262819,
+        "visible": 973
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 51,
+        "mean": 0.232556,
+        "visible": 997
+      }
+    }
+  },
+  {
+    "dx": -0.25,
+    "dy": -0.25,
+    "score_mean_sum": 0.719231,
+    "visible_sum": 2737,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 58,
+        "mean": 0.209131,
+        "visible": 755
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 101,
+        "mean": 0.260106,
+        "visible": 961
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 65,
+        "mean": 0.249994,
+        "visible": 1021
+      }
+    }
+  },
+  {
+    "dx": 0.25,
+    "dy": -0.25,
+    "score_mean_sum": 0.744994,
+    "visible_sum": 2775,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 66,
+        "mean": 0.22265,
+        "visible": 767
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 87,
+        "mean": 0.274381,
+        "visible": 980
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 62,
+        "mean": 0.247963,
+        "visible": 1028
+      }
+    }
+  },
+  {
+    "dx": 0,
+    "dy": -0.5,
+    "score_mean_sum": 1.387144,
+    "visible_sum": 3027,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 102,
+        "mean": 0.41855,
+        "visible": 850
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 106,
+        "mean": 0.502119,
+        "visible": 1069
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 69,
+        "mean": 0.466475,
+        "visible": 1108
+      }
+    }
+  },
+  {
+    "dx": -0.5,
+    "dy": -0.5,
+    "score_mean_sum": 1.420826,
+    "visible_sum": 3063,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 103,
+        "mean": 0.409838,
+        "visible": 845
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 119,
+        "mean": 0.49975,
+        "visible": 1057
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 91,
+        "mean": 0.511238,
+        "visible": 1161
+      }
+    }
+  },
+  {
+    "dx": 0.5,
+    "dy": -0.5,
+    "score_mean_sum": 1.440749,
+    "visible_sum": 3073,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 107,
+        "mean": 0.4331,
+        "visible": 854
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 96,
+        "mean": 0.520487,
+        "visible": 1070
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 85,
+        "mean": 0.487162,
+        "visible": 1149
+      }
+    }
+  }
+]

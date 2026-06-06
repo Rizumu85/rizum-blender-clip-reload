@@ -1,0 +1,22 @@
+__int64 __fastcall sub_1425695F0(__int64 a1, float a2, float a3, __int64 *a4)
+{
+  __int64 result; // rax
+  volatile signed __int32 *v6; // rbx
+
+  *(_DWORD *)(a1 + 8) |= 0x20u; /*0x1425695f6*/
+  *(float *)(a1 + 16) = a2; /*0x1425695fd*/
+  *(float *)(a1 + 20) = a3; /*0x142569605*/
+  result = (__int64)sub_1401985C0((_QWORD *)(a1 + 56), a4); /*0x14256960e*/
+  v6 = (volatile signed __int32 *)a4[1]; /*0x142569613*/
+  if ( v6 ) /*0x14256961a*/
+  {
+    result = (unsigned int)_InterlockedExchangeAdd(v6 + 2, 0xFFFFFFFF); /*0x142569628*/
+    if ( (_DWORD)result == 1 ) /*0x142569630*/
+    {
+      result = (*(__int64 (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v6 + 8LL))(v6); /*0x142569638*/
+      if ( _InterlockedExchangeAdd(v6 + 3, 0xFFFFFFFF) == 1 ) /*0x142569643*/
+        return (*(__int64 (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v6 + 16LL))(v6); /*0x14256964b*/
+    }
+  }
+  return result; /*0x142569653*/
+}

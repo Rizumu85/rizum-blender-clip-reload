@@ -1,0 +1,8 @@
+{
+  "variant": "native_spline_feedback_len255",
+  "seconds": 0.299,
+  "max": 209,
+  "mean": 27.376088,
+  "diff_px": 11009,
+  "visible_px": 10792
+}

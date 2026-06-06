@@ -1,0 +1,332 @@
+[
+  {
+    "variant": "baseline",
+    "score_mean_sum": 0.12015,
+    "visible_sum": 1694,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 12,
+        "mean": 0.017019,
+        "visible": 318
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 35,
+        "mean": 0.050444,
+        "visible": 651
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 21,
+        "mean": 0.052687,
+        "visible": 725
+      }
+    }
+  },
+  {
+    "variant": "xe_plus1",
+    "score_mean_sum": 0.12015,
+    "visible_sum": 1694,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 12,
+        "mean": 0.017019,
+        "visible": 318
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 35,
+        "mean": 0.050444,
+        "visible": 651
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 21,
+        "mean": 0.052687,
+        "visible": 725
+      }
+    }
+  },
+  {
+    "variant": "no_quarter_clamp",
+    "score_mean_sum": 0.12015,
+    "visible_sum": 1694,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 12,
+        "mean": 0.017019,
+        "visible": 318
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 35,
+        "mean": 0.050444,
+        "visible": 651
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 21,
+        "mean": 0.052687,
+        "visible": 725
+      }
+    }
+  },
+  {
+    "variant": "right_bias_0.5",
+    "score_mean_sum": 0.120205,
+    "visible_sum": 1693,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 12,
+        "mean": 0.017012,
+        "visible": 317
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 35,
+        "mean": 0.050456,
+        "visible": 651
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 21,
+        "mean": 0.052737,
+        "visible": 725
+      }
+    }
+  },
+  {
+    "variant": "left_bias_0",
+    "score_mean_sum": 0.202144,
+    "visible_sum": 2012,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 32,
+        "mean": 0.026556,
+        "visible": 434
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 70,
+        "mean": 0.079838,
+        "visible": 738
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 70,
+        "mean": 0.09575,
+        "visible": 840
+      }
+    }
+  },
+  {
+    "variant": "bias_0_0",
+    "score_mean_sum": 0.22822,
+    "visible_sum": 2029,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 43,
+        "mean": 0.034519,
+        "visible": 411
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 72,
+        "mean": 0.088913,
+        "visible": 792
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 71,
+        "mean": 0.104788,
+        "visible": 826
+      }
+    }
+  },
+  {
+    "variant": "denom_0p5",
+    "score_mean_sum": 0.241224,
+    "visible_sum": 2163,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 17,
+        "mean": 0.037887,
+        "visible": 514
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 29,
+        "mean": 0.091037,
+        "visible": 780
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 37,
+        "mean": 0.1123,
+        "visible": 869
+      }
+    }
+  },
+  {
+    "variant": "right_bias_0",
+    "score_mean_sum": 0.260756,
+    "visible_sum": 2186,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 43,
+        "mean": 0.032725,
+        "visible": 493
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 72,
+        "mean": 0.090206,
+        "visible": 738
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 71,
+        "mean": 0.137825,
+        "visible": 955
+      }
+    }
+  },
+  {
+    "variant": "lb0_ln0",
+    "score_mean_sum": 0.388837,
+    "visible_sum": 2183,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 28,
+        "mean": 0.063912,
+        "visible": 569
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 70,
+        "mean": 0.135644,
+        "visible": 764
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 70,
+        "mean": 0.189281,
+        "visible": 850
+      }
+    }
+  },
+  {
+    "variant": "both_num_0",
+    "score_mean_sum": 0.512507,
+    "visible_sum": 2308,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 53,
+        "mean": 0.105525,
+        "visible": 607
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 67,
+        "mean": 0.156238,
+        "visible": 795
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 64,
+        "mean": 0.250744,
+        "visible": 906
+      }
+    }
+  },
+  {
+    "variant": "denom_0",
+    "score_mean_sum": 0.527856,
+    "visible_sum": 2411,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 41,
+        "mean": 0.076787,
+        "visible": 628
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 44,
+        "mean": 0.18545,
+        "visible": 848
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 57,
+        "mean": 0.265619,
+        "visible": 935
+      }
+    }
+  },
+  {
+    "variant": "right_num_0",
+    "score_mean_sum": 0.532019,
+    "visible_sum": 2299,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 53,
+        "mean": 0.089731,
+        "visible": 597
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 67,
+        "mean": 0.179594,
+        "visible": 807
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 61,
+        "mean": 0.262694,
+        "visible": 895
+      }
+    }
+  },
+  {
+    "variant": "rb0p5_rn0",
+    "score_mean_sum": 0.532056,
+    "visible_sum": 2299,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 53,
+        "mean": 0.089744,
+        "visible": 597
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 67,
+        "mean": 0.179606,
+        "visible": 807
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 61,
+        "mean": 0.262706,
+        "visible": 895
+      }
+    }
+  },
+  {
+    "variant": "left_num_0",
+    "score_mean_sum": 0.545931,
+    "visible_sum": 2289,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 50,
+        "mean": 0.091287,
+        "visible": 614
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 64,
+        "mean": 0.197825,
+        "visible": 816
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 64,
+        "mean": 0.256819,
+        "visible": 859
+      }
+    }
+  },
+  {
+    "variant": "xe1_rn0",
+    "score_mean_sum": 0.602394,
+    "visible_sum": 2394,
+    "metrics": {
+      "Vector_Thickness_50.clip": {
+        "max": 57,
+        "mean": 0.099125,
+        "visible": 618
+      },
+      "Vector_Thickness_50_Angle_45.clip": {
+        "max": 67,
+        "mean": 0.202563,
+        "visible": 844
+      },
+      "Vector_Thickness_50_Angle_90.clip": {
+        "max": 66,
+        "mean": 0.300706,
+        "visible": 932
+      }
+    }
+  }
+]

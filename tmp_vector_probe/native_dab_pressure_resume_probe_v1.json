@@ -1,0 +1,680 @@
+{
+  "experiment_env": {
+    "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING": "1",
+    "RIZUM_CLIP_EXPERIMENTAL_VECTOR_DAB": "1"
+  },
+  "guard_preset": null,
+  "run_config": {
+    "clips": [
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_OpacityPressure.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_OpacityRandom_50.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Test_Vector.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_AA_None.clip",
+      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_AA_Medium.clip"
+    ],
+    "duplicate_clip_basenames": {},
+    "experiment_env": {
+      "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING": "1",
+      "RIZUM_CLIP_EXPERIMENTAL_VECTOR_DAB": "1"
+    },
+    "adaptive_spacing_gate": false,
+    "fail_on_regression": false,
+    "fail_on_error": false,
+    "max_mean_regression": 0.0,
+    "max_visible_regression": null,
+    "min_improved": 0,
+    "require_improved": [],
+    "require_unchanged": [],
+    "expected_directions": {}
+  },
+  "summary": {
+    "counts_by_mean_direction": {
+      "improved": 6,
+      "unchanged": 0,
+      "regressed": 0,
+      "unknown": 0
+    },
+    "thresholds": {
+      "max_mean_regression": 0.0,
+      "max_visible_regression": null,
+      "min_improved": 0,
+      "require_improved": [],
+      "require_unchanged": [],
+      "fail_on_error": false
+    },
+    "duplicate_clip_basenames": {},
+    "expected_directions": {},
+    "failure_count": 0,
+    "failure_counts_by_type": {},
+    "passed": true,
+    "warnings": [],
+    "failures": []
+  },
+  "clips": [
+    {
+      "name": "Vector_OpacityPressure.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_OpacityPressure.clip",
+      "default": {
+        "name": "Vector_OpacityPressure.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.09,
+        "ref": "Vector_OpacityPressure.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 218,
+        "mean": 0.122786,
+        "diff_px": 25152,
+        "visible_px": 18175,
+        "visible_pct": 1.733303,
+        "premul_max": 218,
+        "premul_mean": 0.122786,
+        "premul_diff_px": 25152,
+        "premul_visible_px": 18175,
+        "premul_visible_pct": 1.733303,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 218,
+        "alpha_union_mean": 0.122786,
+        "alpha_union_diff_px": 25152,
+        "alpha_union_visible_px": 18175,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 218,
+        "high_alpha_mean": 0.122786,
+        "high_alpha_diff_px": 25152,
+        "high_alpha_visible_px": 18175,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "experiment": {
+        "name": "Vector_OpacityPressure.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.098,
+        "ref": "Vector_OpacityPressure.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 218,
+        "mean": 0.108165,
+        "diff_px": 26253,
+        "visible_px": 17472,
+        "visible_pct": 1.66626,
+        "premul_max": 218,
+        "premul_mean": 0.108165,
+        "premul_diff_px": 26253,
+        "premul_visible_px": 17472,
+        "premul_visible_pct": 1.66626,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 218,
+        "alpha_union_mean": 0.108165,
+        "alpha_union_diff_px": 26253,
+        "alpha_union_visible_px": 17472,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 218,
+        "high_alpha_mean": 0.108165,
+        "high_alpha_diff_px": 26253,
+        "high_alpha_visible_px": 17472,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "delta": {
+        "mean_delta": -0.014621,
+        "visible_px_delta": -703.0,
+        "premul_mean_delta": -0.014621,
+        "premul_visible_px_delta": -703.0,
+        "max_delta": 0.0,
+        "mean_direction": "improved"
+      },
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_OpacityRandom_50.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_OpacityRandom_50.clip",
+      "default": {
+        "name": "Vector_OpacityRandom_50.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          200,
+          200,
+          4
+        ],
+        "seconds": 0.017,
+        "ref": "Vector_OpacityRandom_50.png",
+        "ref_shape": [
+          200,
+          200,
+          4
+        ],
+        "max": 179,
+        "mean": 1.498369,
+        "diff_px": 3471,
+        "visible_px": 2850,
+        "visible_pct": 7.125,
+        "premul_max": 179,
+        "premul_mean": 1.498369,
+        "premul_diff_px": 3471,
+        "premul_visible_px": 2850,
+        "premul_visible_pct": 7.125,
+        "alpha_union_px": 40000,
+        "alpha_union_max": 179,
+        "alpha_union_mean": 1.498369,
+        "alpha_union_diff_px": 3471,
+        "alpha_union_visible_px": 2850,
+        "high_alpha_px": 40000,
+        "high_alpha_max": 179,
+        "high_alpha_mean": 1.498369,
+        "high_alpha_diff_px": 3471,
+        "high_alpha_visible_px": 2850,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "experiment": {
+        "name": "Vector_OpacityRandom_50.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          200,
+          200,
+          4
+        ],
+        "seconds": 0.021,
+        "ref": "Vector_OpacityRandom_50.png",
+        "ref_shape": [
+          200,
+          200,
+          4
+        ],
+        "max": 74,
+        "mean": 0.902325,
+        "diff_px": 3562,
+        "visible_px": 2967,
+        "visible_pct": 7.4175,
+        "premul_max": 74,
+        "premul_mean": 0.902325,
+        "premul_diff_px": 3562,
+        "premul_visible_px": 2967,
+        "premul_visible_pct": 7.4175,
+        "alpha_union_px": 40000,
+        "alpha_union_max": 74,
+        "alpha_union_mean": 0.902325,
+        "alpha_union_diff_px": 3562,
+        "alpha_union_visible_px": 2967,
+        "high_alpha_px": 40000,
+        "high_alpha_max": 74,
+        "high_alpha_mean": 0.902325,
+        "high_alpha_diff_px": 3562,
+        "high_alpha_visible_px": 2967,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "delta": {
+        "mean_delta": -0.596044,
+        "visible_px_delta": 117.0,
+        "premul_mean_delta": -0.596044,
+        "premul_visible_px_delta": 117.0,
+        "max_delta": -105.0,
+        "mean_direction": "improved"
+      },
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_SizePressure.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+      "default": {
+        "name": "Vector_SizePressure.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.074,
+        "ref": "Vector_SizePressure.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 226,
+        "mean": 0.115578,
+        "diff_px": 715,
+        "visible_px": 715,
+        "visible_pct": 0.068188,
+        "premul_max": 226,
+        "premul_mean": 0.115578,
+        "premul_diff_px": 715,
+        "premul_visible_px": 715,
+        "premul_visible_pct": 0.068188,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 226,
+        "alpha_union_mean": 0.115578,
+        "alpha_union_diff_px": 715,
+        "alpha_union_visible_px": 715,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 226,
+        "high_alpha_mean": 0.115578,
+        "high_alpha_diff_px": 715,
+        "high_alpha_visible_px": 715,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "experiment": {
+        "name": "Vector_SizePressure.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.107,
+        "ref": "Vector_SizePressure.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 226,
+        "mean": 0.042028,
+        "diff_px": 260,
+        "visible_px": 260,
+        "visible_pct": 0.024796,
+        "premul_max": 226,
+        "premul_mean": 0.042028,
+        "premul_diff_px": 260,
+        "premul_visible_px": 260,
+        "premul_visible_pct": 0.024796,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 226,
+        "alpha_union_mean": 0.042028,
+        "alpha_union_diff_px": 260,
+        "alpha_union_visible_px": 260,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 226,
+        "high_alpha_mean": 0.042028,
+        "high_alpha_diff_px": 260,
+        "high_alpha_visible_px": 260,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "delta": {
+        "mean_delta": -0.07355,
+        "visible_px_delta": -455.0,
+        "premul_mean_delta": -0.07355,
+        "premul_visible_px_delta": -455.0,
+        "max_delta": 0.0,
+        "mean_direction": "improved"
+      },
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Test_Vector.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Test_Vector.clip",
+      "default": {
+        "name": "Test_Vector.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.128,
+        "ref": "Test_Vector.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 187,
+        "mean": 1.043658,
+        "diff_px": 29867,
+        "visible_px": 27806,
+        "visible_pct": 2.651787,
+        "premul_max": 187,
+        "premul_mean": 1.043658,
+        "premul_diff_px": 29867,
+        "premul_visible_px": 27806,
+        "premul_visible_pct": 2.651787,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 187,
+        "alpha_union_mean": 1.043658,
+        "alpha_union_diff_px": 29867,
+        "alpha_union_visible_px": 27806,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 187,
+        "high_alpha_mean": 1.043658,
+        "high_alpha_diff_px": 29867,
+        "high_alpha_visible_px": 27806,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "experiment": {
+        "name": "Test_Vector.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.243,
+        "ref": "Test_Vector.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 187,
+        "mean": 0.966933,
+        "diff_px": 29898,
+        "visible_px": 26780,
+        "visible_pct": 2.55394,
+        "premul_max": 187,
+        "premul_mean": 0.966933,
+        "premul_diff_px": 29898,
+        "premul_visible_px": 26780,
+        "premul_visible_pct": 2.55394,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 187,
+        "alpha_union_mean": 0.966933,
+        "alpha_union_diff_px": 29898,
+        "alpha_union_visible_px": 26780,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 187,
+        "high_alpha_mean": 0.966933,
+        "high_alpha_diff_px": 29898,
+        "high_alpha_visible_px": 26780,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "delta": {
+        "mean_delta": -0.076725,
+        "visible_px_delta": -1026.0,
+        "premul_mean_delta": -0.076725,
+        "premul_visible_px_delta": -1026.0,
+        "max_delta": 0.0,
+        "mean_direction": "improved"
+      },
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_AA_None.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_AA_None.clip",
+      "default": {
+        "name": "Vector_AA_None.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.08,
+        "ref": "Vector_AA_None.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 226,
+        "mean": 0.410123,
+        "diff_px": 3257,
+        "visible_px": 3256,
+        "visible_pct": 0.310516,
+        "premul_max": 226,
+        "premul_mean": 0.410123,
+        "premul_diff_px": 3257,
+        "premul_visible_px": 3256,
+        "premul_visible_pct": 0.310516,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 226,
+        "alpha_union_mean": 0.410123,
+        "alpha_union_diff_px": 3257,
+        "alpha_union_visible_px": 3256,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 226,
+        "high_alpha_mean": 0.410123,
+        "high_alpha_diff_px": 3257,
+        "high_alpha_visible_px": 3256,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "experiment": {
+        "name": "Vector_AA_None.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.091,
+        "ref": "Vector_AA_None.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 226,
+        "mean": 0.153427,
+        "diff_px": 1669,
+        "visible_px": 1668,
+        "visible_pct": 0.159073,
+        "premul_max": 226,
+        "premul_mean": 0.153427,
+        "premul_diff_px": 1669,
+        "premul_visible_px": 1668,
+        "premul_visible_pct": 0.159073,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 226,
+        "alpha_union_mean": 0.153427,
+        "alpha_union_diff_px": 1669,
+        "alpha_union_visible_px": 1668,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 226,
+        "high_alpha_mean": 0.153427,
+        "high_alpha_diff_px": 1669,
+        "high_alpha_visible_px": 1668,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "delta": {
+        "mean_delta": -0.256696,
+        "visible_px_delta": -1588.0,
+        "premul_mean_delta": -0.256696,
+        "premul_visible_px_delta": -1588.0,
+        "max_delta": 0.0,
+        "mean_direction": "improved"
+      },
+      "expected_direction": null,
+      "matches_expected": null
+    },
+    {
+      "name": "Vector_AA_Medium.clip",
+      "clip": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_AA_Medium.clip",
+      "default": {
+        "name": "Vector_AA_Medium.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.073,
+        "ref": "Vector_AA_Medium.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 222,
+        "mean": 0.238421,
+        "diff_px": 4666,
+        "visible_px": 4454,
+        "visible_pct": 0.424767,
+        "premul_max": 222,
+        "premul_mean": 0.238421,
+        "premul_diff_px": 4666,
+        "premul_visible_px": 4454,
+        "premul_visible_pct": 0.424767,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 222,
+        "alpha_union_mean": 0.238421,
+        "alpha_union_diff_px": 4666,
+        "alpha_union_visible_px": 4454,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 222,
+        "high_alpha_mean": 0.238421,
+        "high_alpha_diff_px": 4666,
+        "high_alpha_visible_px": 4454,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "experiment": {
+        "name": "Vector_AA_Medium.clip",
+        "rendered": true,
+        "mode": "full",
+        "paper_rgb": [
+          226,
+          226,
+          226
+        ],
+        "shape": [
+          1024,
+          1024,
+          4
+        ],
+        "seconds": 0.113,
+        "ref": "Vector_AA_Medium.png",
+        "ref_shape": [
+          1024,
+          1024,
+          4
+        ],
+        "max": 205,
+        "mean": 0.083418,
+        "diff_px": 3498,
+        "visible_px": 3204,
+        "visible_pct": 0.305557,
+        "premul_max": 205,
+        "premul_mean": 0.083418,
+        "premul_diff_px": 3498,
+        "premul_visible_px": 3204,
+        "premul_visible_pct": 0.305557,
+        "alpha_union_px": 1048576,
+        "alpha_union_max": 205,
+        "alpha_union_mean": 0.083418,
+        "alpha_union_diff_px": 3498,
+        "alpha_union_visible_px": 3204,
+        "high_alpha_px": 1048576,
+        "high_alpha_max": 205,
+        "high_alpha_mean": 0.083418,
+        "high_alpha_diff_px": 3498,
+        "high_alpha_visible_px": 3204,
+        "transparent_px": 0,
+        "transparent_rgb_diff_px": 0,
+        "transparent_rgb_visible_px": 0
+      },
+      "delta": {
+        "mean_delta": -0.155003,
+        "visible_px_delta": -1250.0,
+        "premul_mean_delta": -0.155003,
+        "premul_visible_px_delta": -1250.0,
+        "max_delta": -17.0,
+        "mean_direction": "improved"
+      },
+      "expected_direction": null,
+      "matches_expected": null
+    }
+  ]
+}

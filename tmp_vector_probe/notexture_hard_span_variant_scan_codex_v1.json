@@ -1,0 +1,642 @@
+[
+  {
+    "span_sub": 0.475,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.0053882598876953125,
+      "visible": 25,
+      "diff": 25
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 216,
+        "mean": 0.013262748718261719,
+        "visible": 308,
+        "diff": 480
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.5,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.0058193206787109375,
+      "visible": 27,
+      "diff": 27
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 218,
+        "mean": 0.017072677612304688,
+        "visible": 409,
+        "diff": 641
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": -0.05,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.00689697265625,
+      "visible": 32,
+      "diff": 32
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 216,
+        "mean": 0.010869979858398438,
+        "visible": 312,
+        "diff": 482
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.45,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.00775909423828125,
+      "visible": 36,
+      "diff": 36
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 216,
+        "mean": 0.008801460266113281,
+        "visible": 212,
+        "diff": 327
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": -0.025,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.008190155029296875,
+      "visible": 38,
+      "diff": 38
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 216,
+        "mean": 0.007023811340332031,
+        "visible": 175,
+        "diff": 257
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.475,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.008836746215820312,
+      "visible": 41,
+      "diff": 41
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 218,
+        "mean": 0.013024330139160156,
+        "visible": 364,
+        "diff": 561
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.45,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.009052276611328125,
+      "visible": 42,
+      "diff": 42
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 215,
+        "mean": 0.009848594665527344,
+        "visible": 286,
+        "diff": 430
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.475,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.009052276611328125,
+      "visible": 42,
+      "diff": 42
+    },
+    "guards": {
+      "Vector_Baseline": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityPressure": {
+        "max": 218,
+        "mean": 0.01407623291015625,
+        "visible": 383,
+        "diff": 582
+      },
+      "Vector_Flow_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_SizeRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      },
+      "Vector_OpacityRandom_50": {
+        "max": 0,
+        "mean": 0.0,
+        "visible": 0,
+        "diff": 0
+      }
+    }
+  },
+  {
+    "span_sub": 0.45,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.009698867797851562,
+      "visible": 45,
+      "diff": 45
+    }
+  },
+  {
+    "span_sub": 0.425,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.009914398193359375,
+      "visible": 46,
+      "diff": 46
+    }
+  },
+  {
+    "span_sub": 0.5,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.010776519775390625,
+      "visible": 50,
+      "diff": 50
+    }
+  },
+  {
+    "span_sub": 0.5,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.010992050170898438,
+      "visible": 51,
+      "diff": 51
+    }
+  },
+  {
+    "span_sub": 0.425,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.011854171752929688,
+      "visible": 55,
+      "diff": 55
+    }
+  },
+  {
+    "span_sub": 0.425,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.014225006103515625,
+      "visible": 66,
+      "diff": 66
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.014440536499023438,
+      "visible": 67,
+      "diff": 67
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.01465606689453125,
+      "visible": 68,
+      "diff": 68
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.016811370849609375,
+      "visible": 78,
+      "diff": 78
+    }
+  },
+  {
+    "span_sub": 0.375,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.0189666748046875,
+      "visible": 88,
+      "diff": 88
+    }
+  },
+  {
+    "span_sub": 0.375,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.020259857177734375,
+      "visible": 94,
+      "diff": 94
+    }
+  },
+  {
+    "span_sub": 0.375,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.020259857177734375,
+      "visible": 94,
+      "diff": 94
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.025,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.0224151611328125,
+      "visible": 104,
+      "diff": 104
+    }
+  },
+  {
+    "span_sub": 0.35,
+    "y_bias": -0.55,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.024785995483398438,
+      "visible": 115,
+      "diff": 115
+    }
+  },
+  {
+    "span_sub": 0.35,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.024785995483398438,
+      "visible": 115,
+      "diff": 115
+    }
+  },
+  {
+    "span_sub": 0.35,
+    "y_bias": -0.45,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.025217056274414062,
+      "visible": 117,
+      "diff": 117
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": -0.5,
+    "x_bias": 0.0,
+    "radius_delta": 0.05,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.026941299438476562,
+      "visible": 125,
+      "diff": 125
+    }
+  },
+  {
+    "span_sub": 0.5,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.09763526916503906,
+      "visible": 453,
+      "diff": 453
+    }
+  },
+  {
+    "span_sub": 0.45,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.09914398193359375,
+      "visible": 460,
+      "diff": 460
+    }
+  },
+  {
+    "span_sub": 0.475,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.09914398193359375,
+      "visible": 460,
+      "diff": 460
+    }
+  },
+  {
+    "span_sub": 0.425,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.10108375549316406,
+      "visible": 469,
+      "diff": 469
+    }
+  },
+  {
+    "span_sub": 0.4,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.10151481628417969,
+      "visible": 471,
+      "diff": 471
+    }
+  },
+  {
+    "span_sub": 0.35,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.10345458984375,
+      "visible": 480,
+      "diff": 480
+    }
+  },
+  {
+    "span_sub": 0.375,
+    "y_bias": 0.0,
+    "x_bias": 0.0,
+    "radius_delta": 0.0,
+    "Vector_NoTexture": {
+      "max": 226,
+      "mean": 0.10345458984375,
+      "visible": 480,
+      "diff": 480
+    }
+  }
+]

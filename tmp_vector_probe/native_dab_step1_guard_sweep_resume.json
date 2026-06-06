@@ -1,0 +1,93 @@
+[
+  {
+    "clip": "Vector_Baseline",
+    "current": {
+      "mean": 0.509006,
+      "visible": 758,
+      "max": 177
+    },
+    "exp_dab_step1": {
+      "mean": 0.2434,
+      "visible": 718,
+      "max": 103
+    }
+  },
+  {
+    "clip": "Vector_SizeRandom_50",
+    "current": {
+      "mean": 0.914006,
+      "visible": 804,
+      "max": 209
+    },
+    "exp_dab_step1": {
+      "mean": 0.731775,
+      "visible": 865,
+      "max": 207
+    }
+  },
+  {
+    "clip": "Vector_OpacityRandom_50",
+    "current": {
+      "mean": 1.498369,
+      "visible": 2850,
+      "max": 179
+    },
+    "exp_dab_step1": {
+      "mean": 0.915225,
+      "visible": 2916,
+      "max": 82
+    }
+  },
+  {
+    "clip": "Test_Vector",
+    "current": {
+      "mean": 1.043658,
+      "visible": 27806,
+      "max": 187
+    },
+    "exp_dab_step1": {
+      "mean": 1.106109,
+      "visible": 27719,
+      "max": 187
+    }
+  },
+  {
+    "clip": "Vector_SizePressure",
+    "current": {
+      "mean": 0.115578,
+      "visible": 715,
+      "max": 226
+    },
+    "exp_dab_step1": {
+      "mean": 0.087128,
+      "visible": 539,
+      "max": 226
+    }
+  },
+  {
+    "clip": "Vector_OpacityPressure",
+    "current": {
+      "mean": 0.122786,
+      "visible": 18175,
+      "max": 218
+    },
+    "exp_dab_step1": {
+      "mean": 0.170274,
+      "visible": 17193,
+      "max": 219
+    }
+  },
+  {
+    "clip": "Vector_NoTexture",
+    "current": {
+      "mean": 0.235198,
+      "visible": 1455,
+      "max": 226
+    },
+    "exp_dab_step1": {
+      "mean": 0.253464,
+      "visible": 1568,
+      "max": 226
+    }
+  }
+]

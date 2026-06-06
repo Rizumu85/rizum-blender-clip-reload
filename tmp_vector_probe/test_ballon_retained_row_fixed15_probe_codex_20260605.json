@@ -1,0 +1,90 @@
+{
+  "baseline": {
+    "max": 255,
+    "mean": 0.409393,
+    "visible": 14330,
+    "premul_max": 255,
+    "premul_mean": 1.181103,
+    "premul_visible": 14326
+  },
+  "v00_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceFalse_swap_uvFalse_width_scale0.5": {
+    "max": 255,
+    "mean": 0.726921,
+    "visible": 21341,
+    "premul_max": 255,
+    "premul_mean": 2.084145,
+    "premul_visible": 21337
+  },
+  "v01_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceFalse_swap_uvFalse_width_scale0.75": {
+    "max": 255,
+    "mean": 0.58053,
+    "visible": 17930,
+    "premul_max": 255,
+    "premul_mean": 1.652732,
+    "premul_visible": 17926
+  },
+  "v02_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceFalse_swap_uvFalse_width_scale1.0": {
+    "max": 255,
+    "mean": 0.468089,
+    "visible": 15623,
+    "premul_max": 255,
+    "premul_mean": 1.329556,
+    "premul_visible": 15619
+  },
+  "v03_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceTrue_swap_uvFalse_width_scale0.5": {
+    "max": 255,
+    "mean": 0.76578,
+    "visible": 22430,
+    "premul_max": 255,
+    "premul_mean": 2.191507,
+    "premul_visible": 22426
+  },
+  "v04_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceTrue_swap_uvFalse_width_scale0.75": {
+    "max": 255,
+    "mean": 0.632262,
+    "visible": 19395,
+    "premul_max": 255,
+    "premul_mean": 1.797132,
+    "premul_visible": 19391
+  },
+  "v05_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceTrue_swap_uvFalse_width_scale1.0": {
+    "max": 255,
+    "mean": 0.522428,
+    "visible": 17019,
+    "premul_max": 255,
+    "premul_mean": 1.47881,
+    "premul_visible": 17015
+  },
+  "v06_aa4True_half_biasFalse_length_scale1.0_opacity0.6_phase0.0_resourceTrue_swap_uvFalse_width_scale0.75": {
+    "max": 255,
+    "mean": 0.793129,
+    "visible": 27799,
+    "premul_max": 255,
+    "premul_mean": 2.298209,
+    "premul_visible": 27795
+  },
+  "v07_aa4False_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceTrue_swap_uvFalse_width_scale0.75": {
+    "max": 255,
+    "mean": 0.644859,
+    "visible": 18390,
+    "premul_max": 255,
+    "premul_mean": 1.828361,
+    "premul_visible": 18386
+  },
+  "v08_aa4True_half_biasFalse_length_scale1.0_opacity1.0_phase0.0_resourceTrue_swap_uvTrue_width_scale0.75": {
+    "max": 255,
+    "mean": 1.036799,
+    "visible": 27395,
+    "premul_max": 255,
+    "premul_mean": 2.984467,
+    "premul_visible": 27391
+  },
+  "v09_aa4True_half_biasTrue_length_scale1.0_opacity1.0_phase0.0_resourceTrue_swap_uvFalse_width_scale0.75": {
+    "max": 255,
+    "mean": 0.649545,
+    "visible": 19903,
+    "premul_max": 255,
+    "premul_mean": 1.850607,
+    "premul_visible": 19899
+  }
+}

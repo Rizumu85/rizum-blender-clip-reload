@@ -16,7 +16,8 @@ Known fidelity gaps:
 - `Ref_Terra404_Live2D` still has localized color differences after the sampled `LayerType=3` mask, masked THROUGH group, and clipped Add Glow effective-alpha fixes.
 - `Test_AddGlowMultiply` shows unresolved Add Glow base plus clipped Multiply/Normal group semantics.
 - Non-zero layer offsets are detected but not implemented until a supplied sample requires them.
-- Vector, text, 3D, grayscale, monochrome, animation timelines, and write-back are out of scope.
+- Vector and text rendering have partial native-backed preview support. The current vector blocker is `Vector_SizePressure`, which is close but not pixel-exact.
+- 3D, grayscale, monochrome, animation timelines, and write-back are out of scope.
 
 ## Roadmap
 
@@ -61,9 +62,10 @@ Blocker before the next native spike:
 - `clip_studio_importer/` - Blender add-on package.
 - `clip_studio_importer.zip` - installable add-on zip.
 - `clip_loader.py` - project-root development copy of the decoder/compositor.
-- `analysis.md` - technical findings and sample-specific investigations.
-- `design.md` - Blender UX and user-facing behavior.
-- `plan.md` - current directions and tracked implementation work.
+- `docs/AI_MEMORY.md` - current agent-readable state and next reverse-engineering target.
+- `docs/analysis.md` - technical findings and sample-specific investigations.
+- `docs/design.md` - Blender UX and user-facing behavior.
+- `docs/plan.md` - current directions and tracked implementation work.
 
 ## Verification Samples
 

@@ -1,0 +1,1976 @@
+{
+  "name": "Vector_SizeRandom_50.clip",
+  "path": "img\\Vector_SizeRandom_50.clip",
+  "canvas": {
+    "width": 200,
+    "height": 200
+  },
+  "vector_layer_count": 1,
+  "vector_layers": [
+    {
+      "layer_id": 6,
+      "layer_name": "Layer 2",
+      "vector_row": {
+        "_PW_ID": 1,
+        "CanvasId": 1,
+        "MainId": 3,
+        "LayerId": 6
+      },
+      "vector_data": "extrnlidBABE17999B674200B8B3814259CA69BC",
+      "vector_body_len": 1732,
+      "external_header": {
+        "header_len": 40,
+        "tag": "extrnlid",
+        "identifier": "BABE17999B674200B8B3814259CA69BC",
+        "external_id": "extrnlidBABE17999B674200B8B3814259CA69BC",
+        "payload_offset": 56,
+        "payload_size": 1676,
+        "payload_end": 1732,
+        "payload_size_matches_body": true,
+        "matches_vector_data": true
+      },
+      "compact_record_spans": [
+        {
+          "kind": "stroke_92",
+          "offset": 56,
+          "end": 1732,
+          "shape": [
+            92,
+            76,
+            88,
+            88
+          ],
+          "point_count": 18
+        }
+      ],
+      "compact_record_coverage": {
+        "record_count": 1,
+        "covered_bytes": 1676,
+        "body_len": 1732,
+        "prefix_len": 56,
+        "trailing_gap": 0,
+        "fully_covered_after_prefix": true,
+        "prefix_matches_external_header": true
+      },
+      "LayerType": 0,
+      "LayerFolder": 0,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 0,
+      "LayerVisibility": 1,
+      "LayerRenderMipmap": 10,
+      "LayerLayerMaskMipmap": 0,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "LayerColorTypeIndex": 0,
+      "LayerColorTypeBlackChecked": 1,
+      "LayerColorTypeWhiteChecked": 1,
+      "VectorNormalStrokeIndex": 3,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 0,
+      "VectorNormalType": 0,
+      "MixSubColorForEveryPlot": 1,
+      "mipmap_resources": {
+        "LayerRenderMipmap": {
+          "mipmap_id": 10,
+          "offscreen_id": 27,
+          "external_id": "extrnlidDCB3DC1B90E041C8B3053275A18AF7A9",
+          "external_present": false,
+          "external_len": null,
+          "pixel_size": [
+            200,
+            200
+          ],
+          "expected_rgba_tile_len": 262144,
+          "raw_bytes_per_pixel": null,
+          "decoded_tile_blob_len": null,
+          "decoded_bytes_per_pixel": null
+        }
+      }
+    }
+  ],
+  "stroke_count": 1,
+  "object_100_count": 0,
+  "strokes": [
+    {
+      "layer_id": 6,
+      "layer_name": "Layer 2",
+      "body_offset": 56,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "raw_header": {
+        "hex": "0000005c0000004c00000058000000580000001200002081000000160000001d000000b00000006c111111111111111111111111f422f422eeddeeddffffffff3ff0000000000000000000000000000340240000000000001f2cd2e7",
+        "u32_be": {
+          "0": 92,
+          "4": 76,
+          "8": 88,
+          "12": 88,
+          "16": 18,
+          "20": 8321,
+          "24": 22,
+          "28": 29,
+          "32": 176,
+          "36": 108,
+          "40": 286331153,
+          "44": 286331153,
+          "48": 286331153,
+          "52": 4095931426,
+          "56": 4007522013,
+          "60": 4294967295,
+          "64": 1072693248,
+          "68": 0,
+          "72": 0,
+          "76": 3,
+          "80": 1076101120,
+          "84": 0,
+          "88": 523031271
+        },
+        "f32_be": {
+          "0": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "12": 0.0,
+          "16": 0.0,
+          "20": 0.0,
+          "24": 0.0,
+          "28": 0.0,
+          "32": 0.0,
+          "36": 0.0,
+          "40": 0.0,
+          "44": 0.0,
+          "48": 0.0,
+          "64": 1.875,
+          "68": 0.0,
+          "72": 0.0,
+          "76": 0.0,
+          "80": 2.5625,
+          "84": 0.0,
+          "88": 0.0
+        },
+        "f64_be": {
+          "0": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "24": 0.0,
+          "32": 0.0,
+          "40": 0.0,
+          "48": 0.0,
+          "64": 1.0,
+          "72": 0.0,
+          "80": 10.0
+        }
+      },
+      "compact_native_reader_probe": {
+        "valid": true,
+        "record_control": {
+          "object_header_len": 92,
+          "subclass_tail_offset": 76,
+          "point_record_stride": 88,
+          "point_record_tail_offset": 88,
+          "point_count": 18,
+          "object_flags_or_type": 8321
+        },
+        "common_object": {
+          "bbox": [
+            22,
+            29,
+            176,
+            108
+          ],
+          "line_color_triplet_u32": [
+            286331153,
+            286331153,
+            286331153
+          ],
+          "line_rgb": [
+            17,
+            17,
+            17
+          ],
+          "fill_color_triplet_u32": [
+            4095931426,
+            4007522013,
+            4294967295
+          ],
+          "fill_rgb": [
+            243,
+            237,
+            255
+          ],
+          "opacity": 1.0,
+          "extra_u32_72": 0
+        },
+        "point_payload": {
+          "start": 148,
+          "end": 1732
+        },
+        "subclass_tail": {
+          "class": "PWVectorStroke",
+          "list_index_u32_76": 3,
+          "width_or_scale_f64_80": 10.0,
+          "extra_u32_88": 523031271
+        }
+      },
+      "compact_semantic_probe": {
+        "object_kind": "stroke_92",
+        "native_draw_flag_candidate_lens": {
+          "20": {
+            "value": 8321,
+            "bit0_line_lens": true,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 1
+          }
+        },
+        "argb_candidates_from_compact_color": {
+          "line": [
+            255,
+            17,
+            17,
+            17
+          ],
+          "fill": [
+            255,
+            243,
+            237,
+            255
+          ],
+          "opacity_alpha": 255
+        }
+      },
+      "point_count": 18,
+      "bbox": [
+        22,
+        29,
+        176,
+        108
+      ],
+      "line_rgb": [
+        17,
+        17,
+        17
+      ],
+      "fill_rgb": [
+        243,
+        237,
+        255
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 3,
+      "width": 10.0,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          32,
+          39,
+          166,
+          98
+        ],
+        "xy": {
+          "x": {
+            "min": 32.774382,
+            "max": 165.727064,
+            "avg": 89.030105,
+            "uniq": 18
+          },
+          "y": {
+            "min": 39.986962,
+            "max": 97.999593,
+            "avg": 72.16949,
+            "uniq": 18
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 0.0,
+            "max": 0.26932,
+            "avg": 0.227781,
+            "uniq": 18
+          },
+          "40": {
+            "min": 0.577778,
+            "max": 0.7,
+            "avg": 0.613426,
+            "uniq": 13
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.860715,
+            "avg": 0.503172,
+            "uniq": 18
+          },
+          "48": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "64": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "68": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "72": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.71894,
+            "avg": 0.745883,
+            "uniq": 18
+          }
+        },
+        "point_u32_stats": {
+          "16": [
+            {
+              "value": 22,
+              "count": 1
+            },
+            {
+              "value": 24,
+              "count": 1
+            },
+            {
+              "value": 26,
+              "count": 1
+            },
+            {
+              "value": 28,
+              "count": 1
+            },
+            {
+              "value": 31,
+              "count": 1
+            },
+            {
+              "value": 38,
+              "count": 1
+            },
+            {
+              "value": 47,
+              "count": 1
+            },
+            {
+              "value": 58,
+              "count": 1
+            },
+            {
+              "value": 67,
+              "count": 1
+            },
+            {
+              "value": 78,
+              "count": 1
+            },
+            {
+              "value": 87,
+              "count": 1
+            },
+            {
+              "value": 102,
+              "count": 1
+            }
+          ],
+          "20": [
+            {
+              "value": 29,
+              "count": 2
+            },
+            {
+              "value": 86,
+              "count": 1
+            },
+            {
+              "value": 84,
+              "count": 1
+            },
+            {
+              "value": 82,
+              "count": 1
+            },
+            {
+              "value": 80,
+              "count": 1
+            },
+            {
+              "value": 76,
+              "count": 1
+            },
+            {
+              "value": 72,
+              "count": 1
+            },
+            {
+              "value": 67,
+              "count": 1
+            },
+            {
+              "value": 63,
+              "count": 1
+            },
+            {
+              "value": 59,
+              "count": 1
+            },
+            {
+              "value": 56,
+              "count": 1
+            },
+            {
+              "value": 53,
+              "count": 1
+            }
+          ],
+          "24": [
+            {
+              "value": 176,
+              "count": 2
+            },
+            {
+              "value": 45,
+              "count": 1
+            },
+            {
+              "value": 47,
+              "count": 1
+            },
+            {
+              "value": 49,
+              "count": 1
+            },
+            {
+              "value": 52,
+              "count": 1
+            },
+            {
+              "value": 59,
+              "count": 1
+            },
+            {
+              "value": 68,
+              "count": 1
+            },
+            {
+              "value": 79,
+              "count": 1
+            },
+            {
+              "value": 88,
+              "count": 1
+            },
+            {
+              "value": 99,
+              "count": 1
+            },
+            {
+              "value": 108,
+              "count": 1
+            },
+            {
+              "value": 123,
+              "count": 1
+            }
+          ],
+          "28": [
+            {
+              "value": 108,
+              "count": 1
+            },
+            {
+              "value": 107,
+              "count": 1
+            },
+            {
+              "value": 105,
+              "count": 1
+            },
+            {
+              "value": 103,
+              "count": 1
+            },
+            {
+              "value": 101,
+              "count": 1
+            },
+            {
+              "value": 97,
+              "count": 1
+            },
+            {
+              "value": 93,
+              "count": 1
+            },
+            {
+              "value": 88,
+              "count": 1
+            },
+            {
+              "value": 84,
+              "count": 1
+            },
+            {
+              "value": 80,
+              "count": 1
+            },
+            {
+              "value": 77,
+              "count": 1
+            },
+            {
+              "value": 74,
+              "count": 1
+            }
+          ],
+          "32": [
+            {
+              "value": 0,
+              "count": 18
+            }
+          ],
+          "80": [
+            {
+              "value": 523031271,
+              "count": 1
+            },
+            {
+              "value": 1028572865,
+              "count": 1
+            },
+            {
+              "value": 2313219883,
+              "count": 1
+            },
+            {
+              "value": 3308734117,
+              "count": 1
+            },
+            {
+              "value": 3681848239,
+              "count": 1
+            },
+            {
+              "value": 4208004478,
+              "count": 1
+            },
+            {
+              "value": 1882671803,
+              "count": 1
+            },
+            {
+              "value": 2108834796,
+              "count": 1
+            },
+            {
+              "value": 3792241889,
+              "count": 1
+            },
+            {
+              "value": 590862543,
+              "count": 1
+            },
+            {
+              "value": 2968094288,
+              "count": 1
+            },
+            {
+              "value": 4037833612,
+              "count": 1
+            }
+          ],
+          "84": [
+            {
+              "value": 0,
+              "count": 18
+            }
+          ]
+        },
+        "native32_stats": {
+          "u32": {
+            "16": [
+              {
+                "value": 22,
+                "count": 1
+              },
+              {
+                "value": 24,
+                "count": 1
+              },
+              {
+                "value": 26,
+                "count": 1
+              },
+              {
+                "value": 28,
+                "count": 1
+              },
+              {
+                "value": 31,
+                "count": 1
+              },
+              {
+                "value": 38,
+                "count": 1
+              },
+              {
+                "value": 47,
+                "count": 1
+              },
+              {
+                "value": 58,
+                "count": 1
+              }
+            ],
+            "20": [
+              {
+                "value": 29,
+                "count": 2
+              },
+              {
+                "value": 86,
+                "count": 1
+              },
+              {
+                "value": 84,
+                "count": 1
+              },
+              {
+                "value": 82,
+                "count": 1
+              },
+              {
+                "value": 80,
+                "count": 1
+              },
+              {
+                "value": 76,
+                "count": 1
+              },
+              {
+                "value": 72,
+                "count": 1
+              },
+              {
+                "value": 67,
+                "count": 1
+              }
+            ],
+            "24": [
+              {
+                "value": 176,
+                "count": 2
+              },
+              {
+                "value": 45,
+                "count": 1
+              },
+              {
+                "value": 47,
+                "count": 1
+              },
+              {
+                "value": 49,
+                "count": 1
+              },
+              {
+                "value": 52,
+                "count": 1
+              },
+              {
+                "value": 59,
+                "count": 1
+              },
+              {
+                "value": 68,
+                "count": 1
+              },
+              {
+                "value": 79,
+                "count": 1
+              }
+            ],
+            "28": [
+              {
+                "value": 108,
+                "count": 1
+              },
+              {
+                "value": 107,
+                "count": 1
+              },
+              {
+                "value": 105,
+                "count": 1
+              },
+              {
+                "value": 103,
+                "count": 1
+              },
+              {
+                "value": 101,
+                "count": 1
+              },
+              {
+                "value": 97,
+                "count": 1
+              },
+              {
+                "value": 93,
+                "count": 1
+              },
+              {
+                "value": 88,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "cubic64_stats": {
+          "f64": {
+            "0": {
+              "min": 32.774382,
+              "max": 165.727064,
+              "avg": 89.030105,
+              "uniq": 18
+            },
+            "8": {
+              "min": 39.986962,
+              "max": 97.999593,
+              "avg": 72.16949,
+              "uniq": 18
+            },
+            "16": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "24": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "32": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "40": {
+              "min": 7.6e-05,
+              "max": 0.000293,
+              "avg": 0.000123,
+              "uniq": 13
+            }
+          },
+          "u32": {
+            "48": [
+              {
+                "value": 0,
+                "count": 18
+              }
+            ],
+            "52": [
+              {
+                "value": 1065353216,
+                "count": 18
+              }
+            ],
+            "56": [
+              {
+                "value": 1065353216,
+                "count": 18
+              }
+            ],
+            "60": [
+              {
+                "value": 1065353216,
+                "count": 18
+              }
+            ]
+          }
+        },
+        "compact120_tail_f64_stats": {},
+        "pen_bbox_width": {
+          "min": 21.0,
+          "max": 36.0,
+          "avg": 28.388889,
+          "uniq": 9
+        },
+        "pen_bbox_height": {
+          "min": 21.0,
+          "max": 27.0,
+          "avg": 24.222222,
+          "uniq": 7
+        },
+        "first_points": [
+          {
+            "x": 32.774382,
+            "y": 97.999593,
+            "pen_bbox": [
+              22,
+              86,
+              45,
+              108
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 22,
+              "line_select_id_20": 86,
+              "is_vertex_selected_24": 45,
+              "unused_or_extra_28": 108
+            },
+            "float_fields": {
+              "36": 0.00555,
+              "40": 0.588889,
+              "44": 0.0,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 32.774382,
+              "y_f64_8": 97.999593,
+              "u32_16_28": {
+                "16": 22,
+                "20": 86,
+                "24": 45,
+                "28": 108
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.00555,
+                "40": 0.588889,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.00555,
+                  "40": 0.588889,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 523031271,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                32.774382,
+                97.999593,
+                0.0,
+                0.0,
+                0.0,
+                8.7e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 34.20593,
+            "y": 96.999375,
+            "pen_bbox": [
+              24,
+              84,
+              47,
+              107
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 24,
+              "line_select_id_20": 84,
+              "is_vertex_selected_24": 47,
+              "unused_or_extra_28": 107
+            },
+            "float_fields": {
+              "36": 0.192185,
+              "40": 0.588889,
+              "44": 0.16947,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 1.13414
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 34.20593,
+              "y_f64_8": 96.999375,
+              "u32_16_28": {
+                "16": 24,
+                "20": 84,
+                "24": 47,
+                "28": 107
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.192185,
+                "40": 0.588889,
+                "44": 0.16947,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 1.13414
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.192185,
+                  "40": 0.588889,
+                  "44": 0.16947,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 1.13414
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 1028572865,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                34.20593,
+                96.999375,
+                0.0,
+                0.0,
+                0.0,
+                8.7e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 36.60643,
+            "y": 94.486328,
+            "pen_bbox": [
+              26,
+              82,
+              49,
+              105
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 26,
+              "line_select_id_20": 82,
+              "is_vertex_selected_24": 49,
+              "unused_or_extra_28": 105
+            },
+            "float_fields": {
+              "36": 0.263685,
+              "40": 0.594444,
+              "44": 0.295866,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.402619
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 36.60643,
+              "y_f64_8": 94.486328,
+              "u32_16_28": {
+                "16": 26,
+                "20": 82,
+                "24": 49,
+                "28": 105
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.263685,
+                "40": 0.594444,
+                "44": 0.295866,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.402619
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.263685,
+                  "40": 0.594444,
+                  "44": 0.295866,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.402619
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 2313219883,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                36.60643,
+                94.486328,
+                0.0,
+                0.0,
+                0.0,
+                9.2e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 38.256774,
+            "y": 92.998504,
+            "pen_bbox": [
+              28,
+              80,
+              52,
+              103
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 28,
+              "line_select_id_20": 80,
+              "is_vertex_selected_24": 52,
+              "unused_or_extra_28": 103
+            },
+            "float_fields": {
+              "36": 0.26932,
+              "40": 0.594444,
+              "44": 0.325698,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 1.000183
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 38.256774,
+              "y_f64_8": 92.998504,
+              "u32_16_28": {
+                "16": 28,
+                "20": 80,
+                "24": 52,
+                "28": 103
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.26932,
+                "40": 0.594444,
+                "44": 0.325698,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 1.000183
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.26932,
+                  "40": 0.594444,
+                  "44": 0.325698,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "native_channel_names_36_60": {
+                  "36": "sample_context_0x10_primary_scalar",
+                  "40": "sample_context_0x18_angle_over_90",
+                  "44": "sample_context_0x20_aux_scalar",
+                  "48": "sample_context_0x28_angle_like",
+                  "52": "sample_context_0x30_velocity_factor",
+                  "56": "sample_context_0x38_size_factor",
+                  "60": "sample_context_0x40_flow_factor"
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 1.000183
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "native_sampler_record_0x1422CC1E0": {
+                "record_xy_0_8": "compact point f64+0/+8",
+                "record_dynamic_channels_16_64": {
+                  "16": "compact f32+36, primary scalar",
+                  "24": "compact f32+40, angle/tilt-derived scalar",
+                  "32": "compact f32+44, auxiliary scalar",
+                  "40": "compact f32+48, angle-like value interpolated by wrapped 0..360 helper 0x14206D6E0",
+                  "48": "compact f32+52, velocity/direction factor",
+                  "56": "compact f32+56, size-like factor; point flag 0x1000 gates fixed-vs-interpolated behavior",
+                  "64": "compact f32+60, flow/opacity-like factor; point flag 0x2000 gates fixed-vs-interpolated behavior"
+                },
+                "record_metric_72": "path/neighbor metric from 0x1422CA0D0 -> 0x141A8DD80 when requested",
+                "record_flags_80": "point/list flags derived from internal 0x1000/0x2000",
+                "sampler_step_source": "compact f32+64/+68/+72 appear in the adjacent segment-step/tangent path, not as submitted dynamic channels"
+              },
+              "u32_80_84": {
+                "80": 3308734117,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                38.256774,
+                92.998504,
+                0.0,
+                0.0,
+                0.0,
+                9.2e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          }
+        ]
+      },
+      "brush_style_effectors": {
+        "SizeEffector": {
+          "key": "8:129:000000813f000000",
+          "decoded": {
+            "form": "random_floor_0x81",
+            "type": 129,
+            "native_runtime_branches": {
+              "value": 129,
+              "hex": "0x81",
+              "compiled_or_active_0x1": true,
+              "graph_context_primary_0x10": false,
+              "graph_context_primary_0x10_sample_f32_36": false,
+              "graph_context_secondary_0x20": false,
+              "graph_context_secondary_0x20_sample_f32_40": false,
+              "graph_context_aux_0x40": false,
+              "graph_context_aux_0x40_sample_f32_44": false,
+              "random_0x80": true,
+              "velocity_0x100": false,
+              "velocity_0x100_sample_f32_52": false,
+              "unknown_bits": 0
+            },
+            "random_floor": 0.5,
+            "scalar": 0.5,
+            "graph_refs": [],
+            "payload_u32": [
+              1056964608
+            ]
+          },
+          "graphs": {}
+        },
+        "RotationEffector": {
+          "value": 3
+        }
+      },
+      "native_spacing_estimate": {
+        "kind": "stroke_92",
+        "style_id": 3,
+        "branch": "normal_interval",
+        "base_size_source": "compact stroke/object width; native a3 source is still treated as a best-effort estimate",
+        "base_width": 10.0,
+        "compact_f32_56_size_factor_range": [
+          1.0,
+          1.0
+        ],
+        "size_effector": "8:129:000000813f000000",
+        "size_effector_dynamic": true,
+        "size_effector_graph_output": null,
+        "size_effector_multiplier_estimate": null,
+        "effective_size_without_size_effector_range": [
+          10.0,
+          10.0
+        ],
+        "interval_scalar": 0.1,
+        "thickness_guess": 1.0,
+        "state8_without_size_effector_range": [
+          2.0,
+          2.0
+        ]
+      },
+      "importer_spacing_comparison": {
+        "importer_sample_step": 5.0,
+        "sample_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "native_state8_range": [
+          2.0,
+          2.0
+        ],
+        "native_state8_bucket": {
+          "min_bucket": "medium_2_to_8",
+          "max_bucket": "medium_2_to_8",
+          "range_bucket": "medium_2_to_8"
+        },
+        "native_state8_to_importer_step_ratio_range": [
+          0.4,
+          0.4
+        ],
+        "classification": "fallback_step_coarser_than_native_interval",
+        "note": "Diagnostic only: importer fallback draws continuous capsules, while native state+8 is the PWBrushDraw dab interval feedback value."
+      },
+      "experimental_adaptive_spacing_candidate": {
+        "enabled_by_env": "RIZUM_CLIP_EXPERIMENTAL_VECTOR_ADAPTIVE_SPACING",
+        "candidate": true,
+        "candidate_rule": "ordinary no-pattern dab candidates only",
+        "size_effector_form": "random_floor_0x81",
+        "fallback_step_source": "VECTOR_FALLBACK_SAMPLE_STEP",
+        "fallback_step": 5.0,
+        "min_step": 0.5,
+        "native_state8_range": [
+          2.0,
+          2.0
+        ],
+        "estimated_adaptive_step_range": [
+          2.0,
+          2.0
+        ],
+        "would_reduce_step": true,
+        "note": "Diagnostic approximation of the default-off loader branch; exact segment steps are computed from endpoint taper/size-factor values at render time."
+      }
+    }
+  ],
+  "objects_100": [],
+  "brush_styles": {
+    "3": {
+      "MainId": 3,
+      "_PW_ID": 1,
+      "CanvasId": 1,
+      "NextIndex": 0,
+      "StyleFlag": {
+        "value": 115264,
+        "hex": "0x1c240",
+        "native_subpixel_min_size_0x8": false,
+        "native_retained_state_path_0x20": false,
+        "native_thickness_axis_split_0x40": true,
+        "native_segment_start_flag_0x200": true,
+        "direct_max_accum_0x1000": false,
+        "texture_or_water_family_0x10000": true,
+        "texture_or_water_family_0x20000": false,
+        "unknown_bits": 49152
+      },
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 8,
+        "hex": "000000813f000000",
+        "words": [
+          {
+            "u32": 129,
+            "f32": 0.0
+          },
+          {
+            "u32": 1056964608,
+            "f32": 0.5
+          }
+        ],
+        "decoded": {
+          "form": "random_floor_0x81",
+          "type": 129,
+          "native_runtime_branches": {
+            "value": 129,
+            "hex": "0x81",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": true,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "random_floor": 0.5,
+          "scalar": 0.5,
+          "graph_refs": [],
+          "payload_u32": [
+            1056964608
+          ]
+        }
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AntiAlias": 2,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 0.1,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "AutoIntervalType": 0,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "default_or_off_0x01",
+          "type": 1,
+          "native_runtime_branches": {
+            "value": 1,
+            "hex": "0x1",
+            "compiled_or_active_0x1": true,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 3,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 3,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 0,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureFlagDecoded": {
+        "value": 0,
+        "hex": "0x0",
+        "enabled_bit_0x1": false,
+        "density_effector_gate_0x10": false,
+        "invert_sample_0x100": false,
+        "average_baseline_remap_0x200": false,
+        "unknown_bits": 0
+      },
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ],
+        "decoded": {
+          "form": "zero_or_disabled_0x00",
+          "type": 0,
+          "native_runtime_branches": {
+            "value": 0,
+            "hex": "0x0",
+            "compiled_or_active_0x1": false,
+            "graph_context_primary_0x10": false,
+            "graph_context_primary_0x10_sample_f32_36": false,
+            "graph_context_secondary_0x20": false,
+            "graph_context_secondary_0x20_sample_f32_40": false,
+            "graph_context_aux_0x40": false,
+            "graph_context_aux_0x40_sample_f32_44": false,
+            "random_0x80": false,
+            "velocity_0x100": false,
+            "velocity_0x100_sample_f32_52": false,
+            "unknown_bits": 0
+          },
+          "graph_refs": [],
+          "scalars": []
+        }
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0,
+      "importer_renderer_status": {
+        "coverage": "partial_preview",
+        "pixel_affecting_inputs": [
+          "AntiAlias ordinal -> fallback feather",
+          "SizeEffector random_floor_0x81 -> compact u32+80 native-LCG size-random preview"
+        ],
+        "preview_only_inputs": [],
+        "diagnostic_only_inputs": [
+          "RotationEffector",
+          "StyleFlag texture_or_water_family_0x10000"
+        ]
+      }
+    }
+  },
+  "fill_styles": {},
+  "brush_resources": {
+    "pattern_styles": {},
+    "pattern_images": {}
+  },
+  "effector_graphs": {}
+}

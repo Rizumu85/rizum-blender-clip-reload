@@ -1,0 +1,36 @@
+// Hidden C++ exception states: #wind=1
+__int64 __fastcall sub_1425A4B20(__int64 a1, __int64 a2, _QWORD *a3)
+{
+  __int64 result; // rax
+  __int64 v5; // rcx
+  volatile signed __int32 *v6; // rbx
+  __int64 v7; // [rsp+20h] [rbp-18h] BYREF
+  volatile signed __int32 *v8; // [rsp+28h] [rbp-10h]
+
+  *(_DWORD *)a2 = *(_DWORD *)(a1 + 160); /*0x1425a4b36*/
+  *(_DWORD *)(a2 + 4) = 0; /*0x1425a4b3a*/
+  *(_QWORD *)(a2 + 8) = 0; /*0x1425a4b3d*/
+  result = (unsigned int)(1103515245 * *(_DWORD *)(a1 + 160) + 1234567); /*0x1425a4b4b*/
+  *a3 = (unsigned int)result; /*0x1425a4b50*/
+  a3[1] = 0; /*0x1425a4b57*/
+  v5 = *(_QWORD *)(a1 + 136); /*0x1425a4b5b*/
+  if ( v5 ) /*0x1425a4b65*/
+  {
+    sub_1422DF860(v5); /*0x1425a4b67*/
+    result = (__int64)sub_1422DC6F0(*(_QWORD *)(a1 + 136), &v7); /*0x1425a4b78*/
+    if ( v7 ) /*0x1425a4b86*/
+      result = sub_1422DF860(v7); /*0x1425a4b8b*/
+    v6 = v8; /*0x1425a4b91*/
+    if ( v8 ) /*0x1425a4b99*/
+    {
+      result = (unsigned int)_InterlockedExchangeAdd(v8 + 2, 0xFFFFFFFF); /*0x1425a4ba2*/
+      if ( (_DWORD)result == 1 ) /*0x1425a4baa*/
+      {
+        result = (*(__int64 (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v6 + 8LL))(v6); /*0x1425a4bb2*/
+        if ( _InterlockedExchangeAdd(v6 + 3, 0xFFFFFFFF) == 1 ) /*0x1425a4bbd*/
+          return (*(__int64 (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v6 + 16LL))(v6); /*0x1425a4bc5*/
+      }
+    }
+  }
+  return result; /*0x1425a4bc8*/
+}

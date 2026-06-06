@@ -1,0 +1,30 @@
+[
+  {
+    "max": 179,
+    "mean": 1.498369,
+    "visible_px": 2850,
+    "seconds": 0.011,
+    "variant": "current_stable_opacity_hash"
+  },
+  {
+    "max": 180,
+    "mean": 2.183269,
+    "visible_px": 3603,
+    "seconds": 0.012,
+    "variant": "lcg_opacity_capsule"
+  },
+  {
+    "max": 129,
+    "mean": 1.372256,
+    "visible_px": 2966,
+    "seconds": 0.01,
+    "variant": "current_experimental_native_dab"
+  },
+  {
+    "max": 141,
+    "mean": 2.80455,
+    "visible_px": 3445,
+    "seconds": 0.01,
+    "variant": "lcg_opacity_experimental_native_dab"
+  }
+]

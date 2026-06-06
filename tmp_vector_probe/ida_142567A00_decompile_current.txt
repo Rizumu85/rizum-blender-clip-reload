@@ -1,0 +1,35 @@
+_QWORD *__fastcall sub_142567A00(__int64 a1)
+{
+  _QWORD *result; // rax
+  _QWORD *v3; // rax
+  _QWORD *v4; // rbx
+  void (__fastcall ***v5)(_QWORD, __int64); // rcx
+
+  result = *(_QWORD **)(a1 + 32); /*0x142567a06*/
+  if ( !result ) /*0x142567a10*/
+  {
+    v3 = (_QWORD *)operator new(64); /*0x142567a1a*/
+    v4 = v3; /*0x142567a24*/
+    if ( v3 ) /*0x142567a2a*/
+    {
+      *v3 = &Planeswalker::PWVectorPool<Planeswalker::PWVectorSplineCurve>::`vftable'; /*0x142567a33*/
+      v3[2] = 0; /*0x142567a38*/
+      v3[3] = 0; /*0x142567a3c*/
+      v3[6] = 256; /*0x142567a40*/
+      v3[5] = 256; /*0x142567a48*/
+      v3[7] = 0; /*0x142567a50*/
+      v3[1] = 0; /*0x142567a54*/
+      v3[4] = 120; /*0x142567a58*/
+    }
+    else
+    {
+      v4 = 0; /*0x142567a62*/
+    }
+    v5 = *(void (__fastcall ****)(_QWORD, __int64))(a1 + 32); /*0x142567a65*/
+    *(_QWORD *)(a1 + 32) = v4; /*0x142567a69*/
+    if ( v5 ) /*0x142567a70*/
+      (**v5)(v5, 1); /*0x142567a7a*/
+    return v4; /*0x142567a7c*/
+  }
+  return result; /*0x142567a84*/
+}

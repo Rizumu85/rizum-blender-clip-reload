@@ -1,0 +1,212 @@
+{
+  "clip_count": 9,
+  "stroke_count": 12,
+  "shape_counts": [
+    {
+      "count": 4,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8209
+    },
+    {
+      "count": 4,
+      "shape": [
+        92,
+        76,
+        120,
+        88
+      ],
+      "flags": 65
+    },
+    {
+      "count": 4,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321
+    }
+  ],
+  "style_combos": [
+    {
+      "count": 2,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 0
+    },
+    {
+      "count": 1,
+      "size": "12:17:000000113f4ccccc00000003",
+      "opacity": "12:17:000000113f028f5c00000004",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 2
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 2
+    },
+    {
+      "count": 1,
+      "size": "12:17:000000113f4ccccc00000003",
+      "opacity": "12:17:000000113f028f5c00000004",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 0
+    },
+    {
+      "count": 1,
+      "size": "12:17:000000113f4ccccc00000003",
+      "opacity": "12:17:000000113f028f5c00000004",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 3
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 3
+    },
+    {
+      "count": 1,
+      "size": "12:17:000000113f4ccccc00000003",
+      "opacity": "12:17:000000113f028f5c00000004",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 1
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 1
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "24:49:0000003100000000000000073f8000000000000840a00000",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 0
+    },
+    {
+      "count": 1,
+      "size": "24:49:0000003100000000000000053f800000000000063fc00000",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 0,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 0
+    },
+    {
+      "count": 1,
+      "size": "4:1:00000001",
+      "opacity": "4:1:00000001",
+      "flow": "4:1:00000001",
+      "thickness": "4:1:00000001",
+      "flow_base": 1.0,
+      "texture": 2,
+      "pattern": 0,
+      "auto_interval": 2,
+      "anti_alias": 0
+    }
+  ],
+  "effector_keys": [
+    {
+      "count": 12,
+      "kind": "FlowEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 12,
+      "kind": "ThicknessEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 7,
+      "kind": "SizeEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 7,
+      "kind": "OpacityEffector",
+      "key": "4:1:00000001"
+    },
+    {
+      "count": 4,
+      "kind": "SizeEffector",
+      "key": "12:17:000000113f4ccccc00000003"
+    },
+    {
+      "count": 4,
+      "kind": "OpacityEffector",
+      "key": "12:17:000000113f028f5c00000004"
+    },
+    {
+      "count": 1,
+      "kind": "OpacityEffector",
+      "key": "24:49:0000003100000000000000073f8000000000000840a00000"
+    },
+    {
+      "count": 1,
+      "kind": "SizeEffector",
+      "key": "24:49:0000003100000000000000053f800000000000063fc00000"
+    }
+  ]
+}

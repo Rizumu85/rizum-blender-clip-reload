@@ -1,0 +1,184 @@
+{
+  "seconds": 9.216,
+  "note": "Diagnostic only. Replaces Test_Ballon PatternStyle=10 outlines with approximate retained segment quads, true material resource, four subsamples, and native-like 16-bit build-up.",
+  "best": [
+    {
+      "mode": 0,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.63996,
+      "premul_visible_px": 20566,
+      "mean": 0.55136,
+      "visible_px": 18043
+    },
+    {
+      "mode": 2,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.651541,
+      "premul_visible_px": 20777,
+      "mean": 0.555425,
+      "visible_px": 18219
+    },
+    {
+      "mode": 2,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.660659,
+      "premul_visible_px": 20555,
+      "mean": 0.557299,
+      "visible_px": 18043
+    },
+    {
+      "mode": 0,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.662853,
+      "premul_visible_px": 20694,
+      "mean": 0.558192,
+      "visible_px": 18155
+    },
+    {
+      "mode": 0,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.968034,
+      "premul_visible_px": 22209,
+      "mean": 0.637851,
+      "visible_px": 22209
+    },
+    {
+      "mode": 2,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.968932,
+      "premul_visible_px": 22431,
+      "mean": 0.639094,
+      "visible_px": 22431
+    },
+    {
+      "mode": 0,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.975815,
+      "premul_visible_px": 22347,
+      "mean": 0.640691,
+      "visible_px": 22347
+    },
+    {
+      "mode": 2,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.980825,
+      "premul_visible_px": 22183,
+      "mean": 0.641704,
+      "visible_px": 22183
+    }
+  ],
+  "all": [
+    {
+      "mode": 0,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.63996,
+      "premul_visible_px": 20566,
+      "mean": 0.55136,
+      "visible_px": 18043
+    },
+    {
+      "mode": 2,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.651541,
+      "premul_visible_px": 20777,
+      "mean": 0.555425,
+      "visible_px": 18219
+    },
+    {
+      "mode": 2,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.660659,
+      "premul_visible_px": 20555,
+      "mean": 0.557299,
+      "visible_px": 18043
+    },
+    {
+      "mode": 0,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 1.0,
+      "premul_mean": 1.662853,
+      "premul_visible_px": 20694,
+      "mean": 0.558192,
+      "visible_px": 18155
+    },
+    {
+      "mode": 0,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.968034,
+      "premul_visible_px": 22209,
+      "mean": 0.637851,
+      "visible_px": 22209
+    },
+    {
+      "mode": 2,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.968932,
+      "premul_visible_px": 22431,
+      "mean": 0.639094,
+      "visible_px": 22431
+    },
+    {
+      "mode": 0,
+      "flip": 0,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.975815,
+      "premul_visible_px": 22347,
+      "mean": 0.640691,
+      "visible_px": 22347
+    },
+    {
+      "mode": 2,
+      "flip": 1,
+      "angle_offset": 90.0,
+      "phase_step": 18.4,
+      "opacity_scale": 0.75,
+      "premul_mean": 1.980825,
+      "premul_visible_px": 22183,
+      "mean": 0.641704,
+      "visible_px": 22183
+    }
+  ]
+}

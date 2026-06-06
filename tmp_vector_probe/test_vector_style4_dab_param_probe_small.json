@@ -1,0 +1,92 @@
+[
+  {
+    "name": "baseline",
+    "mean": 0.610175,
+    "visible": 24477,
+    "max": 187
+  },
+  {
+    "name": "flow_0.80",
+    "mean": 0.613651,
+    "visible": 26916,
+    "max": 187
+  },
+  {
+    "name": "flow_0.90",
+    "mean": 0.600757,
+    "visible": 25513,
+    "max": 187
+  },
+  {
+    "name": "flow_0.95",
+    "mean": 0.601166,
+    "visible": 23069,
+    "max": 187
+  },
+  {
+    "name": "flow_1.05",
+    "mean": 0.622631,
+    "visible": 26041,
+    "max": 187
+  },
+  {
+    "name": "radius_0.96",
+    "mean": 0.572845,
+    "visible": 22412,
+    "max": 187
+  },
+  {
+    "name": "radius_0.98",
+    "mean": 0.58742,
+    "visible": 22946,
+    "max": 187
+  },
+  {
+    "name": "radius_1.02",
+    "mean": 0.635369,
+    "visible": 25656,
+    "max": 187
+  },
+  {
+    "name": "aa_0.75",
+    "mean": 0.653067,
+    "visible": 26042,
+    "max": 187
+  },
+  {
+    "name": "aa_1.25",
+    "mean": 0.588578,
+    "visible": 23134,
+    "max": 187
+  },
+  {
+    "name": "aa_1.5",
+    "mean": 0.601511,
+    "visible": 25508,
+    "max": 187
+  },
+  {
+    "name": "hard_1.0",
+    "mean": 0.58666,
+    "visible": 22879,
+    "max": 187
+  },
+  {
+    "name": "hard_0.9",
+    "mean": 0.629235,
+    "visible": 25512,
+    "max": 187
+  },
+  {
+    "name": "flow_0.9_aa1.25",
+    "mean": 0.603144,
+    "visible": 26693,
+    "max": 187
+  },
+  {
+    "name": "radius0.98_flow0.9",
+    "mean": 0.58947,
+    "visible": 26080,
+    "max": 187
+  }
+]

@@ -1,0 +1,348 @@
+{
+  "generated": "current",
+  "count": 38,
+  "rows": [
+    {
+      "name": "Test_Vector.clip",
+      "max": 187,
+      "mean": 0.610175,
+      "visible_px": 24477,
+      "premul_mean": 0.610175,
+      "premul_visible_px": 24477,
+      "seconds": 1.957
+    },
+    {
+      "name": "Vector_BrushTip_Material.clip",
+      "max": 11,
+      "mean": 0.061113,
+      "visible_px": 663,
+      "premul_mean": 0.061113,
+      "premul_visible_px": 663,
+      "seconds": 3.949
+    },
+    {
+      "name": "Vector_Thickness_50_Angle_90.clip",
+      "max": 21,
+      "mean": 0.052687,
+      "visible_px": 725,
+      "premul_mean": 0.052687,
+      "premul_visible_px": 725,
+      "seconds": 0.038
+    },
+    {
+      "name": "Vector_Thickness_50_Angle_45.clip",
+      "max": 35,
+      "mean": 0.050444,
+      "visible_px": 651,
+      "premul_mean": 0.050444,
+      "premul_visible_px": 651,
+      "seconds": 0.03
+    },
+    {
+      "name": "Vector_AA_Weak.clip",
+      "max": 162,
+      "mean": 0.036818,
+      "visible_px": 1163,
+      "premul_mean": 0.036818,
+      "premul_visible_px": 1163,
+      "seconds": 0.125
+    },
+    {
+      "name": "Vector_AA_None.clip",
+      "max": 226,
+      "mean": 0.036532,
+      "visible_px": 226,
+      "premul_mean": 0.036532,
+      "premul_visible_px": 226,
+      "seconds": 0.095
+    },
+    {
+      "name": "Vector_SizePressure.clip",
+      "max": 226,
+      "mean": 0.024732,
+      "visible_px": 153,
+      "premul_mean": 0.024732,
+      "premul_visible_px": 153,
+      "seconds": 0.103
+    },
+    {
+      "name": "Vector_BrushTip_Material_Gap.clip",
+      "max": 10,
+      "mean": 0.023456,
+      "visible_px": 258,
+      "premul_mean": 0.023456,
+      "premul_visible_px": 258,
+      "seconds": 0.858
+    },
+    {
+      "name": "Vector_AA_Strong.clip",
+      "max": 128,
+      "mean": 0.020742,
+      "visible_px": 2070,
+      "premul_mean": 0.020742,
+      "premul_visible_px": 2070,
+      "seconds": 0.102
+    },
+    {
+      "name": "Vector_Texture_50.clip",
+      "max": 2,
+      "mean": 0.020188,
+      "visible_px": 3,
+      "premul_mean": 0.020188,
+      "premul_visible_px": 3,
+      "seconds": 0.027
+    },
+    {
+      "name": "Vector_StartEnd_20.clip",
+      "max": 1,
+      "mean": 0.020094,
+      "visible_px": 0,
+      "premul_mean": 0.020094,
+      "premul_visible_px": 0,
+      "seconds": 0.023
+    },
+    {
+      "name": "Vector_Texture.clip",
+      "max": 4,
+      "mean": 0.018159,
+      "visible_px": 6952,
+      "premul_mean": 0.018159,
+      "premul_visible_px": 6952,
+      "seconds": 0.157
+    },
+    {
+      "name": "Vector_Thickness_50.clip",
+      "max": 12,
+      "mean": 0.017019,
+      "visible_px": 318,
+      "premul_mean": 0.017019,
+      "premul_visible_px": 318,
+      "seconds": 0.028
+    },
+    {
+      "name": "Vector_AA_Medium.clip",
+      "max": 114,
+      "mean": 0.016958,
+      "visible_px": 1560,
+      "premul_mean": 0.016958,
+      "premul_visible_px": 1560,
+      "seconds": 0.114
+    },
+    {
+      "name": "Vector_NoTexture.clip",
+      "max": 226,
+      "mean": 0.010992,
+      "visible_px": 68,
+      "premul_mean": 0.010992,
+      "premul_visible_px": 68,
+      "seconds": 0.116
+    },
+    {
+      "name": "Vector_FlowVelocity_50.clip",
+      "max": 1,
+      "mean": 6.3e-05,
+      "visible_px": 0,
+      "premul_mean": 6.3e-05,
+      "premul_visible_px": 0,
+      "seconds": 0.021
+    },
+    {
+      "name": "Vector_Opacity_50.clip",
+      "max": 1,
+      "mean": 1.3e-05,
+      "visible_px": 0,
+      "premul_mean": 1.3e-05,
+      "premul_visible_px": 0,
+      "seconds": 0.018
+    },
+    {
+      "name": "Vector_Angle_45.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.018
+    },
+    {
+      "name": "Vector_Angle_90.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.021
+    },
+    {
+      "name": "Vector_Baseline.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.017
+    },
+    {
+      "name": "Vector_Flow_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.023
+    },
+    {
+      "name": "Vector_FlowPressure_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.028
+    },
+    {
+      "name": "Vector_Gap_Fixed_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.013
+    },
+    {
+      "name": "Vector_Gap_Narraw.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.031
+    },
+    {
+      "name": "Vector_Gap_Normal.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.028
+    },
+    {
+      "name": "Vector_Gap_Wide.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.021
+    },
+    {
+      "name": "Vector_GlobalPressure_Default.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.021
+    },
+    {
+      "name": "Vector_GlobalPressure_StrongCurve.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.017
+    },
+    {
+      "name": "Vector_Hardness_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.029
+    },
+    {
+      "name": "Vector_OpacityPressure.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.102
+    },
+    {
+      "name": "Vector_OpacityRandom_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.023
+    },
+    {
+      "name": "Vector_OpacityTilt_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.02
+    },
+    {
+      "name": "Vector_OpacityVelocity_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.019
+    },
+    {
+      "name": "Vector_SizeRandom_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.021
+    },
+    {
+      "name": "Vector_SizeTilt_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.024
+    },
+    {
+      "name": "Vector_SizeVelocity_50.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.025
+    },
+    {
+      "name": "Vector_StartEndSpeed_20.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.025
+    },
+    {
+      "name": "Vector_Taper_4.clip",
+      "max": 0,
+      "mean": 0.0,
+      "visible_px": 0,
+      "premul_mean": 0.0,
+      "premul_visible_px": 0,
+      "seconds": 0.02
+    }
+  ]
+}

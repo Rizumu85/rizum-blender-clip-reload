@@ -1,0 +1,201 @@
+// Hidden C++ exception states: #wind=4
+__int64 __fastcall sub_142558580(
+        __int64 a1,
+        _QWORD *a2,
+        _QWORD *a3,
+        _OWORD *a4,
+        __int64 a5,
+        __int64 a6,
+        int a7,
+        __int64 a8,
+        _QWORD *a9,
+        _DWORD *a10,
+        _DWORD *a11,
+        unsigned int a12)
+{
+  volatile signed __int32 *v15; // rbx
+  volatile signed __int32 *v16; // rbx
+  volatile signed __int32 *v18; // rbx
+  __int64 v19; // rdx
+  __int64 v20; // r8
+  __int64 v21; // rdx
+  __int64 v22; // rcx
+  volatile signed __int32 *v23; // r14
+  unsigned __int64 v24; // r8
+  unsigned __int64 v25; // xmm0_8
+  volatile signed __int32 *v26; // rbx
+  int v27; // r14d
+  volatile signed __int32 *v28; // rbx
+  __int64 v29; // rax
+  volatile signed __int32 *v30; // rbx
+  _QWORD *v31; // [rsp+40h] [rbp-C0h] BYREF
+  __int64 v32; // [rsp+48h] [rbp-B8h]
+  __int64 v33; // [rsp+50h] [rbp-B0h] BYREF
+  volatile signed __int32 *v34; // [rsp+58h] [rbp-A8h]
+  _DWORD *v35; // [rsp+60h] [rbp-A0h]
+  __int128 v36; // [rsp+70h] [rbp-90h] BYREF
+  _DWORD *v37; // [rsp+80h] [rbp-80h]
+  __m128i v38; // [rsp+90h] [rbp-70h] BYREF
+  __m128i v39; // [rsp+A0h] [rbp-60h] BYREF
+  __int128 v40; // [rsp+B0h] [rbp-50h] BYREF
+  _QWORD *v41; // [rsp+C0h] [rbp-40h]
+  _QWORD *v42; // [rsp+C8h] [rbp-38h]
+  __int64 v43; // [rsp+D0h] [rbp-30h] BYREF
+  volatile signed __int32 *v44; // [rsp+D8h] [rbp-28h]
+  _BYTE v45[16]; // [rsp+E0h] [rbp-20h] BYREF
+  _BYTE v46[16]; // [rsp+F0h] [rbp-10h] BYREF
+
+  *(_QWORD *)&v36 = a4; /*0x1425585b2*/
+  v31 = a2; /*0x1425585ba*/
+  v41 = a3; /*0x1425585c2*/
+  v42 = a9; /*0x1425585cd*/
+  v37 = a10; /*0x1425585d8*/
+  v35 = a11; /*0x1425585e3*/
+  if ( !*a3 ) /*0x1425585e8*/
+  {
+    v15 = (volatile signed __int32 *)a3[1]; /*0x1425585ee*/
+    if ( v15 ) /*0x1425585fa*/
+    {
+      if ( _InterlockedExchangeAdd(v15 + 2, 0xFFFFFFFF) == 1 ) /*0x142558606*/
+      {
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v15 + 8LL))(v15); /*0x14255860e*/
+        if ( _InterlockedExchangeAdd(v15 + 3, 0xFFFFFFFF) == 1 ) /*0x14255861b*/
+          (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v15 + 16LL))(v15); /*0x142558623*/
+      }
+    }
+    v16 = (volatile signed __int32 *)a9[1]; /*0x142558627*/
+    if ( v16 && _InterlockedExchangeAdd(v16 + 2, 0xFFFFFFFF) == 1 ) /*0x14255863b*/
+    {
+      (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v16 + 8LL))(v16); /*0x142558643*/
+      if ( _InterlockedExchangeAdd(v16 + 3, 0xFFFFFFFF) == 1 ) /*0x14255864e*/
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v16 + 16LL))(v16); /*0x142558656*/
+    }
+    return 0; /*0x14255865b*/
+  }
+  *(_DWORD *)(a1 + 616) = a12; /*0x142558666*/
+  sub_142611310(*a3); /*0x14255866f*/
+  sub_142611320(*a3); /*0x14255867a*/
+  sub_14255D370(a1); /*0x142558688*/
+  *(_QWORD *)(a1 + 24) = a6; /*0x142558694*/
+  *(_QWORD *)(a1 + 248) = a5; /*0x14255869f*/
+  *(_DWORD *)(a1 + 212) = 0; /*0x1425586a6*/
+  sub_1401985C0(a1 + 232, a3); /*0x1425586ba*/
+  sub_142610FF0(*a3, &v33, 0); /*0x1425586ca*/
+  if ( !v33 || (sub_1432C06F0(v33, v46), !(unsigned int)sub_14206CBF0(a4, v46)) ) /*0x142558702*/
+  {
+    v18 = v34; /*0x1425586da*/
+    if ( v34 ) /*0x1425586e2*/
+      goto LABEL_35; /*0x1425586e2*/
+    goto LABEL_38; /*0x1425586e2*/
+  }
+  sub_141084FB0(*a3, a4); /*0x142558711*/
+  *(_DWORD *)(a1 + 256) = sub_141967490(v33, v19, v20); /*0x142558720*/
+  *(_OWORD *)(a1 + 8) = *a4; /*0x14255872d*/
+  sub_14206CEF0(a1 + 8, *(unsigned int *)(a1 + 24), *(unsigned int *)(a1 + 28)); /*0x142558737*/
+  sub_14255CB20(a1); /*0x14255873f*/
+  v21 = *a9; /*0x142558744*/
+  v22 = a9[1]; /*0x142558748*/
+  if ( v22 ) /*0x142558750*/
+    _InterlockedExchangeAdd((volatile signed __int32 *)(v22 + 8), 1u); /*0x142558757*/
+  *(_QWORD *)(a1 + 288) = v21; /*0x14255875c*/
+  v23 = *(volatile signed __int32 **)(a1 + 296); /*0x142558763*/
+  *(_QWORD *)(a1 + 296) = v22; /*0x14255876a*/
+  if ( v23 ) /*0x142558779*/
+  {
+    if ( _InterlockedExchangeAdd(v23 + 2, 0xFFFFFFFF) == 1 ) /*0x142558786*/
+    {
+      (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v23 + 8LL))(v23); /*0x14255878e*/
+      if ( _InterlockedExchangeAdd(v23 + 3, 0xFFFFFFFF) == 1 ) /*0x14255879c*/
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v23 + 16LL))(v23); /*0x1425587a4*/
+    }
+  }
+  sub_14255D810(a1, v31, a6, a7, a8, 1, 0, 1); /*0x1425587dd*/
+  if ( *(_QWORD *)(a1 + 288) ) /*0x1425587e2*/
+  {
+    sub_14261DB20(*a9, &v39, &v31); /*0x1425587fd*/
+    v24 = (unsigned int)((_DWORD)v31 - *(_DWORD *)(a1 + 248) - *(_DWORD *)(a1 + 24)) /*0x142558824*/
+        | ((unsigned __int64)(unsigned int)(HIDWORD(v31) - *(_DWORD *)(a1 + 252) - *(_DWORD *)(a1 + 28)) << 32);
+    v38 = v39; /*0x14255882b*/
+    v25 = _mm_srli_si128(v39, 8).m128i_u64[0]; /*0x142558830*/
+    if ( v25 ) /*0x14255883d*/
+      _InterlockedExchangeAdd((volatile signed __int32 *)(v25 + 8), 1u); /*0x142558844*/
+    sub_142614A60(*(_QWORD *)(a1 + 232), &v38, v24); /*0x142558854*/
+    v26 = (volatile signed __int32 *)v39.m128i_i64[1]; /*0x14255885a*/
+    if ( v39.m128i_i64[1] ) /*0x142558861*/
+    {
+      if ( _InterlockedExchangeAdd((volatile signed __int32 *)(v39.m128i_i64[1] + 8), 0xFFFFFFFF) == 1 ) /*0x14255886d*/
+      {
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v26 + 8LL))(v26); /*0x142558875*/
+        if ( _InterlockedExchangeAdd(v26 + 3, 0xFFFFFFFF) == 1 ) /*0x142558882*/
+          (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v26 + 16LL))(v26); /*0x14255888a*/
+      }
+    }
+  }
+  else
+  {
+    v40 = 0; /*0x142558892*/
+    sub_142614A60(*(_QWORD *)(a1 + 232), &v40, 0); /*0x1425588a5*/
+  }
+  v27 = *(_DWORD *)(a1 + 208) & 0x100; /*0x1425588b1*/
+  v32 = *sub_1422DC6F0(*(_QWORD *)(a1 + 72), &v43); /*0x1425588c8*/
+  v28 = v44; /*0x1425588cd*/
+  if ( v44 ) /*0x1425588d4*/
+  {
+    if ( _InterlockedExchangeAdd(v44 + 2, 0xFFFFFFFF) == 1 ) /*0x1425588e0*/
+    {
+      (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v28 + 8LL))(v28); /*0x1425588e8*/
+      if ( _InterlockedExchangeAdd(v28 + 3, 0xFFFFFFFF) == 1 ) /*0x1425588f5*/
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v28 + 16LL))(v28); /*0x1425588fd*/
+    }
+  }
+  sub_142611780( /*0x14255893d*/
+    *(_QWORD *)(a1 + 232),
+    *(_DWORD *)(a1 + 196),
+    v32 != 0,
+    *(_DWORD *)(a1 + 200),
+    *(_DWORD *)(a1 + 192),
+    v27,
+    a12);
+  if ( !(unsigned int)sub_14255D470(a1, 0, a12) ) /*0x14255894a*/
+  {
+    *v35 = 1; /*0x142558958*/
+    v18 = v34; /*0x14255895e*/
+    if ( v34 ) /*0x142558966*/
+    {
+LABEL_35:
+      if ( _InterlockedExchangeAdd(v18 + 2, 0xFFFFFFFF) == 1 ) /*0x142558972*/
+      {
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v18 + 8LL))(v18); /*0x14255897a*/
+        if ( _InterlockedExchangeAdd(v18 + 3, 0xFFFFFFFF) == 1 ) /*0x142558985*/
+          (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v18 + 16LL))(v18); /*0x14255898d*/
+      }
+    }
+LABEL_38:
+    sub_140180EA0(a3); /*0x142558991*/
+    sub_140180EA0(a9); /*0x14255899d*/
+    return 0; /*0x1425589a4*/
+  }
+  if ( *(_DWORD *)(a1 + 212) && *(_QWORD *)(a1 + 304) ) /*0x1425589b2*/
+  {
+    v36 = *(_OWORD *)v36; /*0x1425589c4*/
+    v29 = sub_142611330(*(_QWORD *)(a1 + 232), v45, 0); /*0x1425589d7*/
+    sub_142616800(*(_QWORD *)(a1 + 304), v29, &v36); /*0x1425589eb*/
+    sub_140AAE360(*(_QWORD *)(a1 + 304), 0); /*0x1425589f9*/
+  }
+  if ( *(_DWORD *)(a1 + 352) ) /*0x1425589fe*/
+    sub_14255EAA0(a1, a12); /*0x142558a0c*/
+  *v37 = *(_DWORD *)(a1 + 212); /*0x142558a1b*/
+  v30 = v34; /*0x142558a1d*/
+  if ( v34 ) /*0x142558a25*/
+  {
+    if ( _InterlockedExchangeAdd(v34 + 2, 0xFFFFFFFF) == 1 ) /*0x142558a31*/
+    {
+      (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v30 + 8LL))(v30); /*0x142558a39*/
+      if ( _InterlockedExchangeAdd(v30 + 3, 0xFFFFFFFF) == 1 ) /*0x142558a44*/
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v30 + 16LL))(v30); /*0x142558a4c*/
+    }
+  }
+  sub_140180EA0(a3); /*0x142558a53*/
+  sub_140180EA0(a9); /*0x142558a5c*/
+  return 1; /*0x142558a66*/
+}

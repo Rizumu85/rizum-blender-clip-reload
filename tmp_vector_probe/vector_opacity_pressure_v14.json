@@ -1,0 +1,1202 @@
+{
+  "name": "Vector_OpacityPressure.clip",
+  "path": "img\\Vector_OpacityPressure.clip",
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "vector_layer_count": 1,
+  "vector_layers": [
+    {
+      "layer_id": 26,
+      "layer_name": "Layer 1",
+      "vector_data": "extrnlid9ED0831830E54B2AA2D79D13E673B23F",
+      "vector_body_len": 2876,
+      "external_header": {
+        "header_len": 40,
+        "tag": "extrnlid",
+        "identifier": "9ED0831830E54B2AA2D79D13E673B23F",
+        "external_id": "extrnlid9ED0831830E54B2AA2D79D13E673B23F",
+        "payload_offset": 56,
+        "payload_size": 2820,
+        "payload_end": 2876,
+        "payload_size_matches_body": true,
+        "matches_vector_data": true
+      },
+      "compact_record_spans": [
+        {
+          "kind": "stroke_92",
+          "offset": 56,
+          "end": 2876,
+          "shape": [
+            92,
+            76,
+            88,
+            88
+          ],
+          "point_count": 31
+        }
+      ],
+      "compact_record_coverage": {
+        "record_count": 1,
+        "covered_bytes": 2820,
+        "body_len": 2876,
+        "prefix_len": 56,
+        "trailing_gap": 0,
+        "fully_covered_after_prefix": true,
+        "prefix_matches_external_header": true
+      },
+      "LayerType": 0,
+      "LayerFolder": 0,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 0,
+      "LayerVisibility": 1,
+      "LayerRenderMipmap": 32,
+      "LayerLayerMaskMipmap": 0,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "LayerColorTypeIndex": 0,
+      "LayerColorTypeBlackChecked": 1,
+      "LayerColorTypeWhiteChecked": 1,
+      "VectorNormalStrokeIndex": 15,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 0,
+      "VectorNormalType": 0,
+      "MixSubColorForEveryPlot": 1,
+      "mipmap_resources": {
+        "LayerRenderMipmap": {
+          "mipmap_id": 32,
+          "offscreen_id": 171,
+          "external_id": "extrnlidB0D44E26D4E94389956C1BC2A5B66227",
+          "external_present": false,
+          "external_len": null
+        }
+      }
+    }
+  ],
+  "stroke_count": 1,
+  "object_100_count": 0,
+  "strokes": [
+    {
+      "layer_id": 26,
+      "layer_name": "Layer 1",
+      "body_offset": 56,
+      "shape": [
+        92,
+        76,
+        88,
+        88
+      ],
+      "flags": 8321,
+      "raw_header": {
+        "hex": "0000005c0000004c00000058000000580000001f00002081000000e700000079000002bb000002e5000000000000000000000000e4e4e4e4e0e0e0e0edededed3ff0000000000000000000000000000b403400000000000002baa706",
+        "u32_be": {
+          "0": 92,
+          "4": 76,
+          "8": 88,
+          "12": 88,
+          "16": 31,
+          "20": 8321,
+          "24": 231,
+          "28": 121,
+          "32": 699,
+          "36": 741,
+          "40": 0,
+          "44": 0,
+          "48": 0,
+          "52": 3840206052,
+          "56": 3772834016,
+          "60": 3991793133,
+          "64": 1072693248,
+          "68": 0,
+          "72": 0,
+          "76": 11,
+          "80": 1077149696,
+          "84": 0,
+          "88": 45786886
+        },
+        "f32_be": {
+          "0": 0.0,
+          "4": 0.0,
+          "8": 0.0,
+          "12": 0.0,
+          "16": 0.0,
+          "20": 0.0,
+          "24": 0.0,
+          "28": 0.0,
+          "32": 0.0,
+          "36": 0.0,
+          "40": 0.0,
+          "44": 0.0,
+          "48": 0.0,
+          "64": 1.875,
+          "68": 0.0,
+          "72": 0.0,
+          "76": 0.0,
+          "80": 2.8125,
+          "84": 0.0,
+          "88": 0.0
+        },
+        "f64_be": {
+          "0": 0.0,
+          "8": 0.0,
+          "16": 0.0,
+          "24": 0.0,
+          "32": 0.0,
+          "40": 0.0,
+          "48": 0.0,
+          "64": 1.0,
+          "72": 0.0,
+          "80": 20.0
+        }
+      },
+      "compact_native_reader_probe": {
+        "valid": true,
+        "record_control": {
+          "object_header_len": 92,
+          "subclass_tail_offset": 76,
+          "point_record_stride": 88,
+          "point_record_tail_offset": 88,
+          "point_count": 31,
+          "object_flags_or_type": 8321
+        },
+        "common_object": {
+          "bbox": [
+            231,
+            121,
+            699,
+            741
+          ],
+          "line_color_triplet_u32": [
+            0,
+            0,
+            0
+          ],
+          "line_rgb": [
+            0,
+            0,
+            0
+          ],
+          "fill_color_triplet_u32": [
+            3840206052,
+            3772834016,
+            3991793133
+          ],
+          "fill_rgb": [
+            228,
+            224,
+            237
+          ],
+          "opacity": 1.0,
+          "extra_u32_72": 0
+        },
+        "point_payload": {
+          "start": 148,
+          "end": 2876
+        },
+        "subclass_tail": {
+          "class": "PWVectorStroke",
+          "list_index_u32_76": 11,
+          "width_or_scale_f64_80": 20.0,
+          "extra_u32_88": 45786886
+        }
+      },
+      "compact_semantic_probe": {
+        "object_kind": "stroke_92",
+        "native_draw_flag_candidate_lens": {
+          "20": {
+            "value": 8321,
+            "bit0_line_lens": true,
+            "bit1_fill_lens": false,
+            "bit2_special_lens": false,
+            "low_nibble": 1
+          }
+        },
+        "argb_candidates_from_compact_color": {
+          "line": [
+            255,
+            0,
+            0,
+            0
+          ],
+          "fill": [
+            255,
+            228,
+            224,
+            237
+          ],
+          "opacity_alpha": 255
+        }
+      },
+      "point_count": 31,
+      "bbox": [
+        231,
+        121,
+        699,
+        741
+      ],
+      "line_rgb": [
+        0,
+        0,
+        0
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 11,
+      "width": 20.0,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          251,
+          141,
+          679,
+          721
+        ],
+        "xy": {
+          "x": {
+            "min": 251.649115,
+            "max": 678.555926,
+            "avg": 423.982736,
+            "uniq": 31
+          },
+          "y": {
+            "min": 141.730913,
+            "max": 720.427536,
+            "avg": 379.130375,
+            "uniq": 31
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 0.000366,
+            "max": 0.527536,
+            "avg": 0.248432,
+            "uniq": 31
+          },
+          "40": {
+            "min": 0.522222,
+            "max": 0.788889,
+            "avg": 0.694086,
+            "uniq": 23
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.075884,
+            "avg": 0.02955,
+            "uniq": 31
+          },
+          "48": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "64": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "68": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "72": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.11909,
+            "avg": 1.585251,
+            "uniq": 31
+          }
+        },
+        "native32_stats": {
+          "u32": {
+            "16": [
+              {
+                "value": 231,
+                "count": 1
+              },
+              {
+                "value": 237,
+                "count": 1
+              },
+              {
+                "value": 244,
+                "count": 1
+              },
+              {
+                "value": 251,
+                "count": 1
+              },
+              {
+                "value": 258,
+                "count": 1
+              },
+              {
+                "value": 272,
+                "count": 1
+              },
+              {
+                "value": 279,
+                "count": 1
+              },
+              {
+                "value": 287,
+                "count": 1
+              }
+            ],
+            "20": [
+              {
+                "value": 121,
+                "count": 1
+              },
+              {
+                "value": 129,
+                "count": 1
+              },
+              {
+                "value": 139,
+                "count": 1
+              },
+              {
+                "value": 152,
+                "count": 1
+              },
+              {
+                "value": 163,
+                "count": 1
+              },
+              {
+                "value": 183,
+                "count": 1
+              },
+              {
+                "value": 192,
+                "count": 1
+              },
+              {
+                "value": 204,
+                "count": 1
+              }
+            ],
+            "24": [
+              {
+                "value": 699,
+                "count": 2
+              },
+              {
+                "value": 278,
+                "count": 1
+              },
+              {
+                "value": 285,
+                "count": 1
+              },
+              {
+                "value": 292,
+                "count": 1
+              },
+              {
+                "value": 299,
+                "count": 1
+              },
+              {
+                "value": 313,
+                "count": 1
+              },
+              {
+                "value": 320,
+                "count": 1
+              },
+              {
+                "value": 328,
+                "count": 1
+              }
+            ],
+            "28": [
+              {
+                "value": 741,
+                "count": 2
+              },
+              {
+                "value": 170,
+                "count": 1
+              },
+              {
+                "value": 180,
+                "count": 1
+              },
+              {
+                "value": 193,
+                "count": 1
+              },
+              {
+                "value": 204,
+                "count": 1
+              },
+              {
+                "value": 224,
+                "count": 1
+              },
+              {
+                "value": 233,
+                "count": 1
+              },
+              {
+                "value": 245,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "cubic64_stats": {
+          "f64": {
+            "0": {
+              "min": 251.649115,
+              "max": 678.555926,
+              "avg": 423.982736,
+              "uniq": 31
+            },
+            "8": {
+              "min": 141.730913,
+              "max": 720.427536,
+              "avg": 379.130375,
+              "uniq": 31
+            },
+            "16": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "24": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "32": {
+              "min": 0.0,
+              "max": 0.0,
+              "avg": 0.0,
+              "uniq": 1
+            },
+            "40": {
+              "min": 4.1e-05,
+              "max": 0.000792,
+              "avg": 0.000385,
+              "uniq": 23
+            }
+          },
+          "u32": {
+            "48": [
+              {
+                "value": 0,
+                "count": 31
+              }
+            ],
+            "52": [
+              {
+                "value": 1065353216,
+                "count": 31
+              }
+            ],
+            "56": [
+              {
+                "value": 1065353216,
+                "count": 31
+              }
+            ],
+            "60": [
+              {
+                "value": 1065353216,
+                "count": 31
+              }
+            ]
+          }
+        },
+        "pen_bbox_width": {
+          "min": 41.0,
+          "max": 76.0,
+          "avg": 54.774194,
+          "uniq": 19
+        },
+        "pen_bbox_height": {
+          "min": 41.0,
+          "max": 91.0,
+          "avg": 59.677419,
+          "uniq": 19
+        },
+        "first_points": [
+          {
+            "x": 251.649115,
+            "y": 141.730913,
+            "pen_bbox": [
+              231,
+              121,
+              278,
+              170
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 231,
+              "line_select_id_20": 121,
+              "is_vertex_selected_24": 278,
+              "unused_or_extra_28": 170
+            },
+            "float_fields": {
+              "36": 0.000366,
+              "40": 0.522222,
+              "44": 0.0,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.0
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 251.649115,
+              "y_f64_8": 141.730913,
+              "u32_16_28": {
+                "16": 231,
+                "20": 121,
+                "24": 278,
+                "28": 170
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.000366,
+                "40": 0.522222,
+                "44": 0.0,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.0
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.000366,
+                  "40": 0.522222,
+                  "44": 0.0,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.0
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 45786886,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                251.649115,
+                141.730913,
+                0.0,
+                0.0,
+                0.0,
+                4.1e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 257.362292,
+            "y": 149.047074,
+            "pen_bbox": [
+              237,
+              129,
+              285,
+              180
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 237,
+              "line_select_id_20": 129,
+              "is_vertex_selected_24": 285,
+              "unused_or_extra_28": 180
+            },
+            "float_fields": {
+              "36": 0.030334,
+              "40": 0.527778,
+              "44": 0.012626,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.316062
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 257.362292,
+              "y_f64_8": 149.047074,
+              "u32_16_28": {
+                "16": 237,
+                "20": 129,
+                "24": 285,
+                "28": 180
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.030334,
+                "40": 0.527778,
+                "44": 0.012626,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.316062
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.030334,
+                  "40": 0.527778,
+                  "44": 0.012626,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.316062
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 45786886,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                257.362292,
+                149.047074,
+                0.0,
+                0.0,
+                0.0,
+                4.4e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 264.413412,
+            "y": 159.85139,
+            "pen_bbox": [
+              244,
+              139,
+              292,
+              193
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 244,
+              "line_select_id_20": 139,
+              "is_vertex_selected_24": 292,
+              "unused_or_extra_28": 193
+            },
+            "float_fields": {
+              "36": 0.007448,
+              "40": 0.544444,
+              "44": 0.013818,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 0.210674
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 264.413412,
+              "y_f64_8": 159.85139,
+              "u32_16_28": {
+                "16": 244,
+                "20": 139,
+                "24": 292,
+                "28": 193
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.007448,
+                "40": 0.544444,
+                "44": 0.013818,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 0.210674
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.007448,
+                  "40": 0.544444,
+                  "44": 0.013818,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 0.210674
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 45786886,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                264.413412,
+                159.85139,
+                0.0,
+                0.0,
+                0.0,
+                5.2e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          },
+          {
+            "x": 271.330721,
+            "y": 172.174968,
+            "pen_bbox": [
+              251,
+              152,
+              299,
+              204
+            ],
+            "native32_probe": {
+              "vertex_select_id_16": 251,
+              "line_select_id_20": 152,
+              "is_vertex_selected_24": 299,
+              "unused_or_extra_28": 204
+            },
+            "float_fields": {
+              "36": 0.007197,
+              "40": 0.566667,
+              "44": 0.01403,
+              "48": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "64": 0.0,
+              "68": 0.0,
+              "72": 0.0,
+              "76": 2.077448
+            },
+            "compact_point_reader_probe": {
+              "x_f64_0": 271.330721,
+              "y_f64_8": 172.174968,
+              "u32_16_28": {
+                "16": 251,
+                "20": 152,
+                "24": 299,
+                "28": 204
+              },
+              "u32_32": 0,
+              "f32_36_76": {
+                "36": 0.007197,
+                "40": 0.566667,
+                "44": 0.01403,
+                "48": 0.0,
+                "52": 1.0,
+                "56": 1.0,
+                "60": 1.0,
+                "64": 0.0,
+                "68": 0.0,
+                "72": 0.0,
+                "76": 2.077448
+              },
+              "writer_grouped_f32": {
+                "source_double_derived_36_60": {
+                  "36": 0.007197,
+                  "40": 0.566667,
+                  "44": 0.01403,
+                  "48": 0.0,
+                  "52": 1.0,
+                  "56": 1.0,
+                  "60": 1.0
+                },
+                "other_serialized_f32_64_76": {
+                  "64": 0.0,
+                  "68": 0.0,
+                  "72": 0.0,
+                  "76": 2.077448
+                },
+                "source_flags_bit0_bit1_gate_internal_flags_0x1000_0x2000": true
+              },
+              "u32_80_84": {
+                "80": 45786886,
+                "84": 0
+              }
+            },
+            "cubic64_probe": {
+              "f64_0_40": [
+                271.330721,
+                172.174968,
+                0.0,
+                0.0,
+                0.0,
+                6.5e-05
+              ],
+              "u32_48_60": {
+                "48": 0,
+                "52": 1065353216,
+                "56": 1065353216,
+                "60": 1065353216
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "objects_100": [],
+  "brush_styles": {
+    "11": {
+      "MainId": 11,
+      "StyleFlag": 115264,
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "OpacityEffector": {
+        "len": 24,
+        "hex": "0000003100000000000000073f8000000000000840a00000",
+        "words": [
+          {
+            "u32": 49,
+            "f32": 0.0
+          },
+          {
+            "u32": 0,
+            "f32": 0.0
+          },
+          {
+            "u32": 7,
+            "f32": 0.0
+          },
+          {
+            "u32": 1065353216,
+            "f32": 1.0
+          },
+          {
+            "u32": 8,
+            "f32": 0.0
+          },
+          {
+            "u32": 1084227584,
+            "f32": 5.0
+          }
+        ]
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AntiAlias": 0,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 1.0,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AutoIntervalType": 2,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 3,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 3,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 0,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0
+    }
+  },
+  "brush_resources": {
+    "pattern_styles": {},
+    "pattern_images": {}
+  },
+  "effector_graphs": {
+    "7": {
+      "control_number": 2,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ]
+    },
+    "8": {
+      "control_number": 4,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.5,
+          1.0
+        ],
+        [
+          0.8,
+          0.0
+        ],
+        [
+          1.0,
+          0.0
+        ]
+      ]
+    }
+  }
+}

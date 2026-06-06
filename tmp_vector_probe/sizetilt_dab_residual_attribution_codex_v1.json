@@ -1,0 +1,3601 @@
+{
+  "summary": {
+    "dab_count": 175,
+    "layer_alpha_diff_px": 105,
+    "layer_alpha_visible_px": 25,
+    "delta_counts": [
+      [
+        1,
+        80
+      ],
+      [
+        2,
+        22
+      ],
+      [
+        3,
+        3
+      ]
+    ],
+    "bbox": [
+      20,
+      10,
+      182,
+      173
+    ],
+    "nearest_top": [
+      [
+        174,
+        17
+      ],
+      [
+        173,
+        14
+      ],
+      [
+        172,
+        6
+      ],
+      [
+        157,
+        5
+      ],
+      [
+        167,
+        4
+      ],
+      [
+        170,
+        4
+      ],
+      [
+        161,
+        3
+      ],
+      [
+        171,
+        3
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        64,
+        2
+      ]
+    ],
+    "visible_nearest_top": [
+      [
+        174,
+        11
+      ],
+      [
+        173,
+        10
+      ],
+      [
+        161,
+        1
+      ],
+      [
+        164,
+        1
+      ],
+      [
+        167,
+        1
+      ],
+      [
+        172,
+        1
+      ]
+    ],
+    "tail_dabs": [
+      {
+        "idx": 160,
+        "center": [
+          161.698573284603,
+          158.2751804026308
+        ],
+        "radius": 5.967608822861462,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 161,
+        "center": [
+          162.66772591585698,
+          158.91410017326766
+        ],
+        "radius": 5.96108402878893,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 162,
+        "center": [
+          163.64856148372732,
+          159.55812366881705
+        ],
+        "radius": 5.954617426791049,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 163,
+        "center": [
+          164.64853550342707,
+          160.21218464787523
+        ],
+        "radius": 5.9481578397825885,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 164,
+        "center": [
+          165.667583405889,
+          160.87624894122834
+        ],
+        "radius": 5.941705260153666,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 165,
+        "center": [
+          166.7267589169993,
+          161.56420949774767
+        ],
+        "radius": 5.935088813696372,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 166,
+        "center": [
+          167.78278171284185,
+          162.24976110892828
+        ],
+        "radius": 5.928250138545508,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 167,
+        "center": [
+          168.78706179059532,
+          162.90175594673318
+        ],
+        "radius": 5.921419343222441,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 168,
+        "center": [
+          169.73977513991412,
+          163.52030814414044
+        ],
+        "radius": 5.914596418647681,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 169,
+        "center": [
+          170.68419005953007,
+          164.1335124392521
+        ],
+        "radius": 5.907445703089097,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 170,
+        "center": [
+          171.755889720214,
+          164.82942008814993
+        ],
+        "radius": 5.898768538510683,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 171,
+        "center": [
+          172.74470979481663,
+          165.47157771674875
+        ],
+        "radius": 5.890104119404491,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 172,
+        "center": [
+          173.65101069706336,
+          166.06021906091365
+        ],
+        "radius": 5.881452427049309,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 173,
+        "center": [
+          174.71809081062196,
+          166.7534072673499
+        ],
+        "radius": 5.870091443194877,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      },
+      {
+        "idx": 174,
+        "center": [
+          175.68519898662413,
+          167.38181650192303
+        ],
+        "radius": 5.858202319775103,
+        "opacity_cap": 1.0,
+        "flow": 1.0,
+        "aa_width": 2.5,
+        "direct": false,
+        "thickness": 1.0,
+        "hardness": 1.0
+      }
+    ]
+  },
+  "dabs": [
+    {
+      "idx": 0,
+      "center": [
+        22.43815951032294,
+        10.660217796869807
+      ],
+      "radius": 6.413981126107357,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 1,
+      "center": [
+        22.714109849378524,
+        11.75742589223972
+      ],
+      "radius": 6.562835123314878,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 2,
+      "center": [
+        23.380520847417447,
+        12.786560674522098
+      ],
+      "radius": 6.577262948527958,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 3,
+      "center": [
+        24.164104589230313,
+        13.983460527665194
+      ],
+      "radius": 6.589963846700053,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 4,
+      "center": [
+        24.825281105725203,
+        14.992078156423869
+      ],
+      "radius": 6.598963407821028,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 5,
+      "center": [
+        25.575417054816185,
+        16.135488826976164
+      ],
+      "radius": 6.607975259161227,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 6,
+      "center": [
+        26.33049922200348,
+        17.28362288017432
+      ],
+      "radius": 6.6161717613949556,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 7,
+      "center": [
+        27.05127700699898,
+        18.364711737248427
+      ],
+      "radius": 6.623588567517686,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 8,
+      "center": [
+        27.804271812242167,
+        19.478134771728378
+      ],
+      "radius": 6.6310136879670445,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 9,
+      "center": [
+        28.56084461930537,
+        20.582310450575793
+      ],
+      "radius": 6.638180200922994,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 10,
+      "center": [
+        29.300191309194123,
+        21.648801194427087
+      ],
+      "radius": 6.644929954448367,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 11,
+      "center": [
+        30.06629906502725,
+        22.742148189113678
+      ],
+      "radius": 6.651686571175893,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 12,
+      "center": [
+        30.859248017460587,
+        23.862431178932844
+      ],
+      "radius": 6.6584500580841315,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 13,
+      "center": [
+        31.617601122231083,
+        24.919395176249555
+      ],
+      "radius": 6.657936320427462,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 14,
+      "center": [
+        32.39666419482291,
+        25.995954886972584
+      ],
+      "radius": 6.657059074675555,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 15,
+      "center": [
+        33.199402115473866,
+        27.096511483646715
+      ],
+      "radius": 6.656181944509028,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 16,
+      "center": [
+        33.97263023525857,
+        28.1489404085969
+      ],
+      "radius": 6.655360611834319,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 17,
+      "center": [
+        34.75956567677853,
+        29.212910995562027
+      ],
+      "radius": 6.654546569269639,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 18,
+      "center": [
+        35.56687986796623,
+        30.29753751021925
+      ],
+      "radius": 6.653732626273613,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 19,
+      "center": [
+        36.36374520530368,
+        31.361771931444622
+      ],
+      "radius": 6.65294873082728,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 20,
+      "center": [
+        37.15674554553299,
+        32.41501182288477
+      ],
+      "radius": 6.652186549388751,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 21,
+      "center": [
+        37.964791745419575,
+        33.48360653807948
+      ],
+      "radius": 6.651424455267976,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 22,
+      "center": [
+        38.78077313234013,
+        34.56006243357021
+      ],
+      "radius": 6.650663941808878,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 23,
+      "center": [
+        39.57562881130201,
+        35.60623815573585
+      ],
+      "radius": 6.64993145218538,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 24,
+      "center": [
+        40.379169695585894,
+        36.661506652672294
+      ],
+      "radius": 6.649199043236694,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 25,
+      "center": [
+        41.19139289630576,
+        37.72586489473514
+      ],
+      "radius": 6.64846671495393,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 26,
+      "center": [
+        42.001786864787604,
+        38.78558253216703
+      ],
+      "radius": 6.647743791919404,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 27,
+      "center": [
+        42.80312687738375,
+        39.831325557016484
+      ],
+      "radius": 6.647036326829372,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 28,
+      "center": [
+        43.61256522509176,
+        40.88554692729258
+      ],
+      "radius": 6.6463289370290735,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 29,
+      "center": [
+        44.430099304333964,
+        41.948243912562035
+      ],
+      "radius": 6.645621622510495,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 30,
+      "center": [
+        45.241294286269735,
+        42.99921286539696
+      ],
+      "radius": 6.643032262404118,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 31,
+      "center": [
+        46.05009014178823,
+        44.043917569088386
+      ],
+      "radius": 6.6390494581408275,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 32,
+      "center": [
+        46.867118830145635,
+        45.09724153727055
+      ],
+      "radius": 6.635069041752409,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 33,
+      "center": [
+        47.685923771431476,
+        46.15088757571162
+      ],
+      "radius": 6.631121899406446,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 34,
+      "center": [
+        48.49362134424132,
+        47.1883697880455
+      ],
+      "radius": 6.627268159374649,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 35,
+      "center": [
+        49.30901163558686,
+        48.23390540358125
+      ],
+      "radius": 6.623416658980799,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 36,
+      "center": [
+        50.132080690539624,
+        49.287479683493316
+      ],
+      "radius": 6.619567396923308,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 37,
+      "center": [
+        50.94243751251724,
+        50.32305905052103
+      ],
+      "radius": 6.615814286602841,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 38,
+      "center": [
+        51.75557114490408,
+        51.360517946909056
+      ],
+      "radius": 6.612083875905306,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 39,
+      "center": [
+        52.575894542606335,
+        52.4055032314163
+      ],
+      "radius": 6.608355568647102,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 40,
+      "center": [
+        53.40070834587703,
+        53.45453086074696
+      ],
+      "radius": 6.604640061143101,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 41,
+      "center": [
+        54.22044335786106,
+        54.49442599565187
+      ],
+      "radius": 6.600954853244092,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 42,
+      "center": [
+        55.03925451231438,
+        55.53009619237137
+      ],
+      "radius": 6.597271701589953,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 43,
+      "center": [
+        55.85714284513149,
+        56.5615478744613
+      ],
+      "radius": 6.593590605033359,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 44,
+      "center": [
+        56.67893020190915,
+        57.59484000539292
+      ],
+      "radius": 6.589889846666299,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 45,
+      "center": [
+        57.50200205070726,
+        58.626650686981854
+      ],
+      "radius": 6.586181176850911,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 46,
+      "center": [
+        58.32413826674671,
+        59.65418944989939
+      ],
+      "radius": 6.582474594207253,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 47,
+      "center": [
+        59.14618222858325,
+        60.67851084965477
+      ],
+      "radius": 6.578766296703002,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 48,
+      "center": [
+        59.97355582862097,
+        61.706335795230025
+      ],
+      "radius": 6.575031801674246,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 49,
+      "center": [
+        60.799980740955455,
+        62.72983449322271
+      ],
+      "radius": 6.5712994265647104,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 50,
+      "center": [
+        61.625458047805175,
+        63.749013647519504
+      ],
+      "radius": 6.567569170171006,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 51,
+      "center": [
+        62.45377276149751,
+        64.76589831537743
+      ],
+      "radius": 6.563302649195812,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 52,
+      "center": [
+        63.28538085199475,
+        65.78169466377261
+      ],
+      "radius": 6.558641922323851,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 53,
+      "center": [
+        64.11784722826911,
+        66.79534466741535
+      ],
+      "radius": 6.553984505123275,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 54,
+      "center": [
+        64.95118054002275,
+        67.80686558784986
+      ],
+      "radius": 6.549330332097913,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 55,
+      "center": [
+        65.78575554405877,
+        68.81671680526757
+      ],
+      "radius": 6.5446772988136015,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 56,
+      "center": [
+        66.62118166302015,
+        69.82443025752207
+      ],
+      "radius": 6.540027571320515,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 57,
+      "center": [
+        67.45745624108031,
+        70.8300094808325
+      ],
+      "radius": 6.535381147270024,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 58,
+      "center": [
+        68.29475501285475,
+        71.8336715008015
+      ],
+      "radius": 6.530737035741913,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 59,
+      "center": [
+        69.13309559839219,
+        72.83544202189425
+      ],
+      "radius": 6.526095127356214,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 60,
+      "center": [
+        69.97227745837712,
+        73.83508698318163
+      ],
+      "radius": 6.521456518339842,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 61,
+      "center": [
+        70.81229795258602,
+        74.83260990415549
+      ],
+      "radius": 6.516821206347679,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 62,
+      "center": [
+        71.67522854727491,
+        75.85464708129419
+      ],
+      "radius": 6.512022359954179,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 63,
+      "center": [
+        72.52227897451003,
+        76.85587746104379
+      ],
+      "radius": 6.507210976164091,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 64,
+      "center": [
+        73.3504943265831,
+        77.83280726486927
+      ],
+      "radius": 6.502403147247233,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 65,
+      "center": [
+        74.19242204484708,
+        78.82370435943581
+      ],
+      "radius": 6.497403648251913,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 66,
+      "center": [
+        75.04880126718186,
+        79.82916078392473
+      ],
+      "radius": 6.492193981298876,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 67,
+      "center": [
+        75.88314714644264,
+        80.80619066885025
+      ],
+      "radius": 6.486988491495857,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 68,
+      "center": [
+        76.71816264503673,
+        81.7812737268374
+      ],
+      "radius": 6.481640165587646,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 69,
+      "center": [
+        77.58045347692949,
+        82.78509509877594
+      ],
+      "radius": 6.475959121937533,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 70,
+      "center": [
+        78.41660697075156,
+        83.75519559604261
+      ],
+      "radius": 6.4702830576223,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 71,
+      "center": [
+        79.26596369448262,
+        84.73379371941991
+      ],
+      "radius": 6.464968233336571,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 72,
+      "center": [
+        80.14883763135296,
+        85.74183477313224
+      ],
+      "radius": 6.460207247329469,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 73,
+      "center": [
+        81.00428248957324,
+        86.71358074316068
+      ],
+      "radius": 6.455449767447527,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 74,
+      "center": [
+        81.83235789566315,
+        87.64911070303663
+      ],
+      "radius": 6.450695791108729,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 75,
+      "center": [
+        82.6924281907433,
+        88.61489147329918
+      ],
+      "radius": 6.445587074292179,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 76,
+      "center": [
+        83.58093080566461,
+        89.60557107612952
+      ],
+      "radius": 6.440105565858536,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 77,
+      "center": [
+        84.43318627100953,
+        90.54828820241602
+      ],
+      "radius": 6.43462871905375,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 78,
+      "center": [
+        85.25415615733824,
+        91.44850666911834
+      ],
+      "radius": 6.4291247904887285,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 79,
+      "center": [
+        86.11184752890239,
+        92.38344529512756
+      ],
+      "radius": 6.423324188724807,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 80,
+      "center": [
+        86.98186778273269,
+        93.32849994725697
+      ],
+      "radius": 6.4175288204851855,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 81,
+      "center": [
+        87.86418216235151,
+        94.28364173109047
+      ],
+      "radius": 6.41173868104798,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 82,
+      "center": [
+        88.72628332224583,
+        95.21386042887946
+      ],
+      "radius": 6.406162289651489,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 83,
+      "center": [
+        89.59563075672028,
+        96.1489809000924
+      ],
+      "radius": 6.400616809796027,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 84,
+      "center": [
+        90.47620180328232,
+        97.09330915390976
+      ],
+      "radius": 6.3950761303726225,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 85,
+      "center": [
+        91.34644662228952,
+        98.01814876281352
+      ],
+      "radius": 6.3891914215422405,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 86,
+      "center": [
+        92.21385373693558,
+        98.93240973076043
+      ],
+      "radius": 6.3830117506514235,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 87,
+      "center": [
+        93.09825550716445,
+        99.86221690765478
+      ],
+      "radius": 6.376838056781768,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 88,
+      "center": [
+        93.99908767491942,
+        100.80698575134282
+      ],
+      "radius": 6.3706738125230125,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 89,
+      "center": [
+        94.85924647151487,
+        101.70704226062092
+      ],
+      "radius": 6.364898230832329,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 90,
+      "center": [
+        95.73420446376507,
+        102.62063605583154
+      ],
+      "radius": 6.35912788521947,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 91,
+      "center": [
+        96.62392000018355,
+        103.5477288509963
+      ],
+      "radius": 6.353362770937463,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 92,
+      "center": [
+        97.52000390540124,
+        104.47946036936992
+      ],
+      "radius": 6.347654418933032,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 93,
+      "center": [
+        98.39815049812871,
+        105.38690431316654
+      ],
+      "radius": 6.342121808934552,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 94,
+      "center": [
+        99.28290707138743,
+        106.29399548110388
+      ],
+      "radius": 6.336594021154072,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 95,
+      "center": [
+        100.17425501279098,
+        107.20073341720904
+      ],
+      "radius": 6.33107105138855,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 96,
+      "center": [
+        101.06778697212715,
+        108.10270442813818
+      ],
+      "radius": 6.325579757234149,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 97,
+      "center": [
+        101.95696262272266,
+        108.99349909886898
+      ],
+      "radius": 6.320159086528014,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 98,
+      "center": [
+        102.85245639992857,
+        109.8839510181929
+      ],
+      "radius": 6.314743061035762,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 99,
+      "center": [
+        103.75425076015394,
+        110.77405975925888
+      ],
+      "radius": 6.3093316767767025,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 100,
+      "center": [
+        104.65782681941978,
+        111.65710616097968
+      ],
+      "radius": 6.303857000332295,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 101,
+      "center": [
+        105.55823070002602,
+        112.52434790839604
+      ],
+      "radius": 6.298199748334539,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 102,
+      "center": [
+        106.46956066515243,
+        113.39607347309676
+      ],
+      "radius": 6.292547573307941,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 103,
+      "center": [
+        107.39178585783075,
+        114.27226939071225
+      ],
+      "radius": 6.286900470696285,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 104,
+      "center": [
+        108.29672010505463,
+        115.12643330211603
+      ],
+      "radius": 6.2814276528040525,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 105,
+      "center": [
+        109.21116149679517,
+        115.98413603132475
+      ],
+      "radius": 6.275963679846109,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 106,
+      "center": [
+        110.1357539426793,
+        116.84600156885958
+      ],
+      "radius": 6.2705044597886435,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 107,
+      "center": [
+        111.05594665944416,
+        117.69860195081735
+      ],
+      "radius": 6.2651342512987735,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 108,
+      "center": [
+        111.97496355172925,
+        118.54514585196031
+      ],
+      "radius": 6.259831535064375,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 109,
+      "center": [
+        112.90125126726683,
+        119.39380075295702
+      ],
+      "radius": 6.254533306969947,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 110,
+      "center": [
+        113.82989797689925,
+        120.24061366275295
+      ],
+      "radius": 6.249242580808049,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 111,
+      "center": [
+        114.75348906305801,
+        121.07889952085046
+      ],
+      "radius": 6.244000650421589,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 112,
+      "center": [
+        115.67979396154384,
+        121.91576944435904
+      ],
+      "radius": 6.238763117021455,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 113,
+      "center": [
+        116.60880454600536,
+        122.75122581623862
+      ],
+      "radius": 6.23352997691941,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 114,
+      "center": [
+        117.53764235360435,
+        123.5827073938224
+      ],
+      "radius": 6.228317304969986,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 115,
+      "center": [
+        118.46641587365241,
+        124.41035512424637
+      ],
+      "radius": 6.223124268616416,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 116,
+      "center": [
+        119.39783878359074,
+        125.23661323772224
+      ],
+      "radius": 6.217935562104316,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 117,
+      "center": [
+        120.33190316744587,
+        126.06148405892243
+      ],
+      "radius": 6.212751181823561,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 118,
+      "center": [
+        121.26216581542819,
+        126.87150384314266
+      ],
+      "radius": 6.2078333036172895,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 119,
+      "center": [
+        122.19842115616825,
+        127.68241138259643
+      ],
+      "radius": 6.202939187472307,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 120,
+      "center": [
+        123.14128279164777,
+        128.4953435125548
+      ],
+      "radius": 6.198048929738408,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 121,
+      "center": [
+        124.08553990585995,
+        129.30584604329437
+      ],
+      "radius": 6.1931891565130135,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 122,
+      "center": [
+        125.02120497405473,
+        130.10546898927208
+      ],
+      "radius": 6.188409995076611,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 123,
+      "center": [
+        125.96315163641421,
+        130.90701516632603
+      ],
+      "radius": 6.183634521624455,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 124,
+      "center": [
+        126.9113642406044,
+        131.7104791712754
+      ],
+      "radius": 6.178862733310597,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 125,
+      "center": [
+        127.86010286206101,
+        132.5110354145605
+      ],
+      "radius": 6.174123120004116,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 126,
+      "center": [
+        128.80911887060716,
+        133.3085422262456
+      ],
+      "radius": 6.169416216364249,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 127,
+      "center": [
+        129.76107114134265,
+        134.1054847063714
+      ],
+      "radius": 6.1647129010787864,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 128,
+      "center": [
+        130.7024293744342,
+        134.89141892887423
+      ],
+      "radius": 6.160013171412105,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 129,
+      "center": [
+        131.65853232046462,
+        135.68751148295084
+      ],
+      "radius": 6.1551803562649665,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 130,
+      "center": [
+        132.61457363815774,
+        136.4813009149011
+      ],
+      "radius": 6.150285620064235,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 131,
+      "center": [
+        133.55747927685627,
+        137.2618913653456
+      ],
+      "radius": 6.145394776266504,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 132,
+      "center": [
+        134.4874209776904,
+        138.02943001909267
+      ],
+      "radius": 6.140507072451569,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 133,
+      "center": [
+        135.45444499120197,
+        138.82503072033796
+      ],
+      "radius": 6.135354151002953,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 134,
+      "center": [
+        136.40694302225475,
+        139.6060361525923
+      ],
+      "radius": 6.130205553724826,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 135,
+      "center": [
+        137.34495026847625,
+        140.37248192919643
+      ],
+      "radius": 6.125061276988475,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 136,
+      "center": [
+        138.2953770164151,
+        141.14445588701525
+      ],
+      "radius": 6.1194810519005856,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 137,
+      "center": [
+        139.25679759750312,
+        141.92090519294382
+      ],
+      "radius": 6.113487398972436,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 138,
+      "center": [
+        140.20360134277686,
+        142.68272927353598
+      ],
+      "radius": 6.107499616456357,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 139,
+      "center": [
+        141.14869095327307,
+        143.44025859434646
+      ],
+      "radius": 6.101434551441258,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 140,
+      "center": [
+        142.11561437928205,
+        144.2121355632512
+      ],
+      "radius": 6.095134065639075,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 141,
+      "center": [
+        143.06642937462397,
+        144.96789606557363
+      ],
+      "radius": 6.088840085867728,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 142,
+      "center": [
+        144.005236026601,
+        145.71078765243118
+      ],
+      "radius": 6.082525125993178,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 143,
+      "center": [
+        144.9491937615037,
+        146.4542583621826
+      ],
+      "radius": 6.076069818225623,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 144,
+      "center": [
+        145.8923936578929,
+        147.19078655405758
+      ],
+      "radius": 6.069621361395385,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 145,
+      "center": [
+        146.87405195673023,
+        147.9421781006472
+      ],
+      "radius": 6.063285410959293,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 146,
+      "center": [
+        147.79779688638266,
+        148.6367083719157
+      ],
+      "radius": 6.057644384877795,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 147,
+      "center": [
+        148.76748467396223,
+        149.3546274200497
+      ],
+      "radius": 6.052008606970033,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 148,
+      "center": [
+        149.78298553093896,
+        150.09586878372266
+      ],
+      "radius": 6.046378072353328,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 149,
+      "center": [
+        150.7501801891012,
+        150.7930363918441
+      ],
+      "radius": 6.0412412174217085,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 150,
+      "center": [
+        151.7077398392273,
+        151.4757664038091
+      ],
+      "radius": 6.036347521995782,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 151,
+      "center": [
+        152.6997530394104,
+        152.1760350604112
+      ],
+      "radius": 6.031457790698096,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 152,
+      "center": [
+        153.72613482901988,
+        152.893798856105
+      ],
+      "radius": 6.026572020317516,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 153,
+      "center": [
+        154.7079389258443,
+        153.572347323197
+      ],
+      "radius": 6.019635140655605,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 154,
+      "center": [
+        155.6828914981462,
+        154.24012710108502
+      ],
+      "radius": 6.0117526961063685,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 155,
+      "center": [
+        156.6865747505682,
+        154.9229791403994
+      ],
+      "radius": 6.003880573267772,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 156,
+      "center": [
+        157.7188725264676,
+        155.6208419690662
+      ],
+      "radius": 5.9960187586239915,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 157,
+      "center": [
+        158.6789143875708,
+        156.26612941096343
+      ],
+      "radius": 5.988903594822091,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 158,
+      "center": [
+        159.66226663514647,
+        156.92364365836846
+      ],
+      "radius": 5.981796907741184,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 159,
+      "center": [
+        160.66884807723952,
+        157.59334239204006
+      ],
+      "radius": 5.974698653756665,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 160,
+      "center": [
+        161.698573284603,
+        158.2751804026308
+      ],
+      "radius": 5.967608822861462,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 161,
+      "center": [
+        162.66772591585698,
+        158.91410017326766
+      ],
+      "radius": 5.96108402878893,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 162,
+      "center": [
+        163.64856148372732,
+        159.55812366881705
+      ],
+      "radius": 5.954617426791049,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 163,
+      "center": [
+        164.64853550342707,
+        160.21218464787523
+      ],
+      "radius": 5.9481578397825885,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 164,
+      "center": [
+        165.667583405889,
+        160.87624894122834
+      ],
+      "radius": 5.941705260153666,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 165,
+      "center": [
+        166.7267589169993,
+        161.56420949774767
+      ],
+      "radius": 5.935088813696372,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 166,
+      "center": [
+        167.78278171284185,
+        162.24976110892828
+      ],
+      "radius": 5.928250138545508,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 167,
+      "center": [
+        168.78706179059532,
+        162.90175594673318
+      ],
+      "radius": 5.921419343222441,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 168,
+      "center": [
+        169.73977513991412,
+        163.52030814414044
+      ],
+      "radius": 5.914596418647681,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 169,
+      "center": [
+        170.68419005953007,
+        164.1335124392521
+      ],
+      "radius": 5.907445703089097,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 170,
+      "center": [
+        171.755889720214,
+        164.82942008814993
+      ],
+      "radius": 5.898768538510683,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 171,
+      "center": [
+        172.74470979481663,
+        165.47157771674875
+      ],
+      "radius": 5.890104119404491,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 172,
+      "center": [
+        173.65101069706336,
+        166.06021906091365
+      ],
+      "radius": 5.881452427049309,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 173,
+      "center": [
+        174.71809081062196,
+        166.7534072673499
+      ],
+      "radius": 5.870091443194877,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    },
+    {
+      "idx": 174,
+      "center": [
+        175.68519898662413,
+        167.38181650192303
+      ],
+      "radius": 5.858202319775103,
+      "opacity_cap": 1.0,
+      "flow": 1.0,
+      "aa_width": 2.5,
+      "direct": false,
+      "thickness": 1.0,
+      "hardness": 1.0
+    }
+  ],
+  "residuals": [
+    {
+      "x": 29,
+      "y": 10,
+      "delta": 1,
+      "nearest": 3,
+      "margin": 0.03567426158261089,
+      "dist": 6.554289585117442
+    },
+    {
+      "x": 30,
+      "y": 13,
+      "delta": 1,
+      "nearest": 3,
+      "margin": -0.24595157269530254,
+      "dist": 6.835915419395356
+    },
+    {
+      "x": 34,
+      "y": 18,
+      "delta": 1,
+      "nearest": 9,
+      "margin": 0.007461659261768894,
+      "dist": 6.630718541661225
+    },
+    {
+      "x": 20,
+      "y": 19,
+      "delta": 1,
+      "nearest": 8,
+      "margin": -0.1932414517058776,
+      "dist": 6.824255139672922
+    },
+    {
+      "x": 22,
+      "y": 22,
+      "delta": 1,
+      "nearest": 6,
+      "margin": 0.00034283042702210054,
+      "dist": 6.6158289309679335
+    },
+    {
+      "x": 62,
+      "y": 55,
+      "delta": 1,
+      "nearest": 44,
+      "margin": 0.07073054234353826,
+      "dist": 6.519159304322761
+    },
+    {
+      "x": 75,
+      "y": 70,
+      "delta": 1,
+      "nearest": 62,
+      "margin": 0.010388226736281148,
+      "dist": 6.501634133217898
+    },
+    {
+      "x": 79,
+      "y": 76,
+      "delta": 1,
+      "nearest": 64,
+      "margin": -0.19905144419950282,
+      "dist": 6.701454591446736
+    },
+    {
+      "x": 80,
+      "y": 77,
+      "delta": 1,
+      "nearest": 70,
+      "margin": 0.16186044239765884,
+      "dist": 6.308422615224641
+    },
+    {
+      "x": 66,
+      "y": 79,
+      "delta": 1,
+      "nearest": 61,
+      "margin": 0.09533103023407552,
+      "dist": 6.421490176113603
+    },
+    {
+      "x": 70,
+      "y": 83,
+      "delta": 1,
+      "nearest": 64,
+      "margin": -0.09752789872200207,
+      "dist": 6.599931045969235
+    },
+    {
+      "x": 71,
+      "y": 85,
+      "delta": 1,
+      "nearest": 67,
+      "margin": 0.0020453823187347453,
+      "dist": 6.484943109177122
+    },
+    {
+      "x": 100,
+      "y": 98,
+      "delta": 1,
+      "nearest": 90,
+      "margin": -0.03130309228268224,
+      "dist": 6.390430977502152
+    },
+    {
+      "x": 102,
+      "y": 101,
+      "delta": 1,
+      "nearest": 96,
+      "margin": -0.07570515458620708,
+      "dist": 6.401284911820356
+    },
+    {
+      "x": 105,
+      "y": 104,
+      "delta": 1,
+      "nearest": 95,
+      "margin": 0.10350874904170038,
+      "dist": 6.22756230234685
+    },
+    {
+      "x": 119,
+      "y": 118,
+      "delta": 1,
+      "nearest": 110,
+      "margin": -0.04434790759213669,
+      "dist": 6.293590488400186
+    },
+    {
+      "x": 104,
+      "y": 119,
+      "delta": 1,
+      "nearest": 103,
+      "margin": 0.07984500757280966,
+      "dist": 6.207055463123475
+    },
+    {
+      "x": 128,
+      "y": 125,
+      "delta": 1,
+      "nearest": 124,
+      "margin": 0.09840455147953353,
+      "dist": 6.080458181831063
+    },
+    {
+      "x": 130,
+      "y": 127,
+      "delta": 1,
+      "nearest": 127,
+      "margin": -0.06520589586786585,
+      "dist": 6.229918796946652
+    },
+    {
+      "x": 132,
+      "y": 128,
+      "delta": 1,
+      "nearest": 125,
+      "margin": -0.05049833602767961,
+      "dist": 6.224621456031795
+    },
+    {
+      "x": 116,
+      "y": 130,
+      "delta": 1,
+      "nearest": 116,
+      "margin": -0.024360313908809772,
+      "dist": 6.2422958760131255
+    },
+    {
+      "x": 134,
+      "y": 130,
+      "delta": 1,
+      "nearest": 127,
+      "margin": 0.07452317927376662,
+      "dist": 6.09018972180502
+    },
+    {
+      "x": 125,
+      "y": 137,
+      "delta": 1,
+      "nearest": 129,
+      "margin": 0.042358490446619435,
+      "dist": 6.112821865818347
+    },
+    {
+      "x": 130,
+      "y": 142,
+      "delta": 1,
+      "nearest": 133,
+      "margin": 0.030237553773540427,
+      "dist": 6.105116597229412
+    },
+    {
+      "x": 149,
+      "y": 142,
+      "delta": 1,
+      "nearest": 146,
+      "margin": 0.006018171730594268,
+      "dist": 6.051626213147201
+    },
+    {
+      "x": 154,
+      "y": 147,
+      "delta": 1,
+      "nearest": 154,
+      "margin": -0.2656294840652462,
+      "dist": 6.277382180171615
+    },
+    {
+      "x": 139,
+      "y": 148,
+      "delta": 1,
+      "nearest": 144,
+      "margin": -0.0942699673477998,
+      "dist": 6.163891328743185
+    },
+    {
+      "x": 140,
+      "y": 149,
+      "delta": 1,
+      "nearest": 145,
+      "margin": -0.16079021196032173,
+      "dist": 6.224075622919615
+    },
+    {
+      "x": 161,
+      "y": 151,
+      "delta": 1,
+      "nearest": 155,
+      "margin": -0.06046563522901138,
+      "dist": 6.064346208496783
+    },
+    {
+      "x": 162,
+      "y": 152,
+      "delta": 1,
+      "nearest": 161,
+      "margin": 0.03765707081623937,
+      "dist": 5.923426957972691
+    },
+    {
+      "x": 163,
+      "y": 152,
+      "delta": 1,
+      "nearest": 161,
+      "margin": -0.10122040885882377,
+      "dist": 6.062304437647754
+    },
+    {
+      "x": 144,
+      "y": 153,
+      "delta": 1,
+      "nearest": 146,
+      "margin": 0.008465555868707675,
+      "dist": 6.0491788290090875
+    },
+    {
+      "x": 163,
+      "y": 153,
+      "delta": 1,
+      "nearest": 157,
+      "margin": 0.2053670814045132,
+      "dist": 5.783536513417578
+    },
+    {
+      "x": 164,
+      "y": 153,
+      "delta": 1,
+      "nearest": 158,
+      "margin": -0.10417792915953683,
+      "dist": 6.0859748369007205
+    },
+    {
+      "x": 146,
+      "y": 154,
+      "delta": 1,
+      "nearest": 147,
+      "margin": 0.1364161903860328,
+      "dist": 5.915592416584
+    },
+    {
+      "x": 165,
+      "y": 154,
+      "delta": 1,
+      "nearest": 159,
+      "margin": 0.046241385132318236,
+      "dist": 5.928457268624347
+    },
+    {
+      "x": 166,
+      "y": 154,
+      "delta": 1,
+      "nearest": 164,
+      "margin": -0.08371054288844171,
+      "dist": 6.025415803042108
+    },
+    {
+      "x": 165,
+      "y": 155,
+      "delta": 1,
+      "nearest": 165,
+      "margin": 0.3236178961682983,
+      "dist": 5.611470917528074
+    },
+    {
+      "x": 167,
+      "y": 155,
+      "delta": 2,
+      "nearest": 161,
+      "margin": -0.11552083974266658,
+      "dist": 6.0766048685315965
+    },
+    {
+      "x": 167,
+      "y": 156,
+      "delta": 1,
+      "nearest": 167,
+      "margin": -0.03258683052440059,
+      "dist": 5.9540061737468415
+    },
+    {
+      "x": 168,
+      "y": 156,
+      "delta": 1,
+      "nearest": 167,
+      "margin": 0.01582318907975644,
+      "dist": 5.9055961541426845
+    },
+    {
+      "x": 169,
+      "y": 156,
+      "delta": 1,
+      "nearest": 167,
+      "margin": -0.10368997982176698,
+      "dist": 6.025109323044208
+    },
+    {
+      "x": 152,
+      "y": 157,
+      "delta": 1,
+      "nearest": 157,
+      "margin": 0.051195632915845835,
+      "dist": 5.937707961906245
+    },
+    {
+      "x": 170,
+      "y": 157,
+      "delta": 2,
+      "nearest": 164,
+      "margin": -0.11696412388336075,
+      "dist": 6.058669384037027
+    },
+    {
+      "x": 170,
+      "y": 158,
+      "delta": 1,
+      "nearest": 170,
+      "margin": 0.020545351760189234,
+      "dist": 5.8782231867504935
+    },
+    {
+      "x": 171,
+      "y": 158,
+      "delta": 1,
+      "nearest": 170,
+      "margin": 0.06423956070766312,
+      "dist": 5.83452897780302
+    },
+    {
+      "x": 172,
+      "y": 158,
+      "delta": 1,
+      "nearest": 170,
+      "margin": -0.06193183580735351,
+      "dist": 5.960700374318036
+    },
+    {
+      "x": 153,
+      "y": 159,
+      "delta": 1,
+      "nearest": 157,
+      "margin": 0.0027504542910650187,
+      "dist": 5.986153140531026
+    },
+    {
+      "x": 173,
+      "y": 159,
+      "delta": 2,
+      "nearest": 167,
+      "margin": -0.044727851531695784,
+      "dist": 5.966147194754137
+    },
+    {
+      "x": 154,
+      "y": 160,
+      "delta": 1,
+      "nearest": 157,
+      "margin": -0.006423070574964385,
+      "dist": 5.995326665397055
+    },
+    {
+      "x": 155,
+      "y": 160,
+      "delta": 1,
+      "nearest": 155,
+      "margin": -0.11180151593033738,
+      "dist": 6.115682089198109
+    },
+    {
+      "x": 173,
+      "y": 160,
+      "delta": 1,
+      "nearest": 173,
+      "margin": 0.07204439299820375,
+      "dist": 5.798047050196673
+    },
+    {
+      "x": 175,
+      "y": 160,
+      "delta": 1,
+      "nearest": 173,
+      "margin": -0.024396350821368706,
+      "dist": 5.8944877940162455
+    },
+    {
+      "x": 156,
+      "y": 161,
+      "delta": 1,
+      "nearest": 157,
+      "margin": 0.01428850658327896,
+      "dist": 5.974615088238812
+    },
+    {
+      "x": 157,
+      "y": 161,
+      "delta": 1,
+      "nearest": 162,
+      "margin": -0.19916245651963926,
+      "dist": 6.153779883310689
+    },
+    {
+      "x": 175,
+      "y": 161,
+      "delta": 1,
+      "nearest": 169,
+      "margin": 0.17946956385437307,
+      "dist": 5.727976139234724
+    },
+    {
+      "x": 176,
+      "y": 161,
+      "delta": 1,
+      "nearest": 170,
+      "margin": -0.05994866083547379,
+      "dist": 5.9587171993461565
+    },
+    {
+      "x": 158,
+      "y": 162,
+      "delta": 1,
+      "nearest": 158,
+      "margin": -0.13054335491714042,
+      "dist": 6.112340262658324
+    },
+    {
+      "x": 177,
+      "y": 162,
+      "delta": 1,
+      "nearest": 171,
+      "margin": 0.08262863081004745,
+      "dist": 5.807475488594443
+    },
+    {
+      "x": 159,
+      "y": 163,
+      "delta": 1,
+      "nearest": 160,
+      "margin": -0.00388266801326953,
+      "dist": 5.971491490874731
+    },
+    {
+      "x": 160,
+      "y": 163,
+      "delta": 1,
+      "nearest": 160,
+      "margin": 0.20032488183832697,
+      "dist": 5.767283941023135
+    },
+    {
+      "x": 178,
+      "y": 163,
+      "delta": 1,
+      "nearest": 172,
+      "margin": 0.14942057596172287,
+      "dist": 5.732031851087586
+    },
+    {
+      "x": 179,
+      "y": 163,
+      "delta": 1,
+      "nearest": 173,
+      "margin": -0.08640217845296583,
+      "dist": 5.956493621647843
+    },
+    {
+      "x": 161,
+      "y": 164,
+      "delta": 1,
+      "nearest": 165,
+      "margin": 0.09155339112899163,
+      "dist": 5.84353542256738
+    },
+    {
+      "x": 179,
+      "y": 164,
+      "delta": 2,
+      "nearest": 173,
+      "margin": 0.3047521246958116,
+      "dist": 5.565339318499065
+    },
+    {
+      "x": 180,
+      "y": 164,
+      "delta": 1,
+      "nearest": 174,
+      "margin": 0.034100701446829085,
+      "dist": 5.824101618328274
+    },
+    {
+      "x": 162,
+      "y": 165,
+      "delta": 1,
+      "nearest": 163,
+      "margin": -0.06985477704953968,
+      "dist": 6.018012616832128
+    },
+    {
+      "x": 163,
+      "y": 165,
+      "delta": 1,
+      "nearest": 163,
+      "margin": 0.12412102246278867,
+      "dist": 5.8240368173198
+    },
+    {
+      "x": 179,
+      "y": 165,
+      "delta": 2,
+      "nearest": 172,
+      "margin": -0.46782245313199056,
+      "dist": 6.3492748801813
+    },
+    {
+      "x": 180,
+      "y": 165,
+      "delta": 1,
+      "nearest": 174,
+      "margin": 0.3667064710315229,
+      "dist": 5.49149584874358
+    },
+    {
+      "x": 164,
+      "y": 166,
+      "delta": 1,
+      "nearest": 168,
+      "margin": 0.03465391989115041,
+      "dist": 5.879942498756531
+    },
+    {
+      "x": 179,
+      "y": 166,
+      "delta": 1,
+      "nearest": 172,
+      "margin": -0.5367134622273113,
+      "dist": 6.4181658892766205
+    },
+    {
+      "x": 180,
+      "y": 166,
+      "delta": 2,
+      "nearest": 173,
+      "margin": -0.4166558111003136,
+      "dist": 6.28674725429519
+    },
+    {
+      "x": 165,
+      "y": 167,
+      "delta": 1,
+      "nearest": 168,
+      "margin": 0.07905383714130654,
+      "dist": 5.835542581506375
+    },
+    {
+      "x": 166,
+      "y": 167,
+      "delta": 1,
+      "nearest": 166,
+      "margin": 0.12497567369781137,
+      "dist": 5.803274464847696
+    },
+    {
+      "x": 179,
+      "y": 167,
+      "delta": 2,
+      "nearest": 173,
+      "margin": 0.44307033342091184,
+      "dist": 5.427021109773965
+    },
+    {
+      "x": 180,
+      "y": 167,
+      "delta": 3,
+      "nearest": 174,
+      "margin": 0.5075705207184846,
+      "dist": 5.350631799056618
+    },
+    {
+      "x": 181,
+      "y": 167,
+      "delta": 2,
+      "nearest": 174,
+      "margin": -0.4867848887090567,
+      "dist": 6.344987208484159
+    },
+    {
+      "x": 167,
+      "y": 168,
+      "delta": 1,
+      "nearest": 171,
+      "margin": -0.02276615195888354,
+      "dist": 5.912870271363374
+    },
+    {
+      "x": 179,
+      "y": 168,
+      "delta": 2,
+      "nearest": 173,
+      "margin": 0.13025315355357048,
+      "dist": 5.739838289641306
+    },
+    {
+      "x": 180,
+      "y": 168,
+      "delta": 2,
+      "nearest": 174,
+      "margin": 0.30251805541757815,
+      "dist": 5.555684264357525
+    },
+    {
+      "x": 168,
+      "y": 169,
+      "delta": 1,
+      "nearest": 171,
+      "margin": 0.013926805636463868,
+      "dist": 5.876177313768027
+    },
+    {
+      "x": 169,
+      "y": 169,
+      "delta": 1,
+      "nearest": 169,
+      "margin": 0.0011954258006587892,
+      "dist": 5.906250277288438
+    },
+    {
+      "x": 178,
+      "y": 169,
+      "delta": 2,
+      "nearest": 173,
+      "margin": 0.4965348297612229,
+      "dist": 5.373556613433654
+    },
+    {
+      "x": 179,
+      "y": 169,
+      "delta": 3,
+      "nearest": 173,
+      "margin": -0.3298221897949123,
+      "dist": 6.199913632989789
+    },
+    {
+      "x": 180,
+      "y": 169,
+      "delta": 2,
+      "nearest": 174,
+      "margin": -0.06649131292724597,
+      "dist": 5.924693632702349
+    },
+    {
+      "x": 170,
+      "y": 170,
+      "delta": 1,
+      "nearest": 174,
+      "margin": -0.06145488060570159,
+      "dist": 5.919657200380804
+    },
+    {
+      "x": 177,
+      "y": 170,
+      "delta": 1,
+      "nearest": 173,
+      "margin": 0.5031111223514442,
+      "dist": 5.366980320843433
+    },
+    {
+      "x": 178,
+      "y": 170,
+      "delta": 2,
+      "nearest": 173,
+      "margin": -0.160521804483734,
+      "dist": 6.030613247678611
+    },
+    {
+      "x": 179,
+      "y": 170,
+      "delta": 2,
+      "nearest": 174,
+      "margin": 0.2271491668750203,
+      "dist": 5.6310531529000825
+    },
+    {
+      "x": 180,
+      "y": 170,
+      "delta": 2,
+      "nearest": 174,
+      "margin": -0.571289233803431,
+      "dist": 6.429491553578534
+    },
+    {
+      "x": 172,
+      "y": 171,
+      "delta": 1,
+      "nearest": 172,
+      "margin": -0.09389798376547454,
+      "dist": 5.975350410814784
+    },
+    {
+      "x": 173,
+      "y": 171,
+      "delta": 1,
+      "nearest": 172,
+      "margin": -0.06857203826994684,
+      "dist": 5.950024465319256
+    },
+    {
+      "x": 174,
+      "y": 171,
+      "delta": 1,
+      "nearest": 172,
+      "margin": -0.20958769297707125,
+      "dist": 6.09104012002638
+    },
+    {
+      "x": 175,
+      "y": 171,
+      "delta": 2,
+      "nearest": 173,
+      "margin": 0.4691631459381256,
+      "dist": 5.400928297256751
+    },
+    {
+      "x": 176,
+      "y": 171,
+      "delta": 2,
+      "nearest": 173,
+      "margin": 0.14874152810798424,
+      "dist": 5.7213499150868925
+    },
+    {
+      "x": 177,
+      "y": 171,
+      "delta": 3,
+      "nearest": 173,
+      "margin": -0.3184191392975597,
+      "dist": 6.1885105824924365
+    },
+    {
+      "x": 178,
+      "y": 171,
+      "delta": 2,
+      "nearest": 174,
+      "margin": 0.17352778378026112,
+      "dist": 5.684674535994842
+    },
+    {
+      "x": 179,
+      "y": 171,
+      "delta": 2,
+      "nearest": 174,
+      "margin": -0.4620133891180602,
+      "dist": 6.320215708893163
+    },
+    {
+      "x": 173,
+      "y": 172,
+      "delta": 1,
+      "nearest": 174,
+      "margin": -0.007279880571550379,
+      "dist": 5.865482200346653
+    },
+    {
+      "x": 174,
+      "y": 172,
+      "delta": 2,
+      "nearest": 174,
+      "margin": 0.19838929553700968,
+      "dist": 5.659813024238093
+    },
+    {
+      "x": 175,
+      "y": 172,
+      "delta": 2,
+      "nearest": 174,
+      "margin": 0.23120618541647886,
+      "dist": 5.626996134358624
+    },
+    {
+      "x": 176,
+      "y": 172,
+      "delta": 2,
+      "nearest": 174,
+      "margin": 0.08822073203683356,
+      "dist": 5.769981587738269
+    },
+    {
+      "x": 177,
+      "y": 172,
+      "delta": 1,
+      "nearest": 174,
+      "margin": -0.21816909329621925,
+      "dist": 6.076371413071322
+    },
+    {
+      "x": 178,
+      "y": 172,
+      "delta": 1,
+      "nearest": 174,
+      "margin": -0.6649787735521491,
+      "dist": 6.523181093327252
+    }
+  ]
+}

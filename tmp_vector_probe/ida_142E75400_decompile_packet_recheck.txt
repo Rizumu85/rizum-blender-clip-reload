@@ -1,0 +1,38 @@
+// Hidden C++ exception states: #wind=51
+void __fastcall sub_142E73180(__int64 a1, _QWORD *a2, volatile signed __int32 *a3)
+{
+  _QWORD *v6; // rdi
+  __int64 v7; // rbx
+  int v8; // eax
+  int v9; // eax
+  __int64 v10; // rcx
+  __int64 v11; // rbx
+  signed __int32 v12; // eax
+  signed __int32 v13; // ett
+  unsigned __int64 v14; // xmm0_8
+  __int64 v15; // rcx
+  __int64 v16; // rbx
+  int v17; // eax
+  __int64 v18; // rax
+  __int64 v19; // rdi
+  volatile signed __int32 **v20; // rax
+  volatile signed __int32 *v21; // rdx
+  volatile signed __int32 *v22; // rbx
+  __int64 v23; // rcx
+  volatile signed __int32 *v24; // rbx
+  __int64 v25; // rcx
+  int v26; // ebx
+  __int64 v27; // xmm7_8
+  __int64 v28; // rcx
+  double v29; // xmm11_8
+  __int64 v30; // xmm12_8
+  __int64 v31; // xmm13_8
+  __int64 v32; // rcx
+  unsigned __int64 v33; // xmm0_8
+  __int64 v34; // rcx
+  __int64 v35; // r9
+  unsigned __int64 v36; // xmm0_8
+  __int64 v37; // rdx
+  int v38; // r12d
+  int v39; // ebx
+  _QWORD *v40; // rdi... [95655 chars total]

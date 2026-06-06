@@ -1,0 +1,19 @@
+double __fastcall sub_1422DBF80(int a1, double a2, double a3)
+{
+  double v3; // xmm0_8
+  double result; // xmm0_8
+
+  v3 = 0.08; /*0x1422dbf80*/
+  if ( a1 == 1 ) /*0x1422dbf8e*/
+  {
+    v3 = 0.12; /*0x1422dbf90*/
+  }
+  else if ( a1 == 3 ) /*0x1422dbf9d*/
+  {
+    v3 = 0.04; /*0x1422dbf9f*/
+  }
+  result = v3 * (3.5 - fmax(a2, 0.2) * 2.5); /*0x1422dbfc3*/
+  if ( a3 < 1.0 ) /*0x1422dbfd3*/
+    return result * fmax(a3, 0.01); /*0x1422dbfdd*/
+  return result; /*0x1422dbfe1*/
+}

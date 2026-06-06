@@ -1,0 +1,5 @@
+// Evaluates the tool scalar remap graph: object +0x160 is point count, object +0x60 is double-pair table, xmm1 is input scalar. Used to transform event +0xa0 before it becomes compact point f32+36.
+__int64 __fastcall sub_1423E8640(__int64 a1)
+{
+  return sub_1431F7F10(*(unsigned int *)(a1 + 352), a1 + 96);
+}

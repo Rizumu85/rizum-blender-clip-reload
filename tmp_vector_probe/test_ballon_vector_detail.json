@@ -1,0 +1,2738 @@
+{
+  "name": "Test_Ballon.clip",
+  "path": "img\\Test_Ballon.clip",
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "vector_layer_count": 3,
+  "vector_layers": [
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "vector_data": "extrnlid8FB415AA396C4B38AC5188D0E6C8C8E0",
+      "vector_body_len": 11416,
+      "LayerType": 0,
+      "LayerFolder": 0,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 0,
+      "LayerVisibility": 1,
+      "LayerRenderMipmap": 17,
+      "LayerLayerMaskMipmap": 0,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "LayerColorTypeIndex": 0,
+      "LayerColorTypeBlackChecked": 1,
+      "LayerColorTypeWhiteChecked": 1,
+      "VectorNormalStrokeIndex": 0,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 4,
+      "VectorNormalType": 1,
+      "MixSubColorForEveryPlot": 1
+    },
+    {
+      "layer_id": 9,
+      "layer_name": "Balloon 2",
+      "vector_data": "extrnlid55DD8508A6F14159BDD75FA8926FE1CC",
+      "vector_body_len": 988,
+      "LayerType": 0,
+      "LayerFolder": 0,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 0,
+      "LayerVisibility": 1,
+      "LayerRenderMipmap": 20,
+      "LayerLayerMaskMipmap": 0,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "LayerColorTypeIndex": 1,
+      "LayerColorTypeBlackChecked": 1,
+      "LayerColorTypeWhiteChecked": 1,
+      "VectorNormalStrokeIndex": 0,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 5,
+      "VectorNormalType": 1,
+      "MixSubColorForEveryPlot": 1
+    },
+    {
+      "layer_id": 10,
+      "layer_name": "Balloon 3",
+      "vector_data": "extrnlidA3DA57578D654F70808922A326E0AE73",
+      "vector_body_len": 988,
+      "LayerType": 0,
+      "LayerFolder": 0,
+      "LayerOpacity": 256,
+      "LayerComposite": 0,
+      "LayerClip": 0,
+      "LayerMasking": 0,
+      "LayerVisibility": 1,
+      "LayerRenderMipmap": 23,
+      "LayerLayerMaskMipmap": 0,
+      "LayerRenderOffscrOffsetX": 0,
+      "LayerRenderOffscrOffsetY": 0,
+      "LayerOffsetX": 0,
+      "LayerOffsetY": 0,
+      "LayerColorTypeIndex": 1,
+      "LayerColorTypeBlackChecked": 1,
+      "LayerColorTypeWhiteChecked": 1,
+      "VectorNormalStrokeIndex": 0,
+      "VectorNormalFillIndex": 0,
+      "VectorNormalBalloonIndex": 6,
+      "VectorNormalType": 1,
+      "MixSubColorForEveryPlot": 1
+    }
+  ],
+  "stroke_count": 0,
+  "object_100_count": 10,
+  "strokes": [],
+  "objects_100": [
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 56,
+      "shape": [
+        100,
+        76,
+        104,
+        88
+      ],
+      "point_count": 8,
+      "bbox": [
+        114,
+        158,
+        455,
+        312
+      ],
+      "line_rgb": [
+        243,
+        243,
+        243
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          118,
+          162,
+          452,
+          309
+        ],
+        "xy": {
+          "x": {
+            "min": 118.001,
+            "max": 451.001,
+            "avg": 284.501,
+            "uniq": 4
+          },
+          "y": {
+            "min": 162.001,
+            "max": 308.001,
+            "avg": 235.001,
+            "uniq": 4
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.21954,
+            "avg": 1.881896,
+            "uniq": 6
+          }
+        },
+        "pen_bbox_width": {
+          "min": 8.0,
+          "max": 166.0,
+          "avg": 91.25,
+          "uniq": 3
+        },
+        "pen_bbox_height": {
+          "min": 8.0,
+          "max": 77.0,
+          "avg": 44.5,
+          "uniq": 3
+        },
+        "first_points": [
+          {
+            "x": 276.001,
+            "y": 162.001,
+            "pen_bbox": [
+              272,
+              158,
+              297,
+              166
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 293.001,
+            "y": 162.001,
+            "pen_bbox": [
+              289,
+              158,
+              455,
+              235
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 3.0
+            }
+          },
+          {
+            "x": 451.001,
+            "y": 231.001,
+            "pen_bbox": [
+              447,
+              227,
+              455,
+              243
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.109383
+            }
+          },
+          {
+            "x": 451.001,
+            "y": 239.001,
+            "pen_bbox": [
+              289,
+              235,
+              455,
+              312
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.109383
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 988,
+      "shape": [
+        100,
+        76,
+        104,
+        88
+      ],
+      "point_count": 12,
+      "bbox": [
+        529,
+        171,
+        763,
+        358
+      ],
+      "line_rgb": [
+        243,
+        243,
+        243
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          533,
+          196,
+          760,
+          333
+        ],
+        "xy": {
+          "x": {
+            "min": 533.32844,
+            "max": 759.233541,
+            "avg": 646.280991,
+            "uniq": 6
+          },
+          "y": {
+            "min": 196.404958,
+            "max": 332.520661,
+            "avg": 264.462809,
+            "uniq": 6
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.933435,
+            "avg": 1.781765,
+            "uniq": 12
+          }
+        },
+        "pen_bbox_width": {
+          "min": 8.0,
+          "max": 116.0,
+          "avg": 46.083333,
+          "uniq": 5
+        },
+        "pen_bbox_height": {
+          "min": 11.0,
+          "max": 73.0,
+          "avg": 35.0,
+          "uniq": 5
+        },
+        "first_points": [
+          {
+            "x": 699.933452,
+            "y": 196.404958,
+            "pen_bbox": [
+              696,
+              192,
+              710,
+              203
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 705.58108,
+            "y": 198.636363,
+            "pen_bbox": [
+              701,
+              194,
+              763,
+              266
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.927532
+            }
+          },
+          {
+            "x": 759.233541,
+            "y": 262.231405,
+            "pen_bbox": [
+              755,
+              258,
+              763,
+              271
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.963429
+            }
+          },
+          {
+            "x": 759.233541,
+            "y": 266.694214,
+            "pen_bbox": [
+              701,
+              262,
+              763,
+              335
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.50062
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 2336,
+      "shape": [
+        100,
+        76,
+        88,
+        88
+      ],
+      "point_count": 20,
+      "bbox": [
+        272,
+        377,
+        440,
+        765
+      ],
+      "line_rgb": [
+        243,
+        243,
+        243
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          276,
+          380,
+          436,
+          761
+        ],
+        "xy": {
+          "x": {
+            "min": 276.033057,
+            "max": 435.53719,
+            "avg": 355.785123,
+            "uniq": 11
+          },
+          "y": {
+            "min": 380.991734,
+            "max": 760.330578,
+            "avg": 570.661156,
+            "uniq": 11
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.700259,
+            "avg": 1.855093,
+            "uniq": 20
+          }
+        },
+        "pen_bbox_width": {
+          "min": 12.0,
+          "max": 33.0,
+          "avg": 24.5,
+          "uniq": 8
+        },
+        "pen_bbox_height": {
+          "min": 18.0,
+          "max": 68.0,
+          "avg": 46.3,
+          "uniq": 6
+        },
+        "first_points": [
+          {
+            "x": 355.785123,
+            "y": 380.991734,
+            "pen_bbox": [
+              352,
+              377,
+              385,
+              395
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 380.429867,
+            "y": 390.274817,
+            "pen_bbox": [
+              376,
+              386,
+              407,
+              421
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.278055
+            }
+          },
+          {
+            "x": 402.662212,
+            "y": 417.215371,
+            "pen_bbox": [
+              398,
+              413,
+              425,
+              463
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 2.17815
+            }
+          },
+          {
+            "x": 420.3059,
+            "y": 459.176267,
+            "pen_bbox": [
+              416,
+              455,
+              436,
+              516
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.581318
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 4196,
+      "shape": [
+        100,
+        76,
+        88,
+        88
+      ],
+      "point_count": 16,
+      "bbox": [
+        588,
+        529,
+        752,
+        702
+      ],
+      "line_rgb": [
+        243,
+        243,
+        243
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          592,
+          533,
+          748,
+          698
+        ],
+        "xy": {
+          "x": {
+            "min": 592.561982,
+            "max": 747.933883,
+            "avg": 670.247933,
+            "uniq": 9
+          },
+          "y": {
+            "min": 533.05785,
+            "max": 697.52066,
+            "avg": 615.289255,
+            "uniq": 9
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.780076,
+            "avg": 2.507055,
+            "uniq": 16
+          }
+        },
+        "pen_bbox_width": {
+          "min": 14.0,
+          "max": 38.0,
+          "avg": 27.875,
+          "uniq": 7
+        },
+        "pen_bbox_height": {
+          "min": 15.0,
+          "max": 40.0,
+          "avg": 29.125,
+          "uniq": 5
+        },
+        "first_points": [
+          {
+            "x": 670.247933,
+            "y": 533.05785,
+            "pen_bbox": [
+              666,
+              529,
+              704,
+              544
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 699.977059,
+            "y": 539.317343,
+            "pen_bbox": [
+              696,
+              535,
+              729,
+              561
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.445201
+            }
+          },
+          {
+            "x": 725.180195,
+            "y": 557.142871,
+            "pen_bbox": [
+              721,
+              553,
+              746,
+              588
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 2.409576
+            }
+          },
+          {
+            "x": 742.020393,
+            "y": 583.820659,
+            "pen_bbox": [
+              738,
+              580,
+              752,
+              620
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 2.705883
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 5704,
+      "shape": [
+        100,
+        76,
+        88,
+        88
+      ],
+      "point_count": 16,
+      "bbox": [
+        138,
+        455,
+        244,
+        699
+      ],
+      "line_rgb": [
+        228,
+        224,
+        237
+      ],
+      "fill_rgb": [
+        228,
+        224,
+        237
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          142,
+          459,
+          240,
+          696
+        ],
+        "xy": {
+          "x": {
+            "min": 142.14876,
+            "max": 239.669421,
+            "avg": 190.909091,
+            "uniq": 9
+          },
+          "y": {
+            "min": 459.504131,
+            "max": 695.041322,
+            "avg": 577.272726,
+            "uniq": 9
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.991388,
+            "avg": 1.963908,
+            "uniq": 16
+          }
+        },
+        "pen_bbox_width": {
+          "min": 12.0,
+          "max": 27.0,
+          "avg": 20.625,
+          "uniq": 5
+        },
+        "pen_bbox_height": {
+          "min": 17.0,
+          "max": 54.0,
+          "avg": 38.0,
+          "uniq": 6
+        },
+        "first_points": [
+          {
+            "x": 190.909091,
+            "y": 459.504131,
+            "pen_bbox": [
+              187,
+              455,
+              214,
+              473
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 209.568861,
+            "y": 468.468732,
+            "pen_bbox": [
+              205,
+              464,
+              230,
+              498
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 2.864949
+            }
+          },
+          {
+            "x": 225.387851,
+            "y": 493.997754,
+            "pen_bbox": [
+              221,
+              490,
+              240,
+              536
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.684437
+            }
+          },
+          {
+            "x": 235.957762,
+            "y": 532.204636,
+            "pen_bbox": [
+              232,
+              528,
+              244,
+              582
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.978106
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 7212,
+      "shape": [
+        100,
+        76,
+        88,
+        88
+      ],
+      "point_count": 16,
+      "bbox": [
+        109,
+        764,
+        255,
+        913
+      ],
+      "line_rgb": [
+        228,
+        224,
+        237
+      ],
+      "fill_rgb": [
+        243,
+        243,
+        243
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          113,
+          767,
+          252,
+          909
+        ],
+        "xy": {
+          "x": {
+            "min": 113.22314,
+            "max": 251.239669,
+            "avg": 182.231405,
+            "uniq": 9
+          },
+          "y": {
+            "min": 767.768593,
+            "max": 908.264462,
+            "avg": 838.016527,
+            "uniq": 9
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.846311,
+            "avg": 1.946843,
+            "uniq": 16
+          }
+        },
+        "pen_bbox_width": {
+          "min": 13.0,
+          "max": 35.0,
+          "avg": 25.625,
+          "uniq": 7
+        },
+        "pen_bbox_height": {
+          "min": 13.0,
+          "max": 35.0,
+          "avg": 25.875,
+          "uniq": 5
+        },
+        "first_points": [
+          {
+            "x": 182.231405,
+            "y": 767.768593,
+            "pen_bbox": [
+              178,
+              764,
+              213,
+              777
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 208.639724,
+            "y": 773.115899,
+            "pen_bbox": [
+              204,
+              769,
+              235,
+              793
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.913292
+            }
+          },
+          {
+            "x": 231.027616,
+            "y": 788.343737,
+            "pen_bbox": [
+              227,
+              784,
+              250,
+              815
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.696989
+            }
+          },
+          {
+            "x": 245.986728,
+            "y": 811.133807,
+            "pen_bbox": [
+              242,
+              807,
+              255,
+              842
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 2.298412
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 8720,
+      "shape": [
+        100,
+        76,
+        104,
+        88
+      ],
+      "point_count": 12,
+      "bbox": [
+        540,
+        759,
+        890,
+        917
+      ],
+      "line_rgb": [
+        228,
+        224,
+        237
+      ],
+      "fill_rgb": [
+        243,
+        243,
+        243
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 4,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          544,
+          780,
+          886,
+          896
+        ],
+        "xy": {
+          "x": {
+            "min": 544.654458,
+            "max": 885.345542,
+            "avg": 715.0,
+            "uniq": 6
+          },
+          "y": {
+            "min": 780.8125,
+            "max": 895.1875,
+            "avg": 838.0,
+            "uniq": 6
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 3.975578,
+            "avg": 2.670016,
+            "uniq": 12
+          }
+        },
+        "pen_bbox_width": {
+          "min": 9.0,
+          "max": 170.0,
+          "avg": 65.5,
+          "uniq": 4
+        },
+        "pen_bbox_height": {
+          "min": 10.0,
+          "max": 62.0,
+          "avg": 30.333333,
+          "uniq": 4
+        },
+        "first_points": [
+          {
+            "x": 795.914132,
+            "y": 780.8125,
+            "pen_bbox": [
+              792,
+              777,
+              809,
+              787
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 804.431409,
+            "y": 782.6875,
+            "pen_bbox": [
+              800,
+              778,
+              890,
+              840
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 3.278783
+            }
+          },
+          {
+            "x": 885.345542,
+            "y": 836.125,
+            "pen_bbox": [
+              881,
+              832,
+              890,
+              844
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 3.50218
+            }
+          },
+          {
+            "x": 885.345542,
+            "y": 839.875,
+            "pen_bbox": [
+              800,
+              836,
+              890,
+              898
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 3.75218
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 8,
+      "layer_name": "Balloon 1",
+      "layer_first_child": 0,
+      "body_offset": 10068,
+      "shape": [
+        100,
+        76,
+        104,
+        88
+      ],
+      "point_count": 12,
+      "bbox": [
+        591,
+        387,
+        866,
+        510
+      ],
+      "line_rgb": [
+        228,
+        224,
+        237
+      ],
+      "fill_rgb": [
+        243,
+        243,
+        243
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 5,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          595,
+          403,
+          862,
+          494
+        ],
+        "xy": {
+          "x": {
+            "min": 595.293748,
+            "max": 861.706252,
+            "avg": 728.5,
+            "uniq": 6
+          },
+          "y": {
+            "min": 403.89375,
+            "max": 493.10625,
+            "avg": 448.5,
+            "uniq": 6
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 0.907152,
+            "avg": 0.420124,
+            "uniq": 12
+          }
+        },
+        "pen_bbox_width": {
+          "min": 6.0,
+          "max": 133.0,
+          "avg": 51.833333,
+          "uniq": 4
+        },
+        "pen_bbox_height": {
+          "min": 9.0,
+          "max": 50.0,
+          "avg": 24.5,
+          "uniq": 3
+        },
+        "first_points": [
+          {
+            "x": 791.77297,
+            "y": 403.89375,
+            "pen_bbox": [
+              788,
+              400,
+              802,
+              409
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 798.433282,
+            "y": 405.35625,
+            "pen_bbox": [
+              794,
+              401,
+              866,
+              451
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.181007
+            }
+          },
+          {
+            "x": 861.706252,
+            "y": 447.0375,
+            "pen_bbox": [
+              859,
+              444,
+              865,
+              453
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.102885
+            }
+          },
+          {
+            "x": 861.706252,
+            "y": 449.9625,
+            "pen_bbox": [
+              794,
+              446,
+              866,
+              496
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.177885
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 9,
+      "layer_name": "Balloon 2",
+      "layer_first_child": 0,
+      "body_offset": 56,
+      "shape": [
+        100,
+        76,
+        104,
+        88
+      ],
+      "point_count": 8,
+      "bbox": [
+        472,
+        471,
+        583,
+        741
+      ],
+      "line_rgb": [
+        228,
+        224,
+        237
+      ],
+      "fill_rgb": [
+        243,
+        243,
+        243
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 5,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          476,
+          475,
+          580,
+          738
+        ],
+        "xy": {
+          "x": {
+            "min": 476.001,
+            "max": 579.001,
+            "avg": 527.501,
+            "uniq": 4
+          },
+          "y": {
+            "min": 475.001,
+            "max": 737.001,
+            "avg": 606.001,
+            "uniq": 4
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 1.0,
+            "avg": 0.579582,
+            "uniq": 6
+          }
+        },
+        "pen_bbox_width": {
+          "min": 6.0,
+          "max": 57.0,
+          "avg": 32.75,
+          "uniq": 3
+        },
+        "pen_bbox_height": {
+          "min": 6.0,
+          "max": 132.0,
+          "avg": 72.5,
+          "uniq": 3
+        },
+        "first_points": [
+          {
+            "x": 525.001,
+            "y": 475.001,
+            "pen_bbox": [
+              522,
+              472,
+              533,
+              478
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 530.001,
+            "y": 475.001,
+            "pen_bbox": [
+              526,
+              471,
+              583,
+              603
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 1.0
+            }
+          },
+          {
+            "x": 579.001,
+            "y": 599.001,
+            "pen_bbox": [
+              576,
+              596,
+              582,
+              616
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.302894
+            }
+          },
+          {
+            "x": 579.001,
+            "y": 613.001,
+            "pen_bbox": [
+              526,
+              609,
+              583,
+              741
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.302894
+            }
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": 10,
+      "layer_name": "Balloon 3",
+      "layer_first_child": 0,
+      "body_offset": 56,
+      "shape": [
+        100,
+        76,
+        104,
+        88
+      ],
+      "point_count": 8,
+      "bbox": [
+        310,
+        795,
+        454,
+        846
+      ],
+      "line_rgb": [
+        228,
+        224,
+        237
+      ],
+      "fill_rgb": [
+        243,
+        243,
+        243
+      ],
+      "object_opacity": 1.0,
+      "brush_style_id": 6,
+      "subtype": 2,
+      "width": 2.5,
+      "point_stats": {
+        "valid": true,
+        "point_bbox": [
+          313,
+          798,
+          452,
+          844
+        ],
+        "xy": {
+          "x": {
+            "min": 313.001,
+            "max": 451.001,
+            "avg": 382.251,
+            "uniq": 4
+          },
+          "y": {
+            "min": 798.001,
+            "max": 843.001,
+            "avg": 820.251,
+            "uniq": 4
+          }
+        },
+        "float_fields": {
+          "36": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "40": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "44": {
+            "min": 0.0,
+            "max": 0.0,
+            "avg": 0.0,
+            "uniq": 1
+          },
+          "52": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "56": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "60": {
+            "min": 1.0,
+            "max": 1.0,
+            "avg": 1.0,
+            "uniq": 1
+          },
+          "76": {
+            "min": 0.0,
+            "max": 9.611409,
+            "avg": 5.117063,
+            "uniq": 8
+          }
+        },
+        "pen_bbox_width": {
+          "min": 6.0,
+          "max": 72.0,
+          "avg": 40.5,
+          "uniq": 4
+        },
+        "pen_bbox_height": {
+          "min": 6.0,
+          "max": 28.0,
+          "avg": 17.25,
+          "uniq": 4
+        },
+        "first_points": [
+          {
+            "x": 379.001,
+            "y": 798.001,
+            "pen_bbox": [
+              376,
+              795,
+              389,
+              801
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 0.0
+            }
+          },
+          {
+            "x": 386.001,
+            "y": 798.001,
+            "pen_bbox": [
+              383,
+              795,
+              454,
+              822
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 2.999597
+            }
+          },
+          {
+            "x": 451.001,
+            "y": 819.001,
+            "pen_bbox": [
+              448,
+              816,
+              454,
+              824
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 9.430937
+            }
+          },
+          {
+            "x": 451.001,
+            "y": 821.001,
+            "pen_bbox": [
+              383,
+              818,
+              454,
+              846
+            ],
+            "float_fields": {
+              "36": 1.0,
+              "40": 1.0,
+              "44": 0.0,
+              "52": 1.0,
+              "56": 1.0,
+              "60": 1.0,
+              "76": 7.412715
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "brush_styles": {
+    "4": {
+      "MainId": 4,
+      "StyleFlag": 115248,
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AntiAlias": 2,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 1.0,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AutoIntervalType": 2,
+      "ThicknessBase": 1.5,
+      "ThicknessEffector": {
+        "len": 16,
+        "hex": "000000c13f0000003f59999900000003",
+        "words": [
+          {
+            "u32": 193,
+            "f32": 0.0
+          },
+          {
+            "u32": 1056964608,
+            "f32": 0.5
+          },
+          {
+            "u32": 1062836633,
+            "f32": 0.85
+          },
+          {
+            "u32": 3,
+            "f32": 0.0
+          }
+        ]
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 3,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 1,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 10,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0
+    },
+    "5": {
+      "MainId": 5,
+      "StyleFlag": 115280,
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 12,
+        "hex": "000000110000000000000004",
+        "words": [
+          {
+            "u32": 17,
+            "f32": 0.0
+          },
+          {
+            "u32": 0,
+            "f32": 0.0
+          },
+          {
+            "u32": 4,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AntiAlias": 2,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 0.014793,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AutoIntervalType": 0,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 16,
+        "hex": "000000213e800000000000043f800000",
+        "words": [
+          {
+            "u32": 33,
+            "f32": 0.0
+          },
+          {
+            "u32": 1048576000,
+            "f32": 0.25
+          },
+          {
+            "u32": 4,
+            "f32": 0.0
+          },
+          {
+            "u32": 1065353216,
+            "f32": 1.0
+          }
+        ]
+      },
+      "RotationBase": 90.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 67,
+      "RotationRandom": 0.0,
+      "RotationEffectorInSpray": 1,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 11,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0
+    },
+    "6": {
+      "MainId": 6,
+      "StyleFlag": 115200,
+      "PenRadius": 0.0,
+      "SizeEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "OpacityEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "FlowBase": 1.0,
+      "FlowEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AntiAlias": 3,
+      "MipmapIndexToPlot": 0,
+      "Hardness": 1.0,
+      "IntervalBase": 2.0,
+      "IntervalEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "AutoIntervalType": 0,
+      "ThicknessBase": 1.0,
+      "ThicknessEffector": {
+        "len": 4,
+        "hex": "00000001",
+        "words": [
+          {
+            "u32": 1,
+            "f32": 0.0
+          }
+        ]
+      },
+      "RotationBase": 0.0,
+      "RotationInSprayBase": 0.0,
+      "RotationEffector": 131,
+      "RotationRandom": 1.0,
+      "RotationEffectorInSpray": 1,
+      "RotationRandomInSpray": 1.0,
+      "PatternStyle": 0,
+      "CompositeMode": 0,
+      "DualCompositeMode": 1,
+      "TexturePattern": 0,
+      "TextureFlag": 0,
+      "TextureComposite": 0,
+      "TextureScale": 1.0,
+      "TextureRotate": 0.0,
+      "TextureOffsetX": 0.0,
+      "TextureOffsetY": 0.0,
+      "TextureBrightness": 0.0,
+      "TextureContrast": 0.0,
+      "TextureDensityBase": 1.0,
+      "TextureDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "UseWaterColor": 0,
+      "WaterColorType": 0,
+      "MixColorBase": 1.0,
+      "MixColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "MixAlphaBase": 1.0,
+      "MixAlphaEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ColorExtension": 0.0,
+      "BrushColorMixingMode": 0,
+      "BrushLMSLinearity": 0,
+      "BlurKind": 0,
+      "BlurBase": 0.0,
+      "BlurEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SubColorBase": 0.0,
+      "SubColorEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "HueChangeBase": 0.0,
+      "HueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SaturationChangeBase": 0.0,
+      "SaturationChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ValueChangeBase": 0.0,
+      "ValueChangeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "ChangeDrawColorTarget": 1,
+      "SprayFlag": 0,
+      "SpraySizeBase": 1.0,
+      "SpraySizeEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayDensityBase": 1.0,
+      "SprayDensityEffector": {
+        "len": 4,
+        "hex": "00000000",
+        "words": [
+          {
+            "u32": 0,
+            "f32": 0.0
+          }
+        ]
+      },
+      "SprayBias": 1.0,
+      "FixedSpray": 0,
+      "WaterEdgeFlag": 0,
+      "WaterEdgeRadius": 1.0,
+      "WaterEdgeAlphaPower": 0.0,
+      "WaterEdgeValuePower": 0.0,
+      "WaterEdgeBlur": 0.0
+    }
+  },
+  "brush_resources": {
+    "pattern_styles": {
+      "10": {
+        "_PW_ID": 1,
+        "MainId": 10,
+        "CanvasId": 1,
+        "NextIndex": 11,
+        "ImageNumber": 1,
+        "ImageIndex": {
+          "len": 4,
+          "hex": "00000003"
+        },
+        "OrderType": 3,
+        "Reverse2": 34
+      },
+      "11": {
+        "_PW_ID": 2,
+        "MainId": 11,
+        "CanvasId": 1,
+        "NextIndex": 0,
+        "ImageNumber": 1,
+        "ImageIndex": {
+          "len": 4,
+          "hex": "00000004"
+        },
+        "OrderType": 0,
+        "Reverse2": 0
+      }
+    },
+    "pattern_images": {
+      "3": {
+        "_PW_ID": 1,
+        "MainId": 3,
+        "CanvasId": 1,
+        "NextIndex": 4,
+        "Uuid": {
+          "len": 16,
+          "hex": "22de8cd4d9c8467d8f463182b57d1eed"
+        },
+        "Mipmap": 18,
+        "Name": "粗い線",
+        "decoded_rgba_shape": [
+          23,
+          512,
+          4
+        ],
+        "decoded_alpha_nonzero": 8178
+      },
+      "4": {
+        "_PW_ID": 2,
+        "MainId": 4,
+        "CanvasId": 1,
+        "NextIndex": 0,
+        "Uuid": {
+          "len": 16,
+          "hex": "2c5dfe71e3ef11dd865bf16359120b4f"
+        },
+        "Mipmap": 19,
+        "Name": "Sampled Brush 1"
+      }
+    }
+  },
+  "effector_graphs": {
+    "3": {
+      "control_number": 2,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          1.0
+        ],
+        [
+          1.0,
+          0.0
+        ]
+      ]
+    },
+    "4": {
+      "control_number": 2,
+      "control_data_size": 16,
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ]
+    }
+  }
+}

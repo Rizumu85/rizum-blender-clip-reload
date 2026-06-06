@@ -1,0 +1,63 @@
+// Hidden C++ exception states: #wind=1
+void __fastcall sub_14255C980(__int64 *a1, double *a2, unsigned int a3, int a4, int a5, unsigned int *a6)
+{
+  volatile signed __int32 *v10; // rbx
+  __int64 *v11; // rax
+  __int64 v12; // rdx
+  volatile signed __int32 *v13; // rcx
+  volatile signed __int32 *v14; // rbx
+  __int64 v15; // [rsp+30h] [rbp-38h]
+  volatile signed __int32 *v16; // [rsp+38h] [rbp-30h]
+  __int64 v17; // [rsp+40h] [rbp-28h] BYREF
+  volatile signed __int32 *v18; // [rsp+48h] [rbp-20h]
+
+  v15 = a1[9]; /*0x14255c9ae*/
+  v10 = (volatile signed __int32 *)a1[10]; /*0x14255c9b3*/
+  v16 = v10; /*0x14255c9b7*/
+  if ( v10 ) /*0x14255c9bf*/
+    _InterlockedExchangeAdd(v10 + 2, 1u); /*0x14255c9c6*/
+  if ( a3 ) /*0x14255c9d3*/
+  {
+    v11 = sub_1422DC6F0(a1[9], &v17); /*0x14255c9e2*/
+    v12 = *v11; /*0x14255c9e7*/
+    v13 = (volatile signed __int32 *)v11[1]; /*0x14255c9ea*/
+    v11[1] = 0; /*0x14255c9f1*/
+    *v11 = 0; /*0x14255c9f5*/
+    v15 = v12; /*0x14255c9f8*/
+    v16 = v13; /*0x14255c9fd*/
+    if ( v10 ) /*0x14255ca05*/
+    {
+      if ( _InterlockedExchangeAdd(v10 + 2, 0xFFFFFFFF) == 1 ) /*0x14255ca11*/
+      {
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v10 + 8LL))(v10); /*0x14255ca19*/
+        if ( _InterlockedExchangeAdd(v10 + 3, 0xFFFFFFFF) == 1 ) /*0x14255ca26*/
+          (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v10 + 16LL))(v10); /*0x14255ca2e*/
+      }
+    }
+    v14 = v18; /*0x14255ca31*/
+    if ( v18 ) /*0x14255ca39*/
+    {
+      if ( _InterlockedExchangeAdd(v18 + 2, 0xFFFFFFFF) == 1 ) /*0x14255ca45*/
+      {
+        (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v14 + 8LL))(v14); /*0x14255ca4d*/
+        if ( _InterlockedExchangeAdd(v14 + 3, 0xFFFFFFFF) == 1 ) /*0x14255ca5a*/
+          (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v14 + 16LL))(v14); /*0x14255ca62*/
+      }
+    }
+  }
+  if ( v15 ) /*0x14255ca6d*/
+  {
+    if ( (*(_BYTE *)(v15 + 120) & 0x20) != 0 ) /*0x14255ca87*/
+      sub_142558A90((__int64)a1, (__int64)a2, a3, a4, a6); /*0x14255ca8e*/
+    else
+      sub_14255DFE0((__int64)a1, a2, a3, a4, a5, a6); /*0x14255caa5*/
+    if ( a1[72] ) /*0x14255caaa*/
+      sub_14255A5E0(); /*0x14255cab6*/
+  }
+  if ( v16 && _InterlockedExchangeAdd(v16 + 2, 0xFFFFFFFF) == 1 ) /*0x14255cad0*/
+  {
+    (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v16 + 8LL))(v16); /*0x14255cadd*/
+    if ( _InterlockedExchangeAdd(v16 + 3, 0xFFFFFFFF) == 1 ) /*0x14255cae8*/
+      (*(void (__fastcall **)(volatile signed __int32 *))(*(_QWORD *)v16 + 16LL))(v16); /*0x14255caf2*/
+  }
+}

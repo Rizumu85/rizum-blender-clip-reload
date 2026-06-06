@@ -1,0 +1,344 @@
+[
+  {
+    "kind": "g6_scale",
+    "param": 0.75,
+    "max": 226,
+    "mean": 0.016488,
+    "visible": 102,
+    "dark_extra": 87,
+    "light_missing": 15
+  },
+  {
+    "kind": "g6_bias",
+    "param": -0.006,
+    "max": 226,
+    "mean": 0.016811,
+    "visible": 104,
+    "dark_extra": 101,
+    "light_missing": 3
+  },
+  {
+    "kind": "g5_scale",
+    "param": 0.997,
+    "max": 226,
+    "mean": 0.016973,
+    "visible": 105,
+    "dark_extra": 101,
+    "light_missing": 4
+  },
+  {
+    "kind": "g5_scale",
+    "param": 0.996,
+    "max": 226,
+    "mean": 0.017296,
+    "visible": 107,
+    "dark_extra": 94,
+    "light_missing": 13
+  },
+  {
+    "kind": "g5_scale",
+    "param": 0.995,
+    "max": 226,
+    "mean": 0.017296,
+    "visible": 107,
+    "dark_extra": 88,
+    "light_missing": 19
+  },
+  {
+    "kind": "g6_bias",
+    "param": -0.01,
+    "max": 226,
+    "mean": 0.01762,
+    "visible": 109,
+    "dark_extra": 89,
+    "light_missing": 20
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.85,
+    "max": 226,
+    "mean": 0.017781,
+    "visible": 110,
+    "dark_extra": 103,
+    "light_missing": 7
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.9,
+    "max": 226,
+    "mean": 0.019559,
+    "visible": 121,
+    "dark_extra": 121,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_bias",
+    "param": -0.004,
+    "max": 226,
+    "mean": 0.019559,
+    "visible": 121,
+    "dark_extra": 119,
+    "light_missing": 2
+  },
+  {
+    "kind": "g5_scale",
+    "param": 0.998,
+    "max": 226,
+    "mean": 0.019559,
+    "visible": 121,
+    "dark_extra": 119,
+    "light_missing": 2
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.95,
+    "max": 226,
+    "mean": 0.021338,
+    "visible": 132,
+    "dark_extra": 132,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_bias",
+    "param": -0.002,
+    "max": 226,
+    "mean": 0.021338,
+    "visible": 132,
+    "dark_extra": 132,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.98,
+    "max": 226,
+    "mean": 0.023439,
+    "visible": 145,
+    "dark_extra": 145,
+    "light_missing": 0
+  },
+  {
+    "kind": "baseline",
+    "param": null,
+    "max": 226,
+    "mean": 0.024409,
+    "visible": 151,
+    "dark_extra": 151,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_float32_value",
+    "param": null,
+    "max": 226,
+    "mean": 0.024409,
+    "visible": 151,
+    "dark_extra": 151,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_float32_out",
+    "param": null,
+    "max": 226,
+    "mean": 0.024409,
+    "visible": 151,
+    "dark_extra": 151,
+    "light_missing": 0
+  },
+  {
+    "kind": "g5_float32_value",
+    "param": null,
+    "max": 226,
+    "mean": 0.024409,
+    "visible": 151,
+    "dark_extra": 151,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.5,
+    "max": 226,
+    "mean": 0.024894,
+    "visible": 154,
+    "dark_extra": 66,
+    "light_missing": 88
+  },
+  {
+    "kind": "g6_scale",
+    "param": 1.02,
+    "max": 226,
+    "mean": 0.025702,
+    "visible": 159,
+    "dark_extra": 157,
+    "light_missing": 2
+  },
+  {
+    "kind": "g6_pow",
+    "param": 1.25,
+    "max": 226,
+    "mean": 0.026834,
+    "visible": 166,
+    "dark_extra": 68,
+    "light_missing": 98
+  },
+  {
+    "kind": "g6_scale",
+    "param": 1.05,
+    "max": 226,
+    "mean": 0.026995,
+    "visible": 167,
+    "dark_extra": 166,
+    "light_missing": 1
+  },
+  {
+    "kind": "g6_bias",
+    "param": 0.002,
+    "max": 226,
+    "mean": 0.027803,
+    "visible": 172,
+    "dark_extra": 171,
+    "light_missing": 1
+  },
+  {
+    "kind": "g6_scale",
+    "param": 1.1,
+    "max": 226,
+    "mean": 0.028288,
+    "visible": 175,
+    "dark_extra": 175,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_bias",
+    "param": 0.004,
+    "max": 226,
+    "mean": 0.029582,
+    "visible": 183,
+    "dark_extra": 183,
+    "light_missing": 0
+  },
+  {
+    "kind": "g5_scale",
+    "param": 1.002,
+    "max": 226,
+    "mean": 0.029582,
+    "visible": 183,
+    "dark_extra": 183,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_bias",
+    "param": -0.02,
+    "max": 226,
+    "mean": 0.029582,
+    "visible": 183,
+    "dark_extra": 73,
+    "light_missing": 110
+  },
+  {
+    "kind": "g6_scale",
+    "param": 1.2,
+    "max": 226,
+    "mean": 0.032491,
+    "visible": 201,
+    "dark_extra": 201,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_bias",
+    "param": 0.006,
+    "max": 226,
+    "mean": 0.032491,
+    "visible": 201,
+    "dark_extra": 201,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.25,
+    "max": 226,
+    "mean": 0.033623,
+    "visible": 208,
+    "dark_extra": 61,
+    "light_missing": 147
+  },
+  {
+    "kind": "g6_bias",
+    "param": 0.01,
+    "max": 226,
+    "mean": 0.035886,
+    "visible": 222,
+    "dark_extra": 222,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_pow",
+    "param": 1.5,
+    "max": 226,
+    "mean": 0.035886,
+    "visible": 222,
+    "dark_extra": 61,
+    "light_missing": 161
+  },
+  {
+    "kind": "g6_linear",
+    "param": null,
+    "max": 226,
+    "mean": 0.039765,
+    "visible": 246,
+    "dark_extra": 58,
+    "light_missing": 188
+  },
+  {
+    "kind": "g6_bias",
+    "param": -0.05,
+    "max": 226,
+    "mean": 0.041059,
+    "visible": 254,
+    "dark_extra": 59,
+    "light_missing": 195
+  },
+  {
+    "kind": "g6_pow",
+    "param": 2.0,
+    "max": 226,
+    "mean": 0.042837,
+    "visible": 265,
+    "dark_extra": 58,
+    "light_missing": 207
+  },
+  {
+    "kind": "g6_scale",
+    "param": 0.0,
+    "max": 226,
+    "mean": 0.042998,
+    "visible": 266,
+    "dark_extra": 57,
+    "light_missing": 209
+  },
+  {
+    "kind": "g6_bias",
+    "param": 0.02,
+    "max": 226,
+    "mean": 0.048333,
+    "visible": 299,
+    "dark_extra": 299,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_pow",
+    "param": 0.75,
+    "max": 226,
+    "mean": 0.075651,
+    "visible": 468,
+    "dark_extra": 468,
+    "light_missing": 0
+  },
+  {
+    "kind": "g6_pow",
+    "param": 0.5,
+    "max": 226,
+    "mean": 0.204808,
+    "visible": 1267,
+    "dark_extra": 1267,
+    "light_missing": 0
+  }
+]

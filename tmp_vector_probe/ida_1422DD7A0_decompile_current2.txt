@@ -1,0 +1,5 @@
+// Style/list draw predicate: true when object bytes +624/+648 have 0x40 or style flags at +120 contain both 0x10 and 0x20.
+_BOOL8 __fastcall sub_1422DD7A0(_BYTE *a1)
+{
+  return (a1[624] & 0x40) != 0 || (a1[648] & 0x40) != 0 || (a1[120] & 0x30) == 0x30; /*0x1422dd7be*/
+}

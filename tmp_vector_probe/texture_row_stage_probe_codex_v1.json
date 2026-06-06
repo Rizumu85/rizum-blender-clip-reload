@@ -1,0 +1,1637 @@
+[
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.0,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.0,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.0,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.0,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.0,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.5,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.5,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.5,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.5,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 1.5,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 2.0,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 2.0,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 2.0,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 2.0,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "preview_factor",
+      "amp": 2.0,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_mode0",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_noavg",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": false,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": false,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": -1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": -1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 1,
+      "yoff": 0
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  },
+  {
+    "variant": {
+      "mode": "native_plus",
+      "invert_sample": true,
+      "invert_avg": true,
+      "xoff": 0,
+      "yoff": 1
+    },
+    "Vector_Texture": {
+      "max": 149,
+      "mean": 0.979165,
+      "visible": 10746,
+      "diff": 10746
+    },
+    "Vector_Texture_50": {
+      "max": 77,
+      "mean": 2.226725,
+      "visible": 2296,
+      "diff": 3365
+    },
+    "score": 3.20589
+  }
+]

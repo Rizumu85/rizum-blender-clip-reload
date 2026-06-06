@@ -1,0 +1,60 @@
+__int64 __fastcall sub_142619200(__int64 a1, __int64 a2, int a3, _DWORD *a4)
+{
+  int v4; // ebx
+  int v8; // eax
+  int v9; // r8d
+  int v10; // r8d
+  int v11; // edx
+  int v12; // esi
+  __int64 v13; // rcx
+  __int64 v14; // r8
+  __int64 v15; // rdx
+  _DWORD v17[4]; // [rsp+60h] [rbp-A8h] BYREF
+  __int128 v18; // [rsp+70h] [rbp-98h] BYREF
+  __int128 v19; // [rsp+80h] [rbp-88h] BYREF
+  __int128 v20; // [rsp+90h] [rbp-78h] BYREF
+  __int128 v21; // [rsp+A0h] [rbp-68h] BYREF
+  __int128 v22; // [rsp+B0h] [rbp-58h] BYREF
+
+  *(_DWORD *)(a1 + 500) = 0; /*0x142619225*/
+  v4 = a2; /*0x142619236*/
+  if ( (int)a2 < *(_DWORD *)(a1 + 312) /*0x14261926a*/
+    || (int)a2 >= *(_DWORD *)(a1 + 320)
+    || SHIDWORD(a2) < *(_DWORD *)(a1 + 316)
+    || SHIDWORD(a2) >= *(_DWORD *)(a1 + 324) )
+  {
+    return 0; /*0x14261926a*/
+  }
+  v8 = *(_DWORD *)(a1 + 364); /*0x142619270*/
+  v9 = a3 - v8; /*0x142619276*/
+  if ( v8 >= 0 ) /*0x142619280*/
+    v9 = a3; /*0x142619280*/
+  LODWORD(v19) = a2 - v9; /*0x14261928b*/
+  DWORD2(v19) = v9 + a2; /*0x142619296*/
+  DWORD1(v19) = HIDWORD(a2) - v9; /*0x14261929f*/
+  HIDWORD(v19) = v9 + HIDWORD(a2); /*0x1426192b1*/
+  if ( !(unsigned int)sub_14206CBF0((int *)&v19, (int *)(a1 + 312)) ) /*0x1426192b5*/
+    return 0; /*0x1426192b5*/
+  v10 = -*(_DWORD *)(a1 + 460); /*0x1426192d7*/
+  v11 = -*(_DWORD *)(a1 + 456); /*0x1426192e2*/
+  v20 = v19; /*0x1426192f4*/
+  sub_14206CEF0(&v20, v11, v10); /*0x1426192fd*/
+  v12 = *(_DWORD *)(a1 + 456); /*0x142619312*/
+  v21 = v20; /*0x142619326*/
+  sub_141AAC550(&v21, (char *)&v21 + 8); /*0x14261932f*/
+  v13 = *(_QWORD *)(a1 + 392); /*0x142619341*/
+  v18 = v21; /*0x142619348*/
+  sub_141AAC760(v13, &v18); /*0x14261934e*/
+  v14 = *(_QWORD *)(a1 + 408); /*0x142619353*/
+  v15 = *(_QWORD *)(a1 + 392); /*0x14261935d*/
+  v17[0] = 0; /*0x142619378*/
+  v22 = 0; /*0x1426193c4*/
+  if ( !(unsigned int)sub_14261D190(a1, v15, v14, v4 - v12, 1, 1, 1, 0, (__int64)&v20, (__int64)&v22, (__int64)v17) /*0x142619410*/
+    || *(_DWORD *)(a1 + 364) && !(unsigned int)sub_142618A30(a1, &v22, *(_DWORD *)(a1 + 152) & 0x10000, &v20) )
+  {
+    return 0; /*0x142619441*/
+  }
+  *(_OWORD *)a4 = v22; /*0x142619424*/
+  sub_14206CEF0(a4, *(_DWORD *)(a1 + 456), *(_DWORD *)(a1 + 460)); /*0x142619435*/
+  return 1; /*0x142619443*/
+}

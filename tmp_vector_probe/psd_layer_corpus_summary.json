@@ -1,0 +1,2768 @@
+[
+  {
+    "path": "img\\Test_Vector.psd",
+    "version": 1,
+    "channels": 3,
+    "width": 1024,
+    "height": 1024,
+    "depth": 8,
+    "color_mode": 3,
+    "layer_count_raw": 2,
+    "layers": [
+      {
+        "index": 0,
+        "name": "Paper",
+        "bbox": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Paper",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 0,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 2,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          }
+        ],
+        "alpha_nonzero": 1048576,
+        "rgba_mean_visible": [
+          226.0,
+          226.0,
+          226.0,
+          255.0
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Layer 1",
+        "bbox": [
+          210,
+          177,
+          983,
+          714
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 39505,
+            "shape": [
+              537,
+              773
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 146.665705,
+            "nonzero": 249095
+          },
+          {
+            "id": 0,
+            "length": 15991,
+            "shape": [
+              537,
+              773
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 137.15469,
+            "nonzero": 353569
+          },
+          {
+            "id": 1,
+            "length": 15991,
+            "shape": [
+              537,
+              773
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 91.912168,
+            "nonzero": 353569
+          },
+          {
+            "id": 2,
+            "length": 15991,
+            "shape": [
+              537,
+              773
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 92.492201,
+            "nonzero": 353569
+          }
+        ],
+        "alpha_nonzero": 249095,
+        "rgba_mean_visible": [
+          121.728614,
+          46.402461,
+          47.368181,
+          244.409085
+        ]
+      }
+    ]
+  },
+  {
+    "path": "img\\Test_Ballon.psd",
+    "version": 1,
+    "channels": 4,
+    "width": 1024,
+    "height": 1024,
+    "depth": 8,
+    "color_mode": 3,
+    "layer_count_raw": -3,
+    "layers": [
+      {
+        "index": 0,
+        "name": "Balloon 1",
+        "bbox": [
+          110,
+          159,
+          889,
+          912
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Balloon 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 23709,
+            "shape": [
+              753,
+              779
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 103.449732,
+            "nonzero": 241101
+          },
+          {
+            "id": 0,
+            "length": 28461,
+            "shape": [
+              753,
+              779
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 104.093516,
+            "nonzero": 259772
+          },
+          {
+            "id": 1,
+            "length": 28475,
+            "shape": [
+              753,
+              779
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 103.014963,
+            "nonzero": 259772
+          },
+          {
+            "id": 2,
+            "length": 28175,
+            "shape": [
+              753,
+              779
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 106.519792,
+            "nonzero": 259772
+          }
+        ],
+        "alpha_nonzero": 241101,
+        "rgba_mean_visible": [
+          233.508231,
+          230.884331,
+          239.410869,
+          251.688164
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Balloon 2",
+        "bbox": [
+          474,
+          473,
+          582,
+          740
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Balloon 2",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2887,
+            "shape": [
+              267,
+              108
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 207.01727,
+            "nonzero": 23410
+          },
+          {
+            "id": 0,
+            "length": 2913,
+            "shape": [
+              267,
+              108
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 206.911153,
+            "nonzero": 23398
+          },
+          {
+            "id": 1,
+            "length": 2913,
+            "shape": [
+              267,
+              108
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 206.911153,
+            "nonzero": 23398
+          },
+          {
+            "id": 2,
+            "length": 2913,
+            "shape": [
+              267,
+              108
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 206.911153,
+            "nonzero": 23398
+          }
+        ],
+        "alpha_nonzero": 23410,
+        "rgba_mean_visible": [
+          254.869287,
+          254.869287,
+          254.869287,
+          255.0
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Balloon 3",
+        "bbox": [
+          312,
+          796,
+          453,
+          845
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Balloon 3",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 585,
+            "shape": [
+              49,
+              141
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 197.238385,
+            "nonzero": 5344
+          },
+          {
+            "id": 0,
+            "length": 602,
+            "shape": [
+              49,
+              141
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 197.016934,
+            "nonzero": 5338
+          },
+          {
+            "id": 1,
+            "length": 602,
+            "shape": [
+              49,
+              141
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 197.016934,
+            "nonzero": 5338
+          },
+          {
+            "id": 2,
+            "length": 602,
+            "shape": [
+              49,
+              141
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 197.016934,
+            "nonzero": 5338
+          }
+        ],
+        "alpha_nonzero": 5344,
+        "rgba_mean_visible": [
+          254.713698,
+          254.713698,
+          254.713698,
+          255.0
+        ]
+      }
+    ]
+  },
+  {
+    "path": "img\\Test_Frames.psd",
+    "version": 1,
+    "channels": 4,
+    "width": 1024,
+    "height": 1024,
+    "depth": 8,
+    "color_mode": 3,
+    "layer_count_raw": -9,
+    "layers": [
+      {
+        "index": 0,
+        "name": "</Layer set>",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 0,
+        "clipping": 0,
+        "flags": 2,
+        "tags": {
+          "lsct": {
+            "section_type": 3
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "</Layer set>",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 1,
+        "name": "Frame background 1",
+        "bbox": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame background 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 0,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 2,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          }
+        ],
+        "alpha_nonzero": 1048576,
+        "rgba_mean_visible": [
+          255.0,
+          255.0,
+          255.0,
+          255.0
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Layer 2",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 2",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 3,
+        "name": "Frame 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lsct": {
+            "section_type": 1
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 8630,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 4,
+        "name": "Frame 1",
+        "bbox": [
+          256,
+          126,
+          740,
+          787
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 17703,
+            "shape": [
+              661,
+              484
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 11.838233,
+            "nonzero": 16414
+          },
+          {
+            "id": 0,
+            "length": 12666,
+            "shape": [
+              661,
+              484
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 251.226272,
+            "nonzero": 315716
+          },
+          {
+            "id": 1,
+            "length": 12666,
+            "shape": [
+              661,
+              484
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 251.226272,
+            "nonzero": 315716
+          },
+          {
+            "id": 2,
+            "length": 12666,
+            "shape": [
+              661,
+              484
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 251.226272,
+            "nonzero": 315716
+          }
+        ],
+        "alpha_nonzero": 16414,
+        "rgba_mean_visible": [
+          181.44657,
+          181.44657,
+          181.44657,
+          230.738089
+        ]
+      },
+      {
+        "index": 5,
+        "name": "Layer 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 6,
+        "name": "</Layer set>",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 0,
+        "clipping": 0,
+        "flags": 2,
+        "tags": {
+          "lsct": {
+            "section_type": 3
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "</Layer set>",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 7,
+        "name": "Frame 2",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lsct": {
+            "section_type": 1
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame 2",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 1566,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 8,
+        "name": "Frame 2",
+        "bbox": [
+          855,
+          308,
+          973,
+          703
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame 2",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 3778,
+            "shape": [
+              395,
+              118
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 5.473632,
+            "nonzero": 1616
+          },
+          {
+            "id": 0,
+            "length": 2566,
+            "shape": [
+              395,
+              118
+            ],
+            "min": 0,
+            "max": 244,
+            "mean": 8.459644,
+            "nonzero": 1616
+          },
+          {
+            "id": 1,
+            "length": 2566,
+            "shape": [
+              395,
+              118
+            ],
+            "min": 0,
+            "max": 244,
+            "mean": 8.459644,
+            "nonzero": 1616
+          },
+          {
+            "id": 2,
+            "length": 2566,
+            "shape": [
+              395,
+              118
+            ],
+            "min": 0,
+            "max": 244,
+            "mean": 8.459644,
+            "nonzero": 1616
+          }
+        ],
+        "alpha_nonzero": 1616,
+        "rgba_mean_visible": [
+          244.0,
+          244.0,
+          244.0,
+          157.875
+        ]
+      }
+    ]
+  },
+  {
+    "path": "img\\Test_Monochrome.psd",
+    "version": 1,
+    "channels": 3,
+    "width": 1024,
+    "height": 1024,
+    "depth": 8,
+    "color_mode": 3,
+    "layer_count_raw": 2,
+    "layers": [
+      {
+        "index": 0,
+        "name": "Paper",
+        "bbox": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Paper",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 0,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 2,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          }
+        ],
+        "alpha_nonzero": 1048576,
+        "rgba_mean_visible": [
+          226.0,
+          226.0,
+          226.0,
+          255.0
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Layer 1",
+        "bbox": [
+          0,
+          0,
+          1024,
+          851
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 21099,
+            "shape": [
+              851,
+              1024
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 123.602827,
+            "nonzero": 422394
+          },
+          {
+            "id": 0,
+            "length": 19180,
+            "shape": [
+              851,
+              1024
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 175.303721,
+            "nonzero": 599074
+          },
+          {
+            "id": 1,
+            "length": 19180,
+            "shape": [
+              851,
+              1024
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 175.303721,
+            "nonzero": 599074
+          },
+          {
+            "id": 2,
+            "length": 19180,
+            "shape": [
+              851,
+              1024
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 175.303721,
+            "nonzero": 599074
+          }
+        ],
+        "alpha_nonzero": 422394,
+        "rgba_mean_visible": [
+          246.956278,
+          246.956278,
+          246.956278,
+          255.0
+        ]
+      }
+    ]
+  },
+  {
+    "path": "img\\Test_ToneCurve.psd",
+    "version": 1,
+    "channels": 3,
+    "width": 1024,
+    "height": 1024,
+    "depth": 8,
+    "color_mode": 3,
+    "layer_count_raw": 3,
+    "layers": [
+      {
+        "index": 0,
+        "name": "Layer 1",
+        "bbox": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 0,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 214,
+            "max": 214,
+            "mean": 214.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 2,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 160,
+            "max": 160,
+            "mean": 160.0,
+            "nonzero": 1048576
+          }
+        ],
+        "alpha_nonzero": 1048576,
+        "rgba_mean_visible": [
+          255.0,
+          214.0,
+          160.0,
+          255.0
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Layer 2",
+        "bbox": [
+          26,
+          63,
+          662,
+          350
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 2",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 81968,
+            "shape": [
+              287,
+              636
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 69.975626,
+            "nonzero": 65925
+          },
+          {
+            "id": 0,
+            "length": 27049,
+            "shape": [
+              287,
+              636
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 59.130848,
+            "nonzero": 62315
+          },
+          {
+            "id": 1,
+            "length": 26875,
+            "shape": [
+              287,
+              636
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 56.854672,
+            "nonzero": 62315
+          },
+          {
+            "id": 2,
+            "length": 23923,
+            "shape": [
+              287,
+              636
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 50.497595,
+            "nonzero": 62315
+          }
+        ],
+        "alpha_nonzero": 65925,
+        "rgba_mean_visible": [
+          161.521835,
+          155.407645,
+          137.995783,
+          193.747304
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Tone Curve 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "curv": {
+            "length": 94
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Tone Curve 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      }
+    ]
+  },
+  {
+    "path": "img\\test_Filters_Vector_Text.psd",
+    "version": 1,
+    "channels": 3,
+    "width": 1024,
+    "height": 1024,
+    "depth": 8,
+    "color_mode": 3,
+    "layer_count_raw": 18,
+    "layers": [
+      {
+        "index": 0,
+        "name": "Paper",
+        "bbox": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Paper",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 0,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 2,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 226,
+            "max": 226,
+            "mean": 226.0,
+            "nonzero": 1048576
+          }
+        ],
+        "alpha_nonzero": 1048576,
+        "rgba_mean_visible": [
+          226.0,
+          226.0,
+          226.0,
+          255.0
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Layer 1",
+        "bbox": [
+          278,
+          129,
+          928,
+          942
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 44056,
+            "shape": [
+              813,
+              650
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 22.87332,
+            "nonzero": 51455
+          },
+          {
+            "id": 0,
+            "length": 14057,
+            "shape": [
+              813,
+              650
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 139.075475,
+            "nonzero": 325590
+          },
+          {
+            "id": 1,
+            "length": 14057,
+            "shape": [
+              813,
+              650
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 135.175844,
+            "nonzero": 325590
+          },
+          {
+            "id": 2,
+            "length": 14057,
+            "shape": [
+              813,
+              650
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 144.534959,
+            "nonzero": 325590
+          }
+        ],
+        "alpha_nonzero": 51455,
+        "rgba_mean_visible": [
+          70.0,
+          30.0,
+          126.0,
+          234.912176
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Layer 2",
+        "bbox": [
+          54,
+          182,
+          942,
+          923
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 2",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 30805,
+            "shape": [
+              741,
+              888
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 44.154022,
+            "nonzero": 118369
+          },
+          {
+            "id": 0,
+            "length": 19582,
+            "shape": [
+              741,
+              888
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 90.946616,
+            "nonzero": 318970
+          },
+          {
+            "id": 1,
+            "length": 19180,
+            "shape": [
+              741,
+              888
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 118.571042,
+            "nonzero": 318970
+          },
+          {
+            "id": 2,
+            "length": 19180,
+            "shape": [
+              741,
+              888
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 118.571042,
+            "nonzero": 318970
+          }
+        ],
+        "alpha_nonzero": 118369,
+        "rgba_mean_visible": [
+          73.538012,
+          227.0,
+          227.0,
+          245.450245
+        ]
+      },
+      {
+        "index": 3,
+        "name": "Hue/Saturation/Luminosity 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "hue2": {
+            "length": 100
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Hue/Saturation/Luminosity 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 5374,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 4,
+        "name": "Level Correction 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "levl": {
+            "length": 330
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Level Correction 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 10977,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 5,
+        "name": "Tone Curve 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "curv": {
+            "length": 58
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Tone Curve 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 20063,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 6,
+        "name": "Color balance 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "blnc": {
+            "length": 20
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Color balance 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 27345,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 7,
+        "name": "Threshold 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Threshold 1",
+          "thrs": {
+            "length": 4
+          },
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 24721,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 8,
+        "name": "Gradient map 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "grdm": {
+            "length": 212
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Gradient map 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 23563,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 9,
+        "name": "Brightness/Contrast 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "brit": {
+            "length": 8
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Brightness/Contrast 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 74227,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 10,
+        "name": "Posterization 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Posterization 1",
+          "post": {
+            "length": 4
+          },
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 7580,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 11,
+        "name": "Reverse Gradient 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Reverse Gradient 1",
+          "nvrt": {
+            "length": 0
+          },
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 10367,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 12,
+        "name": "测试测试",
+        "bbox": [
+          137,
+          79,
+          478,
+          323
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "测试测试",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 4701,
+            "shape": [
+              244,
+              341
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 176.825898,
+            "nonzero": 58322
+          },
+          {
+            "id": 0,
+            "length": 5087,
+            "shape": [
+              244,
+              341
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 186.815213,
+            "nonzero": 70236
+          },
+          {
+            "id": 1,
+            "length": 5087,
+            "shape": [
+              244,
+              341
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 181.843289,
+            "nonzero": 70236
+          },
+          {
+            "id": 2,
+            "length": 5087,
+            "shape": [
+              244,
+              341
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 195.954353,
+            "nonzero": 70236
+          }
+        ],
+        "alpha_nonzero": 58322,
+        "rgba_mean_visible": [
+          214.42514,
+          207.332036,
+          227.463324,
+          252.265389
+        ]
+      },
+      {
+        "index": 13,
+        "name": "</Layer set>",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 0,
+        "clipping": 0,
+        "flags": 2,
+        "tags": {
+          "lsct": {
+            "section_type": 3
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "</Layer set>",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 14,
+        "name": "Frame background 1",
+        "bbox": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame background 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 0,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 1,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          },
+          {
+            "id": 2,
+            "length": 18434,
+            "shape": [
+              1024,
+              1024
+            ],
+            "min": 255,
+            "max": 255,
+            "mean": 255.0,
+            "nonzero": 1048576
+          }
+        ],
+        "alpha_nonzero": 1048576,
+        "rgba_mean_visible": [
+          255.0,
+          255.0,
+          255.0,
+          255.0
+        ]
+      },
+      {
+        "index": 15,
+        "name": "Layer 4",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Layer 4",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 16,
+        "name": "Frame 1",
+        "bbox": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lsct": {
+            "section_type": 1
+          },
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 0,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 1,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "length": 2,
+            "shape": [
+              0,
+              0
+            ]
+          },
+          {
+            "id": -2,
+            "length": 2906,
+            "shape": [
+              0,
+              0
+            ]
+          }
+        ],
+        "alpha_nonzero": 0
+      },
+      {
+        "index": 17,
+        "name": "Frame 1",
+        "bbox": [
+          101,
+          738,
+          633,
+          987
+        ],
+        "blend_mode": "norm",
+        "opacity": 255,
+        "clipping": 0,
+        "flags": 0,
+        "tags": {
+          "lspf": {
+            "length": 4
+          },
+          "luni": "Frame 1",
+          "tsly": {
+            "length": 4
+          }
+        },
+        "channels": [
+          {
+            "id": -1,
+            "length": 7170,
+            "shape": [
+              249,
+              532
+            ],
+            "min": 0,
+            "max": 255,
+            "mean": 12.617417,
+            "nonzero": 7444
+          },
+          {
+            "id": 0,
+            "length": 5359,
+            "shape": [
+              249,
+              532
+            ],
+            "min": 0,
+            "max": 70,
+            "mean": 3.933629,
+            "nonzero": 7444
+          },
+          {
+            "id": 1,
+            "length": 5359,
+            "shape": [
+              249,
+              532
+            ],
+            "min": 0,
+            "max": 30,
+            "mean": 1.685841,
+            "nonzero": 7444
+          },
+          {
+            "id": 2,
+            "length": 5359,
+            "shape": [
+              249,
+              532
+            ],
+            "min": 0,
+            "max": 126,
+            "mean": 7.080533,
+            "nonzero": 7444
+          }
+        ],
+        "alpha_nonzero": 7444,
+        "rgba_mean_visible": [
+          70.0,
+          30.0,
+          126.0,
+          224.53036
+        ]
+      }
+    ]
+  }
+]

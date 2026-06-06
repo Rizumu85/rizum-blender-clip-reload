@@ -1,0 +1,26 @@
+{
+  "out_dir": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\rejected_visuals",
+  "legend": {
+    "red": "probe/importer has extra premultiplied pixels compared with CSP",
+    "cyan": "probe/importer is missing pixels compared with CSP",
+    "yellow": "both draw here, but color/alpha differs"
+  },
+  "crop": [
+    58,
+    135,
+    913,
+    936
+  ],
+  "files": [
+    "00_csp_reference.png",
+    "01_current_importer_baseline.png",
+    "01_current_importer_baseline_diff_overlay.png",
+    "02_rejected_scanline_best_preview_lane.png",
+    "02_rejected_scanline_best_preview_lane_diff_overlay.png",
+    "03_rejected_scanline_true_resource.png",
+    "03_rejected_scanline_true_resource_diff_overlay.png",
+    "04_rejected_scanline_sparse_step4.png",
+    "04_rejected_scanline_sparse_step4_diff_overlay.png",
+    "contact_sheet_diff_overlays.png"
+  ]
+}
