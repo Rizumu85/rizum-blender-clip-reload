@@ -21,6 +21,7 @@ DEFAULT_EXE = Path(
 DEFAULT_CLIP = REPO_ROOT / "img" / "Vector_SizePressure.clip"
 DEFAULT_SCRIPT = REPO_ROOT / "tmp_vector_probe" / "native_plot_only_fresh_open_control_v1.js"
 SUMMARY_SCRIPT = REPO_ROOT / "tools" / "summarize_native_plot_only_control.py"
+DEFAULT_TRACE_GLOB = "native_plot_only_fresh_open_control_*_pid{pid}.jsonl"
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,16 +34,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--exe", type=Path, default=DEFAULT_EXE)
     parser.add_argument("--clip", type=Path, default=DEFAULT_CLIP)
     parser.add_argument("--script", type=Path, default=DEFAULT_SCRIPT)
+    parser.add_argument("--trace-glob", default=DEFAULT_TRACE_GLOB)
     parser.add_argument("--timeout", type=float, default=180.0)
+    parser.add_argument("--min-wait", type=float, default=30.0)
     parser.add_argument("--quiet-window", type=float, default=8.0)
     parser.add_argument("--no-summarize", action="store_true")
     return parser.parse_args()
 
 
-def read_latest_trace(process_id: int, started_at: float) -> Path | None:
+def read_latest_trace(process_id: int, started_at: float, trace_glob: str) -> Path | None:
     probe_dir = REPO_ROOT / "tmp_vector_probe"
     candidates = []
-    for path in probe_dir.glob(f"native_plot_only_fresh_open_control_*_pid{process_id}.jsonl"):
+    for path in probe_dir.glob(trace_glob.format(pid=process_id)):
         try:
             stat = path.stat()
         except OSError:
@@ -73,7 +76,7 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def latest_counts(path: Path) -> tuple[int, int, bool]:
+def latest_counts(path: Path) -> tuple[int, int, bool, int, int]:
     rows = load_jsonl(path)
     plot_entries = sum(1 for row in rows if row.get("event") == "plot_entry")
     sizepressure = sum(
@@ -83,7 +86,8 @@ def latest_counts(path: Path) -> tuple[int, int, bool]:
         and isinstance(row.get("sizepressure_call_index"), int)
     )
     hooks_ready = any(row.get("event") == "ready_hooks_installed" for row in rows)
-    return plot_entries, sizepressure, hooks_ready
+    signal_rows = sum(1 for row in rows if row.get("event") != "summary")
+    return plot_entries, sizepressure, hooks_ready, len(rows), signal_rows
 
 
 def run_summarizer(trace_path: Path) -> int:
@@ -125,9 +129,9 @@ def main() -> int:
 
         deadline = time.time() + 10
         while time.time() < deadline:
-            trace_path = read_latest_trace(pid, started_at)
+            trace_path = read_latest_trace(pid, started_at, args.trace_glob)
             if trace_path is not None:
-                _, _, hooks_ready = latest_counts(trace_path)
+                _, _, hooks_ready, _, _ = latest_counts(trace_path)
                 if hooks_ready:
                     break
             time.sleep(0.25)
@@ -142,24 +146,33 @@ def main() -> int:
         print("resumed: true", flush=True)
 
         last_plot_count = -1
+        last_signal_count = -1
         last_change_at = time.time()
+        resumed_at = time.time()
         deadline = time.time() + args.timeout
         while time.time() < deadline:
             if trace_path is None:
-                trace_path = read_latest_trace(pid, started_at)
+                trace_path = read_latest_trace(pid, started_at, args.trace_glob)
             if trace_path is not None:
-                plot_count, sizepressure_count, hooks_ready = latest_counts(trace_path)
-                if plot_count != last_plot_count:
+                plot_count, sizepressure_count, hooks_ready, row_count, signal_count = latest_counts(trace_path)
+                if signal_count != last_signal_count:
                     last_plot_count = plot_count
+                    last_signal_count = signal_count
                     last_change_at = time.time()
                     print(
                         "trace_counts: "
                         f"plot_entries={plot_count} "
                         f"sizepressure={sizepressure_count} "
-                        f"hooks_ready={hooks_ready}",
+                        f"hooks_ready={hooks_ready} "
+                        f"rows={row_count} "
+                        f"signal_rows={signal_count}",
                         flush=True,
                     )
-                if plot_count > 0 and time.time() - last_change_at >= args.quiet_window:
+                if (
+                    time.time() - resumed_at >= args.min_wait
+                    and signal_count > 0
+                    and time.time() - last_change_at >= args.quiet_window
+                ):
                     break
             time.sleep(1)
 
@@ -172,7 +185,9 @@ def main() -> int:
             "final_counts: "
             f"plot_entries={latest_counts(trace_path)[0]} "
             f"sizepressure={latest_counts(trace_path)[1]} "
-            f"hooks_ready={latest_counts(trace_path)[2]}",
+            f"hooks_ready={latest_counts(trace_path)[2]} "
+            f"rows={latest_counts(trace_path)[3]} "
+            f"signal_rows={latest_counts(trace_path)[4]}",
             flush=True,
         )
         if not args.no_summarize:
