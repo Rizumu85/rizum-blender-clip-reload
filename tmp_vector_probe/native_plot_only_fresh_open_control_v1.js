@@ -131,7 +131,7 @@ function summary(reason) {
 }
 
 writeJson({
-  event: 'ready',
+  event: 'ready_start',
   process_id: processId,
   module_base: moduleBase.toString(),
   output_path: outPath,
@@ -188,6 +188,15 @@ Interceptor.attach(addr(RVA_PLOT_ENTRY), {
     writeJson(Object.assign({ event: 'plot_entry' }, rec));
   },
 });
+writeJson({
+  event: 'hook_installed',
+  hook: 'plot_entry',
+  rva: '0x' + RVA_PLOT_ENTRY.toString(16),
+  address: addr(RVA_PLOT_ENTRY).toString(),
+  process_id: processId,
+  module_base: moduleBase.toString(),
+  timestamp_ms: nowMs(),
+});
 
 Interceptor.attach(addr(RVA_PLOT_RADIUS_WRITTEN), {
   onEnter() {
@@ -217,6 +226,35 @@ Interceptor.attach(addr(RVA_PLOT_RADIUS_WRITTEN), {
     };
     writeJson(row);
   },
+});
+writeJson({
+  event: 'hook_installed',
+  hook: 'plot_radius_written',
+  rva: '0x' + RVA_PLOT_RADIUS_WRITTEN.toString(16),
+  address: addr(RVA_PLOT_RADIUS_WRITTEN).toString(),
+  process_id: processId,
+  module_base: moduleBase.toString(),
+  timestamp_ms: nowMs(),
+});
+
+writeJson({
+  event: 'ready_hooks_installed',
+  process_id: processId,
+  module_base: moduleBase.toString(),
+  output_path: outPath,
+  timestamp_ms: nowMs(),
+  hooks: [
+    {
+      name: 'plot_entry',
+      rva: '0x' + RVA_PLOT_ENTRY.toString(16),
+      address: addr(RVA_PLOT_ENTRY).toString(),
+    },
+    {
+      name: 'plot_radius_written',
+      rva: '0x' + RVA_PLOT_RADIUS_WRITTEN.toString(16),
+      address: addr(RVA_PLOT_RADIUS_WRITTEN).toString(),
+    },
+  ],
 });
 
 setInterval(function () {
