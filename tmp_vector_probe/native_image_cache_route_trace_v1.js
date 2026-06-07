@@ -189,31 +189,49 @@ function installHooksForModule(m) {
 function imageFactory(functionName, moduleName) {
   return {
     onEnter(args) {
-      this.args = args;
+      this.argValues = [];
+      for (let i = 0; i < 12; i++) this.argValues.push(args[i]);
+      this.argStrings = this.argValues.map((a) => ptrString(a));
+      this.argI32 = this.argValues.map((a) => {
+        try {
+          return a.toInt32();
+        } catch (_) {
+          return null;
+        }
+      });
+      this.argU32 = this.argValues.map((a) => {
+        try {
+          return a.toUInt32();
+        } catch (_) {
+          return null;
+        }
+      });
     },
     onLeave(retval) {
-      const args = this.args;
+      const i32 = this.argI32;
+      const u32 = this.argU32;
+      const arg = this.argValues;
       let extra = { return_value: ptrString(retval) };
       if (functionName === 'BitBlt') {
-        extra = Object.assign(extra, { x: args[1].toInt32(), y: args[2].toInt32(), width: args[3].toInt32(), height: args[4].toInt32(), rop: args[8].toString() });
+        extra = Object.assign(extra, { x: i32[1], y: i32[2], width: i32[3], height: i32[4], rop: this.argStrings[8] });
       } else if (functionName === 'StretchBlt') {
-        extra = Object.assign(extra, { x: args[1].toInt32(), y: args[2].toInt32(), width: args[3].toInt32(), height: args[4].toInt32(), src_width: args[7].toInt32(), src_height: args[8].toInt32(), rop: args[10].toString() });
+        extra = Object.assign(extra, { x: i32[1], y: i32[2], width: i32[3], height: i32[4], src_width: i32[7], src_height: i32[8], rop: this.argStrings[10] });
       } else if (functionName === 'AlphaBlend') {
-        extra = Object.assign(extra, { x: args[1].toInt32(), y: args[2].toInt32(), width: args[3].toInt32(), height: args[4].toInt32(), src_width: args[7].toInt32(), src_height: args[8].toInt32() });
+        extra = Object.assign(extra, { x: i32[1], y: i32[2], width: i32[3], height: i32[4], src_width: i32[7], src_height: i32[8] });
       } else if (functionName === 'CreateCompatibleBitmap') {
-        extra = Object.assign(extra, { width: args[1].toInt32(), height: args[2].toInt32() });
+        extra = Object.assign(extra, { width: i32[1], height: i32[2] });
       } else if (functionName === 'CreateDIBSection') {
-        const bmi = args[1];
+        const bmi = arg[1];
         extra = Object.assign(extra, {
           width: readI32(bmi, 4),
           height: readI32(bmi, 8),
           planes: readU32(bmi, 12) & 0xffff,
           bit_count: readU32(bmi, 14) & 0xffff,
           compression: readU32(bmi, 16),
-          bits_ptr_out: ptrString(args[4]),
+          bits_ptr_out: this.argStrings[4],
         });
       } else if (functionName === 'SetDIBits' || functionName === 'GetDIBits') {
-        extra = Object.assign(extra, { start_scan: args[3].toUInt32(), scan_lines: args[4].toUInt32() });
+        extra = Object.assign(extra, { start_scan: u32[3], scan_lines: u32[4] });
       }
       const row = baseRow(functionName, moduleName, this, extra);
       if (shouldSample(functionName)) addBacktrace(row, this.context, functionName);
@@ -225,7 +243,7 @@ function imageFactory(functionName, moduleName) {
 function memoryFactory(functionName, moduleName) {
   return {
     onEnter(args) {
-      this.args = args;
+      this.argStrings = [ptrString(args[0]), ptrString(args[1]), ptrString(args[2])];
       this.size = 0;
       if (functionName === 'VirtualAlloc') this.size = args[1].toUInt32();
       else if (functionName === 'HeapAlloc' || functionName === 'RtlAllocateHeap') this.size = args[2].toUInt32();
@@ -236,8 +254,8 @@ function memoryFactory(functionName, moduleName) {
       if (!this.largeEnough) return;
       const row = baseRow(functionName, moduleName, this, {
         size: this.size,
-        dst: ptrString(this.args[0]),
-        src_or_flags: ptrString(this.args[1]),
+        dst: this.argStrings[0],
+        src_or_flags: this.argStrings[1],
         return_value: ptrString(retval),
       });
       addBacktrace(row, this.context, functionName);
