@@ -10,6 +10,15 @@ const MAX_BACKTRACES = 60;
 const MAX_PREFIX_BYTES = 96;
 const MAX_EVENTS = 2000;
 const SUMMARY_INTERVAL_MS = 5000;
+const INCLUDED_CALLER_RVAS = {
+  '0x3a40523': 'main_magic_csfchunk',
+  '0x3a4065d': 'main_chunk_sqlite_or_header',
+  '0x3a40782': 'main_chunk_body',
+  '0x3a41086': 'header_sniff_csfchunk',
+  '0x3a41cd1': 'external_chunk_magic',
+  '0x3a41d7f': 'external_chunk_body',
+  '0x3a41fb6': 'load_probe_csfchunk',
+};
 
 const cspBase = Process.getModuleByName(CSP_MODULE).base;
 const target = cspBase.add(TARGET_RVA);
@@ -21,6 +30,7 @@ const counts = {};
 const callerCounts = {};
 const signatureCounts = {};
 let eventIndex = 0;
+let skippedEventIndex = 0;
 let backtracesWritten = 0;
 
 function makeTimestamp() {
@@ -128,9 +138,11 @@ Interceptor.attach(target, {
     this.requested = args[2].toUInt32();
     this.caller = this.returnAddress;
     this.callerRva = rvaOf(this.returnAddress);
-    this.index = eventIndex++;
+    this.routeLabel = INCLUDED_CALLER_RVAS[this.callerRva] || null;
+    this.index = this.routeLabel ? eventIndex++ : skippedEventIndex++;
   },
   onLeave(retval) {
+    if (!this.routeLabel) return;
     const returned = retval.toInt32();
     const prefix = readPrefix(this.dest, Math.min(this.requested, returned > 0 ? returned : this.requested));
     bump(this.callerRva, prefix.signature);
@@ -143,6 +155,7 @@ Interceptor.attach(target, {
       process_id: processId,
       caller: ptrString(this.caller),
       caller_rva: this.callerRva,
+      route_label: this.routeLabel,
       stream_ptr: ptrString(this.stream),
       dest_ptr: ptrString(this.dest),
       requested_size: this.requested,
@@ -162,6 +175,7 @@ writeJson({
   process_id: processId,
   csp_module_base: cspBase.toString(),
   target_rva: `0x${TARGET_RVA.toString(16)}`,
+  included_caller_rvas: INCLUDED_CALLER_RVAS,
 });
 
 setInterval(function () {
@@ -172,6 +186,7 @@ setInterval(function () {
     counts,
     caller_counts: callerCounts,
     signature_counts: signatureCounts,
+    skipped_non_route_events: skippedEventIndex,
   });
 }, SUMMARY_INTERVAL_MS);
 
@@ -184,6 +199,7 @@ Script.bindWeak(out, function () {
       counts,
       caller_counts: callerCounts,
       signature_counts: signatureCounts,
+      skipped_non_route_events: skippedEventIndex,
     });
     out.flush();
     out.close();

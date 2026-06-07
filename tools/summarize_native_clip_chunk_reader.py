@@ -30,6 +30,7 @@ def compact(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "chunk_read_index": row.get("chunk_read_index"),
         "caller_rva": row.get("caller_rva"),
+        "route_label": row.get("route_label"),
         "requested_size": row.get("requested_size"),
         "return_value": row.get("return_value"),
         "signature": row.get("signature"),
