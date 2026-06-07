@@ -124,11 +124,39 @@ function shouldSample(functionName) {
 function hookExport(moduleName, exportName, factory) {
   const key = `${moduleName}!${exportName}`;
   if (installed[key]) return;
-  const p = Module.findExportByName(moduleName, exportName);
+  const p = findExport(moduleName, exportName);
   if (!p) return;
   installed[key] = true;
   Interceptor.attach(p, factory(exportName, moduleName, p));
   writeJson({ event: 'hook_installed', function: exportName, module: moduleName, address: p.toString() });
+}
+
+function findExport(moduleName, exportName) {
+  try {
+    const m = Process.getModuleByName(moduleName);
+    if (m.findExportByName) {
+      const p = m.findExportByName(exportName);
+      if (p) return p;
+    }
+    if (m.getExportByName) return m.getExportByName(exportName);
+  } catch (_) {
+  }
+  try {
+    if (Module.findExportByName) {
+      const p = Module.findExportByName(moduleName, exportName);
+      if (p) return p;
+    }
+  } catch (_) {
+  }
+  try {
+    if (Module.findGlobalExportByName) return Module.findGlobalExportByName(exportName);
+  } catch (_) {
+  }
+  try {
+    if (Module.getGlobalExportByName) return Module.getGlobalExportByName(exportName);
+  } catch (_) {
+  }
+  return null;
 }
 
 function installHooksForModule(m) {

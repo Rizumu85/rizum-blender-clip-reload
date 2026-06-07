@@ -98,6 +98,10 @@ def run_summarizer(trace_path: Path) -> int:
     ).returncode
 
 
+def on_frida_message(message: dict[str, Any], data: bytes | None) -> None:
+    print(f"frida_message: {json.dumps(message, sort_keys=True)}", flush=True)
+
+
 def main() -> int:
     args = parse_args()
     exe = args.exe.resolve()
@@ -125,6 +129,7 @@ def main() -> int:
     try:
         session = device.attach(pid)
         script = session.create_script(script_source)
+        script.on("message", on_frida_message)
         script.load()
 
         deadline = time.time() + 10

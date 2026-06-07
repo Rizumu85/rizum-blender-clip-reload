@@ -148,7 +148,7 @@ function baseEvent(funcName, context, extra) {
 
 function hookExport(moduleNames, exportName, callbacks) {
   for (const moduleName of moduleNames) {
-    const p = Module.findExportByName(moduleName, exportName);
+    const p = findExport(moduleName, exportName);
     if (p) {
       Interceptor.attach(p, callbacks(exportName, moduleName, p));
       writeJson({ event: 'hook_installed', function: exportName, module: moduleName, address: p.toString() });
@@ -157,6 +157,34 @@ function hookExport(moduleNames, exportName, callbacks) {
   }
   writeJson({ event: 'hook_missing', function: exportName, modules: moduleNames });
   return false;
+}
+
+function findExport(moduleName, exportName) {
+  try {
+    const m = Process.getModuleByName(moduleName);
+    if (m.findExportByName) {
+      const p = m.findExportByName(exportName);
+      if (p) return p;
+    }
+    if (m.getExportByName) return m.getExportByName(exportName);
+  } catch (_) {
+  }
+  try {
+    if (Module.findExportByName) {
+      const p = Module.findExportByName(moduleName, exportName);
+      if (p) return p;
+    }
+  } catch (_) {
+  }
+  try {
+    if (Module.findGlobalExportByName) return Module.findGlobalExportByName(exportName);
+  } catch (_) {
+  }
+  try {
+    if (Module.getGlobalExportByName) return Module.getGlobalExportByName(exportName);
+  } catch (_) {
+  }
+  return null;
 }
 
 function handleKey(h) {
@@ -354,7 +382,7 @@ function installSqliteHooks() {
     const modName = m.name.toLowerCase();
     if (!modName.includes('sqlite')) continue;
     for (const exportName of ['sqlite3_open', 'sqlite3_open_v2', 'sqlite3_prepare_v2', 'sqlite3_step']) {
-      const p = Module.findExportByName(m.name, exportName);
+      const p = findExport(m.name, exportName);
       if (!p) continue;
       Interceptor.attach(p, {
         onEnter(args) {
