@@ -1,0 +1,62 @@
+-- disasm 0x3a3e180 size 0xb0
+03a3e180  mov      qword ptr [rsp + 8], rbx                      FUNC_ENTRY
+03a3e185  mov      qword ptr [rsp + 0x10], rbp                   
+03a3e18a  mov      qword ptr [rsp + 0x18], rsi                   
+03a3e18f  push     rdi                                           
+03a3e190  sub      rsp, 0x20                                     
+03a3e194  mov      rbx, rcx                                      
+03a3e197  mov      esi, r9d                                      
+03a3e19a  add      rcx, 0x100                                    
+03a3e1a1  mov      rbp, r8                                       
+03a3e1a4  mov      rdi, rdx                                      
+03a3e1a7  call     0x143a41780                                   CALL load slot +0x100
+03a3e1ac  test     eax, eax                                      POST first
+03a3e1ae  je       0x143a3e1c1                                   
+03a3e1b0  mov      dword ptr [rbx + 0x3f4], 1                    SUCCESS FLAG WRITE
+03a3e1ba  mov      eax, 1                                        SUCCESS eax=1
+03a3e1bf  jmp      0x143a3e1f9                                   
+03a3e1c1  lea      rcx, [rbx + 0x250]                            SECOND SLOT SETUP
+03a3e1c8  mov      r9d, esi                                      
+03a3e1cb  mov      r8, rbp                                       
+03a3e1ce  mov      rdx, rdi                                      
+03a3e1d1  call     0x143a41780                                   CALL load slot +0x250
+03a3e1d6  test     eax, eax                                      POST second
+03a3e1d8  jne      0x143a3e1ba                                   
+03a3e1da  mov      edx, esi                                      FALLBACK CALL SETUP
+03a3e1dc  mov      rcx, rbp                                      
+03a3e1df  call     0x143a3c0e0                                   FALLBACK CALL
+03a3e1e4  test     eax, eax                                      
+03a3e1e6  je       0x143a3e1f7                                   
+03a3e1e8  mov      rcx, rdi                                      fallback success arg
+03a3e1eb  call     0x142055b70                                   fallback cleanup?
+03a3e1f0  mov      eax, 1                                        
+03a3e1f5  jmp      0x143a3e1f9                                   
+03a3e1f7  xor      eax, eax                                      
+03a3e1f9  mov      rbx, qword ptr [rsp + 0x30]                   
+03a3e1fe  mov      rbp, qword ptr [rsp + 0x38]                   
+03a3e203  mov      rsi, qword ptr [rsp + 0x40]                   
+03a3e208  add      rsp, 0x20                                     
+03a3e20c  pop      rdi                                           
+03a3e20d  ret                                                    RET
+03a3e20e  int3                                                   
+03a3e20f  int3                                                   
+03a3e210  mov      eax, dword ptr [rcx + 0x3f4]                  
+03a3e216  ret                                                    
+03a3e217  int3                                                   
+03a3e218  int3                                                   
+03a3e219  int3                                                   
+03a3e21a  int3                                                   
+03a3e21b  int3                                                   
+03a3e21c  int3                                                   
+03a3e21d  int3                                                   
+03a3e21e  int3                                                   
+03a3e21f  int3                                                   
+03a3e220  mov      rcx, rdx                                      
+03a3e223  mov      edx, r8d                                      
+03a3e226  jmp      0x143a3be40                                   
+03a3e22b  int3                                                   
+03a3e22c  int3                                                   
+03a3e22d  int3                                                   
+03a3e22e  int3                                                   
+03a3e22f  int3                                                   
+-- direct call xrefs to 0x3a3e180
