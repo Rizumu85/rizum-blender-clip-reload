@@ -739,6 +739,16 @@ function writeSummary(reason) {
   });
 }
 
+function rvaMapForJson(values) {
+  const out = {};
+  for (const key in values) {
+    if (Object.prototype.hasOwnProperty.call(values, key)) {
+      out[key] = '0x' + values[key].toString(16);
+    }
+  }
+  return out;
+}
+
 writeJson({
   event: 'ready',
   timestamp_ms: nowMs(),
@@ -749,7 +759,7 @@ writeJson({
   target_ext_id: TARGET_EXT_ID,
   target_body_size: TARGET_BODY_SIZE,
   target_hash: TARGET_HASH,
-  hook_rvas: Object.fromEntries(Object.entries(RVAS).map(([k, v]) => [k, '0x' + v.toString(16)])),
+  hook_rvas: rvaMapForJson(RVAS),
 });
 
 hookFileApi();
