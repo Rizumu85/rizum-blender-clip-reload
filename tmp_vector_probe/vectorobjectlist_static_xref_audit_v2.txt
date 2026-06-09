@@ -1,0 +1,373 @@
+0x139834 and 0x1396B4 are static table metadata registration stubs; 0x0CDF64 is a column descriptor registration stub. All pass the string in rdx to 0x142049220 with a descriptor/global candidate in rcx. These are not row-value extraction sites.
+
+== VectorData 0xcdf64 ==
+fn 0xcdf60..0xcdf87
+classification: B column descriptor registration
+direct string call: {'string_carrier': 'rdx', 'call_rva': '0xcdf72', 'call_target_rva': '0x2049220', 'call_insn': '000cdf72: call    0x142049220'}
+000cded4: enter   0x37f, -0x34
+000cded8: int3
+000cded9: int3
+000cdeda: int3
+000cdedb: int3
+000cdedc: int3
+000cdedd: int3
+000cdede: int3
+000cdedf: int3
+000cdee0: sub     rsp, 0x28
+000cdee4: lea     rdx, [rip + 0x441adfd]
+000cdeeb: lea     rcx, [rip + 0x53b7b56]
+000cdef2: call    0x142049220
+000cdef7: lea     rcx, [rip + 0x41f36d2]
+000cdefe: add     rsp, 0x28
+000cdf02: jmp     0x1438ca758
+000cdf07: int3
+000cdf08: int3
+000cdf09: int3
+000cdf0a: int3
+000cdf0b: int3
+000cdf0c: int3
+000cdf0d: int3
+000cdf0e: int3
+000cdf0f: int3
+000cdf10: sub     rsp, 0x28
+000cdf14: lea     rdx, [rip + 0x441ad2d]
+000cdf1b: lea     rcx, [rip + 0x53b7916]
+000cdf22: call    0x142049220
+000cdf27: lea     rcx, [rip + 0x41f36b2]
+000cdf2e: add     rsp, 0x28
+000cdf32: jmp     0x1438ca758
+000cdf37: int3
+000cdf38: int3
+000cdf39: int3
+000cdf3a: int3
+000cdf3b: int3
+000cdf3c: int3
+000cdf3d: int3
+000cdf3e: int3
+000cdf3f: int3
+000cdf40: sub     rsp, 0x28
+000cdf44: lea     rcx, [rip + 0x53b7885]
+000cdf4b: call    0x142040af0
+000cdf50: lea     rcx, [rip + 0x41f3699]
+000cdf57: add     rsp, 0x28
+000cdf5b: jmp     0x1438ca758
+000cdf60: sub     rsp, 0x28
+000cdf64: lea     rdx, [rip + 0x43d973d]
+000cdf6b: lea     rcx, [rip + 0x53b819e]
+000cdf72: call    0x142049220
+000cdf77: lea     rcx, [rip + 0x41f3682]
+000cdf7e: add     rsp, 0x28
+000cdf82: jmp     0x1438ca758
+000cdf87: int3
+000cdf88: int3
+000cdf89: int3
+000cdf8a: int3
+000cdf8b: int3
+000cdf8c: int3
+000cdf8d: int3
+000cdf8e: int3
+000cdf8f: int3
+000cdf90: sub     rsp, 0x28
+000cdf94: lea     rcx, [rip + 0x53b816d]
+000cdf9b: call    0x142040af0
+000cdfa0: lea     rcx, [rip + 0x41f3669]
+000cdfa7: add     rsp, 0x28
+000cdfab: jmp     0x1438ca758
+000cdfb0: sub     rsp, 0x28
+000cdfb4: lea     rdx, [rip + 0x42679dd]
+000cdfbb: lea     rcx, [rip + 0x53b8186]
+000cdfc2: call    0x142049220
+000cdfc7: lea     rcx, [rip + 0x41f3652]
+000cdfce: add     rsp, 0x28
+000cdfd2: jmp     0x1438ca758
+000cdfd7: int3
+000cdfd8: int3
+000cdfd9: int3
+000cdfda: int3
+000cdfdb: int3
+000cdfdc: int3
+000cdfdd: int3
+000cdfde: int3
+000cdfdf: int3
+000cdfe0: sub     rsp, 0x28
+000cdfe4: lea     rdx, [rip + 0x42679d5]
+000cdfeb: lea     rcx, [rip + 0x53b81e6]
+000cdff2: call    0x142049220
+000cdff7: lea     rcx, [rip + 0x41f3632]
+
+== VectorObjectList 0x139834 ==
+fn 0x139830..0x139857
+classification: A static table metadata registration
+direct string call: {'string_carrier': 'rdx', 'call_rva': '0x139842', 'call_target_rva': '0x2049220', 'call_insn': '00139842: call    0x142049220'}
+001397a4: lea     rdx, [rip + 0x43fcfdd]
+001397ab: lea     rcx, [rip + 0x53b99d6]
+001397b2: call    0x142049220
+001397b7: lea     rcx, [rip + 0x41a4ee2]
+001397be: add     rsp, 0x28
+001397c2: jmp     0x1438ca758
+001397c7: int3
+001397c8: int3
+001397c9: int3
+001397ca: int3
+001397cb: int3
+001397cc: int3
+001397cd: int3
+001397ce: int3
+001397cf: int3
+001397d0: sub     rsp, 0x28
+001397d4: lea     rdx, [rip + 0x436df59]
+001397db: lea     rcx, [rip + 0x53b9d06]
+001397e2: call    0x142049220
+001397e7: lea     rcx, [rip + 0x41a4ec2]
+001397ee: add     rsp, 0x28
+001397f2: jmp     0x1438ca758
+001397f7: int3
+001397f8: int3
+001397f9: int3
+001397fa: int3
+001397fb: int3
+001397fc: int3
+001397fd: int3
+001397fe: int3
+001397ff: int3
+00139800: sub     rsp, 0x28
+00139804: lea     rdx, [rip + 0x43fcdad]
+0013980b: lea     rcx, [rip + 0x53b9376]
+00139812: call    0x142049220
+00139817: lea     rcx, [rip + 0x41a4ea2]
+0013981e: add     rsp, 0x28
+00139822: jmp     0x1438ca758
+00139827: int3
+00139828: int3
+00139829: int3
+0013982a: int3
+0013982b: int3
+0013982c: int3
+0013982d: int3
+0013982e: int3
+0013982f: int3
+00139830: sub     rsp, 0x28
+00139834: lea     rdx, [rip + 0x436de7d]
+0013983b: lea     rcx, [rip + 0x53b93a6]
+00139842: call    0x142049220
+00139847: lea     rcx, [rip + 0x41a4e82]
+0013984e: add     rsp, 0x28
+00139852: jmp     0x1438ca758
+00139857: int3
+00139858: int3
+00139859: int3
+0013985a: int3
+0013985b: int3
+0013985c: int3
+0013985d: int3
+0013985e: int3
+0013985f: int3
+00139860: sub     rsp, 0x28
+00139864: lea     rcx, [rip + 0x53b9135]
+0013986b: call    0x142040af0
+00139870: lea     rcx, [rip + 0x41a4e69]
+00139877: add     rsp, 0x28
+0013987b: jmp     0x1438ca758
+00139880: sub     rsp, 0x28
+00139884: lea     rcx, [rip + 0x53b9f8d]
+0013988b: call    0x142040af0
+00139890: lea     rcx, [rip + 0x41a4e59]
+00139897: add     rsp, 0x28
+0013989b: jmp     0x1438ca758
+001398a0: sub     rsp, 0x28
+001398a4: lea     rcx, [rip + 0x53b9f6e]
+001398ab: call    0x142040af0
+001398b0: lea     rcx, [rip + 0x41a4e49]
+001398b7: add     rsp, 0x28
+001398bb: jmp     0x1438ca758
+001398c0: sub     rsp, 0x28
+001398c4: lea     rcx, [rip + 0x53b9f55]
+001398cb: call    0x142040af0
+001398d0: lea     rcx, [rip + 0x41a4e39]
+001398d7: add     rsp, 0x28
+001398db: jmp     0x1438ca758
+001398e0: sub     rsp, 0x28
+001398e4: lea     rcx, [rip + 0x53b9f49]
+001398eb: call    0x142040af0
+
+== TimeLapseBlob 0x1396b4 ==
+fn 0x1396b0..0x1396d7
+classification: A static table metadata registration
+direct string call: {'string_carrier': 'rdx', 'call_rva': '0x1396c2', 'call_target_rva': '0x2049220', 'call_insn': '001396c2: call    0x142049220'}
+00139624: lea     rdx, [rip + 0x43adfd5]
+0013962b: lea     rcx, [rip + 0x53b9b86]
+00139632: call    0x142049220
+00139637: lea     rcx, [rip + 0x41a4fe2]
+0013963e: add     rsp, 0x28
+00139642: jmp     0x1438ca758
+00139647: int3
+00139648: int3
+00139649: int3
+0013964a: int3
+0013964b: int3
+0013964c: int3
+0013964d: int3
+0013964e: int3
+0013964f: int3
+00139650: sub     rsp, 0x28
+00139654: lea     rdx, [rip + 0x43fd275]
+0013965b: lea     rcx, [rip + 0x53b9f76]
+00139662: call    0x142049220
+00139667: lea     rcx, [rip + 0x41a4fc2]
+0013966e: add     rsp, 0x28
+00139672: jmp     0x1438ca758
+00139677: int3
+00139678: int3
+00139679: int3
+0013967a: int3
+0013967b: int3
+0013967c: int3
+0013967d: int3
+0013967e: int3
+0013967f: int3
+00139680: sub     rsp, 0x28
+00139684: lea     rdx, [rip + 0x43fd1fd]
+0013968b: lea     rcx, [rip + 0x53b9d96]
+00139692: call    0x142049220
+00139697: lea     rcx, [rip + 0x41a4fa2]
+0013969e: add     rsp, 0x28
+001396a2: jmp     0x1438ca758
+001396a7: int3
+001396a8: int3
+001396a9: int3
+001396aa: int3
+001396ab: int3
+001396ac: int3
+001396ad: int3
+001396ae: int3
+001396af: int3
+001396b0: sub     rsp, 0x28
+001396b4: lea     rdx, [rip + 0x436e11d]
+001396bb: lea     rcx, [rip + 0x53ba0c6]
+001396c2: call    0x142049220
+001396c7: lea     rcx, [rip + 0x41a4f82]
+001396ce: add     rsp, 0x28
+001396d2: jmp     0x1438ca758
+001396d7: int3
+001396d8: int3
+001396d9: int3
+001396da: int3
+001396db: int3
+001396dc: int3
+001396dd: int3
+001396de: int3
+001396df: int3
+001396e0: sub     rsp, 0x28
+001396e4: lea     rdx, [rip + 0x43fd255]
+001396eb: lea     rcx, [rip + 0x53ba0f6]
+001396f2: call    0x142049220
+001396f7: lea     rcx, [rip + 0x41a4f62]
+001396fe: add     rsp, 0x28
+00139702: jmp     0x1438ca758
+00139707: int3
+00139708: int3
+00139709: int3
+0013970a: int3
+0013970b: int3
+0013970c: int3
+0013970d: int3
+0013970e: int3
+0013970f: int3
+00139710: sub     rsp, 0x28
+00139714: lea     rdx, [rip + 0x43fd215]
+0013971b: lea     rcx, [rip + 0x53ba096]
+00139722: call    0x142049220
+00139727: lea     rcx, [rip + 0x41a4f42]
+0013972e: add     rsp, 0x28
+00139732: jmp     0x1438ca758
+00139737: int3
+00139738: int3
+00139739: int3
+0013973a: int3
+
+== wrapper 0x142049220 ==
+02049220: mov     qword ptr [rsp + 0x10], rbx
+02049225: mov     qword ptr [rsp + 0x18], rbp
+0204922a: mov     qword ptr [rsp + 0x20], rsi
+0204922f: mov     qword ptr [rsp + 8], rcx
+02049234: push    rdi
+02049235: sub     rsp, 0x20
+02049239: mov     rdi, rdx
+0204923c: mov     rsi, rcx
+0204923f: lea     rax, [rip + 0x248afba]
+02049246: mov     qword ptr [rcx], rax
+02049249: xor     ebp, ebp
+0204924b: mov     qword ptr [rcx + 8], rbp
+0204924f: mov     qword ptr [rcx + 0x10], rbp
+02049253: call    0x142049920
+02049258: mov     rbx, 0xffffffffffffffff
+0204925f: nop
+02049260: inc     rbx
+02049263: cmp     byte ptr [rdi + rbx], 0
+02049267: jne     0x142049260
+02049269: mov     edx, ebx
+0204926b: mov     rcx, rsi
+0204926e: call    0x14204a290
+02049273: mov     r8, rax
+02049276: test    ebx, ebx
+02049278: jle     0x14204931d
+0204927e: cmp     ebx, 0x20
+02049281: jb      0x14204931d
+02049287: lea     ecx, [rbx - 1]
+0204928a: movsxd  rdx, ecx
+0204928d: lea     rax, [rax + rdx*2]
+02049291: lea     rcx, [rdx + rdi]
+02049295: cmp     r8, rcx
+02049298: ja      0x14204929f
+0204929a: cmp     rax, rdi
+0204929d: jae     0x14204931d
+0204929f: mov     ecx, ebx
+020492a1: and     ecx, 0x8000001f
+020492a7: jge     0x1420492b0
+020492a9: dec     ecx
+020492ab: or      ecx, 0xffffffe0
+020492ae: inc     ecx
+020492b0: mov     eax, ebx
+020492b2: sub     eax, ecx
+020492b4: movsxd  r10, eax
+020492b7: lea     rcx, [rdi + 0x10]
+020492bb: lea     rdx, [r8 + 0x20]
+020492bf: mov     r9, 0xfffffffffffffff0
+020492c6: sub     r9, rdi
+020492c9: nop     dword ptr [rax]
+020492d0: movq    xmm1, qword ptr [rcx - 0x10]
+020492d5: xorps   xmm0, xmm0
+020492d8: punpcklbw xmm1, xmm0
+020492dc: movdqu  xmmword ptr [rdx - 0x20], xmm1
+020492e1: movq    xmm2, qword ptr [rcx - 8]
+020492e6: punpcklbw xmm2, xmm0
+020492ea: movdqu  xmmword ptr [rdx - 0x10], xmm2
+020492ef: movq    xmm1, qword ptr [rcx]
+020492f3: punpcklbw xmm1, xmm0
+020492f7: movdqu  xmmword ptr [rdx], xmm1
+020492fb: movq    xmm2, qword ptr [rcx + 8]
+02049300: punpcklbw xmm2, xmm0
+02049304: movdqu  xmmword ptr [rdx + 0x10], xmm2
+02049309: add     ebp, 0x20
+0204930c: lea     rdx, [rdx + 0x40]
+02049310: lea     rcx, [rcx + 0x20]
+02049314: lea     rax, [r9 + rcx]
+02049318: cmp     rax, r10
+0204931b: jl      0x1420492d0
+0204931d: movsxd  rax, ebp
+02049320: movsxd  rdx, ebx
+02049323: cmp     rax, rdx
+02049326: jge     0x142049341
+02049328: nop     dword ptr [rax + rax]
+02049330: movzx   ecx, byte ptr [rax + rdi]
+02049334: mov     word ptr [r8 + rax*2], cx
+02049339: inc     rax
+0204933c: cmp     rax, rdx
+0204933f: jl      0x142049330
+02049341: mov     rax, rsi
+02049344: mov     rbx, qword ptr [rsp + 0x38]
+02049349: mov     rbp, qword ptr [rsp + 0x40]
+0204934e: mov     rsi, qword ptr [rsp + 0x48]
+02049353: add     rsp, 0x20
+02049357: pop     rdi
+02049358: ret
