@@ -1,0 +1,486 @@
+{
+  "output_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_descriptor_consumer_correlation_v1.json",
+  "inputs": {
+    "ground_truth": "tmp_vector_probe\\vectorobjectlist_ground_truth_v1.json",
+    "descriptor_trace": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_descriptor_capture_20260609_012703_677_pid31984.jsonl",
+    "consumer_trace": null,
+    "static_audit": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\metadata_descriptor_static_audit_v1.json",
+    "consumer_static_audit": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\vectorobjectlist_descriptor_consumer_static_audit_v1.json"
+  },
+  "ground_truth": {
+    "target_vector_id": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+    "target_payload": {
+      "exta_index": 4,
+      "external_id": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+      "flags_hex": "0x2081",
+      "is_saved_vector_stroke": true,
+      "payload_hash_4096": "fnv1a32:7bece4ac",
+      "payload_size": 2644
+    },
+    "target_vectorobjectlist_row": {
+      "CanvasId": 1,
+      "LayerId": 21,
+      "MainId": 15,
+      "VectorData": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+      "VectorData_equals_target": true,
+      "VectorData_payload": {
+        "brush_style_id_guess": 0,
+        "exta_index": 4,
+        "external_id": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+        "flags": 8321,
+        "flags_hex": "0x2081",
+        "header_len": 92,
+        "is_0x2081_or_0x2011": true,
+        "is_saved_vector_stroke": true,
+        "payload_hash_4096": "fnv1a32:7bece4ac",
+        "payload_prefix_ascii": "...\\...L...X...X...... ............ ............................?...............@4.........)@eO.",
+        "payload_prefix_hex": "00 00 00 5c 00 00 00 4c 00 00 00 58 00 00 00 58 00 00 00 1d 00 00 20 81 00 00 00 a4 00 00 00 88 00 00 02 20 00 00 01 f7 00 00 00 00 00 00 00 00 00 00 00 00 e4 e4 e4 e4 e0 e0 e0 e0 ed ed ed ed 3f f0 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 40 34 00 00 00 00 00 00 02 b7 fa 29 40 65 4f 80",
+        "payload_size": 2644,
+        "point_count": 164,
+        "point_header_len": 76,
+        "prefix_hex": "00 00 00 5c 00 00 00 4c 00 00 00 58 00 00 00 58 00 00 00 1d 00 00 20 81 00 00 00 a4 00 00 00 88 00 00 02 20 00 00 01 f7 00 00 00 00 00 00 00 00 00 00 00 00 e4 e4 e4 e4 e0 e0 e0 e0 ed ed ed ed 3f f0 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 40 34 00 00 00 00 00 00 02 b7 fa 29 40 65 4f 80",
+        "record_offset": 0,
+        "stride_a": 88,
+        "stride_b": 88
+      },
+      "_PW_ID": 1
+    },
+    "known_external_ids_count": 5
+  },
+  "VectorObjectList_descriptor_pointer_rva": {
+    "static_rva": "0x54f2be8",
+    "runtime": {
+      "descriptor_rva": "0x54f2be8",
+      "descriptor_pointer": "0x7ff7a2db2be8",
+      "stub_rva": "0x139830",
+      "wrapper_call_rva": "0x139842",
+      "wrapper_return_site_rva": "0x139847"
+    }
+  },
+  "VectorData_descriptor_pointer_rva": {
+    "static_rva": "0x5486110",
+    "runtime": {
+      "descriptor_rva": "0x5486110",
+      "descriptor_pointer": "0x7ff7a2d46110",
+      "stub_rva": "0xcdf60",
+      "wrapper_call_rva": "0xcdf72",
+      "wrapper_return_site_rva": "0xcdf77"
+    }
+  },
+  "TimeLapseBlob_descriptor_pointer_rva": {
+    "static_rva": "0x54f3788",
+    "runtime": {
+      "descriptor_rva": "0x54f3788",
+      "descriptor_pointer": "0x7ff7a2db3788",
+      "stub_rva": "0x1396b0",
+      "wrapper_call_rva": "0x1396c2",
+      "wrapper_return_site_rva": "0x1396c7"
+    }
+  },
+  "descriptors_are_module_globals_or_heap": "module globals",
+  "descriptor_trace_summary": {
+    "row_count": 135,
+    "descriptors": {
+      "VectorData": {
+        "descriptor_rva": "0x5486110",
+        "descriptor_pointer": "0x7ff7a2d46110",
+        "stub_rva": "0xcdf60",
+        "wrapper_call_rva": "0xcdf72",
+        "wrapper_return_site_rva": "0xcdf77"
+      },
+      "VectorObjectList": {
+        "descriptor_rva": "0x54f2be8",
+        "descriptor_pointer": "0x7ff7a2db2be8",
+        "stub_rva": "0x139830",
+        "wrapper_call_rva": "0x139842",
+        "wrapper_return_site_rva": "0x139847"
+      },
+      "TimeLapseBlob": {
+        "descriptor_rva": "0x54f3788",
+        "descriptor_pointer": "0x7ff7a2db3788",
+        "stub_rva": "0x1396b0",
+        "wrapper_call_rva": "0x1396c2",
+        "wrapper_return_site_rva": "0x1396c7"
+      }
+    },
+    "stub_calls": {
+      "VectorData": 1,
+      "VectorObjectList": 1,
+      "TimeLapseBlob": 1
+    },
+    "target_string_counts": {
+      "TimeLapseBlob": 27,
+      "VectorData": 52,
+      "VectorObjectList": 50
+    },
+    "first_wrapper_by_string": {
+      "TimeLapseBlob": {
+        "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_descriptor_capture_20260609_012703_677_pid31984.jsonl",
+        "event": "wrapper_relevant_leave",
+        "timestamp_ms": 1780986426602,
+        "event_index": 40,
+        "process_id": 31984,
+        "thread_id": 20172,
+        "caller_rva": "0xbaf17",
+        "wrapper_call_index": 6300,
+        "rcx_descriptor_pointer": "0x7ff7a2d338b8",
+        "rcx_descriptor_rva": "0x54738b8",
+        "rdx_string_pointer": "0x7ff7a1d67780",
+        "rdx_string_rva": "0x44a7780",
+        "string_ascii_preview": "SceneData�������Manager3DOd�����Layer3DModelData��������ModelData3D�����BlobData��������TimeLapseBlob���ReadDBProcessLock�������ReadDBProcessLockD������ReadFolderDBProcessLock�ReadFolderDBProcessLockD��������InstallAliasDBProcessLock�������ChangeDataFolder",
+        "target_hits": [
+          "TimeLapseBlob"
+        ],
+        "return_value": "0x7ff7a2d338b8"
+      },
+      "VectorData": {
+        "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_descriptor_capture_20260609_012703_677_pid31984.jsonl",
+        "event": "wrapper_relevant_leave",
+        "timestamp_ms": 1780986427400,
+        "event_index": 44,
+        "process_id": 31984,
+        "thread_id": 20172,
+        "caller_rva": "0xcdf77",
+        "wrapper_call_index": 7798,
+        "rcx_descriptor_pointer": "0x7ff7a2d46110",
+        "rcx_descriptor_rva": "0x5486110",
+        "rdx_string_pointer": "0x7ff7a1d676a8",
+        "rdx_string_rva": "0x44a76a8",
+        "string_ascii_preview": "VectorData������VectorObjectList��������BankData��������Canvas3DModelBank�������ModelData�������Canvas3DModelLoader�����TrackActionMixer����Track�������TrackActionMixer2�������ItemBinaryData��CanvasItemBinary��������SceneData�������Manager3DOd�����Layer3DM",
+        "target_hits": [
+          "VectorData"
+        ],
+        "return_value": "0x7ff7a2d46110"
+      },
+      "VectorObjectList": {
+        "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_descriptor_capture_20260609_012703_677_pid31984.jsonl",
+        "event": "wrapper_relevant_leave",
+        "timestamp_ms": 1780986427481,
+        "event_index": 46,
+        "process_id": 31984,
+        "thread_id": 20172,
+        "caller_rva": "0xd07f7",
+        "wrapper_call_index": 7968,
+        "rcx_descriptor_pointer": "0x7ff7a2d48b00",
+        "rcx_descriptor_rva": "0x5488b00",
+        "rdx_string_pointer": "0x7ff7a1d67698",
+        "rdx_string_rva": "0x44a7698",
+        "string_ascii_preview": "Offscreen�������VectorData������VectorObjectList��������BankData��������Canvas3DModelBank�������ModelData�������Canvas3DModelLoader�����TrackActionMixer����Track�������TrackActionMixer2�������ItemBinaryData��CanvasItemBinary��������SceneData�������Manager3",
+        "target_hits": [
+          "VectorData",
+          "VectorObjectList"
+        ],
+        "return_value": "0x7ff7a2d48b00"
+      }
+    },
+    "descriptor_field_diffs": {
+      "TimeLapseBlob": [
+        {
+          "offset": "0x1",
+          "before": "00",
+          "after": "42"
+        },
+        {
+          "offset": "0x2",
+          "before": "00",
+          "after": "d9"
+        },
+        {
+          "offset": "0x3",
+          "before": "00",
+          "after": "a1"
+        },
+        {
+          "offset": "0x4",
+          "before": "00",
+          "after": "f7"
+        },
+        {
+          "offset": "0x5",
+          "before": "00",
+          "after": "7f"
+        },
+        {
+          "offset": "0x8",
+          "before": "00",
+          "after": "a0"
+        },
+        {
+          "offset": "0x9",
+          "before": "00",
+          "after": "dd"
+        },
+        {
+          "offset": "0xa",
+          "before": "00",
+          "after": "54"
+        },
+        {
+          "offset": "0xb",
+          "before": "00",
+          "after": "43"
+        },
+        {
+          "offset": "0xc",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0xd",
+          "before": "00",
+          "after": "02"
+        },
+        {
+          "offset": "0x10",
+          "before": "00",
+          "after": "10"
+        },
+        {
+          "offset": "0x11",
+          "before": "00",
+          "after": "6a"
+        },
+        {
+          "offset": "0x12",
+          "before": "00",
+          "after": "f9"
+        },
+        {
+          "offset": "0x13",
+          "before": "00",
+          "after": "46"
+        },
+        {
+          "offset": "0x14",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0x15",
+          "before": "00",
+          "after": "02"
+        },
+        {
+          "offset": "0x18",
+          "before": "00",
+          "after": "09"
+        },
+        {
+          "offset": "0x1c",
+          "before": "00",
+          "after": "0a"
+        }
+      ],
+      "VectorData": [
+        {
+          "offset": "0x1",
+          "before": "00",
+          "after": "42"
+        },
+        {
+          "offset": "0x2",
+          "before": "00",
+          "after": "d9"
+        },
+        {
+          "offset": "0x3",
+          "before": "00",
+          "after": "a1"
+        },
+        {
+          "offset": "0x4",
+          "before": "00",
+          "after": "f7"
+        },
+        {
+          "offset": "0x5",
+          "before": "00",
+          "after": "7f"
+        },
+        {
+          "offset": "0x8",
+          "before": "00",
+          "after": "40"
+        },
+        {
+          "offset": "0x9",
+          "before": "00",
+          "after": "c5"
+        },
+        {
+          "offset": "0xa",
+          "before": "00",
+          "after": "54"
+        },
+        {
+          "offset": "0xb",
+          "before": "00",
+          "after": "43"
+        },
+        {
+          "offset": "0xc",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0xd",
+          "before": "00",
+          "after": "02"
+        },
+        {
+          "offset": "0x10",
+          "before": "00",
+          "after": "10"
+        },
+        {
+          "offset": "0x11",
+          "before": "00",
+          "after": "f8"
+        },
+        {
+          "offset": "0x12",
+          "before": "00",
+          "after": "59"
+        },
+        {
+          "offset": "0x13",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0x14",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0x15",
+          "before": "00",
+          "after": "02"
+        },
+        {
+          "offset": "0x18",
+          "before": "00",
+          "after": "0a"
+        },
+        {
+          "offset": "0x1c",
+          "before": "00",
+          "after": "0b"
+        }
+      ],
+      "VectorObjectList": [
+        {
+          "offset": "0x1",
+          "before": "00",
+          "after": "42"
+        },
+        {
+          "offset": "0x2",
+          "before": "00",
+          "after": "d9"
+        },
+        {
+          "offset": "0x3",
+          "before": "00",
+          "after": "a1"
+        },
+        {
+          "offset": "0x4",
+          "before": "00",
+          "after": "f7"
+        },
+        {
+          "offset": "0x5",
+          "before": "00",
+          "after": "7f"
+        },
+        {
+          "offset": "0x8",
+          "before": "00",
+          "after": "20"
+        },
+        {
+          "offset": "0x9",
+          "before": "00",
+          "after": "c9"
+        },
+        {
+          "offset": "0xa",
+          "before": "00",
+          "after": "54"
+        },
+        {
+          "offset": "0xb",
+          "before": "00",
+          "after": "43"
+        },
+        {
+          "offset": "0xc",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0xd",
+          "before": "00",
+          "after": "02"
+        },
+        {
+          "offset": "0x10",
+          "before": "00",
+          "after": "70"
+        },
+        {
+          "offset": "0x11",
+          "before": "00",
+          "after": "16"
+        },
+        {
+          "offset": "0x12",
+          "before": "00",
+          "after": "5a"
+        },
+        {
+          "offset": "0x13",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0x14",
+          "before": "00",
+          "after": "4a"
+        },
+        {
+          "offset": "0x15",
+          "before": "00",
+          "after": "02"
+        },
+        {
+          "offset": "0x18",
+          "before": "00",
+          "after": "09"
+        },
+        {
+          "offset": "0x1c",
+          "before": "00",
+          "after": "0a"
+        }
+      ]
+    },
+    "target_vector_id_observed_in_descriptor_trace": false
+  },
+  "non_registration_xrefs_to_each_descriptor": {
+    "VectorData": [],
+    "VectorObjectList": [],
+    "TimeLapseBlob": []
+  },
+  "candidate_consumers_ranked_by_evidence": [],
+  "consumer_trace_summary": {
+    "present": false
+  },
+  "target_VectorData_id_observed_natively": false,
+  "row_MainId_LayerId_if_recoverable": null,
+  "target_id_state": "D",
+  "classification": "C",
+  "classification_reason": "Descriptor pointers captured, but static audit found only registration xrefs.",
+  "next_single_consumer_hook_target": "registry insertion/lookup around 0x142049220"
+}
