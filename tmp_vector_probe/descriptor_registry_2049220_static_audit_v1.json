@@ -1,0 +1,4751 @@
+{
+  "exe": "C:\\Program Files\\CELSYS\\CLIP STUDIO 1.5\\CLIP STUDIO PAINT\\CLIPStudioPaint.exe",
+  "image_base": "0x140000000",
+  "wrapper_142049220": {
+    "function_rva": "0x2049220",
+    "function_end_rva": "0x2049359",
+    "arguments": {
+      "rcx": "descriptor/global candidate to initialize",
+      "rdx": "ASCII string key/name to copy into descriptor-owned UTF-16 storage",
+      "r8": "unused in this overload",
+      "r9": "unused in this overload"
+    },
+    "full_disassembly_with_comments": [
+      {
+        "rva": "0x2049220",
+        "insn": "02049220: mov      qword ptr [rsp + 0x10], rbx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x10",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049225",
+        "insn": "02049225: mov      qword ptr [rsp + 0x18], rbp",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x18",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x204922a",
+        "insn": "0204922a: mov      qword ptr [rsp + 0x20], rsi",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x20",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x204922f",
+        "insn": "0204922f: mov      qword ptr [rsp + 8], rcx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x8",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049234",
+        "insn": "02049234: push     rdi",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049235",
+        "insn": "02049235: sub      rsp, 0x20",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049239",
+        "insn": "02049239: mov      rdi, rdx",
+        "comment": "save rdx string/key pointer in rdi",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204923c",
+        "insn": "0204923c: mov      rsi, rcx",
+        "comment": "save rcx descriptor pointer in rsi",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204923f",
+        "insn": "0204923f: lea      rax, [rip + 0x248afba]",
+        "comment": "load vtable/type pointer for this descriptor class",
+        "call_target_rva": null,
+        "rip_target_rva": "0x44d4200",
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rip",
+            "index": null,
+            "scale": 1,
+            "disp": "0x248afba",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049246",
+        "insn": "02049246: mov      qword ptr [rcx], rax",
+        "comment": "descriptor[0] = vtable/type pointer",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x0",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049249",
+        "insn": "02049249: xor      ebp, ebp",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204924b",
+        "insn": "0204924b: mov      qword ptr [rcx + 8], rbp",
+        "comment": "descriptor[8] = 0",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x8",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x204924f",
+        "insn": "0204924f: mov      qword ptr [rcx + 0x10], rbp",
+        "comment": "descriptor[0x10] = 0",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x10",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049253",
+        "insn": "02049253: call     0x142049920",
+        "comment": "reset/free existing descriptor string storage",
+        "call_target_rva": "0x2049920",
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049258",
+        "insn": "02049258: mov      rbx, 0xffffffffffffffff",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204925f",
+        "insn": "0204925f: nop",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049260",
+        "insn": "02049260: inc      rbx",
+        "comment": "strlen loop over rdx ASCII key",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049263",
+        "insn": "02049263: cmp      byte ptr [rdi + rbx], 0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rdi",
+            "index": "rbx",
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049267",
+        "insn": "02049267: jne      0x142049260",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049269",
+        "insn": "02049269: mov      edx, ebx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204926b",
+        "insn": "0204926b: mov      rcx, rsi",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204926e",
+        "insn": "0204926e: call     0x14204a290",
+        "comment": "reserve/allocate UTF-16 string storage for descriptor",
+        "call_target_rva": "0x204a290",
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049273",
+        "insn": "02049273: mov      r8, rax",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049276",
+        "insn": "02049276: test     ebx, ebx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049278",
+        "insn": "02049278: jle      0x14204931d",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204927e",
+        "insn": "0204927e: cmp      ebx, 0x20",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049281",
+        "insn": "02049281: jb       0x14204931d",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049287",
+        "insn": "02049287: lea      ecx, [rbx - 1]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rbx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x-1",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x204928a",
+        "insn": "0204928a: movsxd   rdx, ecx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204928d",
+        "insn": "0204928d: lea      rax, [rax + rdx*2]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rax",
+            "index": "rdx",
+            "scale": 2,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049291",
+        "insn": "02049291: lea      rcx, [rdx + rdi]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rdx",
+            "index": "rdi",
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049295",
+        "insn": "02049295: cmp      r8, rcx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049298",
+        "insn": "02049298: ja       0x14204929f",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204929a",
+        "insn": "0204929a: cmp      rax, rdi",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204929d",
+        "insn": "0204929d: jae      0x14204931d",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204929f",
+        "insn": "0204929f: mov      ecx, ebx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492a1",
+        "insn": "020492a1: and      ecx, 0x8000001f",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492a7",
+        "insn": "020492a7: jge      0x1420492b0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492a9",
+        "insn": "020492a9: dec      ecx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492ab",
+        "insn": "020492ab: or       ecx, 0xffffffe0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492ae",
+        "insn": "020492ae: inc      ecx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492b0",
+        "insn": "020492b0: mov      eax, ebx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492b2",
+        "insn": "020492b2: sub      eax, ecx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492b4",
+        "insn": "020492b4: movsxd   r10, eax",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492b7",
+        "insn": "020492b7: lea      rcx, [rdi + 0x10]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rdi",
+            "index": null,
+            "scale": 1,
+            "disp": "0x10",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492bb",
+        "insn": "020492bb: lea      rdx, [r8 + 0x20]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "r8",
+            "index": null,
+            "scale": 1,
+            "disp": "0x20",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492bf",
+        "insn": "020492bf: mov      r9, 0xfffffffffffffff0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492c6",
+        "insn": "020492c6: sub      r9, rdi",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492c9",
+        "insn": "020492c9: nop      dword ptr [rax]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rax",
+            "index": null,
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492d0",
+        "insn": "020492d0: movq     xmm1, qword ptr [rcx - 0x10]",
+        "comment": "SIMD byte-to-word ASCII -> UTF-16 widening loop",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x-10",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492d5",
+        "insn": "020492d5: xorps    xmm0, xmm0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492d8",
+        "insn": "020492d8: punpcklbw xmm1, xmm0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492dc",
+        "insn": "020492dc: movdqu   xmmword ptr [rdx - 0x20], xmm1",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rdx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x-20",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492e1",
+        "insn": "020492e1: movq     xmm2, qword ptr [rcx - 8]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x-8",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492e6",
+        "insn": "020492e6: punpcklbw xmm2, xmm0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492ea",
+        "insn": "020492ea: movdqu   xmmword ptr [rdx - 0x10], xmm2",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rdx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x-10",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492ef",
+        "insn": "020492ef: movq     xmm1, qword ptr [rcx]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492f3",
+        "insn": "020492f3: punpcklbw xmm1, xmm0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x20492f7",
+        "insn": "020492f7: movdqu   xmmword ptr [rdx], xmm1",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rdx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x0",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x20492fb",
+        "insn": "020492fb: movq     xmm2, qword ptr [rcx + 8]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x8",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049300",
+        "insn": "02049300: punpcklbw xmm2, xmm0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049304",
+        "insn": "02049304: movdqu   xmmword ptr [rdx + 0x10], xmm2",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rdx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x10",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049309",
+        "insn": "02049309: add      ebp, 0x20",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204930c",
+        "insn": "0204930c: lea      rdx, [rdx + 0x40]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rdx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x40",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049310",
+        "insn": "02049310: lea      rcx, [rcx + 0x20]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rcx",
+            "index": null,
+            "scale": 1,
+            "disp": "0x20",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049314",
+        "insn": "02049314: lea      rax, [r9 + rcx]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "r9",
+            "index": "rcx",
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049318",
+        "insn": "02049318: cmp      rax, r10",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204931b",
+        "insn": "0204931b: jl       0x1420492d0",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204931d",
+        "insn": "0204931d: movsxd   rax, ebp",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049320",
+        "insn": "02049320: movsxd   rdx, ebx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049323",
+        "insn": "02049323: cmp      rax, rdx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049326",
+        "insn": "02049326: jge      0x142049341",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049328",
+        "insn": "02049328: nop      dword ptr [rax + rax]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "rax",
+            "index": "rax",
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049330",
+        "insn": "02049330: movzx    ecx, byte ptr [rax + rdi]",
+        "comment": "scalar tail byte-to-word copy",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rax",
+            "index": "rdi",
+            "scale": 1,
+            "disp": "0x0",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049334",
+        "insn": "02049334: mov      word ptr [r8 + rax*2], cx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 0,
+            "base": "r8",
+            "index": "rax",
+            "scale": 2,
+            "disp": "0x0",
+            "access": "write"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049339",
+        "insn": "02049339: inc      rax",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204933c",
+        "insn": "0204933c: cmp      rax, rdx",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x204933f",
+        "insn": "0204933f: jl       0x142049330",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049341",
+        "insn": "02049341: mov      rax, rsi",
+        "comment": "return original descriptor pointer in rax",
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049344",
+        "insn": "02049344: mov      rbx, qword ptr [rsp + 0x38]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x38",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049349",
+        "insn": "02049349: mov      rbp, qword ptr [rsp + 0x40]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x40",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x204934e",
+        "insn": "0204934e: mov      rsi, qword ptr [rsp + 0x48]",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": [
+          {
+            "operand_index": 1,
+            "base": "rsp",
+            "index": null,
+            "scale": 1,
+            "disp": "0x48",
+            "access": "read"
+          }
+        ]
+      },
+      {
+        "rva": "0x2049353",
+        "insn": "02049353: add      rsp, 0x20",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049357",
+        "insn": "02049357: pop      rdi",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      },
+      {
+        "rva": "0x2049358",
+        "insn": "02049358: ret",
+        "comment": null,
+        "call_target_rva": null,
+        "rip_target_rva": null,
+        "memory_accesses": []
+      }
+    ],
+    "descriptor_writes": [
+      {
+        "insn_rva": "0x2049246",
+        "insn": "02049246: mov      qword ptr [rcx], rax",
+        "operand_index": 0,
+        "base": "rcx",
+        "index": null,
+        "scale": 1,
+        "disp": "0x0",
+        "access": "write"
+      },
+      {
+        "insn_rva": "0x204924b",
+        "insn": "0204924b: mov      qword ptr [rcx + 8], rbp",
+        "operand_index": 0,
+        "base": "rcx",
+        "index": null,
+        "scale": 1,
+        "disp": "0x8",
+        "access": "write"
+      },
+      {
+        "insn_rva": "0x204924f",
+        "insn": "0204924f: mov      qword ptr [rcx + 0x10], rbp",
+        "operand_index": 0,
+        "base": "rcx",
+        "index": null,
+        "scale": 1,
+        "disp": "0x10",
+        "access": "write"
+      }
+    ],
+    "helper_calls_inside": [
+      {
+        "call_rva": "0x2049253",
+        "target_rva": "0x2049920",
+        "target_name": "descriptor_string_reset_or_dtor_142049920",
+        "insn": "02049253: call     0x142049920"
+      },
+      {
+        "call_rva": "0x204926e",
+        "target_rva": "0x204a290",
+        "target_name": "descriptor_utf16_storage_reserve_14204A290",
+        "insn": "0204926e: call     0x14204a290"
+      }
+    ],
+    "rip_relative_refs": [
+      {
+        "insn_rva": "0x204923f",
+        "target_rva": "0x44d4200",
+        "section": ".rdata",
+        "insn": "0204923f: lea      rax, [rip + 0x248afba]"
+      }
+    ],
+    "hash_or_bucket_like_operations": [],
+    "lock_or_mutex_like_operations": [],
+    "string_compare_or_copy_operations": [
+      {
+        "insn_rva": "0x2049263",
+        "insn": "02049263: cmp      byte ptr [rdi + rbx], 0"
+      },
+      {
+        "insn_rva": "0x204927e",
+        "insn": "0204927e: cmp      ebx, 0x20"
+      },
+      {
+        "insn_rva": "0x2049295",
+        "insn": "02049295: cmp      r8, rcx"
+      },
+      {
+        "insn_rva": "0x204929a",
+        "insn": "0204929a: cmp      rax, rdi"
+      },
+      {
+        "insn_rva": "0x20492d0",
+        "insn": "020492d0: movq     xmm1, qword ptr [rcx - 0x10]"
+      },
+      {
+        "insn_rva": "0x20492d8",
+        "insn": "020492d8: punpcklbw xmm1, xmm0"
+      },
+      {
+        "insn_rva": "0x20492dc",
+        "insn": "020492dc: movdqu   xmmword ptr [rdx - 0x20], xmm1"
+      },
+      {
+        "insn_rva": "0x20492e1",
+        "insn": "020492e1: movq     xmm2, qword ptr [rcx - 8]"
+      },
+      {
+        "insn_rva": "0x20492e6",
+        "insn": "020492e6: punpcklbw xmm2, xmm0"
+      },
+      {
+        "insn_rva": "0x20492ea",
+        "insn": "020492ea: movdqu   xmmword ptr [rdx - 0x10], xmm2"
+      },
+      {
+        "insn_rva": "0x20492ef",
+        "insn": "020492ef: movq     xmm1, qword ptr [rcx]"
+      },
+      {
+        "insn_rva": "0x20492f3",
+        "insn": "020492f3: punpcklbw xmm1, xmm0"
+      },
+      {
+        "insn_rva": "0x20492f7",
+        "insn": "020492f7: movdqu   xmmword ptr [rdx], xmm1"
+      },
+      {
+        "insn_rva": "0x20492fb",
+        "insn": "020492fb: movq     xmm2, qword ptr [rcx + 8]"
+      },
+      {
+        "insn_rva": "0x2049300",
+        "insn": "02049300: punpcklbw xmm2, xmm0"
+      },
+      {
+        "insn_rva": "0x2049304",
+        "insn": "02049304: movdqu   xmmword ptr [rdx + 0x10], xmm2"
+      },
+      {
+        "insn_rva": "0x2049318",
+        "insn": "02049318: cmp      rax, r10"
+      },
+      {
+        "insn_rva": "0x2049323",
+        "insn": "02049323: cmp      rax, rdx"
+      },
+      {
+        "insn_rva": "0x2049330",
+        "insn": "02049330: movzx    ecx, byte ptr [rax + rdi]"
+      },
+      {
+        "insn_rva": "0x204933c",
+        "insn": "0204933c: cmp      rax, rdx"
+      }
+    ],
+    "return_value_meaning": "rax = original rcx descriptor pointer",
+    "return_value_used_by_target_stubs": false,
+    "global_static_pointers_read_or_written": [
+      {
+        "insn_rva": "0x204923f",
+        "target_rva": "0x44d4200",
+        "section": ".rdata",
+        "insn": "0204923f: lea      rax, [rip + 0x248afba]"
+      }
+    ],
+    "candidate_registry_map_owner_pointer": null,
+    "classification": "A",
+    "classification_reason": "0x142049220 writes only the rcx descriptor/global and its owned string storage. It calls string-storage helpers, scans/copies the rdx key, returns rcx in rax, and shows no hash/bucket/global map write in this function."
+  },
+  "helpers_inside_0x142049220": {
+    "0x2049920": {
+      "name": "descriptor_string_reset_or_dtor_142049920",
+      "function_start_rva": "0x2049920",
+      "function_end_rva": "0x2049945",
+      "direct_calls": [],
+      "rip_relative_refs": [],
+      "lock_like_refcount_ops": [],
+      "assessment": "descriptor-owned string/refcount storage helper; no descriptor registry evidence by itself",
+      "disassembly_sample": [
+        "02049920: mov      qword ptr [rsp + 0x10], rbx",
+        "02049925: mov      qword ptr [rsp + 0x18], rbp",
+        "0204992a: push     rdi",
+        "0204992b: sub      rsp, 0x20",
+        "0204992f: mov      rbx, qword ptr [rcx + 0x10]",
+        "02049933: xor      ebp, ebp",
+        "02049935: mov      qword ptr [rcx + 8], rbp",
+        "02049939: mov      rdi, rcx",
+        "0204993c: mov      qword ptr [rcx + 0x10], rbp",
+        "02049940: test     rbx, rbx",
+        "02049943: je       0x14204997c"
+      ]
+    },
+    "0x204a290": {
+      "name": "descriptor_utf16_storage_reserve_14204A290",
+      "function_start_rva": "0x204a290",
+      "function_end_rva": "0x204a48d",
+      "direct_calls": [
+        {
+          "call_rva": "0x204a2d0",
+          "target_rva": "0x38caa0c",
+          "insn": "0204a2d0: call     0x1438caa0c"
+        },
+        {
+          "call_rva": "0x204a2eb",
+          "target_rva": "0x2049000",
+          "insn": "0204a2eb: call     0x142049000"
+        },
+        {
+          "call_rva": "0x204a30f",
+          "target_rva": "0x20590c0",
+          "insn": "0204a30f: call     0x1420590c0"
+        },
+        {
+          "call_rva": "0x204a346",
+          "target_rva": "0x204a220",
+          "insn": "0204a346: call     0x14204a220"
+        },
+        {
+          "call_rva": "0x204a3b6",
+          "target_rva": "0x38caa0c",
+          "insn": "0204a3b6: call     0x1438caa0c"
+        },
+        {
+          "call_rva": "0x204a3d1",
+          "target_rva": "0x2049000",
+          "insn": "0204a3d1: call     0x142049000"
+        },
+        {
+          "call_rva": "0x204a3f5",
+          "target_rva": "0x20590c0",
+          "insn": "0204a3f5: call     0x1420590c0"
+        },
+        {
+          "call_rva": "0x204a42a",
+          "target_rva": "0x204a220",
+          "insn": "0204a42a: call     0x14204a220"
+        }
+      ],
+      "rip_relative_refs": [],
+      "lock_like_refcount_ops": [
+        {
+          "insn_rva": "0x204a331",
+          "insn": "0204a331: lock xadd dword ptr [rbx + 8], eax"
+        },
+        {
+          "insn_rva": "0x204a353",
+          "insn": "0204a353: lock xadd dword ptr [rbx + 8], eax"
+        },
+        {
+          "insn_rva": "0x204a36d",
+          "insn": "0204a36d: lock xadd dword ptr [rbx + 0xc], eax"
+        },
+        {
+          "insn_rva": "0x204a414",
+          "insn": "0204a414: lock xadd dword ptr [rbx + 8], r15d"
+        },
+        {
+          "insn_rva": "0x204a437",
+          "insn": "0204a437: lock xadd dword ptr [rbx + 8], eax"
+        },
+        {
+          "insn_rva": "0x204a44f",
+          "insn": "0204a44f: lock xadd dword ptr [rbx + 0xc], esi"
+        }
+      ],
+      "assessment": "descriptor-owned string/refcount storage helper; no descriptor registry evidence by itself",
+      "disassembly_sample": [
+        "0204a290: mov      qword ptr [rsp + 0x18], rbx",
+        "0204a295: push     rbp",
+        "0204a296: push     rsi",
+        "0204a297: push     rdi",
+        "0204a298: push     r14",
+        "0204a29a: push     r15",
+        "0204a29c: sub      rsp, 0x60",
+        "0204a2a0: movsxd   r14, edx",
+        "0204a2a3: mov      rdi, rcx",
+        "0204a2a6: lea      ebp, [r14 + 1]",
+        "0204a2aa: mov      rsi, 0xffffffffffffffff",
+        "0204a2b1: lea      r15d, [rsi + 2]",
+        "0204a2b5: cmp      ebp, dword ptr [rcx + 0x1c]",
+        "0204a2b8: jle      0x14204a382",
+        "0204a2be: movsxd   r8, ebp",
+        "0204a2c1: mov      eax, 2",
+        "0204a2c6: mul      r8",
+        "0204a2c9: cmovo    rax, rsi",
+        "0204a2cd: mov      rcx, rax",
+        "0204a2d0: call     0x1438caa0c",
+        "0204a2d5: mov      qword ptr [rsp + 0x20], rax",
+        "0204a2da: movzx    r8d, byte ptr [rsp + 0x98]",
+        "0204a2e3: mov      rdx, rax",
+        "0204a2e6: lea      rcx, [rsp + 0x28]",
+        "0204a2eb: call     0x142049000",
+        "0204a2f0: nop",
+        "0204a2f1: mov      rdx, qword ptr [rdi + 8]",
+        "0204a2f5: test     rdx, rdx",
+        "0204a2f8: jne      0x14204a2fe",
+        "0204a2fa: lea      rdx, [rdi + 0x20]",
+        "0204a2fe: mov      r8d, dword ptr [rdi + 0x18]",
+        "0204a302: lea      r8d, [r8*2 + 2]",
+        "0204a30a: mov      rcx, qword ptr [rsp + 0x20]",
+        "0204a30f: call     0x1420590c0",
+        "0204a314: movaps   xmm0, xmmword ptr [rsp + 0x20]",
+        "0204a319: movdqa   xmmword ptr [rsp + 0x40], xmm0",
+        "0204a31f: psrldq   xmm0, 8",
+        "0204a324: movq     rbx, xmm0",
+        "0204a329: test     rbx, rbx",
+        "0204a32c: je       0x14204a33b",
+        "0204a32e: mov      eax, r15d",
+        "0204a331: lock xadd dword ptr [rbx + 8], eax",
+        "0204a336: mov      rbx, qword ptr [rsp + 0x28]",
+        "0204a33b: mov      r8d, ebp",
+        "0204a33e: lea      rdx, [rsp + 0x40]",
+        "0204a343: mov      rcx, rdi",
+        "0204a346: call     0x14204a220",
+        "0204a34b: nop",
+        "0204a34c: test     rbx, rbx",
+        "0204a34f: je       0x14204a382",
+        "0204a351: mov      eax, esi",
+        "0204a353: lock xadd dword ptr [rbx + 8], eax",
+        "0204a358: cmp      eax, 1",
+        "0204a35b: jne      0x14204a382",
+        "0204a35d: mov      rbx, qword ptr [rsp + 0x28]",
+        "0204a362: mov      rax, qword ptr [rbx]",
+        "0204a365: mov      rcx, rbx",
+        "0204a368: call     qword ptr [rax + 8]",
+        "0204a36b: mov      eax, esi",
+        "0204a36d: lock xadd dword ptr [rbx + 0xc], eax",
+        "0204a372: cmp      eax, 1",
+        "0204a375: jne      0x14204a382",
+        "0204a377: mov      rcx, qword ptr [rsp + 0x28]",
+        "0204a37c: mov      rax, qword ptr [rcx]",
+        "0204a37f: call     qword ptr [rax + 0x10]",
+        "0204a382: cmp      qword ptr [rdi + 8], 0",
+        "0204a387: je       0x14204a46a",
+        "0204a38d: mov      rcx, qword ptr [rdi + 0x10]",
+        "0204a391: test     rcx, rcx",
+        "0204a394: je       0x14204a3a3",
+        "0204a396: mov      ecx, dword ptr [rcx + 8]",
+        "0204a399: nop",
+        "0204a39a: cmp      ecx, 1",
+        "0204a39d: je       0x14204a464",
+        "0204a3a3: movsxd   rbp, dword ptr [rdi + 0x1c]",
+        "0204a3a7: mov      eax, 2",
+        "0204a3ac: mul      rbp",
+        "0204a3af: cmovo    rax, rsi",
+        "0204a3b3: mov      rcx, rax",
+        "0204a3b6: call     0x1438caa0c",
+        "0204a3bb: mov      qword ptr [rsp + 0x30], rax",
+        "0204a3c0: movzx    r8d, byte ptr [rsp + 0x98]",
+        "0204a3c9: mov      rdx, rax",
+        "0204a3cc: lea      rcx, [rsp + 0x38]",
+        "0204a3d1: call     0x142049000",
+        "0204a3d6: nop",
+        "0204a3d7: mov      rdx, qword ptr [rdi + 8]",
+        "0204a3db: test     rdx, rdx",
+        "0204a3de: jne      0x14204a3e4",
+        "0204a3e0: lea      rdx, [rdi + 0x20]",
+        "0204a3e4: mov      r8d, dword ptr [rdi + 0x18]",
+        "0204a3e8: lea      r8d, [r8*2 + 2]",
+        "0204a3f0: mov      rcx, qword ptr [rsp + 0x30]",
+        "0204a3f5: call     0x1420590c0",
+        "0204a3fa: movaps   xmm0, xmmword ptr [rsp + 0x30]",
+        "0204a3ff: movdqa   xmmword ptr [rsp + 0x50], xmm0",
+        "0204a405: psrldq   xmm0, 8",
+        "0204a40a: movq     rbx, xmm0",
+        "0204a40f: test     rbx, rbx",
+        "0204a412: je       0x14204a41f",
+        "0204a414: lock xadd dword ptr [rbx + 8], r15d",
+        "0204a41a: mov      rbx, qword ptr [rsp + 0x38]",
+        "0204a41f: mov      r8d, ebp",
+        "0204a422: lea      rdx, [rsp + 0x50]",
+        "0204a427: mov      rcx, rdi",
+        "0204a42a: call     0x14204a220",
+        "0204a42f: nop",
+        "0204a430: test     rbx, rbx",
+        "0204a433: je       0x14204a464",
+        "0204a435: mov      eax, esi",
+        "0204a437: lock xadd dword ptr [rbx + 8], eax",
+        "0204a43c: cmp      eax, 1",
+        "0204a43f: jne      0x14204a464",
+        "0204a441: mov      rbx, qword ptr [rsp + 0x38]",
+        "0204a446: mov      rax, qword ptr [rbx]",
+        "0204a449: mov      rcx, rbx",
+        "0204a44c: call     qword ptr [rax + 8]",
+        "0204a44f: lock xadd dword ptr [rbx + 0xc], esi",
+        "0204a454: cmp      esi, 1",
+        "0204a457: jne      0x14204a464"
+      ]
+    }
+  },
+  "callers_into_0x142049220": {
+    "total_callers": 39423,
+    "target_stub_callers": {
+      "VectorData": [
+        {
+          "call_rva": "0xcdf72",
+          "enclosing_function_start_rva": "0xcdf60",
+          "enclosing_function_end_rva": "0xcdf87",
+          "insn": "000cdf72: call     0x142049220"
+        }
+      ],
+      "TimeLapseBlob": [
+        {
+          "call_rva": "0x1396c2",
+          "enclosing_function_start_rva": "0x1396b0",
+          "enclosing_function_end_rva": "0x1396d7",
+          "insn": "001396c2: call     0x142049220"
+        }
+      ],
+      "VectorObjectList": [
+        {
+          "call_rva": "0x139842",
+          "enclosing_function_start_rva": "0x139830",
+          "enclosing_function_end_rva": "0x139857",
+          "insn": "00139842: call     0x142049220"
+        }
+      ]
+    },
+    "top_enclosing_functions": [
+      {
+        "function_start_rva": "0x3320a0",
+        "call_count": 727,
+        "sample_calls": [
+          {
+            "call_rva": "0x3327bf",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "003327bf: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3329f4",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "003329f4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x332c2c",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "00332c2c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x332d1c",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "00332d1c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x332e94",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "00332e94: call     0x142049220"
+          },
+          {
+            "call_rva": "0x332eb0",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "00332eb0: call     0x142049220"
+          },
+          {
+            "call_rva": "0x332efd",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "00332efd: call     0x142049220"
+          },
+          {
+            "call_rva": "0x332f19",
+            "enclosing_function_start_rva": "0x3320a0",
+            "enclosing_function_end_rva": "0x3839cc",
+            "insn": "00332f19: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x12f0c0",
+        "call_count": 343,
+        "sample_calls": [
+          {
+            "call_rva": "0x12f0e7",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f0e7: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f145",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f145: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f1a3",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f1a3: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f201",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f201: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f25f",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f25f: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f2bd",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f2bd: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f31b",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f31b: call     0x142049220"
+          },
+          {
+            "call_rva": "0x12f379",
+            "enclosing_function_start_rva": "0x12f0c0",
+            "enclosing_function_end_rva": "0x135afb",
+            "insn": "0012f379: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x163e90",
+        "call_count": 178,
+        "sample_calls": [
+          {
+            "call_rva": "0x163ea2",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163ea2: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163eb6",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163eb6: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163eca",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163eca: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163ede",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163ede: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163ef2",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163ef2: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163f06",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163f06: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163f1a",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163f1a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x163f2e",
+            "enclosing_function_start_rva": "0x163e90",
+            "enclosing_function_end_rva": "0x164c8c",
+            "insn": "00163f2e: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x163180",
+        "call_count": 166,
+        "sample_calls": [
+          {
+            "call_rva": "0x163192",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "00163192: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1631a6",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "001631a6: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1631ba",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "001631ba: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1631ce",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "001631ce: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1631e2",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "001631e2: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1631f6",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "001631f6: call     0x142049220"
+          },
+          {
+            "call_rva": "0x16320a",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "0016320a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x16321e",
+            "enclosing_function_start_rva": "0x163180",
+            "enclosing_function_end_rva": "0x163e8c",
+            "insn": "0016321e: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x8d8b00",
+        "call_count": 165,
+        "sample_calls": [
+          {
+            "call_rva": "0x8d8d16",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8d16: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8d2a",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8d2a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8db6",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8db6: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8dca",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8dca: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8e56",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8e56: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8e6a",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8e6a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8ef6",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8ef6: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8d8f0a",
+            "enclosing_function_start_rva": "0x8d8b00",
+            "enclosing_function_end_rva": "0x8dc660",
+            "insn": "008d8f0a: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x19ff270",
+        "call_count": 148,
+        "sample_calls": [
+          {
+            "call_rva": "0x19ff328",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff328: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff34c",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff34c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff370",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff370: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff394",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff394: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff3b8",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff3b8: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff3dc",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff3dc: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff400",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff400: call     0x142049220"
+          },
+          {
+            "call_rva": "0x19ff424",
+            "enclosing_function_start_rva": "0x19ff270",
+            "enclosing_function_end_rva": "0x1a00c51",
+            "insn": "019ff424: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x35208c0",
+        "call_count": 148,
+        "sample_calls": [
+          {
+            "call_rva": "0x35208ee",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "035208ee: call     0x142049220"
+          },
+          {
+            "call_rva": "0x352092b",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "0352092b: call     0x142049220"
+          },
+          {
+            "call_rva": "0x352096c",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "0352096c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x35209a2",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "035209a2: call     0x142049220"
+          },
+          {
+            "call_rva": "0x35209e1",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "035209e1: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3520a1e",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "03520a1e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3520a5f",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "03520a5f: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3520aa0",
+            "enclosing_function_start_rva": "0x35208c0",
+            "enclosing_function_end_rva": "0x3522de8",
+            "insn": "03520aa0: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x1f95130",
+        "call_count": 140,
+        "sample_calls": [
+          {
+            "call_rva": "0x1f951c4",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f951c4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f95213",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f95213: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f95265",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f95265: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f952b9",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f952b9: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9530b",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f9530b: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f95356",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f95356: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f953a1",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f953a1: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f953ec",
+            "enclosing_function_start_rva": "0x1f95130",
+            "enclosing_function_end_rva": "0x1f98510",
+            "insn": "01f953ec: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x2f35d0",
+        "call_count": 133,
+        "sample_calls": [
+          {
+            "call_rva": "0x2f367e",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f367e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f3696",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f3696: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f36e4",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f36e4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f372a",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f372a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f3770",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f3770: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f37ce",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f37ce: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f3811",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f3811: call     0x142049220"
+          },
+          {
+            "call_rva": "0x2f3857",
+            "enclosing_function_start_rva": "0x2f35d0",
+            "enclosing_function_end_rva": "0x2f6a97",
+            "insn": "002f3857: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xe3d140",
+        "call_count": 121,
+        "sample_calls": [
+          {
+            "call_rva": "0xe3d338",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d338: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d462",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d462: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d4a6",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d4a6: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d4ea",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d4ea: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d534",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d534: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d68f",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d68f: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d6d7",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d6d7: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3d711",
+            "enclosing_function_start_rva": "0xe3d140",
+            "enclosing_function_end_rva": "0xe3faf9",
+            "insn": "00e3d711: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xe31d90",
+        "call_count": 120,
+        "sample_calls": [
+          {
+            "call_rva": "0xe31f85",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e31f85: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe31fe3",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e31fe3: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3203c",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e3203c: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3209d",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e3209d: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe320fe",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e320fe: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3216e",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e3216e: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe321d3",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e321d3: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe3223b",
+            "enclosing_function_start_rva": "0xe31d90",
+            "enclosing_function_end_rva": "0xe35101",
+            "insn": "00e3223b: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x856c20",
+        "call_count": 116,
+        "sample_calls": [
+          {
+            "call_rva": "0x856cc1",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856cc1: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856de9",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856de9: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856dfe",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856dfe: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856e13",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856e13: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856e3d",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856e3d: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856e9a",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856e9a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856ef7",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856ef7: call     0x142049220"
+          },
+          {
+            "call_rva": "0x856f51",
+            "enclosing_function_start_rva": "0x856c20",
+            "enclosing_function_end_rva": "0x85984a",
+            "insn": "00856f51: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x26c32f0",
+        "call_count": 112,
+        "sample_calls": [
+          {
+            "call_rva": "0x26c3345",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c3345: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c3391",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c3391: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c33a3",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c33a3: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c33e9",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c33e9: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c33fb",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c33fb: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c3441",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c3441: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c3453",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c3453: call     0x142049220"
+          },
+          {
+            "call_rva": "0x26c3499",
+            "enclosing_function_start_rva": "0x26c32f0",
+            "enclosing_function_end_rva": "0x26c4821",
+            "insn": "026c3499: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xe2c980",
+        "call_count": 110,
+        "sample_calls": [
+          {
+            "call_rva": "0xe2c9d8",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2c9d8: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2ca9e",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2ca9e: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2cad2",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2cad2: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2cb03",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2cb03: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2cb37",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2cb37: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2cb6b",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2cb6b: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2cba3",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2cba3: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe2cc2d",
+            "enclosing_function_start_rva": "0xe2c980",
+            "enclosing_function_end_rva": "0xe2e7eb",
+            "insn": "00e2cc2d: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x1f9bad0",
+        "call_count": 105,
+        "sample_calls": [
+          {
+            "call_rva": "0x1f9bb3c",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bb3c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bb8e",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bb8e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bbe4",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bbe4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bc3c",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bc3c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bc8e",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bc8e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bce0",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bce0: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bd38",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bd38: call     0x142049220"
+          },
+          {
+            "call_rva": "0x1f9bd90",
+            "enclosing_function_start_rva": "0x1f9bad0",
+            "enclosing_function_end_rva": "0x1f9e2fc",
+            "insn": "01f9bd90: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x39d420",
+        "call_count": 103,
+        "sample_calls": [
+          {
+            "call_rva": "0x39d4b4",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d4b4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d4cd",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d4cd: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d4ff",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d4ff: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d531",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d531: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d563",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d563: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d592",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d592: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d5c1",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d5c1: call     0x142049220"
+          },
+          {
+            "call_rva": "0x39d5ff",
+            "enclosing_function_start_rva": "0x39d420",
+            "enclosing_function_end_rva": "0x3a049b",
+            "insn": "0039d5ff: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xe35b70",
+        "call_count": 103,
+        "sample_calls": [
+          {
+            "call_rva": "0xe35bca",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35bca: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35c01",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35c01: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35c3d",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35c3d: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35c74",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35c74: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35ca8",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35ca8: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35cdf",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35cdf: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35d24",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35d24: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe35dac",
+            "enclosing_function_start_rva": "0xe35b70",
+            "enclosing_function_end_rva": "0xe37eeb",
+            "insn": "00e35dac: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x403dc0",
+        "call_count": 102,
+        "sample_calls": [
+          {
+            "call_rva": "0x403df9",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403df9: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e0e",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e0e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e23",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e23: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e38",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e38: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e4d",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e4d: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e62",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e62: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e77",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e77: call     0x142049220"
+          },
+          {
+            "call_rva": "0x403e8c",
+            "enclosing_function_start_rva": "0x403dc0",
+            "enclosing_function_end_rva": "0x4084f5",
+            "insn": "00403e8c: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x34198b0",
+        "call_count": 102,
+        "sample_calls": [
+          {
+            "call_rva": "0x3419a36",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "03419a36: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3419e7e",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "03419e7e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3419f45",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "03419f45: call     0x142049220"
+          },
+          {
+            "call_rva": "0x341a069",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "0341a069: call     0x142049220"
+          },
+          {
+            "call_rva": "0x341a0de",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "0341a0de: call     0x142049220"
+          },
+          {
+            "call_rva": "0x341a1bf",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "0341a1bf: call     0x142049220"
+          },
+          {
+            "call_rva": "0x341a212",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "0341a212: call     0x142049220"
+          },
+          {
+            "call_rva": "0x341a246",
+            "enclosing_function_start_rva": "0x34198b0",
+            "enclosing_function_end_rva": "0x341e764",
+            "insn": "0341a246: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xaef70",
+        "call_count": 101,
+        "sample_calls": [
+          {
+            "call_rva": "0xaef82",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aef82: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaef96",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aef96: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaefaa",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aefaa: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaefbe",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aefbe: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaefd2",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aefd2: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaefe6",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aefe6: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaeffa",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000aeffa: call     0x142049220"
+          },
+          {
+            "call_rva": "0xaf00e",
+            "enclosing_function_start_rva": "0xaef70",
+            "enclosing_function_end_rva": "0xaf768",
+            "insn": "000af00e: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xdfa10",
+        "call_count": 96,
+        "sample_calls": [
+          {
+            "call_rva": "0xdfa22",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa22: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfa36",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa36: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfa4a",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa4a: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfa5e",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa5e: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfa72",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa72: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfa86",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa86: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfa9a",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfa9a: call     0x142049220"
+          },
+          {
+            "call_rva": "0xdfaae",
+            "enclosing_function_start_rva": "0xdfa10",
+            "enclosing_function_end_rva": "0xe01a4",
+            "insn": "000dfaae: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x3a3860",
+        "call_count": 92,
+        "sample_calls": [
+          {
+            "call_rva": "0x3a3f3f",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a3f3f: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a4189",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a4189: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a4383",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a4383: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a4477",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a4477: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a4509",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a4509: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a4594",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a4594: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a45ed",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a45ed: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a476d",
+            "enclosing_function_start_rva": "0x3a3860",
+            "enclosing_function_end_rva": "0x3a8734",
+            "insn": "003a476d: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x8be250",
+        "call_count": 91,
+        "sample_calls": [
+          {
+            "call_rva": "0x8be29a",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be29a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be2ef",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be2ef: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be303",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be303: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be367",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be367: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be37b",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be37b: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be3e2",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be3e2: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be3f6",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be3f6: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8be45d",
+            "enclosing_function_start_rva": "0x8be250",
+            "enclosing_function_end_rva": "0x8bf9e2",
+            "insn": "008be45d: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x8c2750",
+        "call_count": 91,
+        "sample_calls": [
+          {
+            "call_rva": "0x8c2799",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c2799: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c27f2",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c27f2: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c2806",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c2806: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c285c",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c285c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c2870",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c2870: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c28c8",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c28c8: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c28dc",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c28dc: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8c2931",
+            "enclosing_function_start_rva": "0x8c2750",
+            "enclosing_function_end_rva": "0x8c3c4d",
+            "insn": "008c2931: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x7ccc70",
+        "call_count": 88,
+        "sample_calls": [
+          {
+            "call_rva": "0x7ccd6a",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007ccd6a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7ccd7e",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007ccd7e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7ccde7",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007ccde7: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7ccdfb",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007ccdfb: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7cce63",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007cce63: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7cce77",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007cce77: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7ccedf",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007ccedf: call     0x142049220"
+          },
+          {
+            "call_rva": "0x7ccef3",
+            "enclosing_function_start_rva": "0x7ccc70",
+            "enclosing_function_end_rva": "0x7ce5bd",
+            "insn": "007ccef3: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x57e720",
+        "call_count": 86,
+        "sample_calls": [
+          {
+            "call_rva": "0x57e942",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057e942: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57eae1",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057eae1: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57eaf5",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057eaf5: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57eb4e",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057eb4e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57eb62",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057eb62: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57ebba",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057ebba: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57ebce",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057ebce: call     0x142049220"
+          },
+          {
+            "call_rva": "0x57ec35",
+            "enclosing_function_start_rva": "0x57e720",
+            "enclosing_function_end_rva": "0x58035d",
+            "insn": "0057ec35: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x31bb170",
+        "call_count": 72,
+        "sample_calls": [
+          {
+            "call_rva": "0x31bb388",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb388: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb3bc",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb3bc: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb438",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb438: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb470",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb470: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb526",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb526: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb5dc",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb5dc: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb6b3",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb6b3: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31bb6eb",
+            "enclosing_function_start_rva": "0x31bb170",
+            "enclosing_function_end_rva": "0x31be85c",
+            "insn": "031bb6eb: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xd23e90",
+        "call_count": 70,
+        "sample_calls": [
+          {
+            "call_rva": "0xd23fd2",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d23fd2: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd2403e",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d2403e: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd24052",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d24052: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd2409d",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d2409d: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd240b1",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d240b1: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd24155",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d24155: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd241c1",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d241c1: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd241d5",
+            "enclosing_function_start_rva": "0xd23e90",
+            "enclosing_function_end_rva": "0xd2574f",
+            "insn": "00d241d5: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x8a30c0",
+        "call_count": 68,
+        "sample_calls": [
+          {
+            "call_rva": "0x8a325a",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a325a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a32fb",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a32fb: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a330f",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a330f: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a33a9",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a33a9: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a33bd",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a33bd: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a3437",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a3437: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a34d8",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a34d8: call     0x142049220"
+          },
+          {
+            "call_rva": "0x8a34ec",
+            "enclosing_function_start_rva": "0x8a30c0",
+            "enclosing_function_end_rva": "0x8a4ab4",
+            "insn": "008a34ec: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xe20300",
+        "call_count": 68,
+        "sample_calls": [
+          {
+            "call_rva": "0xe20d67",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e20d67: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21044",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21044: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21b5f",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21b5f: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21c87",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21c87: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21cdb",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21cdb: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21cef",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21cef: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21d55",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21d55: call     0x142049220"
+          },
+          {
+            "call_rva": "0xe21d69",
+            "enclosing_function_start_rva": "0xe20300",
+            "enclosing_function_end_rva": "0xe24fa5",
+            "insn": "00e21d69: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xa51f60",
+        "call_count": 67,
+        "sample_calls": [
+          {
+            "call_rva": "0xa521f1",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a521f1: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa52294",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a52294: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa522a8",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a522a8: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa52308",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a52308: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa523a9",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a523a9: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa523bd",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a523bd: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa5243d",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a5243d: call     0x142049220"
+          },
+          {
+            "call_rva": "0xa52451",
+            "enclosing_function_start_rva": "0xa51f60",
+            "enclosing_function_end_rva": "0xa538fb",
+            "insn": "00a52451: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x3a8740",
+        "call_count": 66,
+        "sample_calls": [
+          {
+            "call_rva": "0x3a8ec4",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a8ec4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a900c",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a900c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a9077",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a9077: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a910f",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a910f: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a9196",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a9196: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a9290",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a9290: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a93b3",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a93b3: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3a94d6",
+            "enclosing_function_start_rva": "0x3a8740",
+            "enclosing_function_end_rva": "0x3ac5be",
+            "insn": "003a94d6: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x31cde90",
+        "call_count": 66,
+        "sample_calls": [
+          {
+            "call_rva": "0x31cded9",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031cded9: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31cdf20",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031cdf20: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31cdf67",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031cdf67: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31cdfae",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031cdfae: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31cdff5",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031cdff5: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31ce03c",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031ce03c: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31ce083",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031ce083: call     0x142049220"
+          },
+          {
+            "call_rva": "0x31ce0ca",
+            "enclosing_function_start_rva": "0x31cde90",
+            "enclosing_function_end_rva": "0x31cf13d",
+            "insn": "031ce0ca: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x577d80",
+        "call_count": 62,
+        "sample_calls": [
+          {
+            "call_rva": "0x577eef",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00577eef: call     0x142049220"
+          },
+          {
+            "call_rva": "0x577f40",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00577f40: call     0x142049220"
+          },
+          {
+            "call_rva": "0x577f54",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00577f54: call     0x142049220"
+          },
+          {
+            "call_rva": "0x577fb4",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00577fb4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x577fc8",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00577fc8: call     0x142049220"
+          },
+          {
+            "call_rva": "0x578020",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00578020: call     0x142049220"
+          },
+          {
+            "call_rva": "0x578034",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00578034: call     0x142049220"
+          },
+          {
+            "call_rva": "0x578089",
+            "enclosing_function_start_rva": "0x577d80",
+            "enclosing_function_end_rva": "0x579a99",
+            "insn": "00578089: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x85e1d0",
+        "call_count": 59,
+        "sample_calls": [
+          {
+            "call_rva": "0x85e26d",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e26d: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e37a",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e37a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e3c7",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e3c7: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e414",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e414: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e461",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e461: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e4ba",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e4ba: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e503",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e503: call     0x142049220"
+          },
+          {
+            "call_rva": "0x85e54c",
+            "enclosing_function_start_rva": "0x85e1d0",
+            "enclosing_function_end_rva": "0x85f7b8",
+            "insn": "0085e54c: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x3cf4d60",
+        "call_count": 55,
+        "sample_calls": [
+          {
+            "call_rva": "0x3cf4dac",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4dac: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf4e0a",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4e0a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf4e60",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4e60: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf4ebc",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4ebc: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf4f18",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4f18: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf4f74",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4f74: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf4fd0",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf4fd0: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cf502c",
+            "enclosing_function_start_rva": "0x3cf4d60",
+            "enclosing_function_end_rva": "0x3cf62f9",
+            "insn": "03cf502c: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x512540",
+        "call_count": 54,
+        "sample_calls": [
+          {
+            "call_rva": "0x512690",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "00512690: call     0x142049220"
+          },
+          {
+            "call_rva": "0x5126e4",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "005126e4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x512701",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "00512701: call     0x142049220"
+          },
+          {
+            "call_rva": "0x51273e",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "0051273e: call     0x142049220"
+          },
+          {
+            "call_rva": "0x5127ec",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "005127ec: call     0x142049220"
+          },
+          {
+            "call_rva": "0x512800",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "00512800: call     0x142049220"
+          },
+          {
+            "call_rva": "0x512862",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "00512862: call     0x142049220"
+          },
+          {
+            "call_rva": "0x512876",
+            "enclosing_function_start_rva": "0x512540",
+            "enclosing_function_end_rva": "0x5138a5",
+            "insn": "00512876: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0x3cecca0",
+        "call_count": 54,
+        "sample_calls": [
+          {
+            "call_rva": "0x3ceccec",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03ceccec: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cecd4a",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03cecd4a: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cecda0",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03cecda0: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cecdfc",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03cecdfc: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cece58",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03cece58: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3ceceb4",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03ceceb4: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cecf10",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03cecf10: call     0x142049220"
+          },
+          {
+            "call_rva": "0x3cecf6c",
+            "enclosing_function_start_rva": "0x3cecca0",
+            "enclosing_function_end_rva": "0x3cee1d9",
+            "insn": "03cecf6c: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xf0f140",
+        "call_count": 53,
+        "sample_calls": [
+          {
+            "call_rva": "0xf0f288",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f288: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f309",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f309: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f38a",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f38a: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f40b",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f40b: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f496",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f496: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f515",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f515: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f59f",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f59f: call     0x142049220"
+          },
+          {
+            "call_rva": "0xf0f620",
+            "enclosing_function_start_rva": "0xf0f140",
+            "enclosing_function_end_rva": "0xf105a3",
+            "insn": "00f0f620: call     0x142049220"
+          }
+        ]
+      },
+      {
+        "function_start_rva": "0xd5c900",
+        "call_count": 52,
+        "sample_calls": [
+          {
+            "call_rva": "0xd5ca55",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5ca55: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5cafc",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5cafc: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5cba9",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5cba9: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5cc50",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5cc50: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5ccf9",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5ccf9: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5cda0",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5cda0: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5ce49",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5ce49: call     0x142049220"
+          },
+          {
+            "call_rva": "0xd5ceed",
+            "enclosing_function_start_rva": "0xd5c900",
+            "enclosing_function_end_rva": "0xd6347e",
+            "insn": "00d5ceed: call     0x142049220"
+          }
+        ]
+      }
+    ],
+    "all_callers_sample": [
+      {
+        "call_rva": "0x36f2",
+        "enclosing_function_start_rva": "0x36e0",
+        "enclosing_function_end_rva": "0x3707",
+        "insn": "000036f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3722",
+        "enclosing_function_start_rva": "0x3710",
+        "enclosing_function_end_rva": "0x3737",
+        "insn": "00003722: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3752",
+        "enclosing_function_start_rva": "0x3740",
+        "enclosing_function_end_rva": "0x3767",
+        "insn": "00003752: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3782",
+        "enclosing_function_start_rva": "0x3770",
+        "enclosing_function_end_rva": "0x3797",
+        "insn": "00003782: call     0x142049220"
+      },
+      {
+        "call_rva": "0x37b2",
+        "enclosing_function_start_rva": "0x37a0",
+        "enclosing_function_end_rva": "0x37c7",
+        "insn": "000037b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x37e2",
+        "enclosing_function_start_rva": "0x37d0",
+        "enclosing_function_end_rva": "0x37f7",
+        "insn": "000037e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3812",
+        "enclosing_function_start_rva": "0x3800",
+        "enclosing_function_end_rva": "0x3827",
+        "insn": "00003812: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3842",
+        "enclosing_function_start_rva": "0x3830",
+        "enclosing_function_end_rva": "0x3857",
+        "insn": "00003842: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3872",
+        "enclosing_function_start_rva": "0x3860",
+        "enclosing_function_end_rva": "0x3887",
+        "insn": "00003872: call     0x142049220"
+      },
+      {
+        "call_rva": "0x38a2",
+        "enclosing_function_start_rva": "0x3890",
+        "enclosing_function_end_rva": "0x38b7",
+        "insn": "000038a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x38d2",
+        "enclosing_function_start_rva": "0x38c0",
+        "enclosing_function_end_rva": "0x38e7",
+        "insn": "000038d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3902",
+        "enclosing_function_start_rva": "0x38f0",
+        "enclosing_function_end_rva": "0x3917",
+        "insn": "00003902: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3a12",
+        "enclosing_function_start_rva": "0x3a00",
+        "enclosing_function_end_rva": "0x3a27",
+        "insn": "00003a12: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3a42",
+        "enclosing_function_start_rva": "0x3a30",
+        "enclosing_function_end_rva": "0x3a57",
+        "insn": "00003a42: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3a72",
+        "enclosing_function_start_rva": "0x3a60",
+        "enclosing_function_end_rva": "0x3a87",
+        "insn": "00003a72: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3aa2",
+        "enclosing_function_start_rva": "0x3a90",
+        "enclosing_function_end_rva": "0x3ab7",
+        "insn": "00003aa2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3ad2",
+        "enclosing_function_start_rva": "0x3ac0",
+        "enclosing_function_end_rva": "0x3ae7",
+        "insn": "00003ad2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3b02",
+        "enclosing_function_start_rva": "0x3af0",
+        "enclosing_function_end_rva": "0x3b17",
+        "insn": "00003b02: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3b32",
+        "enclosing_function_start_rva": "0x3b20",
+        "enclosing_function_end_rva": "0x3b47",
+        "insn": "00003b32: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3b62",
+        "enclosing_function_start_rva": "0x3b50",
+        "enclosing_function_end_rva": "0x3b77",
+        "insn": "00003b62: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3b92",
+        "enclosing_function_start_rva": "0x3b80",
+        "enclosing_function_end_rva": "0x3ba7",
+        "insn": "00003b92: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3bc2",
+        "enclosing_function_start_rva": "0x3bb0",
+        "enclosing_function_end_rva": "0x3bd7",
+        "insn": "00003bc2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3bf2",
+        "enclosing_function_start_rva": "0x3be0",
+        "enclosing_function_end_rva": "0x3c07",
+        "insn": "00003bf2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3c22",
+        "enclosing_function_start_rva": "0x3c10",
+        "enclosing_function_end_rva": "0x3c37",
+        "insn": "00003c22: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3cd2",
+        "enclosing_function_start_rva": "0x3cc0",
+        "enclosing_function_end_rva": "0x3ce7",
+        "insn": "00003cd2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3d02",
+        "enclosing_function_start_rva": "0x3cf0",
+        "enclosing_function_end_rva": "0x3d17",
+        "insn": "00003d02: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3d32",
+        "enclosing_function_start_rva": "0x3d20",
+        "enclosing_function_end_rva": "0x3d47",
+        "insn": "00003d32: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3d62",
+        "enclosing_function_start_rva": "0x3d50",
+        "enclosing_function_end_rva": "0x3d77",
+        "insn": "00003d62: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3d92",
+        "enclosing_function_start_rva": "0x3d80",
+        "enclosing_function_end_rva": "0x3da7",
+        "insn": "00003d92: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3dc2",
+        "enclosing_function_start_rva": "0x3db0",
+        "enclosing_function_end_rva": "0x3dd7",
+        "insn": "00003dc2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3df2",
+        "enclosing_function_start_rva": "0x3de0",
+        "enclosing_function_end_rva": "0x3e07",
+        "insn": "00003df2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3e22",
+        "enclosing_function_start_rva": "0x3e10",
+        "enclosing_function_end_rva": "0x3e37",
+        "insn": "00003e22: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3e52",
+        "enclosing_function_start_rva": "0x3e40",
+        "enclosing_function_end_rva": "0x3e67",
+        "insn": "00003e52: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3e82",
+        "enclosing_function_start_rva": "0x3e70",
+        "enclosing_function_end_rva": "0x3e97",
+        "insn": "00003e82: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3eb2",
+        "enclosing_function_start_rva": "0x3ea0",
+        "enclosing_function_end_rva": "0x3ec7",
+        "insn": "00003eb2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3ee2",
+        "enclosing_function_start_rva": "0x3ed0",
+        "enclosing_function_end_rva": "0x3ef7",
+        "insn": "00003ee2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x3f12",
+        "enclosing_function_start_rva": "0x3f00",
+        "enclosing_function_end_rva": "0x3f27",
+        "insn": "00003f12: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4002",
+        "enclosing_function_start_rva": "0x3ff0",
+        "enclosing_function_end_rva": "0x4017",
+        "insn": "00004002: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4032",
+        "enclosing_function_start_rva": "0x4020",
+        "enclosing_function_end_rva": "0x4047",
+        "insn": "00004032: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4082",
+        "enclosing_function_start_rva": "0x4070",
+        "enclosing_function_end_rva": "0x4097",
+        "insn": "00004082: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4112",
+        "enclosing_function_start_rva": "0x4100",
+        "enclosing_function_end_rva": "0x4127",
+        "insn": "00004112: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4142",
+        "enclosing_function_start_rva": "0x4130",
+        "enclosing_function_end_rva": "0x4157",
+        "insn": "00004142: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4172",
+        "enclosing_function_start_rva": "0x4160",
+        "enclosing_function_end_rva": "0x4187",
+        "insn": "00004172: call     0x142049220"
+      },
+      {
+        "call_rva": "0x41a2",
+        "enclosing_function_start_rva": "0x4190",
+        "enclosing_function_end_rva": "0x41b7",
+        "insn": "000041a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x41d2",
+        "enclosing_function_start_rva": "0x41c0",
+        "enclosing_function_end_rva": "0x41e7",
+        "insn": "000041d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4202",
+        "enclosing_function_start_rva": "0x41f0",
+        "enclosing_function_end_rva": "0x4217",
+        "insn": "00004202: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4232",
+        "enclosing_function_start_rva": "0x4220",
+        "enclosing_function_end_rva": "0x4247",
+        "insn": "00004232: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4262",
+        "enclosing_function_start_rva": "0x4250",
+        "enclosing_function_end_rva": "0x4277",
+        "insn": "00004262: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4292",
+        "enclosing_function_start_rva": "0x4280",
+        "enclosing_function_end_rva": "0x42a7",
+        "insn": "00004292: call     0x142049220"
+      },
+      {
+        "call_rva": "0x42c2",
+        "enclosing_function_start_rva": "0x42b0",
+        "enclosing_function_end_rva": "0x42d7",
+        "insn": "000042c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x42f2",
+        "enclosing_function_start_rva": "0x42e0",
+        "enclosing_function_end_rva": "0x4307",
+        "insn": "000042f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4322",
+        "enclosing_function_start_rva": "0x4310",
+        "enclosing_function_end_rva": "0x4337",
+        "insn": "00004322: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4372",
+        "enclosing_function_start_rva": "0x4360",
+        "enclosing_function_end_rva": "0x4387",
+        "insn": "00004372: call     0x142049220"
+      },
+      {
+        "call_rva": "0x43a2",
+        "enclosing_function_start_rva": "0x4390",
+        "enclosing_function_end_rva": "0x43b7",
+        "insn": "000043a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x43d2",
+        "enclosing_function_start_rva": "0x43c0",
+        "enclosing_function_end_rva": "0x43e7",
+        "insn": "000043d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4402",
+        "enclosing_function_start_rva": "0x43f0",
+        "enclosing_function_end_rva": "0x4417",
+        "insn": "00004402: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4432",
+        "enclosing_function_start_rva": "0x4420",
+        "enclosing_function_end_rva": "0x4447",
+        "insn": "00004432: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4462",
+        "enclosing_function_start_rva": "0x4450",
+        "enclosing_function_end_rva": "0x4477",
+        "insn": "00004462: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4492",
+        "enclosing_function_start_rva": "0x4480",
+        "enclosing_function_end_rva": "0x44a7",
+        "insn": "00004492: call     0x142049220"
+      },
+      {
+        "call_rva": "0x44c2",
+        "enclosing_function_start_rva": "0x44b0",
+        "enclosing_function_end_rva": "0x44d7",
+        "insn": "000044c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x44f2",
+        "enclosing_function_start_rva": "0x44e0",
+        "enclosing_function_end_rva": "0x4507",
+        "insn": "000044f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4522",
+        "enclosing_function_start_rva": "0x4510",
+        "enclosing_function_end_rva": "0x4537",
+        "insn": "00004522: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4552",
+        "enclosing_function_start_rva": "0x4540",
+        "enclosing_function_end_rva": "0x4567",
+        "insn": "00004552: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4582",
+        "enclosing_function_start_rva": "0x4570",
+        "enclosing_function_end_rva": "0x4597",
+        "insn": "00004582: call     0x142049220"
+      },
+      {
+        "call_rva": "0x45f2",
+        "enclosing_function_start_rva": "0x45e0",
+        "enclosing_function_end_rva": "0x4607",
+        "insn": "000045f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4622",
+        "enclosing_function_start_rva": "0x4610",
+        "enclosing_function_end_rva": "0x4637",
+        "insn": "00004622: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4652",
+        "enclosing_function_start_rva": "0x4640",
+        "enclosing_function_end_rva": "0x4667",
+        "insn": "00004652: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4682",
+        "enclosing_function_start_rva": "0x4670",
+        "enclosing_function_end_rva": "0x4697",
+        "insn": "00004682: call     0x142049220"
+      },
+      {
+        "call_rva": "0x46b2",
+        "enclosing_function_start_rva": "0x46a0",
+        "enclosing_function_end_rva": "0x46c7",
+        "insn": "000046b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x46e2",
+        "enclosing_function_start_rva": "0x46d0",
+        "enclosing_function_end_rva": "0x46f7",
+        "insn": "000046e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4712",
+        "enclosing_function_start_rva": "0x4700",
+        "enclosing_function_end_rva": "0x4727",
+        "insn": "00004712: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4742",
+        "enclosing_function_start_rva": "0x4730",
+        "enclosing_function_end_rva": "0x4757",
+        "insn": "00004742: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4772",
+        "enclosing_function_start_rva": "0x4760",
+        "enclosing_function_end_rva": "0x4787",
+        "insn": "00004772: call     0x142049220"
+      },
+      {
+        "call_rva": "0x47a2",
+        "enclosing_function_start_rva": "0x4790",
+        "enclosing_function_end_rva": "0x47b7",
+        "insn": "000047a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x47d2",
+        "enclosing_function_start_rva": "0x47c0",
+        "enclosing_function_end_rva": "0x47e7",
+        "insn": "000047d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4802",
+        "enclosing_function_start_rva": "0x47f0",
+        "enclosing_function_end_rva": "0x4817",
+        "insn": "00004802: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4852",
+        "enclosing_function_start_rva": "0x4840",
+        "enclosing_function_end_rva": "0x4867",
+        "insn": "00004852: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4882",
+        "enclosing_function_start_rva": "0x4870",
+        "enclosing_function_end_rva": "0x4897",
+        "insn": "00004882: call     0x142049220"
+      },
+      {
+        "call_rva": "0x48b2",
+        "enclosing_function_start_rva": "0x48a0",
+        "enclosing_function_end_rva": "0x48c7",
+        "insn": "000048b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x48e2",
+        "enclosing_function_start_rva": "0x48d0",
+        "enclosing_function_end_rva": "0x48f7",
+        "insn": "000048e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4912",
+        "enclosing_function_start_rva": "0x4900",
+        "enclosing_function_end_rva": "0x4927",
+        "insn": "00004912: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4942",
+        "enclosing_function_start_rva": "0x4930",
+        "enclosing_function_end_rva": "0x4957",
+        "insn": "00004942: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4972",
+        "enclosing_function_start_rva": "0x4960",
+        "enclosing_function_end_rva": "0x4987",
+        "insn": "00004972: call     0x142049220"
+      },
+      {
+        "call_rva": "0x49a2",
+        "enclosing_function_start_rva": "0x4990",
+        "enclosing_function_end_rva": "0x49b7",
+        "insn": "000049a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x49d2",
+        "enclosing_function_start_rva": "0x49c0",
+        "enclosing_function_end_rva": "0x49e7",
+        "insn": "000049d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4a02",
+        "enclosing_function_start_rva": "0x49f0",
+        "enclosing_function_end_rva": "0x4a17",
+        "insn": "00004a02: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4a32",
+        "enclosing_function_start_rva": "0x4a20",
+        "enclosing_function_end_rva": "0x4a47",
+        "insn": "00004a32: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4a62",
+        "enclosing_function_start_rva": "0x4a50",
+        "enclosing_function_end_rva": "0x4a77",
+        "insn": "00004a62: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4ab2",
+        "enclosing_function_start_rva": "0x4aa0",
+        "enclosing_function_end_rva": "0x4ac7",
+        "insn": "00004ab2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4ae2",
+        "enclosing_function_start_rva": "0x4ad0",
+        "enclosing_function_end_rva": "0x4af7",
+        "insn": "00004ae2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4b12",
+        "enclosing_function_start_rva": "0x4b00",
+        "enclosing_function_end_rva": "0x4b27",
+        "insn": "00004b12: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4b42",
+        "enclosing_function_start_rva": "0x4b30",
+        "enclosing_function_end_rva": "0x4b57",
+        "insn": "00004b42: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4b72",
+        "enclosing_function_start_rva": "0x4b60",
+        "enclosing_function_end_rva": "0x4b87",
+        "insn": "00004b72: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4ba2",
+        "enclosing_function_start_rva": "0x4b90",
+        "enclosing_function_end_rva": "0x4bb7",
+        "insn": "00004ba2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4bd2",
+        "enclosing_function_start_rva": "0x4bc0",
+        "enclosing_function_end_rva": "0x4be7",
+        "insn": "00004bd2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4c02",
+        "enclosing_function_start_rva": "0x4bf0",
+        "enclosing_function_end_rva": "0x4c17",
+        "insn": "00004c02: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4c32",
+        "enclosing_function_start_rva": "0x4c20",
+        "enclosing_function_end_rva": "0x4c47",
+        "insn": "00004c32: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4c62",
+        "enclosing_function_start_rva": "0x4c50",
+        "enclosing_function_end_rva": "0x4c77",
+        "insn": "00004c62: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4c92",
+        "enclosing_function_start_rva": "0x4c80",
+        "enclosing_function_end_rva": "0x4ca7",
+        "insn": "00004c92: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4cc2",
+        "enclosing_function_start_rva": "0x4cb0",
+        "enclosing_function_end_rva": "0x4cd7",
+        "insn": "00004cc2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4cf2",
+        "enclosing_function_start_rva": "0x4ce0",
+        "enclosing_function_end_rva": "0x4d07",
+        "insn": "00004cf2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4d22",
+        "enclosing_function_start_rva": "0x4d10",
+        "enclosing_function_end_rva": "0x4d37",
+        "insn": "00004d22: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4d52",
+        "enclosing_function_start_rva": "0x4d40",
+        "enclosing_function_end_rva": "0x4d67",
+        "insn": "00004d52: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4d82",
+        "enclosing_function_start_rva": "0x4d70",
+        "enclosing_function_end_rva": "0x4d97",
+        "insn": "00004d82: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4db2",
+        "enclosing_function_start_rva": "0x4da0",
+        "enclosing_function_end_rva": "0x4dc7",
+        "insn": "00004db2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4e02",
+        "enclosing_function_start_rva": "0x4df0",
+        "enclosing_function_end_rva": "0x4e17",
+        "insn": "00004e02: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4e32",
+        "enclosing_function_start_rva": "0x4e20",
+        "enclosing_function_end_rva": "0x4e47",
+        "insn": "00004e32: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4e62",
+        "enclosing_function_start_rva": "0x4e50",
+        "enclosing_function_end_rva": "0x4e77",
+        "insn": "00004e62: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4e92",
+        "enclosing_function_start_rva": "0x4e80",
+        "enclosing_function_end_rva": "0x4ea7",
+        "insn": "00004e92: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4ec2",
+        "enclosing_function_start_rva": "0x4eb0",
+        "enclosing_function_end_rva": "0x4ed7",
+        "insn": "00004ec2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4ef2",
+        "enclosing_function_start_rva": "0x4ee0",
+        "enclosing_function_end_rva": "0x4f07",
+        "insn": "00004ef2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4f22",
+        "enclosing_function_start_rva": "0x4f10",
+        "enclosing_function_end_rva": "0x4f37",
+        "insn": "00004f22: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4f52",
+        "enclosing_function_start_rva": "0x4f40",
+        "enclosing_function_end_rva": "0x4f67",
+        "insn": "00004f52: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4f82",
+        "enclosing_function_start_rva": "0x4f70",
+        "enclosing_function_end_rva": "0x4f97",
+        "insn": "00004f82: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4fb2",
+        "enclosing_function_start_rva": "0x4fa0",
+        "enclosing_function_end_rva": "0x4fc7",
+        "insn": "00004fb2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x4fe2",
+        "enclosing_function_start_rva": "0x4fd0",
+        "enclosing_function_end_rva": "0x4ff7",
+        "insn": "00004fe2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5012",
+        "enclosing_function_start_rva": "0x5000",
+        "enclosing_function_end_rva": "0x5027",
+        "insn": "00005012: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5062",
+        "enclosing_function_start_rva": "0x5050",
+        "enclosing_function_end_rva": "0x5077",
+        "insn": "00005062: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5092",
+        "enclosing_function_start_rva": "0x5080",
+        "enclosing_function_end_rva": "0x50a7",
+        "insn": "00005092: call     0x142049220"
+      },
+      {
+        "call_rva": "0x50c2",
+        "enclosing_function_start_rva": "0x50b0",
+        "enclosing_function_end_rva": "0x50d7",
+        "insn": "000050c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x50f2",
+        "enclosing_function_start_rva": "0x50e0",
+        "enclosing_function_end_rva": "0x5107",
+        "insn": "000050f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5122",
+        "enclosing_function_start_rva": "0x5110",
+        "enclosing_function_end_rva": "0x5137",
+        "insn": "00005122: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5152",
+        "enclosing_function_start_rva": "0x5140",
+        "enclosing_function_end_rva": "0x5167",
+        "insn": "00005152: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5182",
+        "enclosing_function_start_rva": "0x5170",
+        "enclosing_function_end_rva": "0x5197",
+        "insn": "00005182: call     0x142049220"
+      },
+      {
+        "call_rva": "0x51b2",
+        "enclosing_function_start_rva": "0x51a0",
+        "enclosing_function_end_rva": "0x51c7",
+        "insn": "000051b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x51e2",
+        "enclosing_function_start_rva": "0x51d0",
+        "enclosing_function_end_rva": "0x51f7",
+        "insn": "000051e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5212",
+        "enclosing_function_start_rva": "0x5200",
+        "enclosing_function_end_rva": "0x5227",
+        "insn": "00005212: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5242",
+        "enclosing_function_start_rva": "0x5230",
+        "enclosing_function_end_rva": "0x5257",
+        "insn": "00005242: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5272",
+        "enclosing_function_start_rva": "0x5260",
+        "enclosing_function_end_rva": "0x5287",
+        "insn": "00005272: call     0x142049220"
+      },
+      {
+        "call_rva": "0x52c2",
+        "enclosing_function_start_rva": "0x52b0",
+        "enclosing_function_end_rva": "0x52d7",
+        "insn": "000052c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x52f2",
+        "enclosing_function_start_rva": "0x52e0",
+        "enclosing_function_end_rva": "0x5307",
+        "insn": "000052f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5322",
+        "enclosing_function_start_rva": "0x5310",
+        "enclosing_function_end_rva": "0x5337",
+        "insn": "00005322: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5352",
+        "enclosing_function_start_rva": "0x5340",
+        "enclosing_function_end_rva": "0x5367",
+        "insn": "00005352: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5382",
+        "enclosing_function_start_rva": "0x5370",
+        "enclosing_function_end_rva": "0x5397",
+        "insn": "00005382: call     0x142049220"
+      },
+      {
+        "call_rva": "0x53b2",
+        "enclosing_function_start_rva": "0x53a0",
+        "enclosing_function_end_rva": "0x53c7",
+        "insn": "000053b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x53e2",
+        "enclosing_function_start_rva": "0x53d0",
+        "enclosing_function_end_rva": "0x53f7",
+        "insn": "000053e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5412",
+        "enclosing_function_start_rva": "0x5400",
+        "enclosing_function_end_rva": "0x5427",
+        "insn": "00005412: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5442",
+        "enclosing_function_start_rva": "0x5430",
+        "enclosing_function_end_rva": "0x5457",
+        "insn": "00005442: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5472",
+        "enclosing_function_start_rva": "0x5460",
+        "enclosing_function_end_rva": "0x5487",
+        "insn": "00005472: call     0x142049220"
+      },
+      {
+        "call_rva": "0x54a2",
+        "enclosing_function_start_rva": "0x5490",
+        "enclosing_function_end_rva": "0x54b7",
+        "insn": "000054a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x54d2",
+        "enclosing_function_start_rva": "0x54c0",
+        "enclosing_function_end_rva": "0x54e7",
+        "insn": "000054d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5762",
+        "enclosing_function_start_rva": "0x5750",
+        "enclosing_function_end_rva": "0x5777",
+        "insn": "00005762: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5792",
+        "enclosing_function_start_rva": "0x5780",
+        "enclosing_function_end_rva": "0x57a7",
+        "insn": "00005792: call     0x142049220"
+      },
+      {
+        "call_rva": "0x57c2",
+        "enclosing_function_start_rva": "0x57b0",
+        "enclosing_function_end_rva": "0x57d7",
+        "insn": "000057c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x57f2",
+        "enclosing_function_start_rva": "0x57e0",
+        "enclosing_function_end_rva": "0x5807",
+        "insn": "000057f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5822",
+        "enclosing_function_start_rva": "0x5810",
+        "enclosing_function_end_rva": "0x5837",
+        "insn": "00005822: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5852",
+        "enclosing_function_start_rva": "0x5840",
+        "enclosing_function_end_rva": "0x5867",
+        "insn": "00005852: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5882",
+        "enclosing_function_start_rva": "0x5870",
+        "enclosing_function_end_rva": "0x5897",
+        "insn": "00005882: call     0x142049220"
+      },
+      {
+        "call_rva": "0x58b2",
+        "enclosing_function_start_rva": "0x58a0",
+        "enclosing_function_end_rva": "0x58c7",
+        "insn": "000058b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x58e2",
+        "enclosing_function_start_rva": "0x58d0",
+        "enclosing_function_end_rva": "0x58f7",
+        "insn": "000058e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5912",
+        "enclosing_function_start_rva": "0x5900",
+        "enclosing_function_end_rva": "0x5927",
+        "insn": "00005912: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5942",
+        "enclosing_function_start_rva": "0x5930",
+        "enclosing_function_end_rva": "0x5957",
+        "insn": "00005942: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5972",
+        "enclosing_function_start_rva": "0x5960",
+        "enclosing_function_end_rva": "0x5987",
+        "insn": "00005972: call     0x142049220"
+      },
+      {
+        "call_rva": "0x59c2",
+        "enclosing_function_start_rva": "0x59b0",
+        "enclosing_function_end_rva": "0x59d7",
+        "insn": "000059c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x59f2",
+        "enclosing_function_start_rva": "0x59e0",
+        "enclosing_function_end_rva": "0x5a07",
+        "insn": "000059f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5a22",
+        "enclosing_function_start_rva": "0x5a10",
+        "enclosing_function_end_rva": "0x5a37",
+        "insn": "00005a22: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5a52",
+        "enclosing_function_start_rva": "0x5a40",
+        "enclosing_function_end_rva": "0x5a67",
+        "insn": "00005a52: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5a82",
+        "enclosing_function_start_rva": "0x5a70",
+        "enclosing_function_end_rva": "0x5a97",
+        "insn": "00005a82: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5ab2",
+        "enclosing_function_start_rva": "0x5aa0",
+        "enclosing_function_end_rva": "0x5ac7",
+        "insn": "00005ab2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5ae2",
+        "enclosing_function_start_rva": "0x5ad0",
+        "enclosing_function_end_rva": "0x5af7",
+        "insn": "00005ae2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5b12",
+        "enclosing_function_start_rva": "0x5b00",
+        "enclosing_function_end_rva": "0x5b27",
+        "insn": "00005b12: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5b42",
+        "enclosing_function_start_rva": "0x5b30",
+        "enclosing_function_end_rva": "0x5b57",
+        "insn": "00005b42: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5b72",
+        "enclosing_function_start_rva": "0x5b60",
+        "enclosing_function_end_rva": "0x5b87",
+        "insn": "00005b72: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5ba2",
+        "enclosing_function_start_rva": "0x5b90",
+        "enclosing_function_end_rva": "0x5bb7",
+        "insn": "00005ba2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5bd2",
+        "enclosing_function_start_rva": "0x5bc0",
+        "enclosing_function_end_rva": "0x5be7",
+        "insn": "00005bd2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5d42",
+        "enclosing_function_start_rva": "0x5d30",
+        "enclosing_function_end_rva": "0x5d57",
+        "insn": "00005d42: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5d72",
+        "enclosing_function_start_rva": "0x5d60",
+        "enclosing_function_end_rva": "0x5d87",
+        "insn": "00005d72: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5da2",
+        "enclosing_function_start_rva": "0x5d90",
+        "enclosing_function_end_rva": "0x5db7",
+        "insn": "00005da2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5dd2",
+        "enclosing_function_start_rva": "0x5dc0",
+        "enclosing_function_end_rva": "0x5de7",
+        "insn": "00005dd2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5e02",
+        "enclosing_function_start_rva": "0x5df0",
+        "enclosing_function_end_rva": "0x5e17",
+        "insn": "00005e02: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5e32",
+        "enclosing_function_start_rva": "0x5e20",
+        "enclosing_function_end_rva": "0x5e47",
+        "insn": "00005e32: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5e62",
+        "enclosing_function_start_rva": "0x5e50",
+        "enclosing_function_end_rva": "0x5e77",
+        "insn": "00005e62: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5e92",
+        "enclosing_function_start_rva": "0x5e80",
+        "enclosing_function_end_rva": "0x5ea7",
+        "insn": "00005e92: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5ec2",
+        "enclosing_function_start_rva": "0x5eb0",
+        "enclosing_function_end_rva": "0x5ed7",
+        "insn": "00005ec2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5ef2",
+        "enclosing_function_start_rva": "0x5ee0",
+        "enclosing_function_end_rva": "0x5f07",
+        "insn": "00005ef2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5f22",
+        "enclosing_function_start_rva": "0x5f10",
+        "enclosing_function_end_rva": "0x5f37",
+        "insn": "00005f22: call     0x142049220"
+      },
+      {
+        "call_rva": "0x5f52",
+        "enclosing_function_start_rva": "0x5f40",
+        "enclosing_function_end_rva": "0x5f67",
+        "insn": "00005f52: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6002",
+        "enclosing_function_start_rva": "0x5ff0",
+        "enclosing_function_end_rva": "0x6017",
+        "insn": "00006002: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6032",
+        "enclosing_function_start_rva": "0x6020",
+        "enclosing_function_end_rva": "0x6047",
+        "insn": "00006032: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6062",
+        "enclosing_function_start_rva": "0x6050",
+        "enclosing_function_end_rva": "0x6077",
+        "insn": "00006062: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6092",
+        "enclosing_function_start_rva": "0x6080",
+        "enclosing_function_end_rva": "0x60a7",
+        "insn": "00006092: call     0x142049220"
+      },
+      {
+        "call_rva": "0x60c2",
+        "enclosing_function_start_rva": "0x60b0",
+        "enclosing_function_end_rva": "0x60d7",
+        "insn": "000060c2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x60f2",
+        "enclosing_function_start_rva": "0x60e0",
+        "enclosing_function_end_rva": "0x6107",
+        "insn": "000060f2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6122",
+        "enclosing_function_start_rva": "0x6110",
+        "enclosing_function_end_rva": "0x6137",
+        "insn": "00006122: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6152",
+        "enclosing_function_start_rva": "0x6140",
+        "enclosing_function_end_rva": "0x6167",
+        "insn": "00006152: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6182",
+        "enclosing_function_start_rva": "0x6170",
+        "enclosing_function_end_rva": "0x6197",
+        "insn": "00006182: call     0x142049220"
+      },
+      {
+        "call_rva": "0x61b2",
+        "enclosing_function_start_rva": "0x61a0",
+        "enclosing_function_end_rva": "0x61c7",
+        "insn": "000061b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x61e2",
+        "enclosing_function_start_rva": "0x61d0",
+        "enclosing_function_end_rva": "0x61f7",
+        "insn": "000061e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6212",
+        "enclosing_function_start_rva": "0x6200",
+        "enclosing_function_end_rva": "0x6227",
+        "insn": "00006212: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6822",
+        "enclosing_function_start_rva": "0x6810",
+        "enclosing_function_end_rva": "0x6837",
+        "insn": "00006822: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6852",
+        "enclosing_function_start_rva": "0x6840",
+        "enclosing_function_end_rva": "0x6867",
+        "insn": "00006852: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6882",
+        "enclosing_function_start_rva": "0x6870",
+        "enclosing_function_end_rva": "0x6897",
+        "insn": "00006882: call     0x142049220"
+      },
+      {
+        "call_rva": "0x68b2",
+        "enclosing_function_start_rva": "0x68a0",
+        "enclosing_function_end_rva": "0x68c7",
+        "insn": "000068b2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x68e2",
+        "enclosing_function_start_rva": "0x68d0",
+        "enclosing_function_end_rva": "0x68f7",
+        "insn": "000068e2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6912",
+        "enclosing_function_start_rva": "0x6900",
+        "enclosing_function_end_rva": "0x6927",
+        "insn": "00006912: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6942",
+        "enclosing_function_start_rva": "0x6930",
+        "enclosing_function_end_rva": "0x6957",
+        "insn": "00006942: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6972",
+        "enclosing_function_start_rva": "0x6960",
+        "enclosing_function_end_rva": "0x6987",
+        "insn": "00006972: call     0x142049220"
+      },
+      {
+        "call_rva": "0x69a2",
+        "enclosing_function_start_rva": "0x6990",
+        "enclosing_function_end_rva": "0x69b7",
+        "insn": "000069a2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x69d2",
+        "enclosing_function_start_rva": "0x69c0",
+        "enclosing_function_end_rva": "0x69e7",
+        "insn": "000069d2: call     0x142049220"
+      },
+      {
+        "call_rva": "0x6a02",
+        "enclosing_function_start_rva": "0x69f0",
+        "enclosing_function_end_rva": "0x6a17",
+        "insn": "00006a02: call     0x142049220"
+      }
+    ]
+  },
+  "overall_classification": "A",
+  "overall_classification_reason": "0x142049220 writes only the rcx descriptor/global and its owned string storage. It calls string-storage helpers, scans/copies the rdx key, returns rcx in rax, and shows no hash/bucket/global map write in this function."
+}
