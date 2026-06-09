@@ -321,7 +321,11 @@ def caller_group_for_wrapper(b: Bin) -> dict[str, Any]:
             by_target[name].append(ref)
         by_function[ref["enclosing_function_start_rva"]].append(ref)
     return {
-        "total_callers": len(refs),
+        "candidate_direct_call_sites_total_overinclusive": len(refs),
+        "caller_scan_note": (
+            "Collected by validating direct-call encodings inside PE runtime-function ranges. "
+            "Use exact target-stub return-site groups for firm claims; the broad total is an overinclusive orientation aid."
+        ),
         "target_stub_callers": dict(by_target),
         "top_enclosing_functions": [
             {"function_start_rva": func, "call_count": count, "sample_calls": by_function[func][:8]}
@@ -395,7 +399,11 @@ def write_txt(static_audit: dict[str, Any], lookup_audit: dict[str, Any]) -> Non
         lines.append(f"{row['insn']}{suffix}")
     lines.append("")
     lines.append("Callers into 0x142049220:")
-    lines.append(f"total={static_audit['callers_into_0x142049220']['total_callers']}")
+    lines.append(
+        "candidate_total_overinclusive="
+        f"{static_audit['callers_into_0x142049220']['candidate_direct_call_sites_total_overinclusive']}"
+    )
+    lines.append(static_audit["callers_into_0x142049220"]["caller_scan_note"])
     for name, refs in static_audit["callers_into_0x142049220"]["target_stub_callers"].items():
         lines.append(f"- {name}: {len(refs)} target stub call(s)")
     lines.append("")

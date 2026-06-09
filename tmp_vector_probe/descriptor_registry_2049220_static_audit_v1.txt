@@ -104,7 +104,8 @@ Full wrapper disassembly:
 02049358: ret
 
 Callers into 0x142049220:
-total=39423
+candidate_total_overinclusive=39423
+Collected by validating direct-call encodings inside PE runtime-function ranges. Use exact target-stub return-site groups for firm claims; the broad total is an overinclusive orientation aid.
 - VectorData: 1 target stub call(s)
 - TimeLapseBlob: 1 target stub call(s)
 - VectorObjectList: 1 target stub call(s)

@@ -95,14 +95,25 @@ def summarize_registration(rows: list[dict[str, Any]]) -> dict[str, Any]:
     events = Counter(str(row.get("event", "unknown")) for row in rows)
     target_events = [row for row in rows if row.get("event") == "wrapper_target_leave"]
     helper_events = [row for row in rows if row.get("event") == "helper_inside_target_wrapper"]
-    by_target: dict[str, list[dict[str, Any]]] = {}
-    for row in target_events:
-        for hit in row.get("target_hits") or []:
-            by_target.setdefault(str(hit), []).append(row)
     descriptors = {}
     for row in rows:
         if row.get("event") == "summary" and isinstance(row.get("descriptors"), dict):
             descriptors.update(row["descriptors"])
+    by_target: dict[str, list[dict[str, Any]]] = {}
+    for row in target_events:
+        for hit in row.get("target_hits") or []:
+            by_target.setdefault(str(hit), []).append(row)
+    exact_target_events = {}
+    for name, meta in descriptors.items():
+        wanted = (meta or {}).get("descriptor_rva")
+        if not wanted:
+            continue
+        exact = [
+            row for row in target_events
+            if str(row.get("descriptor_static_rva", "")).lower() == str(wanted).lower()
+        ]
+        if exact:
+            exact_target_events[name] = exact[0]
     helper_counts = Counter(str(row.get("helper_name", "unknown")) for row in helper_events)
     candidate_registry_pointers = []
     for row in target_events + helper_events:
@@ -114,9 +125,22 @@ def summarize_registration(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "row_count": len(rows),
         "event_counts": dict(events),
         "descriptors": descriptors,
-        "wrapper_target_counts": {name: len(items) for name, items in by_target.items()},
+        "wrapper_target_counts_by_string_scan": {name: len(items) for name, items in by_target.items()},
+        "wrapper_target_counts_by_exact_descriptor": {
+            name: sum(
+                1 for row in target_events
+                if str(row.get("descriptor_static_rva", "")).lower() == str((meta or {}).get("descriptor_rva", "")).lower()
+            )
+            for name, meta in descriptors.items()
+        },
         "helper_counts_inside_target_wrappers": dict(helper_counts),
-        "first_wrapper_target_event_by_name": {name: compact(items[0]) for name, items in by_target.items() if items},
+        "first_wrapper_target_event_by_name": {
+            name: compact(exact_target_events.get(name) or (items[0] if items else None))
+            for name, items in by_target.items()
+        },
+        "first_wrapper_target_event_by_exact_descriptor": {
+            name: compact(row) for name, row in exact_target_events.items()
+        },
         "first_helper_event_by_name": {
             name: compact(next((row for row in helper_events if row.get("helper_name") == name), None))
             for name in helper_counts

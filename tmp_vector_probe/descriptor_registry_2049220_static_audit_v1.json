@@ -1354,7 +1354,8 @@
     }
   },
   "callers_into_0x142049220": {
-    "total_callers": 39423,
+    "candidate_direct_call_sites_total_overinclusive": 39423,
+    "caller_scan_note": "Collected by validating direct-call encodings inside PE runtime-function ranges. Use exact target-stub return-site groups for firm claims; the broad total is an overinclusive orientation aid.",
     "target_stub_callers": {
       "VectorData": [
         {
