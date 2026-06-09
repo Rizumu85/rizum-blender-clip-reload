@@ -1,0 +1,72 @@
+{
+  "classification": "D",
+  "consumer_trace_path": null,
+  "event_counts": {
+    "chunk_read": 15,
+    "file_api": 15,
+    "file_read": 11,
+    "hook_installed": 4,
+    "loader_entry": 1,
+    "loader_leave": 1,
+    "loader_post_allocation": 1,
+    "loader_post_body_read": 1,
+    "loader_post_body_size": 1,
+    "ready": 1,
+    "ready_hooks_installed": 1,
+    "registration_entry": 1,
+    "registration_first_pre_call": 1,
+    "summary": 14
+  },
+  "ground_truth_has_target_vector_id": true,
+  "ground_truth_path": "tmp_vector_probe\\vectorobjectlist_ground_truth_v1.json",
+  "ground_truth_target_row": [
+    {
+      "CanvasId": 1,
+      "LayerId": 21,
+      "MainId": 15,
+      "VectorData": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+      "VectorData_equals_target": true,
+      "VectorData_payload": {
+        "brush_style_id_guess": 0,
+        "exta_index": 4,
+        "external_id": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+        "flags": 8321,
+        "flags_hex": "0x2081",
+        "header_len": 92,
+        "is_0x2081_or_0x2011": true,
+        "is_saved_vector_stroke": true,
+        "payload_hash_4096": "fnv1a32:7bece4ac",
+        "payload_prefix_ascii": "...\\...L...X...X...... ............ ............................?...............@4.........)@eO.",
+        "payload_prefix_hex": "00 00 00 5c 00 00 00 4c 00 00 00 58 00 00 00 58 00 00 00 1d 00 00 20 81 00 00 00 a4 00 00 00 88 00 00 02 20 00 00 01 f7 00 00 00 00 00 00 00 00 00 00 00 00 e4 e4 e4 e4 e0 e0 e0 e0 ed ed ed ed 3f f0 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 40 34 00 00 00 00 00 00 02 b7 fa 29 40 65 4f 80",
+        "payload_size": 2644,
+        "point_count": 164,
+        "point_header_len": 76,
+        "prefix_hex": "00 00 00 5c 00 00 00 4c 00 00 00 58 00 00 00 58 00 00 00 1d 00 00 20 81 00 00 00 a4 00 00 00 88 00 00 02 20 00 00 01 f7 00 00 00 00 00 00 00 00 00 00 00 00 e4 e4 e4 e4 e0 e0 e0 e0 ed ed ed ed 3f f0 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 40 34 00 00 00 00 00 00 02 b7 fa 29 40 65 4f 80",
+        "record_offset": 0,
+        "stride_a": 88,
+        "stride_b": 88
+      },
+      "_PW_ID": 1
+    }
+  ],
+  "next_single_hook_target": "Target VectorData id is never read; expand SQLite/wrapper trace.",
+  "preview_cache_id_observed_natively": false,
+  "preview_cache_id_summary": {
+    "caller_rvas": {},
+    "column_names": {},
+    "count": 0,
+    "events": {},
+    "first_hits": [],
+    "sql_statements": []
+  },
+  "sqlite_trace_path": "tmp_vector_probe\\native_vector_body_route_positive_control_20260607_232256_311_pid94376.jsonl",
+  "target_vector_id_observed_natively": false,
+  "target_vector_id_summary": {
+    "caller_rvas": {},
+    "column_names": {},
+    "count": 0,
+    "events": {},
+    "first_hits": [],
+    "sql_statements": []
+  }
+}
