@@ -20,13 +20,13 @@ const RVAS = {
 };
 
 const STUBS = {
-  VectorData: { stub: 0x0cdf60, call: 0x0cdf72, descriptor: 0x5486110, string: 0x44a76a8 },
-  VectorObjectList: { stub: 0x139830, call: 0x139842, descriptor: 0x54f2be8, string: 0x44a76b8 },
-  TimeLapseBlob: { stub: 0x1396b0, call: 0x1396c2, descriptor: 0x54f3788, string: 0x44a77d8 },
+  VectorData: { stub: 0x0cdf60, call: 0x0cdf72, return_site: 0x0cdf77, descriptor: 0x5486110, string: 0x44a76a8 },
+  VectorObjectList: { stub: 0x139830, call: 0x139842, return_site: 0x139847, descriptor: 0x54f2be8, string: 0x44a76b8 },
+  TimeLapseBlob: { stub: 0x1396b0, call: 0x1396c2, return_site: 0x1396c7, descriptor: 0x54f3788, string: 0x44a77d8 },
 };
 
 const TARGET_STRINGS = ['VectorData', 'VectorObjectList', 'TimeLapseBlob', 'ExternalChunk'];
-const TARGET_CALLERS = new Set(Object.values(STUBS).map((item) => `0x${item.call.toString(16)}`));
+const TARGET_RETURN_SITES = new Map(Object.entries(STUBS).map(([name, item]) => [`0x${item.return_site.toString(16)}`, name]));
 
 const csp = Process.getModuleByName(CSP_MODULE);
 const cspBase = csp.base;
@@ -208,8 +208,10 @@ function hookWrapper() {
         r8: pointerPreview(this.context.r8),
         r9: pointerPreview(this.context.r9),
       };
-      this.hits = findTargetHits(this.argsPreview);
-      this.relevant = TARGET_CALLERS.has(this.callerRva) || this.hits.length > 0;
+      this.stubNameFromReturnSite = TARGET_RETURN_SITES.get(this.callerRva) || null;
+      this.stringHits = findTargetHits(this.argsPreview);
+      this.hits = this.stubNameFromReturnSite ? [this.stubNameFromReturnSite] : this.stringHits;
+      this.relevant = Boolean(this.stubNameFromReturnSite) || this.stringHits.length > 0;
       bump(counts, 'wrapper_entry');
       bump(wrapperCalls, this.callerRva);
       if (this.relevant) this.before = descriptorSnapshot(this.rcx);
@@ -255,6 +257,8 @@ function hookWrapper() {
         r9: ptrString(this.context.r9),
         return_value: ptrString(retval),
         target_hits: this.hits,
+        string_scan_hits: this.stringHits,
+        stub_name_from_return_site: this.stubNameFromReturnSite,
         descriptor_before_call: this.before,
         descriptor_after_call: after,
         descriptor_field_diffs: diffSnapshots(this.before, after),
@@ -295,11 +299,12 @@ writeJson({
   module_path: csp.path,
   output_path: outPath,
   hook_rvas: RVAS,
-  descriptors: Object.fromEntries(Object.entries(STUBS).map(([name, meta]) => [name, {
+    descriptors: Object.fromEntries(Object.entries(STUBS).map(([name, meta]) => [name, {
     descriptor_rva: `0x${meta.descriptor.toString(16)}`,
     descriptor_pointer: ptrString(vaOfRva(meta.descriptor)),
     stub_rva: `0x${meta.stub.toString(16)}`,
     wrapper_call_rva: `0x${meta.call.toString(16)}`,
+    wrapper_return_site_rva: `0x${meta.return_site.toString(16)}`,
   }])),
 });
 
