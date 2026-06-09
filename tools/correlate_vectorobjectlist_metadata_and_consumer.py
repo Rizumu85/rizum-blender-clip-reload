@@ -44,6 +44,9 @@ def find_ground_truth_target(gt: dict[str, Any]) -> dict[str, Any] | None:
     for row in gt.get("enriched_rows", []):
         if row.get("VectorData") == TARGET_ID:
             return row
+    for row in gt.get("vectorobjectlist_rows", []):
+        if row.get("VectorData") == TARGET_ID:
+            return row
     return None
 
 
