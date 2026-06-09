@@ -36,6 +36,7 @@ const counts = {};
 const targetCounts = {};
 const callerCounts = {};
 const handlePaths = {};
+const interestingFileCounts = {};
 const firstEvents = {};
 
 const asciiPattern = asciiHex(TARGET_ID);
@@ -183,17 +184,35 @@ function hookExport(moduleName, name, callbacks) {
   if (!addr) return false;
   try { Interceptor.attach(addr, callbacks(addr)); return true; } catch (_) { return false; }
 }
+function hookExportAny(moduleNames, name, callbacks) {
+  let ok = false;
+  for (const mod of moduleNames) ok = hookExport(mod, name, callbacks) || ok;
+  return ok;
+}
+function interestingPath(path) {
+  return path && /Vector_SizePressure|\\.clip$/i.test(path);
+}
 
 function hookFileApis() {
-  hookExport('kernel32.dll', 'CreateFileW', () => ({
+  hookExportAny(['kernel32.dll', 'KernelBase.dll'], 'CreateFileW', () => ({
     onEnter(args) { this.path = safeUtf16(args[0], 1024); },
     onLeave(retval) {
+      bump(counts, 'CreateFileW');
       if (retval && !retval.isNull() && retval.toString() !== '0xffffffffffffffff') {
         handlePaths[retval.toString()] = this.path;
       }
+      if (interestingPath(this.path)) {
+        bump(interestingFileCounts, `CreateFileW:${this.path}`);
+        logHit('interesting_file_open', {
+          caller_rva: rvaOf(this.returnAddress),
+          path: this.path,
+          handle: ptrString(retval),
+          hits: [],
+        }, this.context);
+      }
     },
   }));
-  hookExport('kernel32.dll', 'ReadFile', () => ({
+  hookExportAny(['kernel32.dll', 'KernelBase.dll'], 'ReadFile', () => ({
     onEnter(args) {
       this.handle = args[0].toString();
       this.buf = args[1];
@@ -205,12 +224,15 @@ function hookFileApis() {
       let n = this.requested;
       const br = safeU32(this.bytesReadPtr);
       if (br !== null) n = br;
+      bump(counts, 'ReadFile');
+      const path = handlePaths[this.handle];
+      if (interestingPath(path)) bump(interestingFileCounts, `ReadFile:${path}`);
       const hits = scanMemory(this.buf, n);
       if (hits.length) {
         logHit('ReadFile_buffer_hit', {
           caller_rva: rvaOf(this.returnAddress),
           handle: this.handle,
-          path: handlePaths[this.handle],
+          path,
           bytes: n,
           buffer: ptrString(this.buf),
           hits,
@@ -218,10 +240,11 @@ function hookFileApis() {
       }
     },
   }));
-  hookExport('kernel32.dll', 'MapViewOfFile', () => ({
+  hookExportAny(['kernel32.dll', 'KernelBase.dll'], 'MapViewOfFile', () => ({
     onEnter(args) { this.sizeLow = args[4].toUInt32(); },
     onLeave(retval) {
       if (!retval || retval.isNull()) return;
+      bump(counts, 'MapViewOfFile');
       const size = this.sizeLow || (4 * 1024 * 1024);
       const hits = scanMemory(retval, size);
       if (hits.length) {
@@ -363,6 +386,7 @@ function writeSummary(kind) {
     counts,
     target_counts: targetCounts,
     caller_counts: callerCounts,
+    interesting_file_counts: interestingFileCounts,
     first_events: firstEvents,
   });
 }
