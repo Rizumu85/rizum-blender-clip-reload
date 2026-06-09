@@ -73,6 +73,33 @@ Open blocker:
   Before the accepted 1px feedback-step floor this was `mean=0.024409`,
   `visible=151`; old residual attribution files still describe the same broad
   hard-edge superset shape.
+- Vector_SizePressure native route status:
+  confirmed target `VectorObjectList.VectorData` external id is
+  `extrnlid62D15CB4395245648869B4AEBAD8FBCE`; payload size is `2644`;
+  payload hash is `fnv1a32:7bece4ac`; saved vector flags are `0x2081`.
+  A valid target-id hunter run proves the native body loader route reaches
+  `0x143A41780`. Static disassembly shows `0x143A41780` reads the body size,
+  reserves storage through `0x142056880`, then reads the payload directly into
+  the returned `dest_ptr` through `0x1420575A0`.
+- Static ownership model for the target body: `0x142056880(rcx=r13,
+  edx=2644)` returns `dest_ptr`; `r13` is a blob/vector-like owner with
+  `+0x08 = heap buffer pointer`, `+0x18 = logical size`,
+  `+0x1c = capacity`, and `+0x20 = inline fallback`. For `2644` bytes the
+  body should be heap-backed, not inline, so the model to validate is
+  `r13+0x08 == dest_ptr`, `r13+0x18 == 2644`, `r13+0x1c >= 2644`,
+  `0x1420575A0` writes directly into `dest_ptr`, and the post-read dest hash
+  is `fnv1a32:7bece4ac`.
+- Unconfirmed native-route facts: which document/layer/resource/cache object
+  ultimately owns `r13`; whether the target vector body is eagerly parsed or
+  lazy-materialized; and the exact route from `VectorObjectList.VectorData` to
+  the saved-vector renderer. Stop opening new route-discovery targets for now.
+  Mark `Vector_SizePressure` as a research blocker and run only the existing
+  target body ownership trace:
+  `tmp_vector_probe/native_target_body_ownership_trace_v1.js`, then correlate
+  with `tools/correlate_target_body_ownership.py` to
+  `tmp_vector_probe/native_target_body_ownership_correlation_v1.json`.
+  If this trace cannot prove who owns `r13`, record owner-chain unresolved and
+  do not open a new hook target.
 - Current no-edit replay files:
   `tmp_vector_probe/sizepressure_current_feedback_trace_codex_v2.json` and
   `tmp_vector_probe/sizepressure_current_boundary_attribution_codex_v2.json`.
