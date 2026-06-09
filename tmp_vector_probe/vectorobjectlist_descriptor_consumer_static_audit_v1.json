@@ -1,0 +1,118 @@
+{
+  "descriptor_rvas": {
+    "VectorData": "0x5486110",
+    "VectorObjectList": "0x54f2be8",
+    "TimeLapseBlob": "0x54f3788"
+  },
+  "xrefs_by_descriptor": {
+    "VectorData": [
+      {
+        "xref_rva": "0xcdf6b",
+        "insn": "000cdf6b: lea      rcx, [rip + 0x53b819e]",
+        "access_kind": "read-or-address",
+        "enclosing_function_start_rva": "0xcdf40",
+        "enclosing_function_end_rva": "0xcdf87",
+        "is_registration_stub": true
+      }
+    ],
+    "VectorObjectList": [
+      {
+        "xref_rva": "0x13983b",
+        "insn": "0013983b: lea      rcx, [rip + 0x53b93a6]",
+        "access_kind": "read-or-address",
+        "enclosing_function_start_rva": "0x139830",
+        "enclosing_function_end_rva": "0x139857",
+        "is_registration_stub": true
+      }
+    ],
+    "TimeLapseBlob": [
+      {
+        "xref_rva": "0x1396bb",
+        "insn": "001396bb: lea      rcx, [rip + 0x53ba0c6]",
+        "access_kind": "read-or-address",
+        "enclosing_function_start_rva": "0x1396b0",
+        "enclosing_function_end_rva": "0x1396d7",
+        "is_registration_stub": true
+      }
+    ]
+  },
+  "non_registration_xrefs_by_descriptor": {
+    "VectorData": [],
+    "VectorObjectList": [],
+    "TimeLapseBlob": []
+  },
+  "candidate_consumers_ranked": [
+    {
+      "function_start_rva": "0xcdf40",
+      "function_end_rva": "0xcdf87",
+      "uses": [
+        {
+          "descriptor": "VectorData",
+          "xref_rva": "0xcdf6b",
+          "insn": "000cdf6b: lea      rcx, [rip + 0x53b819e]"
+        }
+      ],
+      "nearby_calls": [
+        {
+          "call_rva": "0xcdf4b",
+          "target_rva": "0x2040af0",
+          "insn": "000cdf4b: call     0x142040af0"
+        },
+        {
+          "call_rva": "0xcdf72",
+          "target_rva": "0x2049220",
+          "insn": "000cdf72: call     0x142049220"
+        }
+      ],
+      "mentions_generic_readers": [],
+      "strings_nearby": [],
+      "classification": "unknown",
+      "score": 7
+    },
+    {
+      "function_start_rva": "0x139830",
+      "function_end_rva": "0x139857",
+      "uses": [
+        {
+          "descriptor": "VectorObjectList",
+          "xref_rva": "0x13983b",
+          "insn": "0013983b: lea      rcx, [rip + 0x53b93a6]"
+        }
+      ],
+      "nearby_calls": [
+        {
+          "call_rva": "0x139842",
+          "target_rva": "0x2049220",
+          "insn": "00139842: call     0x142049220"
+        }
+      ],
+      "mentions_generic_readers": [],
+      "strings_nearby": [],
+      "classification": "unknown",
+      "score": 6
+    },
+    {
+      "function_start_rva": "0x1396b0",
+      "function_end_rva": "0x1396d7",
+      "uses": [
+        {
+          "descriptor": "TimeLapseBlob",
+          "xref_rva": "0x1396bb",
+          "insn": "001396bb: lea      rcx, [rip + 0x53ba0c6]"
+        }
+      ],
+      "nearby_calls": [
+        {
+          "call_rva": "0x1396c2",
+          "target_rva": "0x2049220",
+          "insn": "001396c2: call     0x142049220"
+        }
+      ],
+      "mentions_generic_readers": [],
+      "strings_nearby": [],
+      "classification": "TimeLapseBlob-only comparison user",
+      "score": 1
+    }
+  ],
+  "assessment": "Direct RIP-relative descriptor xrefs are registration-heavy if non_registration_xrefs_by_descriptor is empty. That points toward registry/map insertion and lookup rather than direct static descriptor consumers."
+}
