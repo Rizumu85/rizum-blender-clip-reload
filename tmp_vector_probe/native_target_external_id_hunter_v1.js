@@ -170,7 +170,16 @@ function moduleExport(moduleNames, exportNames) {
   return out;
 }
 function hookExport(moduleName, name, callbacks) {
-  const addr = Module.findExportByName(moduleName, name);
+  let addr = null;
+  try {
+    const mod = Process.getModuleByName(moduleName);
+    for (const exp of mod.enumerateExports()) {
+      if (exp.type === 'function' && exp.name === name) {
+        addr = exp.address;
+        break;
+      }
+    }
+  } catch (_) {}
   if (!addr) return false;
   try { Interceptor.attach(addr, callbacks(addr)); return true; } catch (_) { return false; }
 }
