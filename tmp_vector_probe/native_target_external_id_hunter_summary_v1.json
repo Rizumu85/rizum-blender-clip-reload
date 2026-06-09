@@ -1,0 +1,2411 @@
+{
+  "output_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_summary_v1.json",
+  "inputs": [
+    "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl"
+  ],
+  "any_target_observed": true,
+  "per_file": [
+    {
+      "file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+      "row_count": 116,
+      "event_counts": {
+        "ready": 1,
+        "summary": 24,
+        "interesting_file_open": 18,
+        "ReadFile_buffer_hit": 26,
+        "known_csp_function_hit": 4,
+        "string_api_hit": 43
+      },
+      "target_observed": true,
+      "first_target_event": {
+        "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+        "event": "ReadFile_buffer_hit",
+        "timestamp_ms": 1780989543394,
+        "event_index": 14,
+        "process_id": 2344,
+        "thread_id": 8808,
+        "caller_rva": "0x205d38d",
+        "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+        "bytes": 65536,
+        "buffer": "0x2918daefa50",
+        "hits": [
+          {
+            "kind": "target_ascii",
+            "address": "0x2918daf3977",
+            "offset": "0x3f27"
+          },
+          {
+            "kind": "preview_ascii",
+            "address": "0x2918daf3a37",
+            "offset": "0x3fe7"
+          }
+        ],
+        "backtrace": [
+          {
+            "va": "0x7ff79f91d38d",
+            "rva": "0x205d38d",
+            "symbol": "0x7ff79f91d38d"
+          },
+          {
+            "va": "0x7ff79f918aee",
+            "rva": "0x2058aee",
+            "symbol": "0x7ff79f918aee"
+          },
+          {
+            "va": "0x7ff79f91799f",
+            "rva": "0x205799f",
+            "symbol": "0x7ff79f91799f"
+          },
+          {
+            "va": "0x7ff79f9177a5",
+            "rva": "0x20577a5",
+            "symbol": "0x7ff79f9177a5"
+          },
+          {
+            "va": "0x7ff7a130065d",
+            "rva": "0x3a4065d",
+            "symbol": "0x7ff7a130065d"
+          },
+          {
+            "va": "0x7ff7a12fe2d3",
+            "rva": "0x3a3e2d3",
+            "symbol": "0x7ff7a12fe2d3"
+          },
+          {
+            "va": "0x7ff7a0bab096",
+            "rva": "0x32eb096",
+            "symbol": "0x7ff7a0bab096"
+          },
+          {
+            "va": "0x7ff7a0a4235c",
+            "rva": "0x318235c",
+            "symbol": "0x7ff7a0a4235c"
+          },
+          {
+            "va": "0x7ff7a0a43248",
+            "rva": "0x3183248",
+            "symbol": "0x7ff7a0a43248"
+          },
+          {
+            "va": "0x7ff7a0314a63",
+            "rva": "0x2a54a63",
+            "symbol": "0x7ff7a0314a63"
+          },
+          {
+            "va": "0x7ff7a031480a",
+            "rva": "0x2a5480a",
+            "symbol": "0x7ff7a031480a"
+          },
+          {
+            "va": "0x7ff79dbd5842",
+            "rva": "0x315842",
+            "symbol": "0x7ff79dbd5842"
+          }
+        ]
+      },
+      "target_events_by_kind": {
+        "ReadFile_buffer_hit": 14,
+        "string_api_hit": 22,
+        "known_csp_function_hit": 2
+      },
+      "top_target_caller_rvas": [
+        [
+          "0x3377328",
+          20
+        ],
+        [
+          "0x205d38d",
+          10
+        ],
+        [
+          "0x335f826",
+          4
+        ],
+        [
+          "0x20590ee",
+          2
+        ],
+        [
+          "0x331eb1a",
+          1
+        ],
+        [
+          "0x3a3e1ac",
+          1
+        ]
+      ],
+      "first_20_target_events": [
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989543394,
+          "event_index": 14,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 65536,
+          "buffer": "0x2918daefa50",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf3977",
+              "offset": "0x3f27"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918daf3a37",
+              "offset": "0x3fe7"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91799f",
+              "rva": "0x205799f",
+              "symbol": "0x7ff79f91799f"
+            },
+            {
+              "va": "0x7ff79f9177a5",
+              "rva": "0x20577a5",
+              "symbol": "0x7ff79f9177a5"
+            },
+            {
+              "va": "0x7ff7a130065d",
+              "rva": "0x3a4065d",
+              "symbol": "0x7ff7a130065d"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a4235c",
+              "rva": "0x318235c",
+              "symbol": "0x7ff7a0a4235c"
+            },
+            {
+              "va": "0x7ff7a0a43248",
+              "rva": "0x3183248",
+              "symbol": "0x7ff7a0a43248"
+            },
+            {
+              "va": "0x7ff7a0314a63",
+              "rva": "0x2a54a63",
+              "symbol": "0x7ff7a0314a63"
+            },
+            {
+              "va": "0x7ff7a031480a",
+              "rva": "0x2a5480a",
+              "symbol": "0x7ff7a031480a"
+            },
+            {
+              "va": "0x7ff79dbd5842",
+              "rva": "0x315842",
+              "symbol": "0x7ff79dbd5842"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989543394,
+          "event_index": 15,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 65536,
+          "buffer": "0x2918daefa50",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf3977",
+              "offset": "0x3f27"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918daf3a37",
+              "offset": "0x3fe7"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91799f",
+              "rva": "0x205799f",
+              "symbol": "0x7ff79f91799f"
+            },
+            {
+              "va": "0x7ff79f9177a5",
+              "rva": "0x20577a5",
+              "symbol": "0x7ff79f9177a5"
+            },
+            {
+              "va": "0x7ff7a130065d",
+              "rva": "0x3a4065d",
+              "symbol": "0x7ff7a130065d"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a4235c",
+              "rva": "0x318235c",
+              "symbol": "0x7ff7a0a4235c"
+            },
+            {
+              "va": "0x7ff7a0a43248",
+              "rva": "0x3183248",
+              "symbol": "0x7ff7a0a43248"
+            },
+            {
+              "va": "0x7ff7a0314a63",
+              "rva": "0x2a54a63",
+              "symbol": "0x7ff7a0314a63"
+            },
+            {
+              "va": "0x7ff7a031480a",
+              "rva": "0x2a5480a",
+              "symbol": "0x7ff7a031480a"
+            },
+            {
+              "va": "0x7ff79dbd5842",
+              "rva": "0x315842",
+              "symbol": "0x7ff79dbd5842"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989543397,
+          "event_index": 16,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 245776,
+          "buffer": "0x29181fdb030",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x29181ff1018",
+              "offset": "0x15fe8"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x29181fe7018",
+              "offset": "0xbfe8"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91770d",
+              "rva": "0x205770d",
+              "symbol": "0x7ff79f91770d"
+            },
+            {
+              "va": "0x7ff7a1300782",
+              "rva": "0x3a40782",
+              "symbol": "0x7ff7a1300782"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a4235c",
+              "rva": "0x318235c",
+              "symbol": "0x7ff7a0a4235c"
+            },
+            {
+              "va": "0x7ff7a0a43248",
+              "rva": "0x3183248",
+              "symbol": "0x7ff7a0a43248"
+            },
+            {
+              "va": "0x7ff7a0314a63",
+              "rva": "0x2a54a63",
+              "symbol": "0x7ff7a0314a63"
+            },
+            {
+              "va": "0x7ff7a031480a",
+              "rva": "0x2a5480a",
+              "symbol": "0x7ff7a031480a"
+            },
+            {
+              "va": "0x7ff79dbd5842",
+              "rva": "0x315842",
+              "symbol": "0x7ff79dbd5842"
+            },
+            {
+              "va": "0x7ff79dbca98a",
+              "rva": "0x30a98a",
+              "symbol": "0x7ff79dbca98a"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989543399,
+          "event_index": 17,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 245776,
+          "buffer": "0x29181fdb030",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x29181ff1018",
+              "offset": "0x15fe8"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x29181fe7018",
+              "offset": "0xbfe8"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91770d",
+              "rva": "0x205770d",
+              "symbol": "0x7ff79f91770d"
+            },
+            {
+              "va": "0x7ff7a1300782",
+              "rva": "0x3a40782",
+              "symbol": "0x7ff7a1300782"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a4235c",
+              "rva": "0x318235c",
+              "symbol": "0x7ff7a0a4235c"
+            },
+            {
+              "va": "0x7ff7a0a43248",
+              "rva": "0x3183248",
+              "symbol": "0x7ff7a0a43248"
+            },
+            {
+              "va": "0x7ff7a0314a63",
+              "rva": "0x2a54a63",
+              "symbol": "0x7ff7a0314a63"
+            },
+            {
+              "va": "0x7ff7a031480a",
+              "rva": "0x2a5480a",
+              "symbol": "0x7ff7a031480a"
+            },
+            {
+              "va": "0x7ff79dbd5842",
+              "rva": "0x315842",
+              "symbol": "0x7ff79dbd5842"
+            },
+            {
+              "va": "0x7ff79dbca98a",
+              "rva": "0x30a98a",
+              "symbol": "0x7ff79dbca98a"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563174,
+          "event_index": 24,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 65536,
+          "buffer": "0x2918daefa50",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf3977",
+              "offset": "0x3f27"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918daf3a37",
+              "offset": "0x3fe7"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91799f",
+              "rva": "0x205799f",
+              "symbol": "0x7ff79f91799f"
+            },
+            {
+              "va": "0x7ff79f9177a5",
+              "rva": "0x20577a5",
+              "symbol": "0x7ff79f9177a5"
+            },
+            {
+              "va": "0x7ff7a130065d",
+              "rva": "0x3a4065d",
+              "symbol": "0x7ff7a130065d"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a3d9f3",
+              "rva": "0x317d9f3",
+              "symbol": "0x7ff7a0a3d9f3"
+            },
+            {
+              "va": "0x7ff7a0316c2d",
+              "rva": "0x2a56c2d",
+              "symbol": "0x7ff7a0316c2d"
+            },
+            {
+              "va": "0x7ff7a03167c3",
+              "rva": "0x2a567c3",
+              "symbol": "0x7ff7a03167c3"
+            },
+            {
+              "va": "0x7ff7a0316128",
+              "rva": "0x2a56128",
+              "symbol": "0x7ff7a0316128"
+            },
+            {
+              "va": "0x7ff79e258ebc",
+              "rva": "0x998ebc",
+              "symbol": "0x7ff79e258ebc"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563175,
+          "event_index": 25,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 65536,
+          "buffer": "0x2918daefa50",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf3977",
+              "offset": "0x3f27"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918daf3a37",
+              "offset": "0x3fe7"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91799f",
+              "rva": "0x205799f",
+              "symbol": "0x7ff79f91799f"
+            },
+            {
+              "va": "0x7ff79f9177a5",
+              "rva": "0x20577a5",
+              "symbol": "0x7ff79f9177a5"
+            },
+            {
+              "va": "0x7ff7a130065d",
+              "rva": "0x3a4065d",
+              "symbol": "0x7ff7a130065d"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a3d9f3",
+              "rva": "0x317d9f3",
+              "symbol": "0x7ff7a0a3d9f3"
+            },
+            {
+              "va": "0x7ff7a0316c2d",
+              "rva": "0x2a56c2d",
+              "symbol": "0x7ff7a0316c2d"
+            },
+            {
+              "va": "0x7ff7a03167c3",
+              "rva": "0x2a567c3",
+              "symbol": "0x7ff7a03167c3"
+            },
+            {
+              "va": "0x7ff7a0316128",
+              "rva": "0x2a56128",
+              "symbol": "0x7ff7a0316128"
+            },
+            {
+              "va": "0x7ff79e258ebc",
+              "rva": "0x998ebc",
+              "symbol": "0x7ff79e258ebc"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563178,
+          "event_index": 26,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 245776,
+          "buffer": "0x291820af030",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x291820c5018",
+              "offset": "0x15fe8"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x291820bb018",
+              "offset": "0xbfe8"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91770d",
+              "rva": "0x205770d",
+              "symbol": "0x7ff79f91770d"
+            },
+            {
+              "va": "0x7ff7a1300782",
+              "rva": "0x3a40782",
+              "symbol": "0x7ff7a1300782"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a3d9f3",
+              "rva": "0x317d9f3",
+              "symbol": "0x7ff7a0a3d9f3"
+            },
+            {
+              "va": "0x7ff7a0316c2d",
+              "rva": "0x2a56c2d",
+              "symbol": "0x7ff7a0316c2d"
+            },
+            {
+              "va": "0x7ff7a03167c3",
+              "rva": "0x2a567c3",
+              "symbol": "0x7ff7a03167c3"
+            },
+            {
+              "va": "0x7ff7a0316128",
+              "rva": "0x2a56128",
+              "symbol": "0x7ff7a0316128"
+            },
+            {
+              "va": "0x7ff79e258ebc",
+              "rva": "0x998ebc",
+              "symbol": "0x7ff79e258ebc"
+            },
+            {
+              "va": "0x7ff79dbcaa1b",
+              "rva": "0x30aa1b",
+              "symbol": "0x7ff79dbcaa1b"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563180,
+          "event_index": 27,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 245776,
+          "buffer": "0x291820af030",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x291820c5018",
+              "offset": "0x15fe8"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x291820bb018",
+              "offset": "0xbfe8"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91770d",
+              "rva": "0x205770d",
+              "symbol": "0x7ff79f91770d"
+            },
+            {
+              "va": "0x7ff7a1300782",
+              "rva": "0x3a40782",
+              "symbol": "0x7ff7a1300782"
+            },
+            {
+              "va": "0x7ff7a12fe2d3",
+              "rva": "0x3a3e2d3",
+              "symbol": "0x7ff7a12fe2d3"
+            },
+            {
+              "va": "0x7ff7a0bab096",
+              "rva": "0x32eb096",
+              "symbol": "0x7ff7a0bab096"
+            },
+            {
+              "va": "0x7ff7a0a3d9f3",
+              "rva": "0x317d9f3",
+              "symbol": "0x7ff7a0a3d9f3"
+            },
+            {
+              "va": "0x7ff7a0316c2d",
+              "rva": "0x2a56c2d",
+              "symbol": "0x7ff7a0316c2d"
+            },
+            {
+              "va": "0x7ff7a03167c3",
+              "rva": "0x2a567c3",
+              "symbol": "0x7ff7a03167c3"
+            },
+            {
+              "va": "0x7ff7a0316128",
+              "rva": "0x2a56128",
+              "symbol": "0x7ff7a0316128"
+            },
+            {
+              "va": "0x7ff79e258ebc",
+              "rva": "0x998ebc",
+              "symbol": "0x7ff79e258ebc"
+            },
+            {
+              "va": "0x7ff79dbcaa1b",
+              "rva": "0x30aa1b",
+              "symbol": "0x7ff79dbcaa1b"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563516,
+          "event_index": 32,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x335f826",
+          "path": "C:\\Users\\Rizum\\AppData\\Local\\Temp\\7D28EE1D-B1AB-4297-9905-7D4523D25F73\\742DEA58-ED6B-4402-BC11-20DFC6D08040\\brief_0\\00000001",
+          "bytes": 4096,
+          "buffer": "0x2918d13d4f0",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918d13e407",
+              "offset": "0xf17"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918d13e4c7",
+              "offset": "0xfd7"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c1f826",
+              "rva": "0x335f826",
+              "symbol": "0x7ff7a0c1f826"
+            },
+            {
+              "va": "0x7ff7a0c5a4f2",
+              "rva": "0x339a4f2",
+              "symbol": "0x7ff7a0c5a4f2"
+            },
+            {
+              "va": "0x7ff7a0c4ca70",
+              "rva": "0x338ca70",
+              "symbol": "0x7ff7a0c4ca70"
+            },
+            {
+              "va": "0x7ff7a0c4c2c8",
+              "rva": "0x338c2c8",
+              "symbol": "0x7ff7a0c4c2c8"
+            },
+            {
+              "va": "0x7ff7a0c51174",
+              "rva": "0x3391174",
+              "symbol": "0x7ff7a0c51174"
+            },
+            {
+              "va": "0x7ff7a0ca07cd",
+              "rva": "0x33e07cd",
+              "symbol": "0x7ff7a0ca07cd"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2f78",
+              "rva": null,
+              "symbol": "0xc8e50f2f78"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563517,
+          "event_index": 33,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x335f826",
+          "path": "C:\\Users\\Rizum\\AppData\\Local\\Temp\\7D28EE1D-B1AB-4297-9905-7D4523D25F73\\742DEA58-ED6B-4402-BC11-20DFC6D08040\\brief_0\\00000001",
+          "bytes": 4096,
+          "buffer": "0x2918d13d4f0",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918d13e407",
+              "offset": "0xf17"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918d13e4c7",
+              "offset": "0xfd7"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c1f826",
+              "rva": "0x335f826",
+              "symbol": "0x7ff7a0c1f826"
+            },
+            {
+              "va": "0x7ff7a0c5a4f2",
+              "rva": "0x339a4f2",
+              "symbol": "0x7ff7a0c5a4f2"
+            },
+            {
+              "va": "0x7ff7a0c4ca70",
+              "rva": "0x338ca70",
+              "symbol": "0x7ff7a0c4ca70"
+            },
+            {
+              "va": "0x7ff7a0c4c2c8",
+              "rva": "0x338c2c8",
+              "symbol": "0x7ff7a0c4c2c8"
+            },
+            {
+              "va": "0x7ff7a0c51174",
+              "rva": "0x3391174",
+              "symbol": "0x7ff7a0c51174"
+            },
+            {
+              "va": "0x7ff7a0ca07cd",
+              "rva": "0x33e07cd",
+              "symbol": "0x7ff7a0ca07cd"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2f78",
+              "rva": null,
+              "symbol": "0xc8e50f2f78"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563596,
+          "event_index": 42,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0x1",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003����4A��\u0002��Z�������\u0002���\u0004����qA��\u0002��Z�������\u0003���\u0005�����@��\u0002��Z�������\u0004���\u0006����[B��\u0002��Z�������\u0005���\u0007����RB��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001�����������������������������������������������������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2a18",
+              "rva": null,
+              "symbol": "0xc8e50f2a18"
+            },
+            {
+              "va": "0xc8e50f2868",
+              "rva": null,
+              "symbol": "0xc8e50f2868"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563746,
+          "event_index": 44,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0xffffffff",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003���0vA��\u0002��Z�������\u0002���\u0004���@eB��\u0002��Z�������\u0003���\u0005���pcA��\u0002��Z�������\u0004���\u0006���ИB��\u0002��Z�������\u0005���\u0007���pDB��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001�����������������������������������������������������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2a18",
+              "rva": null,
+              "symbol": "0xc8e50f2a18"
+            },
+            {
+              "va": "0xc8e50f2868",
+              "rva": null,
+              "symbol": "0xc8e50f2868"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563765,
+          "event_index": 46,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0x1",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003���p�A��\u0002��Z�������\u0002���\u0004����nB��\u0002��Z�������\u0003���\u0005����1B��\u0002��Z�������\u0004���\u0006��� \u001dA��\u0002��Z�������\u0005���\u0007���\u0010�A��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001�����������������������������������������������������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2a18",
+              "rva": null,
+              "symbol": "0xc8e50f2a18"
+            },
+            {
+              "va": "0xc8e50f2868",
+              "rva": null,
+              "symbol": "0xc8e50f2868"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563785,
+          "event_index": 48,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0x1",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003����[B��\u0002��Z�������\u0002���\u0004����^A��\u0002��Z�������\u0003���\u0005���@�@��\u0002��Z�������\u0004���\u0006���\u0010;B��\u0002��Z�������\u0005���\u0007��� �B��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001������������������������������������\u0002����������\u0001�������J�\u0014��\u0002��V���V�X�\u0001�������\u001d����\u0001���������������\u0002������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2a18",
+              "rva": null,
+              "symbol": "0xc8e50f2a18"
+            },
+            {
+              "va": "0xc8e50f2868",
+              "rva": null,
+              "symbol": "0xc8e50f2868"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563806,
+          "event_index": 50,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0x1",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003���ИB��\u0002��Z�������\u0002���\u0004���`�A��\u0002��Z�������\u0003���\u0005����4A��\u0002��Z�������\u0004���\u0006�����A��\u0002��Z�������\u0005���\u0007����\u0002B��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001�����������������������������������������������������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2a18",
+              "rva": null,
+              "symbol": "0xc8e50f2a18"
+            },
+            {
+              "va": "0xc8e50f2868",
+              "rva": null,
+              "symbol": "0xc8e50f2868"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563848,
+          "event_index": 52,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 65536,
+          "buffer": "0x2918daefa50",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf0170",
+              "offset": "0x720"
+            },
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf4b1b",
+              "offset": "0x50cb"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918daf4bdb",
+              "offset": "0x518b"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91799f",
+              "rva": "0x205799f",
+              "symbol": "0x7ff79f91799f"
+            },
+            {
+              "va": "0x7ff79f9177a5",
+              "rva": "0x20577a5",
+              "symbol": "0x7ff79f9177a5"
+            },
+            {
+              "va": "0x7ff7a1301cd1",
+              "rva": "0x3a41cd1",
+              "symbol": "0x7ff7a1301cd1"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2788",
+              "rva": null,
+              "symbol": "0xc8e50f2788"
+            },
+            {
+              "va": "0xc8e50f25d8",
+              "rva": null,
+              "symbol": "0xc8e50f25d8"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            },
+            {
+              "va": "0x2918759dae0",
+              "rva": null,
+              "symbol": "0x2918759dae0"
+            },
+            {
+              "va": "0x7ff7a0bdeb72",
+              "rva": "0x331eb72",
+              "symbol": "0x7ff7a0bdeb72"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "ReadFile_buffer_hit",
+          "timestamp_ms": 1780989563849,
+          "event_index": 53,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x205d38d",
+          "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+          "bytes": 65536,
+          "buffer": "0x2918daefa50",
+          "hits": [
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf0170",
+              "offset": "0x720"
+            },
+            {
+              "kind": "target_ascii",
+              "address": "0x2918daf4b1b",
+              "offset": "0x50cb"
+            },
+            {
+              "kind": "preview_ascii",
+              "address": "0x2918daf4bdb",
+              "offset": "0x518b"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff79f91d38d",
+              "rva": "0x205d38d",
+              "symbol": "0x7ff79f91d38d"
+            },
+            {
+              "va": "0x7ff79f918aee",
+              "rva": "0x2058aee",
+              "symbol": "0x7ff79f918aee"
+            },
+            {
+              "va": "0x7ff79f91799f",
+              "rva": "0x205799f",
+              "symbol": "0x7ff79f91799f"
+            },
+            {
+              "va": "0x7ff79f9177a5",
+              "rva": "0x20577a5",
+              "symbol": "0x7ff79f9177a5"
+            },
+            {
+              "va": "0x7ff7a1301cd1",
+              "rva": "0x3a41cd1",
+              "symbol": "0x7ff7a1301cd1"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2788",
+              "rva": null,
+              "symbol": "0xc8e50f2788"
+            },
+            {
+              "va": "0xc8e50f25d8",
+              "rva": null,
+              "symbol": "0xc8e50f25d8"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            },
+            {
+              "va": "0x2918759dae0",
+              "rva": null,
+              "symbol": "0x2918759dae0"
+            },
+            {
+              "va": "0x7ff7a0bdeb72",
+              "rva": "0x331eb72",
+              "symbol": "0x7ff7a0bdeb72"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563928,
+          "event_index": 55,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0x1",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003���\u0010�A��\u0002��Z�������\u0002���\u0004���P�A��\u0002��Z�������\u0003���\u0005����BA��\u0002��Z�������\u0004���\u0006����xB��\u0002��Z�������\u0005���\u0007���pcA��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001���������������J���O���P���P���P���Q���R���R���������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2838",
+              "rva": null,
+              "symbol": "0xc8e50f2838"
+            },
+            {
+              "va": "0xc8e50f2688",
+              "rva": null,
+              "symbol": "0xc8e50f2688"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563951,
+          "event_index": 57,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0xffffffff",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003����\u0015B��\u0002��Z�������\u0002���\u0004���pDB��\u0002��Z�������\u0003���\u0005����LA��\u0002��Z�������\u0004���\u0006����/A��\u0002��Z�������\u0005���\u0007�����@��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001�����������������������������������������������������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2838",
+              "rva": null,
+              "symbol": "0xc8e50f2838"
+            },
+            {
+              "va": "0xc8e50f2688",
+              "rva": null,
+              "symbol": "0xc8e50f2688"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        },
+        {
+          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+          "event": "string_api_hit",
+          "timestamp_ms": 1780989563971,
+          "event_index": 59,
+          "process_id": 2344,
+          "thread_id": 8808,
+          "caller_rva": "0x3377328",
+          "module": "VCRUNTIME140.dll",
+          "export_name": "memcmp",
+          "retval": "0xffffffff",
+          "hits": [
+            {
+              "kind": "target_utf8",
+              "text": "extrnlid62D15CB4395245648869B4AEBAD8FBCE�������������������������k���\u0002��a�������!�������\u0006�������$�������\u000e�����������������������\u0002���������������Z�������\u0001���\u0003�����A��\u0002��Z�������\u0002���\u0004���`�B��\u0002��Z�������\u0003���\u0005����PA��\u0002��Z�������\u0004���\u0006�����@��\u0002��Z�������\u0005���\u0007����?B��\u0002��Q���\u0002���\u0006���������������1���\u0001���\u000e���������������\u0005�\u0001�����\u0005������� �Ơ���E�����������������������\u0002�\u0001����������\u0001����������\u000b�������\u0001�����������������������������������������������������������������������������������������������������������������������"
+            }
+          ],
+          "backtrace": [
+            {
+              "va": "0x7ff7a0c37328",
+              "rva": "0x3377328",
+              "symbol": "0x7ff7a0c37328"
+            },
+            {
+              "va": "0x7ff7a0cb9d7e",
+              "rva": "0x33f9d7e",
+              "symbol": "0x7ff7a0cb9d7e"
+            },
+            {
+              "va": "0x7ff7a0c9d75e",
+              "rva": "0x33dd75e",
+              "symbol": "0x7ff7a0c9d75e"
+            },
+            {
+              "va": "0x7ff7a0c96a37",
+              "rva": "0x33d6a37",
+              "symbol": "0x7ff7a0c96a37"
+            },
+            {
+              "va": "0x7ff7a0c24f9d",
+              "rva": "0x3364f9d",
+              "symbol": "0x7ff7a0c24f9d"
+            },
+            {
+              "va": "0x7ff7a13048bb",
+              "rva": "0x3a448bb",
+              "symbol": "0x7ff7a13048bb"
+            },
+            {
+              "va": "0x7ff7a1301a76",
+              "rva": "0x3a41a76",
+              "symbol": "0x7ff7a1301a76"
+            },
+            {
+              "va": "0x7ff7a12fe1ac",
+              "rva": "0x3a3e1ac",
+              "symbol": "0x7ff7a12fe1ac"
+            },
+            {
+              "va": "0xc8e50f2838",
+              "rva": null,
+              "symbol": "0xc8e50f2838"
+            },
+            {
+              "va": "0xc8e50f2688",
+              "rva": null,
+              "symbol": "0xc8e50f2688"
+            },
+            {
+              "va": "0x1",
+              "rva": null,
+              "symbol": "0x1"
+            },
+            {
+              "va": "0x2919d4079b0",
+              "rva": null,
+              "symbol": "0x2919d4079b0"
+            }
+          ]
+        }
+      ],
+      "final_trace_summary": {
+        "event": "summary",
+        "kind": "unload",
+        "timestamp_ms": 1780989639714,
+        "process_id": 2344,
+        "module_base": "0x7ff79d8c0000",
+        "output_path": "E:/Documents/Claude/Projects/rizum-blender-clip-reload/tmp_vector_probe/native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl",
+        "counts": {
+          "ReadFile": 14722,
+          "MapViewOfFile": 12342,
+          "CreateFileW": 594,
+          "interesting_file_open": 18,
+          "ReadFile_buffer_hit": 26,
+          "known_csp_function_hit": 4,
+          "string_api_hit": 43
+        },
+        "target_counts": {
+          "preview_ascii": 24,
+          "target_ascii": 16,
+          "preview_utf8": 26,
+          "target_utf8": 26
+        },
+        "caller_counts": {
+          "unknown": 2,
+          "0x2059fd5": 2,
+          "0x205d1d4": 14,
+          "0x205d38d": 20,
+          "0x335f826": 6,
+          "0x331eb1a": 2,
+          "0x20590ee": 4,
+          "0x3377328": 39,
+          "0x3a3e1ac": 2
+        },
+        "interesting_file_counts": {
+          "CreateFileW:E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip": 18,
+          "ReadFile:E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip": 26
+        },
+        "first_events": {
+          "interesting_file_open": {
+            "event": "interesting_file_open",
+            "timestamp_ms": 1780989539780,
+            "event_index": 0,
+            "process_id": 2344,
+            "thread_id": 8808,
+            "caller_rva": null,
+            "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+            "handle": "0x1a6c",
+            "hits": [],
+            "backtrace": [
+              {
+                "va": "0x7ffb483cb5fb",
+                "rva": null,
+                "symbol": "0x7ffb483cb5fb CLIPStudioPaint.exe!PrintDlgExW"
+              },
+              {
+                "va": "0x7ffb48360b95",
+                "rva": null,
+                "symbol": "0x7ffb48360b95 CLIPStudioPaint.exe!DllCanUnloadNow"
+              },
+              {
+                "va": "0x7ffb48346200",
+                "rva": null,
+                "symbol": "0x7ffb48346200"
+              },
+              {
+                "va": "0x7ffb4838b4fa",
+                "rva": null,
+                "symbol": "0x7ffb4838b4fa CLIPStudioPaint.exe!PrintDlgW"
+              },
+              {
+                "va": "0x7ffb48325437",
+                "rva": null,
+                "symbol": "0x7ffb48325437"
+              },
+              {
+                "va": "0x7ffb483a4ccd",
+                "rva": null,
+                "symbol": "0x7ffb483a4ccd CLIPStudioPaint.exe!PrintDlgW"
+              },
+              {
+                "va": "0x7ffb48359843",
+                "rva": null,
+                "symbol": "0x7ffb48359843 CLIPStudioPaint.exe!DllCanUnloadNow"
+              },
+              {
+                "va": "0x7ffb4835bb76",
+                "rva": null,
+                "symbol": "0x7ffb4835bb76 CLIPStudioPaint.exe!DllCanUnloadNow"
+              },
+              {
+                "va": "0x7ffb485cdf90",
+                "rva": null,
+                "symbol": "0x7ffb485cdf90 CLIPStudioPaint.exe!GetWindowLongPtrW"
+              },
+              {
+                "va": "0x7ffb485ce514",
+                "rva": null,
+                "symbol": "0x7ffb485ce514 CLIPStudioPaint.exe!SetWindowTextW"
+              },
+              {
+                "va": "0x7ffb485ce436",
+                "rva": null,
+                "symbol": "0x7ffb485ce436 CLIPStudioPaint.exe!SetWindowTextW"
+              },
+              {
+                "va": "0x7ffb485cc396",
+                "rva": null,
+                "symbol": "0x7ffb485cc396 CLIPStudioPaint.exe!CallWindowProcW"
+              },
+              {
+                "va": "0x7ffb485cbc1c",
+                "rva": null,
+                "symbol": "0x7ffb485cbc1c CLIPStudioPaint.exe!SendMessageW"
+              },
+              {
+                "va": "0x7ffb486022a3",
+                "rva": null,
+                "symbol": "0x7ffb486022a3 CLIPStudioPaint.exe!GetWindowDpiAwarenessContext"
+              },
+              {
+                "va": "0x7ffb4a664094",
+                "rva": null,
+                "symbol": "0x7ffb4a664094 CLIPStudioPaint.exe!KiUserCallbackDispatcher"
+              },
+              {
+                "va": "0x7ffb47b91364",
+                "rva": null,
+                "symbol": "0x7ffb47b91364 CLIPStudioPaint.exe!NtUserMessageCall"
+              }
+            ]
+          },
+          "ReadFile_buffer_hit": {
+            "event": "ReadFile_buffer_hit",
+            "timestamp_ms": 1780989543368,
+            "event_index": 6,
+            "process_id": 2344,
+            "thread_id": 8808,
+            "caller_rva": "0x205d38d",
+            "handle": "0x1548",
+            "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+            "bytes": 65536,
+            "buffer": "0x2918daefa50",
+            "hits": [
+              {
+                "kind": "preview_ascii",
+                "address": "0x2918daefab8",
+                "offset": "0x68"
+              }
+            ],
+            "backtrace": [
+              {
+                "va": "0x7ff79f91d38d",
+                "rva": "0x205d38d",
+                "symbol": "0x7ff79f91d38d"
+              },
+              {
+                "va": "0x7ff79f918aee",
+                "rva": "0x2058aee",
+                "symbol": "0x7ff79f918aee"
+              },
+              {
+                "va": "0x7ff79f9178f1",
+                "rva": "0x20578f1",
+                "symbol": "0x7ff79f9178f1"
+              },
+              {
+                "va": "0x7ff79f9177a5",
+                "rva": "0x20577a5",
+                "symbol": "0x7ff79f9177a5"
+              },
+              {
+                "va": "0x7ff7a1301fb6",
+                "rva": "0x3a41fb6",
+                "symbol": "0x7ff7a1301fb6"
+              },
+              {
+                "va": "0x7ff7a0a42313",
+                "rva": "0x3182313",
+                "symbol": "0x7ff7a0a42313"
+              },
+              {
+                "va": "0x7ff7a0a43248",
+                "rva": "0x3183248",
+                "symbol": "0x7ff7a0a43248"
+              },
+              {
+                "va": "0x7ff7a0314a63",
+                "rva": "0x2a54a63",
+                "symbol": "0x7ff7a0314a63"
+              },
+              {
+                "va": "0x7ff7a031480a",
+                "rva": "0x2a5480a",
+                "symbol": "0x7ff7a031480a"
+              },
+              {
+                "va": "0x7ff79dbd5842",
+                "rva": "0x315842",
+                "symbol": "0x7ff79dbd5842"
+              },
+              {
+                "va": "0x7ff79dbca98a",
+                "rva": "0x30a98a",
+                "symbol": "0x7ff79dbca98a"
+              },
+              {
+                "va": "0x7ff79dbcf166",
+                "rva": "0x30f166",
+                "symbol": "0x7ff79dbcf166"
+              },
+              {
+                "va": "0x7ff79dbce409",
+                "rva": "0x30e409",
+                "symbol": "0x7ff79dbce409"
+              },
+              {
+                "va": "0x7ff79dbcc6c3",
+                "rva": "0x30c6c3",
+                "symbol": "0x7ff79dbcc6c3"
+              },
+              {
+                "va": "0x7ff79dbcc752",
+                "rva": "0x30c752",
+                "symbol": "0x7ff79dbcc752"
+              },
+              {
+                "va": "0x7ff79dbe9be7",
+                "rva": "0x329be7",
+                "symbol": "0x7ff79dbe9be7"
+              }
+            ]
+          },
+          "target_any": {
+            "event": "ReadFile_buffer_hit",
+            "timestamp_ms": 1780989543394,
+            "event_index": 14,
+            "process_id": 2344,
+            "thread_id": 8808,
+            "caller_rva": "0x205d38d",
+            "handle": "0x18a0",
+            "path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\img\\Vector_SizePressure.clip",
+            "bytes": 65536,
+            "buffer": "0x2918daefa50",
+            "hits": [
+              {
+                "kind": "target_ascii",
+                "address": "0x2918daf3977",
+                "offset": "0x3f27"
+              },
+              {
+                "kind": "preview_ascii",
+                "address": "0x2918daf3a37",
+                "offset": "0x3fe7"
+              }
+            ],
+            "backtrace": [
+              {
+                "va": "0x7ff79f91d38d",
+                "rva": "0x205d38d",
+                "symbol": "0x7ff79f91d38d"
+              },
+              {
+                "va": "0x7ff79f918aee",
+                "rva": "0x2058aee",
+                "symbol": "0x7ff79f918aee"
+              },
+              {
+                "va": "0x7ff79f91799f",
+                "rva": "0x205799f",
+                "symbol": "0x7ff79f91799f"
+              },
+              {
+                "va": "0x7ff79f9177a5",
+                "rva": "0x20577a5",
+                "symbol": "0x7ff79f9177a5"
+              },
+              {
+                "va": "0x7ff7a130065d",
+                "rva": "0x3a4065d",
+                "symbol": "0x7ff7a130065d"
+              },
+              {
+                "va": "0x7ff7a12fe2d3",
+                "rva": "0x3a3e2d3",
+                "symbol": "0x7ff7a12fe2d3"
+              },
+              {
+                "va": "0x7ff7a0bab096",
+                "rva": "0x32eb096",
+                "symbol": "0x7ff7a0bab096"
+              },
+              {
+                "va": "0x7ff7a0a4235c",
+                "rva": "0x318235c",
+                "symbol": "0x7ff7a0a4235c"
+              },
+              {
+                "va": "0x7ff7a0a43248",
+                "rva": "0x3183248",
+                "symbol": "0x7ff7a0a43248"
+              },
+              {
+                "va": "0x7ff7a0314a63",
+                "rva": "0x2a54a63",
+                "symbol": "0x7ff7a0314a63"
+              },
+              {
+                "va": "0x7ff7a031480a",
+                "rva": "0x2a5480a",
+                "symbol": "0x7ff7a031480a"
+              },
+              {
+                "va": "0x7ff79dbd5842",
+                "rva": "0x315842",
+                "symbol": "0x7ff79dbd5842"
+              },
+              {
+                "va": "0x7ff79dbca98a",
+                "rva": "0x30a98a",
+                "symbol": "0x7ff79dbca98a"
+              },
+              {
+                "va": "0x7ff79dbcf166",
+                "rva": "0x30f166",
+                "symbol": "0x7ff79dbcf166"
+              },
+              {
+                "va": "0x7ff79dbce409",
+                "rva": "0x30e409",
+                "symbol": "0x7ff79dbce409"
+              },
+              {
+                "va": "0x7ff79dbcc6c3",
+                "rva": "0x30c6c3",
+                "symbol": "0x7ff79dbcc6c3"
+              }
+            ]
+          },
+          "known_csp_function_hit": {
+            "event": "known_csp_function_hit",
+            "timestamp_ms": 1780989563514,
+            "event_index": 30,
+            "process_id": 2344,
+            "thread_id": 8808,
+            "function_name": "generic_value_reader_143365840",
+            "function_rva": "0x3365840",
+            "caller_rva": "0x331eb1a",
+            "retval": "0x2919d423b10",
+            "args": [
+              {
+                "ptr": "0x2919d417f90",
+                "rva": null,
+                "utf8": "�����\u0002������������������\u0010-\u000f�����\u0001����\r�-\b���\u0001���\u0003���\u000b�����������������������������������EdgeUnit���������\u0016A��\u0002��x\u0016A��\u0002��p\u0016A��\u0002��x\u0016A��\u0002���\u0013A��\u0002��\u000f���2���P�A��\u0002��X\u0017A��\u0002��������������������������\u0005�\u0002������\u0003��\u0001�����������������������\r�������\u0001����\u0010B��\u0002����������",
+                "utf16": "裰郁ʑ",
+                "p0": "0x29190c188f0",
+                "p0_rva": null,
+                "p0_utf8": "@�������A��\u0002�������\u0002��`�܌�\u0002��@����\u0002��\u0002���\u0010���`�\u0004�������������������������\u0001���d�������������\u0001\u0001���������\u0001��������)����������ʚ;�ʚ;�\u0007���\u0003���\u0001�����\u000e���\n���P����\u0003���\u0003���������\u0001����������������&\u000f�����\u0001���\u0001���������������������������������������������������",
+                "p0_utf16": "鹿ꊕ翷"
+              },
+              {
+                "ptr": "0x4",
+                "rva": null,
+                "utf8": null,
+                "utf16": null,
+                "p0": null,
+                "p0_rva": null,
+                "p0_utf8": null,
+                "p0_utf16": null
+              },
+              {
+                "ptr": "0x7ffffffffffffffc",
+                "rva": null,
+                "utf8": null,
+                "utf16": null,
+                "p0": null,
+                "p0_rva": null,
+                "p0_utf8": null,
+                "p0_utf16": null
+              },
+              {
+                "ptr": "0xc8e4f81000",
+                "rva": null,
+                "utf8": "����������\u0010�������\u0007��������������\u001e���������������\u0010��������������(\t������h\"����������������>��\u0002��������������������������h\"��������������������������������������������������������������������������������������������������������������������������������������",
+                "utf16": "",
+                "p0": null,
+                "p0_rva": null,
+                "p0_utf8": null,
+                "p0_utf16": null
+              }
+            ],
+            "hits": [
+              {
+                "kind": "preview_utf8",
+                "text": "extrnlid5943B673F7C84B779ED2D7C96E942EAE��A��\u0002�� \u001dA��\u0002�������������������������������������������nB��\u0002��������������������������\b���\u0002���\u0002���\u0001���\t���\u0001���\u0001���\u0001���\b���������������������������\t���\u0001���/����\u0018��/����\u0018��\b���� ���\u0002��\b���\t���\t���\u0001���\b���\b���\u0003���\u0001���\b���\u0001���\u0001���\b���\b���\b���\b���\u0001�������\u0001���\t���\b���\b���\b���\t���\r���\b���\t���\r���\t���\r���\u0001���\b���\t���\u0001���\t���\u0019���\u0001�������\b���\u0001���\r���\r���\b���\b���\b���\u0007���\u0001���\u0001���\u0001���\b���\u0001�����������S���S���S���S���U���W���X���X���Y���Z���[���[���[���[���[���[���[���[���[���\\���"
+              }
+            ],
+            "backtrace": [
+              {
+                "va": "0x7ff7a0bdeb1a",
+                "rva": "0x331eb1a",
+                "symbol": "0x7ff7a0bdeb1a"
+              },
+              {
+                "va": "0x7ff7a0bdd31b",
+                "rva": "0x331d31b",
+                "symbol": "0x7ff7a0bdd31b"
+              },
+              {
+                "va": "0x7ff7a0bdd563",
+                "rva": "0x331d563",
+                "symbol": "0x7ff7a0bdd563"
+              },
+              {
+                "va": "0x7ff7a0bdc3d9",
+                "rva": "0x331c3d9",
+                "symbol": "0x7ff7a0bdc3d9"
+              },
+              {
+                "va": "0x7ff7a0c12318",
+                "rva": "0x3352318",
+                "symbol": "0x7ff7a0c12318"
+              },
+              {
+                "va": "0x7ff7a0c11c2a",
+                "rva": "0x3351c2a",
+                "symbol": "0x7ff7a0c11c2a"
+              },
+              {
+                "va": "0x7ff7a0ba4b0a",
+                "rva": "0x32e4b0a",
+                "symbol": "0x7ff7a0ba4b0a"
+              },
+              {
+                "va": "0x7ff7a0ba4797",
+                "rva": "0x32e4797",
+                "symbol": "0x7ff7a0ba4797"
+              },
+              {
+                "va": "0x7ff79fe744f1",
+                "rva": "0x25b44f1",
+                "symbol": "0x7ff79fe744f1"
+              },
+              {
+                "va": "0x7ff79fd7fd86",
+                "rva": "0x24bfd86",
+                "symbol": "0x7ff79fd7fd86"
+              },
+              {
+                "va": "0x7ff79fd7cfd3",
+                "rva": "0x24bcfd3",
+                "symbol": "0x7ff79fd7cfd3"
+              },
+              {
+                "va": "0x7ff79fc834d0",
+                "rva": "0x23c34d0",
+                "symbol": "0x7ff79fc834d0"
+              },
+              {
+                "va": "0x7ff79fbbc2b4",
+                "rva": "0x22fc2b4",
+                "symbol": "0x7ff79fbbc2b4"
+              },
+              {
+                "va": "0x7ff79faabef6",
+                "rva": "0x21ebef6",
+                "symbol": "0x7ff79faabef6"
+              },
+              {
+                "va": "0x7ff7a0a3daf8",
+                "rva": "0x317daf8",
+                "symbol": "0x7ff7a0a3daf8"
+              },
+              {
+                "va": "0x7ff7a0316c2d",
+                "rva": "0x2a56c2d",
+                "symbol": "0x7ff7a0316c2d"
+              }
+            ]
+          },
+          "string_api_hit": {
+            "event": "string_api_hit",
+            "timestamp_ms": 1780989563516,
+            "event_index": 31,
+            "process_id": 2344,
+            "thread_id": 8808,
+            "module": "VCRUNTIME140.dll",
+            "export_name": "memcmp",
+            "caller_rva": "0x20590ee",
+            "retval": null,
+            "args": [
+              "0x2919d423b10",
+              "0x7ff7a1d67678",
+              "0x8",
+              "0x8"
+            ],
+            "hits": [
+              {
+                "kind": "preview_utf8",
+                "text": "extrnlid5943B673F7C84B779ED2D7C96E942EAE��A��\u0002�� \u001dA��\u0002�������������������������������������������nB��\u0002��������������������������\b���\u0002���\u0002���\u0001���\t���\u0001���\u0001���\u0001���\b���������������������������\t���\u0001���/����\u0018��/����\u0018��\b���� ���\u0002��\b���\t���\t���\u0001���\b���\b���\u0003���\u0001���\b���\u0001���\u0001���\b���\b���\b���\b���\u0001�������\u0001���\t���\b���\b���\b���\t���\r���\b���\t���\r���\t���\r���\u0001���\b���\t���\u0001���\t���\u0019���\u0001�������\b���\u0001���\r���\r���\b���\b���\b���\u0007���\u0001���\u0001���\u0001���\b���\u0001�����������S���S���S���S���U���W���X���X���Y���Z���[���[���[���[���[���[���[���[���[���\\���"
+              }
+            ],
+            "backtrace": [
+              {
+                "va": "0x7ff79f9190ee",
+                "rva": "0x20590ee",
+                "symbol": "0x7ff79f9190ee"
+              },
+              {
+                "va": "0x7ff7a12fc15a",
+                "rva": "0x3a3c15a",
+                "symbol": "0x7ff7a12fc15a"
+              },
+              {
+                "va": "0x7ff7a0bdeb4c",
+                "rva": "0x331eb4c",
+                "symbol": "0x7ff7a0bdeb4c"
+              },
+              {
+                "va": "0x7ff7a0bdd31b",
+                "rva": "0x331d31b",
+                "symbol": "0x7ff7a0bdd31b"
+              },
+              {
+                "va": "0x7ff7a0bdd563",
+                "rva": "0x331d563",
+                "symbol": "0x7ff7a0bdd563"
+              },
+              {
+                "va": "0x7ff7a0bdc3d9",
+                "rva": "0x331c3d9",
+                "symbol": "0x7ff7a0bdc3d9"
+              },
+              {
+                "va": "0x7ff7a0c12318",
+                "rva": "0x3352318",
+                "symbol": "0x7ff7a0c12318"
+              },
+              {
+                "va": "0x7ff7a0c11c2a",
+                "rva": "0x3351c2a",
+                "symbol": "0x7ff7a0c11c2a"
+              },
+              {
+                "va": "0x7ff7a0ba4b0a",
+                "rva": "0x32e4b0a",
+                "symbol": "0x7ff7a0ba4b0a"
+              },
+              {
+                "va": "0x7ff7a0ba4797",
+                "rva": "0x32e4797",
+                "symbol": "0x7ff7a0ba4797"
+              },
+              {
+                "va": "0x7ff79fe744f1",
+                "rva": "0x25b44f1",
+                "symbol": "0x7ff79fe744f1"
+              },
+              {
+                "va": "0x7ff79fd7fd86",
+                "rva": "0x24bfd86",
+                "symbol": "0x7ff79fd7fd86"
+              },
+              {
+                "va": "0x7ff79fd7cfd3",
+                "rva": "0x24bcfd3",
+                "symbol": "0x7ff79fd7cfd3"
+              },
+              {
+                "va": "0x7ff79fc834d0",
+                "rva": "0x23c34d0",
+                "symbol": "0x7ff79fc834d0"
+              },
+              {
+                "va": "0x7ff79fbbc2b4",
+                "rva": "0x22fc2b4",
+                "symbol": "0x7ff79fbbc2b4"
+              },
+              {
+                "va": "0x7ff79faabef6",
+                "rva": "0x21ebef6",
+                "symbol": "0x7ff79faabef6"
+              }
+            ]
+          }
+        },
+        "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_target_external_id_hunter_20260609_021839_552_pid2344.jsonl"
+      },
+      "route_hint": "first target sighting is raw file/mapped input; next hook should be the caller/backtrace parser above ReadFile"
+    }
+  ]
+}
