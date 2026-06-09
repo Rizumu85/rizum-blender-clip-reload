@@ -99,7 +99,11 @@ def classify(items: list[dict[str, Any]]) -> tuple[str, str, str]:
     startup_vd = bool(startup and startup["observed"].get("VectorData"))
     open_vo = bool(open_run and open_run["observed"].get("VectorObjectList"))
     open_vd = bool(open_run and open_run["observed"].get("VectorData"))
-    wrapper_direct = any(i["wrapper_saw_target_strings_directly"] for i in items)
+    wrapper_direct_target_schema = any(
+        i["observed"].get("VectorObjectList") or i["observed"].get("VectorData")
+        for i in items
+        if i["wrapper_saw_target_strings_directly"]
+    )
 
     if (startup_vo or startup_vd) and not (open_vo or open_vd):
         return (
@@ -119,10 +123,10 @@ def classify(items: list[dict[str, Any]]) -> tuple[str, str, str]:
             "VectorObjectList appears but VectorData does not.",
             "Next target: table descriptor construction and column descriptor lookup.",
         )
-    if wrapper_direct:
+    if wrapper_direct_target_schema:
         return (
             "E",
-            "0x142049220 sees target strings directly.",
+            "0x142049220 sees VectorObjectList/VectorData target strings directly.",
             "Next target: caller function(s) passing those strings.",
         )
     return (
