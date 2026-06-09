@@ -78,9 +78,9 @@ def merge_counter_from_summary(rows: list[dict[str, Any]], key: str) -> Counter[
         if isinstance(value, dict):
             for item, count in value.items():
                 try:
-                    counter[str(item)] += int(count)
+                    counter[str(item)] = max(counter[str(item)], int(count))
                 except (TypeError, ValueError):
-                    counter[str(item)] += 1
+                    counter[str(item)] = max(counter[str(item)], 1)
     return counter
 
 

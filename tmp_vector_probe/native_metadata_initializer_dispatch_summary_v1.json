@@ -1,30 +1,30 @@
 {
   "output_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_summary_v1.json",
   "inputs": [
-    "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl"
+    "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl"
   ],
   "files_by_classification": {
     "A": [
-      "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl"
+      "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl"
     ]
   },
   "combined_stub_counts": {
-    "VectorData": 8,
-    "VectorObjectList": 7,
-    "TimeLapseBlob": 7
+    "VectorData": 1,
+    "VectorObjectList": 1,
+    "TimeLapseBlob": 1
   },
   "combined_target_string_counts": {
-    "TimeLapseBlob": 219,
-    "VectorObjectList": 389,
-    "VectorData": 396
+    "TimeLapseBlob": 54,
+    "VectorObjectList": 102,
+    "VectorData": 104
   },
   "next_single_hook_target": "descriptor pointers produced by VectorObjectList/VectorData stubs and their consumer",
   "per_file": [
     {
-      "file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+      "file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
       "row_count": 95,
       "ready": {
-        "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+        "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
         "event": "ready",
         "timestamp_ms": 1780978747723,
         "process_id": 5268
@@ -39,98 +39,98 @@
       "dispatcher_was_hit": false,
       "dispatcher_note": "No concrete dispatcher was statically identified; this trace hooks confirmed stubs and wrapper only.",
       "stub_counts": {
-        "VectorData": 8,
-        "VectorObjectList": 7,
-        "TimeLapseBlob": 7
+        "VectorData": 1,
+        "VectorObjectList": 1,
+        "TimeLapseBlob": 1
       },
       "VectorObjectList_stub_called": true,
       "VectorData_stub_called": true,
       "TimeLapseBlob_stub_called": true,
       "target_string_counts": {
-        "TimeLapseBlob": 219,
-        "VectorObjectList": 389,
-        "VectorData": 396
+        "TimeLapseBlob": 54,
+        "VectorObjectList": 102,
+        "VectorData": 104
       },
       "wrapper_callers_top20": [
         [
           "0x1b3a7fe",
-          24408
+          3950
         ],
         [
           "0x1b3a8ad",
-          24407
+          3950
         ],
         [
           "0x3315f29",
-          6090
+          1544
+        ],
+        [
+          "0x1b67f34",
+          1222
         ],
         [
           "0x33163d2",
-          5041
+          1196
         ],
         [
           "0x3316493",
-          5041
+          1196
         ],
         [
           "0x3316fce",
-          4919
+          1176
         ],
         [
           "0x331239a",
-          4919
+          1176
         ],
         [
           "0x33123ab",
-          4919
+          1176
         ],
         [
           "0x33123bc",
-          4919
+          1176
         ],
         [
           "0x331504d",
-          4919
+          1176
         ],
         [
           "0x3315068",
-          4919
+          1176
         ],
         [
           "0x3315399",
-          4919
+          1176
         ],
         [
           "0x331272b",
-          4919
+          1176
         ],
         [
           "0x331275e",
-          4918
+          1176
         ],
         [
           "0x3311e27",
-          4918
+          1176
         ],
         [
           "0x33168d2",
-          4399
+          1004
         ],
         [
           "0x331694b",
-          4399
+          1004
         ],
         [
           "0x3316a37",
-          4399
+          1004
         ],
         [
           "0x33153fd",
-          3790
-        ],
-        [
-          "0x3316967",
-          3466
+          848
         ]
       ],
       "target_wrapper_callers_top20": {
@@ -417,15 +417,15 @@
       },
       "called_vs_skipped_entries": {
         "called": {
-          "VectorData": 8,
-          "VectorObjectList": 7,
-          "TimeLapseBlob": 7
+          "VectorData": 1,
+          "VectorObjectList": 1,
+          "TimeLapseBlob": 1
         },
         "table_present_but_not_called": []
       },
       "first_stub_events": {
         "VectorObjectList": {
-          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+          "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
           "event": "registration_stub_entry",
           "timestamp_ms": 1780978754676,
           "event_index": 11,
@@ -443,7 +443,7 @@
           "descriptor_global_pointer_from_rcx": null
         },
         "VectorData": {
-          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+          "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
           "event": "registration_stub_entry",
           "timestamp_ms": 1780978751656,
           "event_index": 3,
@@ -461,7 +461,7 @@
           "descriptor_global_pointer_from_rcx": null
         },
         "TimeLapseBlob": {
-          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+          "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
           "event": "registration_stub_entry",
           "timestamp_ms": 1780978754706,
           "event_index": 19,
@@ -481,7 +481,7 @@
       },
       "first_target_string_events": {
         "VectorObjectList": {
-          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+          "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
           "event": "metadata_wrapper_target_string",
           "timestamp_ms": 1780978751657,
           "event_index": 4,
@@ -499,7 +499,7 @@
           "return_value": "0x7ff7a2d46110"
         },
         "VectorData": {
-          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+          "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
           "event": "metadata_wrapper_target_string",
           "timestamp_ms": 1780978751657,
           "event_index": 4,
@@ -517,7 +517,7 @@
           "return_value": "0x7ff7a2d46110"
         },
         "TimeLapseBlob": {
-          "_file": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
+          "_file": "tmp_vector_probe\\native_metadata_initializer_dispatch_trace_20260608_231907_721_pid5268.jsonl",
           "event": "metadata_wrapper_target_string",
           "timestamp_ms": 1780978750813,
           "event_index": 0,
