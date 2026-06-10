@@ -25,6 +25,8 @@ from typing import Any, Iterable
 
 from PIL import Image
 import pyautogui
+import cv2
+import numpy as np
 from pywinauto import Desktop
 from pywinauto.application import Application
 from pywinauto.findwindows import ElementNotFoundError
@@ -59,6 +61,13 @@ class ControlInfo:
     rectangle: list[int]
     visible: bool
     enabled: bool
+
+
+@dataclass
+class VisualCandidate:
+    label: str
+    rectangle: list[int]
+    template_path: str | None = None
 
 
 def stamp() -> str:
@@ -306,6 +315,138 @@ def calibrate_templates(win, controls: list[ControlInfo], screenshot_path: Path)
     return saved
 
 
+def _connected_boxes(mask: np.ndarray) -> list[tuple[int, int, int, int, int]]:
+    count, labels, stats, _centroids = cv2.connectedComponentsWithStats(mask.astype("uint8"), 8)
+    boxes: list[tuple[int, int, int, int, int]] = []
+    for label in range(1, count):
+        x, y, w, h, area = [int(v) for v in stats[label]]
+        if area < 4 or w < 2 or h < 3:
+            continue
+        boxes.append((x, y, x + w, y + h, area))
+    return boxes
+
+
+def _merge_boxes(boxes: list[tuple[int, int, int, int]], gap_x: int, gap_y: int) -> list[tuple[int, int, int, int]]:
+    merged: list[tuple[int, int, int, int]] = []
+    for box in sorted(boxes, key=lambda b: (b[1], b[0])):
+        x0, y0, x1, y1 = box
+        placed = False
+        for idx, current in enumerate(merged):
+            cx0, cy0, cx1, cy1 = current
+            vertical_overlap = min(y1, cy1) - max(y0, cy0)
+            close_y = abs(((y0 + y1) // 2) - ((cy0 + cy1) // 2)) <= gap_y or vertical_overlap > 0
+            close_x = x0 <= cx1 + gap_x and x1 >= cx0 - gap_x
+            if close_y and close_x:
+                merged[idx] = (min(cx0, x0), min(cy0, y0), max(cx1, x1), max(cy1, y1))
+                placed = True
+                break
+        if not placed:
+            merged.append(box)
+    # One extra pass settles transitive merges.
+    if len(merged) != len(boxes):
+        return _merge_boxes(merged, gap_x, gap_y)
+    return merged
+
+
+def _save_template_from_window_screenshot(
+    screenshot_path: Path,
+    rect: tuple[int, int, int, int],
+    label: str,
+    *,
+    padding: int = 3,
+) -> str:
+    image = Image.open(screenshot_path)
+    w, h = image.size
+    x0, y0, x1, y1 = rect
+    x0 = max(0, x0 - padding)
+    y0 = max(0, y0 - padding)
+    x1 = min(w, x1 + padding)
+    y1 = min(h, y1 + padding)
+    TEMPLATE_DIR.mkdir(parents=True, exist_ok=True)
+    out = TEMPLATE_DIR / f"{label}.png"
+    image.crop((x0, y0, x1, y1)).save(out)
+    return str(out)
+
+
+def calibrate_visual_templates(screenshot_path: Path) -> tuple[dict[str, str], list[VisualCandidate]]:
+    """Create first-run templates from the current window screenshot.
+
+    UIA exposes very little for CSP, so this uses image evidence: threshold dark
+    connected components, find the top menu text row, and save the first word as
+    file_menu.png. It also saves toolbar candidates for manual review.
+    """
+    image = Image.open(screenshot_path).convert("RGB")
+    arr = np.asarray(image)
+    gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+    height, width = gray.shape
+
+    top_h = max(80, min(int(height * 0.18), 180))
+    top = gray[:top_h, :]
+    dark = top < 140
+    boxes5 = _connected_boxes(dark)
+
+    # Letter components in the menu area, then grouped into words.
+    letter_boxes = [
+        (x0, y0, x1, y1)
+        for x0, y0, x1, y1, area in boxes5
+        if 4 <= (y1 - y0) <= 24 and 2 <= (x1 - x0) <= 30 and area <= 220
+    ]
+    word_boxes = _merge_boxes(letter_boxes, gap_x=7, gap_y=8)
+    word_boxes = [
+        box for box in word_boxes
+        if 10 <= (box[2] - box[0]) <= 120 and 8 <= (box[3] - box[1]) <= 28
+    ]
+
+    # Find a row with several menu words. This avoids hardcoding File's pixel
+    # position while still using the visible top menu layout.
+    rows: list[list[tuple[int, int, int, int]]] = []
+    for box in sorted(word_boxes, key=lambda b: (b[1], b[0])):
+        cy = (box[1] + box[3]) // 2
+        row = next((r for r in rows if abs(((r[0][1] + r[0][3]) // 2) - cy) <= 8), None)
+        if row is None:
+            rows.append([box])
+        else:
+            row.append(box)
+    rows = [sorted(row, key=lambda b: b[0]) for row in rows if len(row) >= 4]
+    rows.sort(key=lambda row: (0 if row[0][0] < width * 0.08 else 1, row[0][1], -len(row)))
+
+    saved: dict[str, str] = {}
+    candidates: list[VisualCandidate] = []
+    if rows:
+        menu_row = rows[0]
+        for idx, box in enumerate(menu_row[:12]):
+            label = "file_menu" if idx == 0 else f"top_menu_{idx:02d}"
+            path = _save_template_from_window_screenshot(screenshot_path, box, label, padding=4)
+            candidates.append(VisualCandidate(label=label, rectangle=list(box), template_path=path))
+            if idx == 0:
+                saved["file_menu"] = path
+
+    # Toolbar/icon candidates below menu row. These are not named automatically;
+    # the dry-run output lets the user inspect and choose if CSP's UI language or
+    # theme makes the PNG button visually distinct.
+    toolbar_y0 = rows[0][0][3] + 8 if rows else int(top_h * 0.45)
+    toolbar_y1 = min(top_h + 80, height)
+    toolbar = gray[toolbar_y0:toolbar_y1, :]
+    toolbar_dark = toolbar < 125
+    icon_boxes_raw = _connected_boxes(toolbar_dark)
+    icon_boxes = [
+        (x0, y0 + toolbar_y0, x1, y1 + toolbar_y0)
+        for x0, y0, x1, y1, area in icon_boxes_raw
+        if 6 <= (x1 - x0) <= 70 and 6 <= (y1 - y0) <= 60 and area >= 20
+    ]
+    icon_boxes = _merge_boxes(icon_boxes, gap_x=6, gap_y=6)
+    icon_boxes = [
+        box for box in icon_boxes
+        if 8 <= (box[2] - box[0]) <= 90 and 8 <= (box[3] - box[1]) <= 70
+    ]
+    for idx, box in enumerate(sorted(icon_boxes, key=lambda b: (b[1], b[0]))[:60]):
+        label = f"toolbar_candidate_{idx:02d}"
+        path = _save_template_from_window_screenshot(screenshot_path, box, label, padding=5)
+        candidates.append(VisualCandidate(label=label, rectangle=list(box), template_path=path))
+
+    return saved, candidates
+
+
 def click_template(name: str, *, dry_run: bool, confidence: float) -> bool:
     path = TEMPLATE_DIR / f"{name}.png"
     if not path.exists():
@@ -318,6 +459,28 @@ def click_template(name: str, *, dry_run: bool, confidence: float) -> bool:
     if not dry_run:
         pyautogui.click(x, y)
     return True
+
+
+def has_template(name: str) -> bool:
+    return (TEMPLATE_DIR / f"{name}.png").exists()
+
+
+def ensure_execute_ready(args: argparse.Namespace) -> None:
+    missing: list[str] = []
+    if args.open and args.open_method == "uia" and not has_template("file_menu"):
+        missing.append("file_menu.png")
+    # CSP's toolbar/menu is mostly custom-drawn on this machine, so exporting
+    # needs a verified PNG button/menu template unless UIA exposes one later.
+    if not has_template("png_button") and not has_template("png_menu"):
+        missing.append("png_button.png or png_menu.png")
+    if missing:
+        raise RuntimeError(
+            "execute preflight failed; missing visual template(s): "
+            + ", ".join(missing)
+            + ". Run dry-run with --calibrate-templates, inspect "
+            + str(TEMPLATE_DIR)
+            + ", and copy the correct toolbar/menu candidate to the expected name before using --execute."
+        )
 
 
 def click_by_uia_or_template(win, patterns: Iterable[str], template_name: str, *, dry_run: bool, timeout: float = 4.0) -> None:
@@ -451,11 +614,20 @@ def dry_run_report(win, args: argparse.Namespace) -> dict[str, Any]:
     print(f"screenshot: {screenshot_path}")
     print(f"control_dump: {dump_path}")
     print_candidates(controls)
-    templates = calibrate_templates(win, controls, screenshot_path) if args.calibrate_templates else {}
+    templates: dict[str, str] = {}
+    visual_candidates: list[VisualCandidate] = []
+    if args.calibrate_templates:
+        templates.update(calibrate_templates(win, controls, screenshot_path))
+        visual_templates, visual_candidates = calibrate_visual_templates(screenshot_path)
+        templates.update({k: v for k, v in visual_templates.items() if k not in templates})
     if templates:
         print("\n[templates]")
         for label, path in templates.items():
             print(f"  {label}: {path}")
+    if visual_candidates:
+        print("\n[visual candidates]")
+        for item in visual_candidates[:80]:
+            print(f"  {item.label}: rect={item.rectangle} template={item.template_path}")
     return {
         "title": win.window_text(),
         "rect": norm_rect(win.rectangle()),
@@ -463,6 +635,7 @@ def dry_run_report(win, args: argparse.Namespace) -> dict[str, Any]:
         "screenshot": str(screenshot_path),
         "control_dump": str(dump_path),
         "templates": templates,
+        "visual_candidates": [asdict(item) for item in visual_candidates],
     }
 
 
@@ -511,6 +684,7 @@ def main() -> int:
         print(f"summary: {summary_path}")
         return 0
 
+    ensure_execute_ready(args)
     set_foreground(win)
     if args.open:
         if args.open_method == "uia":
