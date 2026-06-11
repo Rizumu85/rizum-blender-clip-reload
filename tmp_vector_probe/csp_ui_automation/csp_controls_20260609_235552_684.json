@@ -1,0 +1,77 @@
+[
+  {
+    "index": 0,
+    "name": "CLIP STUDIO PAINT",
+    "control_type": "Window",
+    "automation_id": null,
+    "class_name": "742DEA58-ED6B-4402-BC11-20DFC6D08040",
+    "rectangle": [
+      0,
+      0,
+      1522,
+      1387
+    ],
+    "visible": true,
+    "enabled": true
+  },
+  {
+    "index": 1,
+    "name": "",
+    "control_type": "Pane",
+    "automation_id": null,
+    "class_name": "742DEA58-ED6B-4402-BC11-20DFC6D08040-2D2FC079-EABA-46f4-9B20-A910FB25B322",
+    "rectangle": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "visible": true,
+    "enabled": true
+  },
+  {
+    "index": 2,
+    "name": "",
+    "control_type": "Pane",
+    "automation_id": null,
+    "class_name": "742DEA58-ED6B-4402-BC11-20DFC6D08040-2D2FC079-EABA-46f4-9B20-A910FB25B322",
+    "rectangle": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "visible": true,
+    "enabled": true
+  },
+  {
+    "index": 3,
+    "name": "",
+    "control_type": "Pane",
+    "automation_id": null,
+    "class_name": "742DEA58-ED6B-4402-BC11-20DFC6D08040-2D2FC079-EABA-46f4-9B20-A910FB25B322",
+    "rectangle": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "visible": true,
+    "enabled": true
+  },
+  {
+    "index": 4,
+    "name": "",
+    "control_type": "Pane",
+    "automation_id": null,
+    "class_name": "742DEA58-ED6B-4402-BC11-20DFC6D08040-2D2FC079-EABA-46f4-9B20-A910FB25B322",
+    "rectangle": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "visible": true,
+    "enabled": true
+  }
+]

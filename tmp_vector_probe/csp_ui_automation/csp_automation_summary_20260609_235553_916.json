@@ -1,0 +1,17 @@
+{
+  "dry_run": true,
+  "report": {
+    "title": "CLIP STUDIO PAINT",
+    "rect": [
+      0,
+      0,
+      1522,
+      1387
+    ],
+    "foreground_pid": 988,
+    "screenshot": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\csp_window_20260609_235552_455.png",
+    "control_dump": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\csp_controls_20260609_235552_684.json",
+    "templates": {}
+  },
+  "actions": []
+}

@@ -1,0 +1,57 @@
+{
+  "classification": "E",
+  "classification_rationale": "No VectorObjectList/VectorData metadata or consumer evidence was observed in the supplied traces.",
+  "consumer": {
+    "caller_rvas": {},
+    "consumer_rows": 0,
+    "first_target_records": [],
+    "row_fields": [],
+    "target_id_records": 0
+  },
+  "consumer_trace_path": null,
+  "ground_truth_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\vectorobjectlist_ground_truth_v1.json",
+  "ground_truth_target_row": {
+    "CanvasId": 1,
+    "LayerId": 21,
+    "MainId": 15,
+    "VectorData": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+    "VectorData_equals_target": true,
+    "VectorData_payload": {
+      "brush_style_id_guess": 0,
+      "exta_index": 4,
+      "external_id": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+      "flags": 8321,
+      "flags_hex": "0x2081",
+      "header_len": 92,
+      "is_0x2081_or_0x2011": true,
+      "is_saved_vector_stroke": true,
+      "payload_hash_4096": "fnv1a32:7bece4ac",
+      "payload_prefix_ascii": "...\\...L...X...X...... ............ ............................?...............@4.........)@eO.",
+      "payload_prefix_hex": "00 00 00 5c 00 00 00 4c 00 00 00 58 00 00 00 58 00 00 00 1d 00 00 20 81 00 00 00 a4 00 00 00 88 00 00 02 20 00 00 01 f7 00 00 00 00 00 00 00 00 00 00 00 00 e4 e4 e4 e4 e0 e0 e0 e0 ed ed ed ed 3f f0 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 40 34 00 00 00 00 00 00 02 b7 fa 29 40 65 4f 80",
+      "payload_size": 2644,
+      "point_count": 164,
+      "point_header_len": 76,
+      "prefix_hex": "00 00 00 5c 00 00 00 4c 00 00 00 58 00 00 00 58 00 00 00 1d 00 00 20 81 00 00 00 a4 00 00 00 88 00 00 02 20 00 00 01 f7 00 00 00 00 00 00 00 00 00 00 00 00 e4 e4 e4 e4 e0 e0 e0 e0 ed ed ed ed 3f f0 00 00 00 00 00 00 00 00 00 00 00 00 00 0b 40 34 00 00 00 00 00 00 02 b7 fa 29 40 65 4f 80",
+      "record_offset": 0,
+      "stride_a": 88,
+      "stride_b": 88
+    },
+    "_PW_ID": 1
+  },
+  "metadata": {
+    "caller_rvas": {},
+    "descriptor_pointers": {},
+    "first_records": {},
+    "metadata_rows": 0,
+    "observed": {},
+    "wrapper_counts": {}
+  },
+  "metadata_trace_path": "tmp_vector_probe\\native_sqlite_table_metadata_trace_20260608_223911_669_pid13036.jsonl",
+  "next_single_hook_target": "Next target: re-audit static xrefs or attach earlier/spawn.",
+  "row_consumer_identified": false,
+  "target_id_state": "not observed",
+  "target_vector_data_id": "extrnlid62D15CB4395245648869B4AEBAD8FBCE",
+  "target_vectordata_id_observed_natively": false,
+  "vectordata_column_metadata_observed": false,
+  "vectorobjectlist_table_metadata_observed": false
+}

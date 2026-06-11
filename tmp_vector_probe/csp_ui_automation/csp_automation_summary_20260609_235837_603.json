@@ -1,0 +1,321 @@
+{
+  "dry_run": true,
+  "report": {
+    "title": "CLIP STUDIO PAINT",
+    "rect": [
+      0,
+      0,
+      1522,
+      1387
+    ],
+    "foreground_pid": 8208,
+    "screenshot": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\csp_window_20260609_235835_849.png",
+    "control_dump": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\csp_controls_20260609_235836_147.json",
+    "templates": {
+      "file_menu": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\file_menu.png"
+    },
+    "visual_candidates": [
+      {
+        "label": "file_menu",
+        "rectangle": [
+          27,
+          48,
+          55,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\file_menu.png"
+      },
+      {
+        "label": "top_menu_01",
+        "rectangle": [
+          82,
+          48,
+          113,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_01.png"
+      },
+      {
+        "label": "top_menu_02",
+        "rectangle": [
+          138,
+          47,
+          201,
+          63
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_02.png"
+      },
+      {
+        "label": "top_menu_03",
+        "rectangle": [
+          226,
+          48,
+          303,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_03.png"
+      },
+      {
+        "label": "top_menu_04",
+        "rectangle": [
+          330,
+          48,
+          373,
+          63
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_04.png"
+      },
+      {
+        "label": "top_menu_05",
+        "rectangle": [
+          399,
+          48,
+          447,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_05.png"
+      },
+      {
+        "label": "top_menu_06",
+        "rectangle": [
+          473,
+          48,
+          511,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_06.png"
+      },
+      {
+        "label": "top_menu_07",
+        "rectangle": [
+          538,
+          48,
+          579,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_07.png"
+      },
+      {
+        "label": "top_menu_08",
+        "rectangle": [
+          604,
+          48,
+          668,
+          59
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_08.png"
+      },
+      {
+        "label": "top_menu_09",
+        "rectangle": [
+          694,
+          48,
+          728,
+          62
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\top_menu_09.png"
+      },
+      {
+        "label": "toolbar_candidate_00",
+        "rectangle": [
+          381,
+          82,
+          408,
+          109
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_00.png"
+      },
+      {
+        "label": "toolbar_candidate_01",
+        "rectangle": [
+          573,
+          82,
+          600,
+          103
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_01.png"
+      },
+      {
+        "label": "toolbar_candidate_02",
+        "rectangle": [
+          934,
+          82,
+          958,
+          107
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_02.png"
+      },
+      {
+        "label": "toolbar_candidate_03",
+        "rectangle": [
+          849,
+          83,
+          875,
+          109
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_03.png"
+      },
+      {
+        "label": "toolbar_candidate_04",
+        "rectangle": [
+          1111,
+          90,
+          1133,
+          102
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_04.png"
+      },
+      {
+        "label": "toolbar_candidate_05",
+        "rectangle": [
+          56,
+          117,
+          72,
+          135
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_05.png"
+      },
+      {
+        "label": "toolbar_candidate_06",
+        "rectangle": [
+          121,
+          117,
+          140,
+          139
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_06.png"
+      },
+      {
+        "label": "toolbar_candidate_07",
+        "rectangle": [
+          81,
+          148,
+          109,
+          176
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_07.png"
+      },
+      {
+        "label": "toolbar_candidate_08",
+        "rectangle": [
+          250,
+          149,
+          277,
+          176
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_08.png"
+      },
+      {
+        "label": "toolbar_candidate_09",
+        "rectangle": [
+          166,
+          150,
+          192,
+          176
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_09.png"
+      },
+      {
+        "label": "toolbar_candidate_10",
+        "rectangle": [
+          126,
+          158,
+          146,
+          168
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_10.png"
+      },
+      {
+        "label": "toolbar_candidate_11",
+        "rectangle": [
+          211,
+          158,
+          231,
+          168
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_11.png"
+      },
+      {
+        "label": "toolbar_candidate_12",
+        "rectangle": [
+          307,
+          158,
+          315,
+          168
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_12.png"
+      },
+      {
+        "label": "toolbar_candidate_13",
+        "rectangle": [
+          39,
+          160,
+          55,
+          174
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_13.png"
+      },
+      {
+        "label": "toolbar_candidate_14",
+        "rectangle": [
+          1192,
+          161,
+          1206,
+          174
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_14.png"
+      },
+      {
+        "label": "toolbar_candidate_15",
+        "rectangle": [
+          1171,
+          163,
+          1179,
+          173
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_15.png"
+      },
+      {
+        "label": "toolbar_candidate_16",
+        "rectangle": [
+          1149,
+          209,
+          1159,
+          217
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_16.png"
+      },
+      {
+        "label": "toolbar_candidate_17",
+        "rectangle": [
+          267,
+          213,
+          276,
+          222
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_17.png"
+      },
+      {
+        "label": "toolbar_candidate_18",
+        "rectangle": [
+          289,
+          213,
+          298,
+          222
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_18.png"
+      },
+      {
+        "label": "toolbar_candidate_19",
+        "rectangle": [
+          27,
+          214,
+          52,
+          240
+        ],
+        "template_path": "E:\\Documents\\Claude\\Projects\\rizum-blender-clip-reload\\tmp_vector_probe\\csp_ui_automation\\templates\\toolbar_candidate_19.png"
+      }
+    ]
+  },
+  "actions": []
+}

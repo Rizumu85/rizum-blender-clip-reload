@@ -1,0 +1,16 @@
+     ____
+    / _  |   Frida 17.10.1 - A world-class dynamic instrumentation toolkit
+   | (_| |
+    > _  |   Commands:
+   /_/ |_|       help      -> Displays the help system
+   . . . .       object?   -> Display information about 'object'
+   . . . .       exit/quit -> Exit
+   . . . .
+   . . . .   More info at https://frida.re/docs/home/
+   . . . .
+   . . . .   Connected to Local System (id=local)
+Spawning `C:\Program Files\CELSYS\CLIP STUDIO 1.5\CLIP STUDIO PAINT\CLIPStudioPaint.exe E:\Documents\Claude\Projects\rizum-blender-clip-reload\img\Vector_SizePressure.clip`...
+Spawned `C:\Program Files\CELSYS\CLIP STUDIO 1.5\CLIP STUDIO PAINT\CLIPStudioPaint.exe E:\Documents\Claude\Projects\rizum-blender-clip-reload\img\Vector_SizePressure.clip`. Resuming main thread!
+[Local::CLIPStudioPaint.exe ]-> Process terminated
+
+Thank you for using Frida!

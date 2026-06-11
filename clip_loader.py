@@ -4284,11 +4284,7 @@ class ClipFile:
                 ):
                     thickness_base = max(float(style.thickness_base), 0.05)
                     rotation_base = float(style.rotation_base)
-                    rotation_from_horizontal = abs(((rotation_base + 90.0) % 180.0) - 90.0)
-                    if rotation_from_horizontal > 1.0:
-                        use_thickness_ellipse = True
-                    else:
-                        radius_base *= thickness_base
+                    use_thickness_ellipse = True
                 if (
                     style is not None
                     and style.pattern_style == 0
