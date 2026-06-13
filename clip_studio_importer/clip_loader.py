@@ -29,6 +29,7 @@ import sqlite3
 import struct
 import tempfile
 import zlib
+import itertools
 from dataclasses import dataclass
 from typing import Iterable, NamedTuple, Optional
 
@@ -2396,7 +2397,7 @@ class ClipFile:
         det = major_sq * minor_sq
         cx, cy = center
         cy0 = cy - 0.5
-        y_extent = math.sqrt(x_coeff)
+        y_extent_cap = math.sqrt(row_coeff)
 
         inner_major = max(radius_major - aa_width, 0.0)
         inner_minor = max(radius_minor - aa_width, 0.0)
@@ -2448,9 +2449,9 @@ class ClipFile:
                         inner_right = q3 + width
                 else:
                     raw = (
-                        (float(y) - (cy0 - y_extent) + 0.5) / aa_width
+                        (float(y) - (cy0 - y_extent_cap) + 0.5) / aa_width
                         if cy0 > float(y)
-                        else ((cy0 + y_extent) - float(y) - 0.5) / aa_width
+                        else ((cy0 + y_extent_cap) - float(y) - 0.5) / aa_width
                     )
                     cap = max(0.0, min(raw, 1.0))
             else:
@@ -2493,6 +2494,7 @@ class ClipFile:
         thickness: float = 1.0,
         rotation_degrees: float = 0.0,
         hardness: float = 1.0,
+        native_axis_flag: bool = True,
     ) -> None:
         radius = max(float(radius), 0.0)
         opacity_cap = max(0.0, min(float(opacity_cap), 1.0))
@@ -2529,11 +2531,21 @@ class ClipFile:
         use_ellipse = thickness < 0.999999
         radius_major = radius
         radius_minor = max(radius_major * thickness, 0.0)
-        outer_radius = radius_major if aa_width <= 0.0 else radius_major + 1.0
-        min_x = max(int(np.floor(cx - outer_radius - 1.0)), 0)
-        max_x = min(int(np.ceil(cx + outer_radius + 1.0)), self.width - 1)
-        min_y = max(int(np.floor(cy - outer_radius - 1.0)), 0)
-        max_y = min(int(np.ceil(cy + outer_radius + 1.0)), self.height - 1)
+        if use_ellipse:
+            angle = np.deg2rad(float(rotation_degrees) + 90.0)
+            cos_a = float(np.cos(angle))
+            sin_a = float(np.sin(angle))
+            x_extent = math.sqrt(radius_minor * radius_minor * sin_a * sin_a + radius_major * radius_major * cos_a * cos_a)
+            y_extent = math.sqrt(radius_minor * radius_minor * cos_a * cos_a + radius_major * radius_major * sin_a * sin_a)
+            outer_radius_x = x_extent + (1.0 if aa_width > 0.0 else 0.0)
+            outer_radius_y = y_extent + (1.0 if aa_width > 0.0 else 0.0)
+        else:
+            outer_radius_x = radius_major + (1.0 if aa_width > 0.0 else 0.0)
+            outer_radius_y = outer_radius_x
+        min_x = max(int(np.floor(cx - outer_radius_x - 1.0)), 0)
+        max_x = min(int(np.ceil(cx + outer_radius_x + 1.0)), self.width - 1)
+        min_y = max(int(np.floor(cy - outer_radius_y - 1.0)), 0)
+        max_y = min(int(np.ceil(cy + outer_radius_y + 1.0)), self.height - 1)
         if max_x < min_x or max_y < min_y:
             return
 
@@ -2552,12 +2564,14 @@ class ClipFile:
             if aa_width <= 0.0:
                 coverage_i = np.where(dist < 1.0, 32768, 0).astype(np.int32)
             elif not use_hardness_profile:
+                # Native 0x14263F410 conditionally adds +90 based on StyleFlag&0x40.
+                ellipse_rotation = rotation_degrees if native_axis_flag else rotation_degrees - 90.0
                 coverage_i = self._native_stretched_ellipse_aa_coverage(
                     center,
                     radius_major,
                     radius_minor,
                     aa_width,
-                    rotation_degrees,
+                    ellipse_rotation,
                     (min_x, max_x, min_y, max_y),
                 )
             else:
@@ -4665,6 +4679,7 @@ class ClipFile:
                     or use_secondary_or_aux_size_dynamics
                     or use_random_size_dynamics
                 )
+                use_pressure_thickness_dynamics = False  # disabled pending native feedback loop verification
                 if (
                     (
                         os.environ.get(VECTOR_EXPERIMENTAL_ADAPTIVE_SPACING_ENV) == "1"
@@ -4739,6 +4754,30 @@ class ClipFile:
                                 )
                                 if sample_size is not None:
                                     taper = max(0.0, min(float(sample_size), 1.0))
+                            thickness_ratio = 1.0
+                            if use_pressure_thickness_dynamics:
+                                sample_primary_th = (
+                                    native_primary_scalars[idx] * (1.0 - t)
+                                    + native_primary_scalars[idx + 1] * t
+                                )
+                                thickness_factor = self._brush_single_graph_effector_value(
+                                    brush_style_id,
+                                    "ThicknessEffector",
+                                    sample_primary_th,
+                                )
+                                if thickness_factor is not None:
+                                    thickness_ratio = max(
+                                        0.05,
+                                        min(float(style.thickness_base) * float(thickness_factor), 4.0),
+                                    )
+                                else:
+                                    thickness_ratio = (
+                                        max(0.05, min(float(style.thickness_base), 4.0))
+                                        if 0.0 < float(style.thickness_base) < 1.0
+                                        else 1.0
+                                    )
+                            elif 0.0 < float(style.thickness_base) < 1.0:
+                                thickness_ratio = max(0.05, min(float(style.thickness_base), 4.0))
                             opacity_taper = (
                                 opacity_tapers[idx] * (1.0 - t) + opacity_tapers[idx + 1] * t
                             )
@@ -4802,6 +4841,7 @@ class ClipFile:
                                     flow_factor,
                                     flow_effector_factor,
                                     native_feedback_state,
+                                    thickness_ratio,
                                 )
                             )
                             size_multiplier = taper if size_dynamics_for_dab else 1.0
@@ -4847,6 +4887,7 @@ class ClipFile:
                                     native_flow_factors[idx + 1],
                                     native_flow_effector_factors[idx + 1],
                                     native_feedback_state,
+                                    1.0,  # thickness_ratio: fallback endpoint
                                 )
                             )
                         residual_distance = max(0.0, walk - distance)
@@ -4865,6 +4906,7 @@ class ClipFile:
                     curve_flow_factors,
                     curve_flow_effector_factors,
                     curve_random_states,
+                    itertools.repeat(1.0),
                 )
                 # Native plot +0 is passed directly to the no-pattern dab rasterizer.
                 native_radius_base = float(width)
@@ -4874,7 +4916,7 @@ class ClipFile:
                     else rgba
                 )
                 native_alpha_i = ((native_texture_target[..., 3].astype(np.int32) * 32768) + 127) // 255
-                for point, taper, opacity_taper, size_factor, flow_factor, flow_effector_factor, random_state in sample_iter:
+                for point, taper, opacity_taper, size_factor, flow_factor, flow_effector_factor, random_state, thickness_ratio in sample_iter:
                     if opacity_floor is not None:
                         random_value = ((int(random_state) >> 16) & 0x7FFF) / 32768.0
                         opacity_taper = opacity_floor + (1.0 - opacity_floor) * random_value
@@ -4915,6 +4957,7 @@ class ClipFile:
                             )
                             else 0.0
                         ),
+                        native_axis_flag=bool(style.style_flag & 0x40),
                         hardness=style.hardness,
                     )
                 native_texture_target[..., 3] = np.where(native_alpha_i > 0, (native_alpha_i - 1) >> 7, 0).astype(np.uint8)
