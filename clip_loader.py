@@ -61,6 +61,14 @@ class _BalloonFallbackTuning(NamedTuple):
 
 FRAME_LINE_FALLBACK_BLACK_ALPHA = 158
 FRAME_FALLBACK_BBOX_INSET = 2
+FRAME_DOTTED_DAB_ALPHA_KERNEL = (
+    (64, 156, 156, 64),
+    (156, 255, 255, 156),
+    (180, 255, 255, 182),
+    (180, 255, 255, 182),
+    (156, 255, 255, 157),
+    (64, 156, 157, 64),
+)
 TEXT_BALLOON_FALLBACK_INSET = (3, 3, 2, 2)
 TEXT_BALLOON_FALLBACK_POWER = 2.6
 VECTOR_OBJECT_FALLBACK_DEFAULT_WIDTH = 2.5
@@ -105,6 +113,9 @@ VECTOR_FILLED_CURVE_FEATHER_BY_AA = {
     2: 1.10,
     3: 1.25,
 }
+VECTOR_FILLED_CURVE_WIDE_RADIUS_SCALE = 0.99
+VECTOR_FILLED_CURVE_WIDE_CAP_SEGMENTS = 16
+VECTOR_FILLED_CURVE_WIDE_AA_SCALE = 4
 VECTOR_LEGACY_AA_FEATHER = 0.20
 VECTOR_NATIVE_AA_FEATHER_BY_LEVEL = {1: 0.75, 2: 1.25, 3: 1.75}
 VECTOR_HARDNESS_FEATHER_SCALE = 2.3
@@ -144,7 +155,7 @@ BALLOON_FALLBACK_DEFAULT_TUNING = _BalloonFallbackTuning(
 )
 BALLOON_FALLBACK_TUNING_BY_INDEX = {
     2: _BalloonFallbackTuning(bbox_expand=1, point_weight=0.55, outline_extra=-1, ellipse_power=2.2),
-    3: _BalloonFallbackTuning(bbox_expand=3, point_weight=0.45, outline_extra=2, ellipse_power=2.2),
+    3: _BalloonFallbackTuning(bbox_expand=2, point_weight=0.0, outline_extra=2, ellipse_power=2.6),
 }
 
 
@@ -2012,6 +2023,47 @@ class ClipFile:
         rgba[y0:y1, x0:x0 + width] = outline
         rgba[y0:y1, x1 - width:x1] = outline
 
+    def _draw_dotted_frame_rect_rgba(
+        self,
+        rgba: np.ndarray,
+        bbox: tuple[int, int, int, int],
+        color: tuple[int, int, int],
+        vector_width: float,
+        interval_base: float,
+        opacity: float,
+    ) -> None:
+        x0, y0, x1, y1 = bbox
+        if x1 <= x0 or y1 <= y0:
+            return
+        stamp = np.asarray(FRAME_DOTTED_DAB_ALPHA_KERNEL, dtype=np.uint8)
+        step = max(
+            1,
+            int(round(2.0 * max(float(vector_width), 0.1) * max(float(interval_base), 0.1))),
+        )
+        dot_w = int(stamp.shape[1])
+        dot_h = int(stamp.shape[0])
+        left = x0 + 1
+        top = y0 + 1
+        right = x1 - dot_w - 1
+        bottom = y1 - dot_h - 1
+        if right < left or bottom < top:
+            return
+        opacity = max(0.0, min(float(opacity), 1.0))
+        for x in range(left, right + 1, step):
+            self._draw_material_stamp_rgba(
+                rgba, (float(x), float(top)), color, stamp, opacity, 0.0, 0.0
+            )
+            self._draw_material_stamp_rgba(
+                rgba, (float(x), float(bottom)), color, stamp, opacity, 0.0, 0.0
+            )
+        for y in range(top, bottom + 1, step):
+            self._draw_material_stamp_rgba(
+                rgba, (float(left), float(y)), color, stamp, opacity, 0.0, 0.0
+            )
+            self._draw_material_stamp_rgba(
+                rgba, (float(right), float(y)), color, stamp, opacity, 0.0, 0.0
+            )
+
     def _draw_ellipse_rgba(
         self,
         rgba: np.ndarray,
@@ -2096,52 +2148,6 @@ class ClipFile:
         src[..., 3] = np.clip(np.floor(alpha + 0.5), 0, 255).astype(np.uint8)
         self._alpha_over_rgba(rgba[y0:y1, x0:x1], src)
 
-    def _draw_polygon_rgba(
-        self,
-        rgba: np.ndarray,
-        points: list[tuple[float, float]],
-        color: tuple[int, int, int, int],
-        scale: int = 1,
-    ) -> None:
-        if len(points) < 3:
-            return
-        scale = max(1, min(int(scale), 8))
-        min_x = max(int(math.floor(min(x for x, _ in points) - 1.0)), 0)
-        max_x = min(int(math.ceil(max(x for x, _ in points) + 1.0)), self.width)
-        min_y = max(int(math.floor(min(y for _, y in points) - 1.0)), 0)
-        max_y = min(int(math.ceil(max(y for _, y in points) + 1.0)), self.height)
-        if min_x >= max_x or min_y >= max_y:
-            return
-
-        width_px = max_x - min_x
-        height_px = max_y - min_y
-        sample_x = (np.arange(width_px * scale, dtype=np.float64) + 0.5) / scale + min_x
-        sample_y = (np.arange(height_px * scale, dtype=np.float64) + 0.5) / scale + min_y
-        yy, xx = np.meshgrid(sample_y, sample_x, indexing="ij")
-        inside = np.zeros((height_px * scale, width_px * scale), dtype=bool)
-        prev_x, prev_y = points[-1]
-        for next_x, next_y in points:
-            if abs(next_y - prev_y) > 1e-12:
-                crosses = (prev_y > yy) != (next_y > yy)
-                x_at_y = (next_x - prev_x) * (yy - prev_y) / (next_y - prev_y) + prev_x
-                inside ^= crosses & (xx < x_at_y)
-            prev_x, prev_y = next_x, next_y
-        if not np.any(inside):
-            return
-
-        if scale == 1:
-            alpha = inside.astype(np.uint8) * int(max(0, min(color[3], 255)))
-        else:
-            alpha = (
-                inside.reshape(height_px, scale, width_px, scale).mean(axis=(1, 3))
-                * float(max(0, min(color[3], 255)))
-            )
-            alpha = np.clip(np.floor(alpha + 0.5), 0, 255).astype(np.uint8)
-        src = np.zeros((height_px, width_px, 4), dtype=np.uint8)
-        src[..., :3] = color[:3]
-        src[..., 3] = alpha
-        self._alpha_over_rgba(rgba[min_y:max_y, min_x:max_x], src)
-
     def _draw_polyline_rgba(
         self,
         rgba: np.ndarray,
@@ -2219,6 +2225,52 @@ class ClipFile:
             region[..., 3] = np.clip(
                 np.floor(out_a[..., 0] * 255.0 + 0.5), 0, 255
             ).astype(np.uint8)
+
+    def _draw_polygon_rgba(
+        self,
+        rgba: np.ndarray,
+        points: list[tuple[float, float]],
+        color: tuple[int, int, int, int],
+        scale: int = 1,
+    ) -> None:
+        if len(points) < 3:
+            return
+        scale = max(1, min(int(scale), 8))
+        min_x = max(int(math.floor(min(x for x, _ in points) - 1.0)), 0)
+        max_x = min(int(math.ceil(max(x for x, _ in points) + 1.0)), self.width)
+        min_y = max(int(math.floor(min(y for _, y in points) - 1.0)), 0)
+        max_y = min(int(math.ceil(max(y for _, y in points) + 1.0)), self.height)
+        if min_x >= max_x or min_y >= max_y:
+            return
+
+        width_px = max_x - min_x
+        height_px = max_y - min_y
+        sample_x = (np.arange(width_px * scale, dtype=np.float64) + 0.5) / scale + min_x
+        sample_y = (np.arange(height_px * scale, dtype=np.float64) + 0.5) / scale + min_y
+        yy, xx = np.meshgrid(sample_y, sample_x, indexing="ij")
+        inside = np.zeros((height_px * scale, width_px * scale), dtype=bool)
+        prev_x, prev_y = points[-1]
+        for next_x, next_y in points:
+            if abs(next_y - prev_y) > 1e-12:
+                crosses = (prev_y > yy) != (next_y > yy)
+                x_at_y = (next_x - prev_x) * (yy - prev_y) / (next_y - prev_y) + prev_x
+                inside ^= crosses & (xx < x_at_y)
+            prev_x, prev_y = next_x, next_y
+        if not np.any(inside):
+            return
+
+        if scale == 1:
+            alpha = inside.astype(np.uint8) * int(max(0, min(color[3], 255)))
+        else:
+            alpha = (
+                inside.reshape(height_px, scale, width_px, scale).mean(axis=(1, 3))
+                * float(max(0, min(color[3], 255)))
+            )
+            alpha = np.clip(np.floor(alpha + 0.5), 0, 255).astype(np.uint8)
+        src = np.zeros((height_px, width_px, 4), dtype=np.uint8)
+        src[..., :3] = color[:3]
+        src[..., 3] = alpha
+        self._alpha_over_rgba(rgba[min_y:max_y, min_x:max_x], src)
 
     def _draw_polyline_ellipse_rgba(
         self,
@@ -2404,9 +2456,9 @@ class ClipFile:
                     cap = max(0.0, min(raw, 1.0))
             else:
                 raw = (
-                    (float(y) - (cy0 - y_extent_cap) + 0.5) / aa_width
+                    (float(y) - (cy0 - y_extent) + 0.5) / aa_width
                     if cy0 > float(y)
-                    else ((cy0 + y_extent_cap) - float(y) - 0.5) / aa_width
+                    else ((cy0 + y_extent) - float(y) - 0.5) / aa_width
                 )
                 cap = max(0.0, min(raw, 1.0))
 
@@ -2513,8 +2565,6 @@ class ClipFile:
                 coverage_i = np.where(dist < 1.0, 32768, 0).astype(np.int32)
             elif not use_hardness_profile:
                 # Native 0x14263F410 conditionally adds +90 based on StyleFlag&0x40.
-                # _native_stretched_ellipse_aa_coverage always adds +90 internally,
-                # so we subtract 90 when the flag is off to cancel the internal offset.
                 ellipse_rotation = rotation_degrees if native_axis_flag else rotation_degrees - 90.0
                 coverage_i = self._native_stretched_ellipse_aa_coverage(
                     center,
@@ -2679,12 +2729,37 @@ class ClipFile:
         style = self._brush_style_preview(brush_style_id)
         if style is None:
             return False
+        simple_texture = (
+            style.pattern_style == 0
+            and style.texture_pattern > 0
+            and style.texture_flag == 0x201
+            and style.texture_composite == 0
+            and abs(style.texture_scale - 1.0) <= 1e-6
+            and abs(style.texture_rotate) <= 1e-6
+            and abs(style.texture_offset_x) <= 1e-6
+            and abs(style.texture_offset_y) <= 1e-6
+            and abs(style.texture_brightness) <= 1e-6
+            and abs(style.texture_contrast) <= 1e-6
+        )
+        if simple_texture:
+            return not (style.retained_state or style.spray_flag)
         return not (
             style.retained_state
             or style.spray_flag
             or style.pattern_style
             or style.texture_pattern
             or style.texture_flag
+        )
+
+    def _brush_is_dotted_frame_line(self, brush_style_id: int) -> bool:
+        style = self._brush_style_preview(brush_style_id)
+        if style is None:
+            return False
+        return (
+            style.pattern_style == 0
+            and style.texture_pattern == 0
+            and not style.retained_state
+            and abs(float(style.interval_base) - 2.0) <= 1e-6
         )
 
     @staticmethod
@@ -3314,6 +3389,13 @@ class ClipFile:
         self._brush_material_stamp_cache[brush_style_id] = stamp
         return stamp
 
+    def _brush_is_large_frame_material_preview(self, brush_style_id: int) -> bool:
+        style = self._brush_style_preview(brush_style_id)
+        if style is None or not style.pattern_style or not style.retained_state:
+            return False
+        lane = self._brush_material_full_lane_alpha(brush_style_id)
+        return lane is not None and lane.shape[0] >= 128 and lane.shape[1] >= 128
+
     @staticmethod
     def _resize_alpha_bilinear(alpha: np.ndarray, width: int, height: int) -> np.ndarray:
         rgba = np.zeros((alpha.shape[0], alpha.shape[1], 4), dtype=np.uint8)
@@ -3379,11 +3461,12 @@ class ClipFile:
                 u = float(x) / scale_x
                 coverage = (
                     sample(u, v)
-                    + sample(u + x_step, v)
+                    + sample(u + 0.5 * x_step, v)
                     + sample(u, v + 0.5 * y_step)
                     + sample(u + 0.5 * x_step, v + 0.5 * y_step)
                 )
-                out[y, x] = np.clip((coverage + 2) // 4, 0, 255)
+                fixed_coverage = ((coverage * 0x8000 * 0x80808081) >> 32) >> 9
+                out[y, x] = np.clip((fixed_coverage * 255 + 0x4000) // 0x8000, 0, 255)
         return out
 
     @staticmethod
@@ -3438,6 +3521,84 @@ class ClipFile:
             )
         region[..., :3] = np.clip(np.floor(out_rgb * 255.0 + 0.5), 0, 255).astype(np.uint8)
         region[..., 3] = np.clip(np.floor(out_a[..., 0] * 255.0 + 0.5), 0, 255).astype(np.uint8)
+
+    def _draw_material_wide_stamp_rgba(
+        self,
+        rgba: np.ndarray,
+        center: tuple[float, float],
+        color: tuple[int, int, int],
+        brush_style_id: int,
+        fallback_alpha: np.ndarray,
+        opacity: float,
+        width: int,
+        height: int,
+        render_width: float,
+        render_height: float,
+        anchor_x: float,
+        anchor_y: float,
+    ) -> None:
+        full_lane = self._brush_material_full_lane_alpha(brush_style_id)
+        if full_lane is None:
+            stamp_alpha = self._resize_alpha_bilinear(fallback_alpha, width, height)
+            self._draw_material_stamp_rgba(
+                rgba,
+                center,
+                color,
+                stamp_alpha,
+                opacity,
+                anchor_x,
+                anchor_y,
+            )
+            return
+        if width <= 0 or height <= 0 or render_width <= 0.0 or render_height <= 0.0 or opacity <= 0.0:
+            return
+        native_w = max(1, int(full_lane.shape[1] / VECTOR_MATERIAL_NATIVE_MIP_SCALE))
+        native_h = max(1, int(full_lane.shape[0] / VECTOR_MATERIAL_NATIVE_MIP_SCALE))
+        native_alpha = self._resize_alpha_area(full_lane, native_w, native_h)
+        scale_x = render_width / float(native_alpha.shape[1])
+        scale_y = render_height / float(native_alpha.shape[0])
+        if scale_x <= 0.0 or scale_y <= 0.0:
+            return
+
+        x0 = int(round(center[0] - width * anchor_x))
+        y0 = int(round(center[1] - height * anchor_y))
+        origin_x = center[0] - render_width * anchor_x
+        origin_y = center[1] - render_height * anchor_y
+        x_step = 1.0 / scale_x
+        y_step = 1.0 / scale_y
+        stamp_alpha = np.zeros((height, width), dtype=np.uint8)
+
+        def sample(u: float, v: float) -> int:
+            sx = int(np.floor(u))
+            sy = int(np.floor(v))
+            if sx < 0 or sy < 0 or sx >= native_alpha.shape[1] or sy >= native_alpha.shape[0]:
+                return 0
+            return int(native_alpha[sy, sx])
+
+        for y in range(height):
+            py = float(y0 + y)
+            v = (py - origin_y) / scale_y
+            for x in range(width):
+                px = float(x0 + x)
+                u = (px - origin_x) / scale_x
+                coverage = (
+                    sample(u, v)
+                    + sample(u + 0.5 * x_step, v)
+                    + sample(u, v + 0.5 * y_step)
+                    + sample(u + 0.5 * x_step, v + 0.5 * y_step)
+                )
+                fixed_coverage = ((coverage * 0x8000 * 0x80808081) >> 32) >> 9
+                stamp_alpha[y, x] = np.clip((fixed_coverage * 255 + 0x4000) // 0x8000, 0, 255)
+
+        self._draw_material_stamp_rgba(
+            rgba,
+            center,
+            color,
+            stamp_alpha,
+            opacity,
+            anchor_x,
+            anchor_y,
+        )
 
     def _vector_resample_points_by_distance(
         self,
@@ -3932,6 +4093,77 @@ class ClipFile:
                     )
                     found = True
                     continue
+                style = self._brush_style_preview(brush_style_id)
+                if (
+                    point_count == 2
+                    and width > VECTOR_FILLED_CURVE_MAX_SOLID_WIDTH
+                    and style is not None
+                    and style.pattern_style == 0
+                    and style.texture_pattern == 0
+                ):
+                    line_points: list[tuple[float, float]] = []
+                    valid = True
+                    points_start = off + header_len
+                    for idx in range(point_count):
+                        point_off = points_start + idx * stride_a
+                        if point_off + 16 > len(body):
+                            valid = False
+                            break
+                        x = struct.unpack_from(">d", body, point_off)[0]
+                        y = struct.unpack_from(">d", body, point_off + 8)[0]
+                        if not (np.isfinite(x) and np.isfinite(y)):
+                            valid = False
+                            break
+                        line_points.append((float(x), float(y)))
+                if valid and len(line_points) == 2:
+                    # Wide compact 0x41 objects carry an explicit centre
+                    # segment plus radius-like width; the object bbox is
+                    # the expanded bounds, not the shape to rasterize. The
+                    # native V4 route builds an envelope from circular pen-head
+                    # points, then scan-converts that polygon.
+                    aa_level = self._brush_anti_alias(brush_style_id)
+                    p0, p1 = line_points
+                    dx = p1[0] - p0[0]
+                    dy = p1[1] - p0[1]
+                    distance = float(np.hypot(dx, dy))
+                    if distance <= 1e-6:
+                        continue
+                    radius = width * VECTOR_FILLED_CURVE_WIDE_RADIUS_SCALE
+                    normal_x = -dy / distance
+                    normal_y = dx / distance
+                    start_angle = math.atan2(normal_y, normal_x)
+                    end_angle = math.atan2(-normal_y, -normal_x)
+                    cap_segments = max(4, int(VECTOR_FILLED_CURVE_WIDE_CAP_SEGMENTS))
+                    polygon: list[tuple[float, float]] = []
+                    for cap_idx in range(cap_segments + 1):
+                        angle = start_angle + math.pi * cap_idx / cap_segments
+                        polygon.append(
+                            (
+                                p0[0] + math.cos(angle) * radius,
+                                p0[1] + math.sin(angle) * radius,
+                            )
+                        )
+                    for cap_idx in range(cap_segments + 1):
+                        angle = end_angle + math.pi * cap_idx / cap_segments
+                        polygon.append(
+                            (
+                                p1[0] + math.cos(angle) * radius,
+                                p1[1] + math.sin(angle) * radius,
+                            )
+                        )
+                    self._draw_polygon_rgba(
+                        rgba,
+                        polygon,
+                        (
+                            max(0, min(int(rgb[0]), 255)),
+                            max(0, min(int(rgb[1]), 255)),
+                            max(0, min(int(rgb[2]), 255)),
+                            255,
+                        ),
+                        scale=VECTOR_FILLED_CURVE_WIDE_AA_SCALE if aa_level > 0 else 1,
+                    )
+                    found = True
+                    continue
                 bbox = (
                     min(max(int(x0) + VECTOR_FILLED_CURVE_ELLIPSE_INSET[0], 0), self.width),
                     min(max(int(y0) + VECTOR_FILLED_CURVE_ELLIPSE_INSET[1], 0), self.height),
@@ -4164,7 +4396,7 @@ class ClipFile:
             material_stamp = self._brush_material_stamp_alpha(brush_style_id)
             if material_stamp is not None:
                 style = self._brush_style_preview(brush_style_id) or _BrushStylePreview()
-                interval_is_wide = style.interval_base > 0.1
+                interval_is_wide = style.interval_base >= 0.1
                 stamp_w = max(
                     1,
                     int(round(
@@ -4190,18 +4422,9 @@ class ClipFile:
                     1,
                     int(round(render_h)),
                 )
-                stamp = (
-                    self._resize_material_wide_stamp_alpha(
-                        brush_style_id,
-                        material_stamp,
-                        stamp_w,
-                        stamp_h,
-                        render_w,
-                        render_h,
-                    )
-                    if interval_is_wide
-                    else self._resize_alpha_bilinear(material_stamp, stamp_w, stamp_h)
-                )
+                stamp = None
+                if not interval_is_wide:
+                    stamp = self._resize_alpha_bilinear(material_stamp, stamp_w, stamp_h)
                 base_opacity = 1.0 if not np.isfinite(stroke_opacity) else max(0.0, min(float(stroke_opacity), 1.0))
                 stamp_opacity = base_opacity * (
                     VECTOR_MATERIAL_STAMP_GAP_ALPHA
@@ -4232,15 +4455,32 @@ class ClipFile:
                 else:
                     stamp_points = self._vector_resample_points_by_distance(points, stamp_step)
                 for point in stamp_points:
-                    self._draw_material_stamp_rgba(
-                        rgba,
-                        point if use_float_material_center else self._vector_sample_point(point),
-                        stamp_color,
-                        stamp,
-                        stamp_opacity,
-                        anchor_x=0.50,
-                        anchor_y=anchor_y,
-                    )
+                    center = point if use_float_material_center else self._vector_sample_point(point)
+                    if interval_is_wide:
+                        self._draw_material_wide_stamp_rgba(
+                            rgba,
+                            center,
+                            stamp_color,
+                            brush_style_id,
+                            material_stamp,
+                            stamp_opacity,
+                            stamp_w,
+                            stamp_h,
+                            render_w,
+                            render_h,
+                            anchor_x=0.50,
+                            anchor_y=anchor_y,
+                        )
+                    elif stamp is not None:
+                        self._draw_material_stamp_rgba(
+                            rgba,
+                            center,
+                            stamp_color,
+                            stamp,
+                            stamp_opacity,
+                            anchor_x=0.50,
+                            anchor_y=anchor_y,
+                        )
                 found = True
                 continue
             aa_level = self._brush_anti_alias(brush_style_id)
@@ -4647,7 +4887,7 @@ class ClipFile:
                                     native_flow_factors[idx + 1],
                                     native_flow_effector_factors[idx + 1],
                                     native_feedback_state,
-                                    1.0,  # thickness_ratio: fallback endpoint, no dynamics
+                                    1.0,  # thickness_ratio: fallback endpoint
                                 )
                             )
                         residual_distance = max(0.0, walk - distance)
@@ -4670,7 +4910,12 @@ class ClipFile:
                 )
                 # Native plot +0 is passed directly to the no-pattern dab rasterizer.
                 native_radius_base = float(width)
-                native_alpha_i = ((rgba[..., 3].astype(np.int32) * 32768) + 127) // 255
+                native_texture_target = (
+                    np.zeros_like(rgba)
+                    if self._brush_texture_preview_alpha(brush_style_id) is not None
+                    else rgba
+                )
+                native_alpha_i = ((native_texture_target[..., 3].astype(np.int32) * 32768) + 127) // 255
                 for point, taper, opacity_taper, size_factor, flow_factor, flow_effector_factor, random_state, thickness_ratio in sample_iter:
                     if opacity_floor is not None:
                         random_value = ((int(random_state) >> 16) & 0x7FFF) / 32768.0
@@ -4678,7 +4923,7 @@ class ClipFile:
                     size_multiplier = taper if size_dynamics_for_dab else 1.0
                     radius = native_radius_base * max(0.0, min(float(size_multiplier) * float(size_factor), 4.0))
                     self._draw_native_dab_rgba(
-                        rgba,
+                        native_texture_target,
                         point,
                         color[:3],
                         radius=radius,
@@ -4715,7 +4960,10 @@ class ClipFile:
                         native_axis_flag=bool(style.style_flag & 0x40),
                         hardness=style.hardness,
                     )
-                rgba[..., 3] = np.where(native_alpha_i > 0, (native_alpha_i - 1) >> 7, 0).astype(np.uint8)
+                native_texture_target[..., 3] = np.where(native_alpha_i > 0, (native_alpha_i - 1) >> 7, 0).astype(np.uint8)
+                if native_texture_target is not rgba:
+                    self._apply_brush_texture_preview(native_texture_target, brush_style_id)
+                    self._alpha_over_rgba(rgba, native_texture_target)
                 found = True
                 continue
 
@@ -4819,6 +5067,55 @@ class ClipFile:
                 draw_outline_width = outline_width
             else:
                 draw_line_rgb, line_alpha, style_width = line_style
+                if (
+                    not has_child
+                    and header.family_id == VECTOR_FAMILY_FRAME
+                    and self._brush_is_dotted_frame_line(header.line_style_id)
+                ):
+                    style = self._brush_style_preview(header.line_style_id)
+                    self._draw_dotted_frame_rect_rgba(
+                        rgba,
+                        bbox,
+                        draw_line_rgb,
+                        vector_width,
+                        2.0 if style is None else style.interval_base,
+                        object_opacity,
+                    )
+                    continue
+                if (
+                    has_child
+                    and header.family_id == VECTOR_FAMILY_FRAME
+                    and self._brush_is_large_frame_material_preview(header.line_style_id)
+                ):
+                    x0, y0, x1, y1 = bbox
+                    inset = FRAME_FALLBACK_BBOX_INSET
+                    inset_bbox = (
+                        min(max(x0 + inset, 0), self.width),
+                        min(max(y0 + inset, 0), self.height),
+                        min(max(x1 - inset, 0), self.width),
+                        min(max(y1 - inset, 0), self.height),
+                    )
+                    if fill is not None:
+                        self._draw_rect_rgba(
+                            rgba,
+                            inset_bbox,
+                            fill=fill,
+                            outline=None,
+                        )
+                    material_bbox = (
+                        min(max(x0 + 1, 0), self.width),
+                        min(max(y0 + 1, 0), self.height),
+                        min(max(x1 - 1, 0), self.width),
+                        min(max(y1 - 1, 0), self.height),
+                    )
+                    self._draw_rect_rgba(
+                        rgba,
+                        material_bbox,
+                        fill=None,
+                        outline=(64, 64, 64, 255),
+                        width=4,
+                    )
+                    continue
                 outline = (draw_line_rgb[0], draw_line_rgb[1], draw_line_rgb[2], line_alpha)
                 draw_outline_width = style_width or outline_width
             x0, y0, x1, y1 = bbox
@@ -4969,9 +5266,6 @@ class ClipFile:
         if body is None:
             return None
         headers = self._vector_object_headers(body)
-        native_point_image = self._balloon_native_point_family_image(body)
-        if native_point_image is not None:
-            return native_point_image
         if not headers:
             bbox = self._vector_header_bbox(body)
             if bbox is None:
@@ -4990,10 +5284,26 @@ class ClipFile:
             )]
         rgba = np.zeros((self.height, self.width, 4), dtype=np.uint8)
         balloon_index = int(layer["VectorNormalBalloonIndex"] or 0)
+        color_type = layer["LayerColorTypeIndex"] if "LayerColorTypeIndex" in layer.keys() else None
+        force_binary_color = color_type == 1
+
+        def layer_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+            if not force_binary_color:
+                return rgb
+            # Binary-color balloon layers export vector colors through the
+            # layer's black/white mode, not the stored pastel object RGB.
+            lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+            value = 255 if lum >= 128.0 else 0
+            return (value, value, value)
+
+        native_point_image = self._balloon_native_point_family_image(body, color_map=layer_rgb)
+        if native_point_image is not None:
+            return native_point_image
+
         for header in headers:
             bbox = header.bbox
-            line_rgb = header.line_rgb
-            fill_rgb = header.fill_rgb
+            line_rgb = layer_rgb(header.line_rgb)
+            fill_rgb = layer_rgb(header.fill_rgb)
             object_opacity = header.opacity
             vector_width = header.width
             line_style_id = header.line_style_id
@@ -5030,7 +5340,13 @@ class ClipFile:
                 )
             draw_ellipse = (
                 self._draw_ellipse_rgba_supersampled
-                if self._brush_anti_alias(line_style_id) >= 3
+                if (
+                    self._brush_anti_alias(line_style_id) >= 3
+                    and not (
+                        force_binary_color
+                        and (self._brush_style_preview(line_style_id) or _BrushStylePreview()).pattern_style == 2
+                    )
+                )
                 else self._draw_ellipse_rgba
             )
             draw_ellipse(
