@@ -94,24 +94,18 @@ pub fn decode_alpha_tiles(
     let cols_usize = usize::try_from(cols).map_err(|_| ClipFileError::TileSizeOverflow)?;
     let rows_usize = usize::try_from(rows).map_err(|_| ClipFileError::TileSizeOverflow)?;
     for tile_y in 0..rows_usize {
+        let (dst_y0, tile_height) = active_tile_span(tile_y, height_usize);
         for tile_x in 0..cols_usize {
             let tile_index = tile_y * cols_usize + tile_x;
             let tile_start = tile_index * MASK_TILE_BYTES;
+            let (dst_x0, tile_width) = active_tile_span(tile_x, width_usize);
 
-            for local_y in 0..TILE_SIZE {
-                let y = tile_y * TILE_SIZE + local_y;
-                if y >= height_usize {
-                    break;
-                }
-                for local_x in 0..TILE_SIZE {
-                    let x = tile_x * TILE_SIZE + local_x;
-                    if x >= width_usize {
-                        break;
-                    }
-                    let source_pixel = local_y * TILE_SIZE + local_x;
-                    let dest = y * width_usize + x;
-                    pixels[dest] = tile_blob[tile_start + source_pixel];
-                }
+            for local_y in 0..tile_height {
+                let source_start = tile_start + local_y * TILE_SIZE;
+                let source_end = source_start + tile_width;
+                let dest_start = (dst_y0 + local_y) * width_usize + dst_x0;
+                let dest_end = dest_start + tile_width;
+                pixels[dest_start..dest_end].copy_from_slice(&tile_blob[source_start..source_end]);
             }
         }
     }
@@ -162,29 +156,32 @@ pub fn decode_rgba_tiles(
     let cols_usize = usize::try_from(cols).map_err(|_| ClipFileError::TileSizeOverflow)?;
     let rows_usize = usize::try_from(rows).map_err(|_| ClipFileError::TileSizeOverflow)?;
     for tile_y in 0..rows_usize {
+        let (dst_y0, tile_height) = active_tile_span(tile_y, height_usize);
         for tile_x in 0..cols_usize {
             let tile_index = tile_y * cols_usize + tile_x;
             let tile_start = tile_index * RGBA_TILE_BYTES;
             let alpha_start = tile_start;
             let bgra_start = tile_start + MASK_TILE_BYTES;
+            let (dst_x0, tile_width) = active_tile_span(tile_x, width_usize);
 
-            for local_y in 0..TILE_SIZE {
-                let y = tile_y * TILE_SIZE + local_y;
-                if y >= height_usize {
-                    break;
-                }
-                for local_x in 0..TILE_SIZE {
-                    let x = tile_x * TILE_SIZE + local_x;
-                    if x >= width_usize {
-                        break;
-                    }
-                    let source_pixel = local_y * TILE_SIZE + local_x;
-                    let bgra = bgra_start + source_pixel * 4;
-                    let dest = (y * width_usize + x) * 4;
-                    pixels[dest] = tile_blob[bgra + 2];
-                    pixels[dest + 1] = tile_blob[bgra + 1];
-                    pixels[dest + 2] = tile_blob[bgra];
-                    pixels[dest + 3] = tile_blob[alpha_start + source_pixel];
+            for local_y in 0..tile_height {
+                let source_pixel = local_y * TILE_SIZE;
+                let alpha_row_start = alpha_start + source_pixel;
+                let bgra_row_start = bgra_start + source_pixel * 4;
+                let dest_start = ((dst_y0 + local_y) * width_usize + dst_x0) * 4;
+                let alpha_row = &tile_blob[alpha_row_start..alpha_row_start + tile_width];
+                let bgra_row = &tile_blob[bgra_row_start..bgra_row_start + tile_width * 4];
+                let dest_row = &mut pixels[dest_start..dest_start + tile_width * 4];
+
+                for ((dst, bgra), alpha) in dest_row
+                    .chunks_exact_mut(4)
+                    .zip(bgra_row.chunks_exact(4))
+                    .zip(alpha_row)
+                {
+                    dst[0] = bgra[2];
+                    dst[1] = bgra[1];
+                    dst[2] = bgra[0];
+                    dst[3] = *alpha;
                 }
             }
         }
@@ -213,28 +210,30 @@ pub fn decode_gray_rgba_tiles(
         .map_err(|_| ClipFileError::TileSizeOverflow)?;
 
     for tile_y in 0..rows_usize {
+        let (dst_y0, tile_height) = active_tile_span(tile_y, height_usize);
         for tile_x in 0..cols_usize {
             let tile_index = tile_y * cols_usize + tile_x;
             let tile_start = tile_index * GRAY_RGBA_TILE_BYTES;
             let alpha_start = tile_start;
             let gray_start = tile_start + MASK_TILE_BYTES;
-            for local_y in 0..TILE_SIZE {
-                let y = tile_y * TILE_SIZE + local_y;
-                if y >= height_usize {
-                    break;
-                }
-                for local_x in 0..TILE_SIZE {
-                    let x = tile_x * TILE_SIZE + local_x;
-                    if x >= width_usize {
-                        break;
-                    }
-                    let source_pixel = local_y * TILE_SIZE + local_x;
-                    let gray = tile_blob[gray_start + source_pixel];
-                    let dest = (y * width_usize + x) * 4;
-                    pixels[dest] = gray;
-                    pixels[dest + 1] = gray;
-                    pixels[dest + 2] = gray;
-                    pixels[dest + 3] = tile_blob[alpha_start + source_pixel];
+            let (dst_x0, tile_width) = active_tile_span(tile_x, width_usize);
+
+            for local_y in 0..tile_height {
+                let source_pixel = local_y * TILE_SIZE;
+                let alpha_row_start = alpha_start + source_pixel;
+                let gray_row_start = gray_start + source_pixel;
+                let dest_start = ((dst_y0 + local_y) * width_usize + dst_x0) * 4;
+                let alpha_row = &tile_blob[alpha_row_start..alpha_row_start + tile_width];
+                let gray_row = &tile_blob[gray_row_start..gray_row_start + tile_width];
+                let dest_row = &mut pixels[dest_start..dest_start + tile_width * 4];
+
+                for ((dst, gray), alpha) in
+                    dest_row.chunks_exact_mut(4).zip(gray_row).zip(alpha_row)
+                {
+                    dst[0] = *gray;
+                    dst[1] = *gray;
+                    dst[2] = *gray;
+                    dst[3] = *alpha;
                 }
             }
         }
@@ -264,31 +263,28 @@ pub fn decode_mono_rgba_tiles(
     let half_tile = MONO_RGBA_TILE_BYTES / 2;
 
     for tile_y in 0..rows_usize {
+        let (dst_y0, tile_height) = active_tile_span(tile_y, height_usize);
         for tile_x in 0..cols_usize {
             let tile_index = tile_y * cols_usize + tile_x;
             let tile_start = tile_index * MONO_RGBA_TILE_BYTES;
             let alpha_start = tile_start;
             let white_start = tile_start + half_tile;
-            for local_y in 0..TILE_SIZE {
-                let y = tile_y * TILE_SIZE + local_y;
-                if y >= height_usize {
-                    break;
-                }
-                for local_x in 0..TILE_SIZE {
-                    let x = tile_x * TILE_SIZE + local_x;
-                    if x >= width_usize {
-                        break;
-                    }
+            let (dst_x0, tile_width) = active_tile_span(tile_x, width_usize);
+
+            for local_y in 0..tile_height {
+                let dest_start = ((dst_y0 + local_y) * width_usize + dst_x0) * 4;
+                let dest_row = &mut pixels[dest_start..dest_start + tile_width * 4];
+
+                for (local_x, dst) in dest_row.chunks_exact_mut(4).enumerate() {
                     let bit_index = local_y * TILE_SIZE + local_x;
                     let alpha = bit_plane_value(tile_blob, alpha_start, bit_index);
                     let white = bit_plane_value(tile_blob, white_start, bit_index) && alpha;
-                    let dest = (y * width_usize + x) * 4;
                     if alpha {
-                        pixels[dest + 3] = 255;
+                        dst[3] = 255;
                         if white {
-                            pixels[dest] = 255;
-                            pixels[dest + 1] = 255;
-                            pixels[dest + 2] = 255;
+                            dst[0] = 255;
+                            dst[1] = 255;
+                            dst[2] = 255;
                         }
                     }
                 }
@@ -345,6 +341,12 @@ fn bit_plane_value(bytes: &[u8], plane_start: usize, bit_index: usize) -> bool {
     let byte = bytes[plane_start + bit_index / 8];
     let mask = 0x80 >> (bit_index % 8);
     byte & mask != 0
+}
+
+fn active_tile_span(tile_index: usize, image_len: usize) -> (usize, usize) {
+    let start = tile_index * TILE_SIZE;
+    let len = image_len.saturating_sub(start).min(TILE_SIZE);
+    (start, len)
 }
 
 fn div_ceil_u32(value: u32, divisor: u32) -> Result<u32, ClipFileError> {
