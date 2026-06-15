@@ -134,6 +134,7 @@ pub struct ClipSession {
     render_plan: RenderPlan,
     raster_sources: HashMap<LayerId, clip_file::metadata::RasterLayerSource>,
     mask_sources: HashMap<LayerId, clip_file::metadata::MaskLayerSource>,
+    filter_sources: HashMap<LayerId, clip_file::metadata::FilterLayerSource>,
     rendered_image: Option<clip_file::tiles::RgbaTileImage>,
 }
 
@@ -164,6 +165,12 @@ impl ClipSession {
             .filter(|node| node.mask_mipmap_id.is_some())
             .map(|node| node.layer_id)
             .collect();
+        let filter_layer_ids: Vec<_> = render_plan
+            .nodes
+            .iter()
+            .filter(|node| node.kind == RenderNodeKind::Filter)
+            .map(|node| node.layer_id)
+            .collect();
         let raster_sources = clip_file::metadata::read_raster_layer_sources_from_sqlite(
             container.sqlite_bytes(),
             &raster_layer_ids,
@@ -174,6 +181,10 @@ impl ClipSession {
             &mask_layer_ids,
             summary.canvas,
         )?;
+        let filter_sources = clip_file::metadata::read_filter_layer_sources_from_sqlite(
+            container.sqlite_bytes(),
+            &filter_layer_ids,
+        )?;
         Ok(Self {
             path,
             container,
@@ -181,6 +192,7 @@ impl ClipSession {
             render_plan,
             raster_sources,
             mask_sources,
+            filter_sources,
             rendered_image: None,
         })
     }
@@ -1322,9 +1334,10 @@ impl ClipSession {
             return Ok(None);
         }
 
-        let filter = clip_file::metadata::read_filter_layer_source_from_sqlite(
-            self.container.sqlite_bytes(),
-            node.layer_id,
+        let filter = self.filter_sources.get(&node.layer_id).ok_or(
+            clip_file::ClipFileError::LayerHasNoFilterInfo {
+                layer_id: node.layer_id,
+            },
         )?;
         let Some((_name, mode, lut_rgba)) = lut_filter_rgba(filter.filter_type, &filter.payload)
         else {
@@ -1799,9 +1812,10 @@ impl ClipSession {
             });
             return Ok(None);
         }
-        let filter = clip_file::metadata::read_filter_layer_source_from_sqlite(
-            self.container.sqlite_bytes(),
-            node.layer_id,
+        let filter = self.filter_sources.get(&node.layer_id).ok_or(
+            clip_file::ClipFileError::LayerHasNoFilterInfo {
+                layer_id: node.layer_id,
+            },
         )?;
         let Some((name, mode, lut_rgba)) = lut_filter_rgba(filter.filter_type, &filter.payload)
         else {
@@ -3699,6 +3713,7 @@ mod tests {
             },
             raster_sources: HashMap::new(),
             mask_sources: HashMap::new(),
+            filter_sources: HashMap::new(),
             rendered_image: None,
         };
 
@@ -4230,6 +4245,7 @@ mod tests {
             },
             raster_sources: folder_raster_sources,
             mask_sources: HashMap::new(),
+            filter_sources: HashMap::new(),
             rendered_image: None,
         };
 
@@ -4263,6 +4279,7 @@ mod tests {
             },
             raster_sources: HashMap::new(),
             mask_sources: HashMap::new(),
+            filter_sources: HashMap::new(),
             rendered_image: None,
         }
     }

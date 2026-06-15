@@ -211,7 +211,6 @@ impl ClipSession {
                 }
                 RenderNodeKind::Filter => {
                     if self.check_strict_lut_filter_support(
-                        sqlite_bytes,
                         node,
                         options,
                         resource_stats,
@@ -475,7 +474,6 @@ impl ClipSession {
 
     fn check_strict_lut_filter_support(
         &self,
-        sqlite_bytes: &[u8],
         node: &clip_graph::RenderNode,
         options: StrictRasterStackOptions,
         resource_stats: &mut NormalRasterStackResourceStats,
@@ -527,8 +525,11 @@ impl ClipSession {
             return Ok(false);
         }
 
-        let filter =
-            clip_file::metadata::read_filter_layer_source_from_sqlite(sqlite_bytes, node.layer_id)?;
+        let filter = self.filter_sources.get(&node.layer_id).ok_or(
+            clip_file::ClipFileError::LayerHasNoFilterInfo {
+                layer_id: node.layer_id,
+            },
+        )?;
         if lut_filter_rgba(filter.filter_type, &filter.payload).is_none() {
             unsupported.push(unsupported_node(
                 node.id,
