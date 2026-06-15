@@ -1,4 +1,3 @@
-use clip_file::container::ClipContainer;
 use clip_graph::{RenderNodeId, RenderNodeKind};
 use clip_model::LayerId;
 
@@ -46,9 +45,8 @@ impl ClipSession {
     pub fn check_normal_raster_stack_support(
         &self,
     ) -> Result<NormalRasterStackSupportResult, RuntimeError> {
-        let container = ClipContainer::open(&self.path)?;
         let selection = self.select_strict_normal_raster_stack_support(
-            container.sqlite_bytes(),
+            self.container.sqlite_bytes(),
             support_options(),
         )?;
         Ok(NormalRasterStackSupportResult {
@@ -177,7 +175,6 @@ impl ClipSession {
                 RenderNodeKind::Raster => {
                     let orphan_clipped = node.clip && clip_base_state == ClipBaseState::Cleared;
                     let supported = self.check_strict_raster_node_support(
-                        sqlite_bytes,
                         node,
                         options,
                         orphan_clipped,
@@ -192,7 +189,6 @@ impl ClipSession {
 
                     if options.allow_clipping_runs && !node.clip {
                         let (_clipped_count, next_index) = self.collect_strict_clipped_support(
-                            sqlite_bytes,
                             index + 1,
                             node.depth,
                             end,
@@ -309,8 +305,8 @@ impl ClipSession {
             return Ok(false);
         }
         if node.mask_mipmap_id.is_some() {
-            let mask = self.check_mask_metadata(sqlite_bytes, node.layer_id)?;
-            resource_stats.add_mask_source(&mask);
+            let mask = self.check_mask_metadata(node.layer_id)?;
+            resource_stats.add_mask_source(mask);
         }
 
         let child_count = self.collect_strict_support_in_range(
@@ -381,8 +377,8 @@ impl ClipSession {
             return Ok(false);
         }
         if node.mask_mipmap_id.is_some() {
-            let mask = self.check_mask_metadata(sqlite_bytes, node.layer_id)?;
-            resource_stats.add_mask_source(&mask);
+            let mask = self.check_mask_metadata(node.layer_id)?;
+            resource_stats.add_mask_source(mask);
         }
 
         let child_count = self.collect_strict_support_in_range(
@@ -399,7 +395,6 @@ impl ClipSession {
 
     fn check_strict_raster_node_support(
         &self,
-        sqlite_bytes: &[u8],
         node: &clip_graph::RenderNode,
         options: StrictRasterStackOptions,
         allow_clip_flag: bool,
@@ -456,11 +451,10 @@ impl ClipSession {
             .ok_or(RuntimeError::MissingRasterRenderMipmap {
                 layer_id: node.layer_id,
             })?;
-        let source = clip_file::metadata::read_raster_layer_source_from_sqlite(
-            sqlite_bytes,
-            node.layer_id,
-            self.summary.canvas,
-        )?;
+        let source = self
+            .raster_sources
+            .get(&node.layer_id)
+            .ok_or(clip_file::ClipFileError::MissingLayer(node.layer_id))?;
         if !matches!(source.color_type.unwrap_or(0), 0 | 1 | 2) {
             unsupported.push(unsupported_node(
                 node.id,
@@ -470,10 +464,10 @@ impl ClipSession {
             ));
             return Ok(false);
         }
-        resource_stats.add_raster_source(&source);
+        resource_stats.add_raster_source(source);
         if node.mask_mipmap_id.is_some() {
-            let mask = self.check_mask_metadata(sqlite_bytes, node.layer_id)?;
-            resource_stats.add_mask_source(&mask);
+            let mask = self.check_mask_metadata(node.layer_id)?;
+            resource_stats.add_mask_source(mask);
         }
 
         Ok(true)
@@ -545,8 +539,8 @@ impl ClipSession {
             return Ok(false);
         }
         if node.mask_mipmap_id.is_some() {
-            let mask = self.check_mask_metadata(sqlite_bytes, node.layer_id)?;
-            resource_stats.add_mask_source(&mask);
+            let mask = self.check_mask_metadata(node.layer_id)?;
+            resource_stats.add_mask_source(mask);
         }
 
         Ok(true)
@@ -554,7 +548,6 @@ impl ClipSession {
 
     fn collect_strict_clipped_support(
         &self,
-        sqlite_bytes: &[u8],
         mut index: usize,
         base_depth: u16,
         end: usize,
@@ -572,7 +565,6 @@ impl ClipSession {
             match node.kind {
                 RenderNodeKind::Raster => {
                     if self.check_strict_raster_node_support(
-                        sqlite_bytes,
                         node,
                         options,
                         true,
@@ -626,14 +618,12 @@ impl ClipSession {
 
     fn check_mask_metadata(
         &self,
-        sqlite_bytes: &[u8],
         layer_id: LayerId,
-    ) -> Result<clip_file::metadata::MaskLayerSource, RuntimeError> {
-        let source = clip_file::metadata::read_mask_layer_source_from_sqlite(
-            sqlite_bytes,
-            layer_id,
-            self.summary.canvas,
-        )?;
+    ) -> Result<&clip_file::metadata::MaskLayerSource, RuntimeError> {
+        let source = self
+            .mask_sources
+            .get(&layer_id)
+            .ok_or(clip_file::ClipFileError::LayerHasNoMask { layer_id })?;
         Ok(source)
     }
 }

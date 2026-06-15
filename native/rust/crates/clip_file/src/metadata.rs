@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use clip_model::{CanvasSize, LayerId, LayerKind, LayerOpacity, LayerVisibility, Rgba8};
 use rusqlite::Connection;
@@ -160,7 +160,45 @@ pub fn read_raster_layer_source_from_sqlite(
 ) -> Result<RasterLayerSource, ClipFileError> {
     let conn = connect_sqlite(sqlite_bytes)?;
     let layer_columns = table_columns(&conn, "Layer")?;
-    let query = format!(
+    let query = raster_layer_source_query(&layer_columns);
+    let mut stmt = conn.prepare(&query)?;
+    read_raster_layer_source_with_statement(&mut stmt, layer_id, canvas_size)
+}
+
+pub fn read_raster_layer_sources_from_sqlite(
+    sqlite_bytes: &[u8],
+    layer_ids: &[LayerId],
+    canvas_size: CanvasSize,
+) -> Result<HashMap<LayerId, RasterLayerSource>, ClipFileError> {
+    let conn = connect_sqlite(sqlite_bytes)?;
+    let layer_columns = table_columns(&conn, "Layer")?;
+    let query = raster_layer_source_query(&layer_columns);
+    let mut stmt = conn.prepare(&query)?;
+    let mut sources = HashMap::with_capacity(layer_ids.len());
+    for layer_id in layer_ids {
+        let source = read_raster_layer_source_with_statement(&mut stmt, *layer_id, canvas_size)?;
+        sources.insert(*layer_id, source);
+    }
+    Ok(sources)
+}
+
+type RasterLayerSourceRow = (
+    i64,
+    i64,
+    i64,
+    i64,
+    Option<i64>,
+    i64,
+    i64,
+    i64,
+    String,
+    Option<Vec<u8>>,
+    Option<i64>,
+    Option<i64>,
+);
+
+fn raster_layer_source_query(layer_columns: &HashSet<String>) -> String {
+    format!(
         "SELECT \
             l.MainId, l.LayerType, l.LayerVisibility, l.LayerRenderMipmap, \
             {}, {}, {}, m.BaseMipmapInfo, mi.Offscreen, \
@@ -171,11 +209,18 @@ pub fn read_raster_layer_source_from_sqlite(
          JOIN Offscreen o ON o.MainId = mi.Offscreen \
          LEFT JOIN LayerThumbnail lt ON lt.LayerId = l.MainId \
          WHERE l.MainId = ?1",
-        optional_i64_expr(&layer_columns, "LayerColorTypeIndex"),
-        optional_i64_expr(&layer_columns, "LayerRenderOffscrOffsetX"),
-        optional_i64_expr(&layer_columns, "LayerRenderOffscrOffsetY"),
-    );
-    let row = conn.query_row(&query, [layer_id.0], |row| {
+        optional_i64_expr(layer_columns, "LayerColorTypeIndex"),
+        optional_i64_expr(layer_columns, "LayerRenderOffscrOffsetX"),
+        optional_i64_expr(layer_columns, "LayerRenderOffscrOffsetY"),
+    )
+}
+
+fn read_raster_layer_source_with_statement(
+    stmt: &mut rusqlite::Statement<'_>,
+    layer_id: LayerId,
+    canvas_size: CanvasSize,
+) -> Result<RasterLayerSource, ClipFileError> {
+    let row: RasterLayerSourceRow = match stmt.query_row([layer_id.0], |row| {
         let id: i64 = row.get(0)?;
         let layer_type: i64 = row.get(1)?;
         let visibility: i64 = row.get(2)?;
@@ -206,7 +251,13 @@ pub fn read_raster_layer_source_from_sqlite(
             thumbnail_width,
             thumbnail_height,
         ))
-    });
+    }) {
+        Ok(row) => row,
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            return Err(ClipFileError::MissingLayer(layer_id));
+        }
+        Err(err) => return Err(ClipFileError::Sqlite(err)),
+    };
 
     let (
         id,
@@ -221,13 +272,7 @@ pub fn read_raster_layer_source_from_sqlite(
         attribute,
         thumbnail_width,
         thumbnail_height,
-    ) = match row {
-        Ok(row) => row,
-        Err(rusqlite::Error::QueryReturnedNoRows) => {
-            return Err(ClipFileError::MissingLayer(layer_id));
-        }
-        Err(err) => return Err(ClipFileError::Sqlite(err)),
-    };
+    ) = row;
 
     let layer_type = checked_i64_to_u32(layer_type, "Layer.LayerType")?;
     let kind = layer_kind(layer_type);
@@ -275,7 +320,32 @@ pub fn read_mask_layer_source_from_sqlite(
 ) -> Result<MaskLayerSource, ClipFileError> {
     let conn = connect_sqlite(sqlite_bytes)?;
     let layer_columns = table_columns(&conn, "Layer")?;
-    let query = format!(
+    let query = mask_layer_source_query(&layer_columns);
+    let mut stmt = conn.prepare(&query)?;
+    read_mask_layer_source_with_statement(&mut stmt, layer_id, canvas_size)
+}
+
+pub fn read_mask_layer_sources_from_sqlite(
+    sqlite_bytes: &[u8],
+    layer_ids: &[LayerId],
+    canvas_size: CanvasSize,
+) -> Result<HashMap<LayerId, MaskLayerSource>, ClipFileError> {
+    let conn = connect_sqlite(sqlite_bytes)?;
+    let layer_columns = table_columns(&conn, "Layer")?;
+    let query = mask_layer_source_query(&layer_columns);
+    let mut stmt = conn.prepare(&query)?;
+    let mut sources = HashMap::with_capacity(layer_ids.len());
+    for layer_id in layer_ids {
+        let source = read_mask_layer_source_with_statement(&mut stmt, *layer_id, canvas_size)?;
+        sources.insert(*layer_id, source);
+    }
+    Ok(sources)
+}
+
+type MaskLayerSourceRow = (i64, i64, i64, i64, i64, String, Option<Vec<u8>>);
+
+fn mask_layer_source_query(layer_columns: &HashSet<String>) -> String {
+    format!(
         "SELECT \
             l.MainId, l.LayerLayerMaskMipmap, {}, {}, \
             m.BaseMipmapInfo, mi.Offscreen, o.BlockData, o.Attribute \
@@ -284,10 +354,17 @@ pub fn read_mask_layer_source_from_sqlite(
          JOIN MipmapInfo mi ON mi.MainId = m.BaseMipmapInfo \
          JOIN Offscreen o ON o.MainId = mi.Offscreen \
          WHERE l.MainId = ?1 AND l.LayerLayerMaskMipmap != 0",
-        optional_i64_expr(&layer_columns, "LayerMaskOffscrOffsetX"),
-        optional_i64_expr(&layer_columns, "LayerMaskOffscrOffsetY"),
-    );
-    let row = conn.query_row(&query, [layer_id.0], |row| {
+        optional_i64_expr(layer_columns, "LayerMaskOffscrOffsetX"),
+        optional_i64_expr(layer_columns, "LayerMaskOffscrOffsetY"),
+    )
+}
+
+fn read_mask_layer_source_with_statement(
+    stmt: &mut rusqlite::Statement<'_>,
+    layer_id: LayerId,
+    canvas_size: CanvasSize,
+) -> Result<MaskLayerSource, ClipFileError> {
+    let row: MaskLayerSourceRow = match stmt.query_row([layer_id.0], |row| {
         let id: i64 = row.get(0)?;
         let mask_mipmap_id: i64 = row.get(1)?;
         let offset_x: Option<i64> = row.get(2)?;
@@ -308,15 +385,15 @@ pub fn read_mask_layer_source_from_sqlite(
             external_id,
             attribute,
         ))
-    });
-
-    let (id, mask_mipmap_id, offset_x, offset_y, offscreen_id, external_id, attribute) = match row {
+    }) {
         Ok(row) => row,
         Err(rusqlite::Error::QueryReturnedNoRows) => {
             return Err(ClipFileError::LayerHasNoMask { layer_id });
         }
         Err(err) => return Err(ClipFileError::Sqlite(err)),
     };
+
+    let (id, mask_mipmap_id, offset_x, offset_y, offscreen_id, external_id, attribute) = row;
     let pixel_size = attribute
         .as_deref()
         .and_then(|attribute| parse_offscreen_pixel_size(attribute, canvas_size))

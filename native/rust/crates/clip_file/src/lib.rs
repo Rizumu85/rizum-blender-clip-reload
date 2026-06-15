@@ -122,7 +122,14 @@ pub fn read_raster_layer_source_rgba_from_container(
 ) -> Result<PlacedRgbaTileImage, ClipFileError> {
     let source =
         read_raster_layer_source_from_sqlite(container.sqlite_bytes(), layer_id, canvas_size)?;
-    let image = decode_raster_source_rgba(container, &source, layer_id)?;
+    read_resolved_raster_layer_source_rgba_from_container(container, &source)
+}
+
+pub fn read_resolved_raster_layer_source_rgba_from_container(
+    container: &ClipContainer,
+    source: &metadata::RasterLayerSource,
+) -> Result<PlacedRgbaTileImage, ClipFileError> {
+    let image = decode_raster_source_rgba(container, source, source.layer.id)?;
     Ok(PlacedRgbaTileImage {
         image,
         offset_x: source.offset_x,
@@ -137,7 +144,14 @@ pub fn read_layer_mask_alpha_from_container(
 ) -> Result<AlphaTileImage, ClipFileError> {
     let source =
         read_mask_layer_source_from_sqlite(container.sqlite_bytes(), layer_id, canvas_size)?;
+    read_resolved_layer_mask_alpha_from_container(container, canvas_size, &source)
+}
 
+pub fn read_resolved_layer_mask_alpha_from_container(
+    container: &ClipContainer,
+    canvas_size: CanvasSize,
+    source: &metadata::MaskLayerSource,
+) -> Result<AlphaTileImage, ClipFileError> {
     let body = container
         .external_data_body(&source.external_id)
         .ok_or_else(|| ClipFileError::MissingExternalData(source.external_id.clone()))?;

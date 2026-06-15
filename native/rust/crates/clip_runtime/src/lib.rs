@@ -132,6 +132,8 @@ pub struct ClipSession {
     container: clip_file::container::ClipContainer,
     summary: ClipFileSummary,
     render_plan: RenderPlan,
+    raster_sources: HashMap<LayerId, clip_file::metadata::RasterLayerSource>,
+    mask_sources: HashMap<LayerId, clip_file::metadata::MaskLayerSource>,
     rendered_image: Option<clip_file::tiles::RgbaTileImage>,
 }
 
@@ -150,11 +152,35 @@ impl ClipSession {
             .map(layer_graph_input_from_file)
             .collect();
         let render_plan = RenderPlan::build(summary.canvas, summary.root_layer_id, &graph_inputs)?;
+        let raster_layer_ids: Vec<_> = render_plan
+            .nodes
+            .iter()
+            .filter(|node| node.kind == RenderNodeKind::Raster)
+            .map(|node| node.layer_id)
+            .collect();
+        let mask_layer_ids: Vec<_> = render_plan
+            .nodes
+            .iter()
+            .filter(|node| node.mask_mipmap_id.is_some())
+            .map(|node| node.layer_id)
+            .collect();
+        let raster_sources = clip_file::metadata::read_raster_layer_sources_from_sqlite(
+            container.sqlite_bytes(),
+            &raster_layer_ids,
+            summary.canvas,
+        )?;
+        let mask_sources = clip_file::metadata::read_mask_layer_sources_from_sqlite(
+            container.sqlite_bytes(),
+            &mask_layer_ids,
+            summary.canvas,
+        )?;
         Ok(Self {
             path,
             container,
             summary,
             render_plan,
+            raster_sources,
+            mask_sources,
             rendered_image: None,
         })
     }
@@ -1070,7 +1096,7 @@ impl ClipSession {
             return Ok(None);
         }
 
-        let mask_key = plan_gpu_mask_resource(node, resource_plan);
+        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
         let children = self.collect_gpu_sources_in_range(
             index + 1,
             subtree_end,
@@ -1136,7 +1162,7 @@ impl ClipSession {
             return Ok(None);
         }
 
-        let mask_key = plan_gpu_mask_resource(node, resource_plan);
+        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
         let children = self.collect_gpu_sources_in_range(
             index + 1,
             subtree_end,
@@ -1214,11 +1240,11 @@ impl ClipSession {
                 .ok_or(RuntimeError::MissingRasterRenderMipmap {
                     layer_id: node.layer_id,
                 })?;
-        let source_info = clip_file::read_raster_layer_source_info_from_container(
-            &self.container,
-            self.summary.canvas,
-            node.layer_id,
-        )?;
+        let source = self
+            .raster_sources
+            .get(&node.layer_id)
+            .cloned()
+            .ok_or(clip_file::ClipFileError::MissingLayer(node.layer_id))?;
         let key = clip_gpu::GpuRasterResourceKey {
             layer_id: node.layer_id,
             render_mipmap_id,
@@ -1229,15 +1255,16 @@ impl ClipSession {
                 render_node_id: node.id,
                 layer_id: node.layer_id,
                 render_mipmap_id,
+                source: source.clone(),
             },
         );
-        let mask_key = plan_gpu_mask_resource(node, resource_plan);
+        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
         Ok(Some(clip_gpu::GpuNormalRasterSource {
             key,
             opacity,
             mask_key,
-            offset_x: source_info.offset_x,
-            offset_y: source_info.offset_y,
+            offset_x: source.offset_x,
+            offset_y: source.offset_y,
             blend_mode: gpu_raster_blend_mode(blend_mode),
         }))
     }
@@ -1309,7 +1336,7 @@ impl ClipSession {
             });
             return Ok(None);
         };
-        let mask_key = plan_gpu_mask_resource(node, resource_plan);
+        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
         Ok(Some(clip_gpu::GpuNormalStackSource::LutFilter {
             lut_rgba,
             opacity,
@@ -2920,18 +2947,20 @@ fn prefixed_trace_role(prefix: &str, role: &str) -> String {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct PlannedRasterResourceMeta {
     render_node_id: RenderNodeId,
     layer_id: LayerId,
     render_mipmap_id: u32,
+    source: clip_file::metadata::RasterLayerSource,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct PlannedMaskResourceMeta {
     render_node_id: RenderNodeId,
     layer_id: LayerId,
     mask_mipmap_id: u32,
+    source: clip_file::metadata::MaskLayerSource,
 }
 
 #[derive(Debug, Default)]
@@ -2973,16 +3002,15 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         renderer: &clip_gpu::GpuRenderer,
         source: clip_gpu::GpuNormalRasterSource,
     ) -> Result<clip_gpu::GpuRasterResourceCache, Self::Error> {
-        let meta = self.plan.rasters.get(&source.key).copied().ok_or_else(|| {
+        let meta = self.plan.rasters.get(&source.key).cloned().ok_or_else(|| {
             RuntimeError::Gpu(clip_gpu::GpuRenderError::MissingRasterResource {
                 layer_id: source.key.layer_id,
                 render_mipmap_id: source.key.render_mipmap_id,
             })
         })?;
-        let placed = clip_file::read_raster_layer_source_rgba_from_container(
+        let placed = clip_file::read_resolved_raster_layer_source_rgba_from_container(
             self.container,
-            self.canvas,
-            meta.layer_id,
+            &meta.source,
         )?;
         let upload = clip_gpu::GpuRasterUpload {
             layer_id: meta.layer_id,
@@ -2999,16 +3027,16 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         renderer: &clip_gpu::GpuRenderer,
         key: clip_gpu::GpuMaskResourceKey,
     ) -> Result<clip_gpu::GpuMaskResourceCache, Self::Error> {
-        let meta = self.plan.masks.get(&key).copied().ok_or_else(|| {
+        let meta = self.plan.masks.get(&key).cloned().ok_or_else(|| {
             RuntimeError::Gpu(clip_gpu::GpuRenderError::MissingMaskResource {
                 layer_id: key.layer_id,
                 mask_mipmap_id: key.mask_mipmap_id,
             })
         })?;
-        let image = clip_file::read_layer_mask_alpha_from_container(
+        let image = clip_file::read_resolved_layer_mask_alpha_from_container(
             self.container,
             self.canvas,
-            meta.layer_id,
+            &meta.source,
         )?;
         let upload = clip_gpu::GpuMaskUpload {
             layer_id: meta.layer_id,
@@ -3094,10 +3122,18 @@ fn gpu_normal_stack_source(draw: &StrictRasterStackDraw) -> clip_gpu::GpuNormalS
 }
 
 fn plan_gpu_mask_resource(
+    mask_sources: &HashMap<LayerId, clip_file::metadata::MaskLayerSource>,
     node: &clip_graph::RenderNode,
     resource_plan: &mut GpuResourcePlan,
-) -> Option<clip_gpu::GpuMaskResourceKey> {
-    let mask_mipmap_id = node.mask_mipmap_id?;
+) -> Result<Option<clip_gpu::GpuMaskResourceKey>, RuntimeError> {
+    let Some(mask_mipmap_id) = node.mask_mipmap_id else {
+        return Ok(None);
+    };
+    let source = mask_sources.get(&node.layer_id).cloned().ok_or(
+        clip_file::ClipFileError::LayerHasNoMask {
+            layer_id: node.layer_id,
+        },
+    )?;
     let key = clip_gpu::GpuMaskResourceKey {
         layer_id: node.layer_id,
         mask_mipmap_id,
@@ -3108,9 +3144,10 @@ fn plan_gpu_mask_resource(
             render_node_id: node.id,
             layer_id: node.layer_id,
             mask_mipmap_id,
+            source,
         },
     );
-    Some(key)
+    Ok(Some(key))
 }
 
 fn gpu_normal_raster_source(decoded: &PlannedDecodedRaster) -> clip_gpu::GpuNormalRasterSource {
@@ -3473,6 +3510,7 @@ fn layer_graph_input_from_file(record: &clip_file::metadata::LayerGraphRecord) -
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::path::{Path, PathBuf};
 
     use clip_file::ClipFileSummary;
@@ -3659,6 +3697,8 @@ mod tests {
                     raster_node(3, 11, 1, 16, true),
                 ],
             },
+            raster_sources: HashMap::new(),
+            mask_sources: HashMap::new(),
             rendered_image: None,
         };
 
@@ -4160,9 +4200,16 @@ mod tests {
         assert!(flat.unsupported.is_empty());
         let flat_image = flat.image.expect("flat output image");
 
+        let folder_session_container = clip_file::container::ClipContainer::open(&path)
+            .expect("open Test_Clipping.clip container");
+        let folder_raster_sources = clip_file::metadata::read_raster_layer_sources_from_sqlite(
+            folder_session_container.sqlite_bytes(),
+            &[LayerId(10), LayerId(11)],
+            CanvasSize::new(512, 512),
+        )
+        .expect("read Test_Clipping raster sources");
         let folder_session = ClipSession {
-            container: clip_file::container::ClipContainer::open(&path)
-                .expect("open Test_Clipping.clip container"),
+            container: folder_session_container,
             path,
             summary: ClipFileSummary {
                 canvas: CanvasSize::new(512, 512),
@@ -4181,6 +4228,8 @@ mod tests {
                     raster_node(4, 11, 2, 16, true),
                 ],
             },
+            raster_sources: folder_raster_sources,
+            mask_sources: HashMap::new(),
             rendered_image: None,
         };
 
@@ -4212,6 +4261,8 @@ mod tests {
                 root_layer_id: LayerId(2),
                 nodes,
             },
+            raster_sources: HashMap::new(),
+            mask_sources: HashMap::new(),
             rendered_image: None,
         }
     }
