@@ -53,20 +53,13 @@ impl GpuRenderer {
         let accum_usage = wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::TEXTURE_BINDING
             | wgpu::TextureUsages::COPY_SRC;
-        let accum_textures = [
-            create_rgba8_texture(
-                &self.context.device,
-                "rizum_clip_provider_normal_accum_a",
-                output_size,
-                accum_usage,
-            ),
-            create_rgba8_texture(
-                &self.context.device,
-                "rizum_clip_provider_normal_accum_b",
-                output_size,
-                accum_usage,
-            ),
-        ];
+        let accum_pair = StreamingTexturePair::new(
+            &self.context.device,
+            "rizum_clip_provider_normal_accum_a",
+            "rizum_clip_provider_normal_accum_b",
+            output_size,
+            accum_usage,
+        );
         let pipelines = NormalStackPipelines::new(&self.context.device);
         let mut state = StreamingEncoder::<P::Error>::new(
             &self.context.device,
@@ -76,15 +69,11 @@ impl GpuRenderer {
         let mut previous_index = 0usize;
         let mut next_index = 1usize;
 
-        {
-            let initial_view =
-                accum_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-            clear_rgba8_texture(
-                state.encoder_mut(),
-                &initial_view,
-                "rizum_clip_provider_normal_initial_clear",
-            );
-        }
+        clear_rgba8_texture(
+            state.encoder_mut(),
+            accum_pair.view(previous_index),
+            "rizum_clip_provider_normal_initial_clear",
+        );
 
         let updated = encode_sources_with_provider(
             self,
@@ -92,7 +81,7 @@ impl GpuRenderer {
             &mut state,
             output_size,
             sources,
-            &accum_textures,
+            &accum_pair,
             previous_index,
             next_index,
             &pipelines,
@@ -104,7 +93,7 @@ impl GpuRenderer {
 
         let pixels = self
             .read_texture_rgba8(
-                &accum_textures[previous_index],
+                accum_pair.texture(previous_index),
                 output_size.width,
                 output_size.height,
             )
@@ -114,6 +103,44 @@ impl GpuRenderer {
             size: output_size,
             pixels,
         })
+    }
+}
+
+struct StreamingTexturePair {
+    textures: [wgpu::Texture; 2],
+    views: [wgpu::TextureView; 2],
+}
+
+impl StreamingTexturePair {
+    fn new(
+        device: &wgpu::Device,
+        label_a: &'static str,
+        label_b: &'static str,
+        size: CanvasSize,
+        usage: wgpu::TextureUsages,
+    ) -> Self {
+        let textures = [
+            create_rgba8_texture(device, label_a, size, usage),
+            create_rgba8_texture(device, label_b, size, usage),
+        ];
+        let views = [
+            textures[0].create_view(&wgpu::TextureViewDescriptor::default()),
+            textures[1].create_view(&wgpu::TextureViewDescriptor::default()),
+        ];
+        Self { textures, views }
+    }
+
+    fn texture(&self, index: usize) -> &wgpu::Texture {
+        &self.textures[index]
+    }
+
+    fn view(&self, index: usize) -> &wgpu::TextureView {
+        &self.views[index]
+    }
+
+    fn into_view(self, index: usize) -> wgpu::TextureView {
+        let [view_a, view_b] = self.views;
+        if index == 0 { view_a } else { view_b }
     }
 }
 
@@ -176,7 +203,7 @@ fn encode_sources_with_provider<P>(
     state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
     sources: &[GpuNormalStackSource],
-    accum_textures: &[wgpu::Texture; 2],
+    accum_pair: &StreamingTexturePair,
     mut previous_index: usize,
     mut next_index: usize,
     pipelines: &NormalStackPipelines,
@@ -185,20 +212,16 @@ where
     P: GpuNormalStackResourceProvider,
 {
     for source in sources {
-        let previous_view =
-            accum_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-        let output_view =
-            accum_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
         encode_source_with_provider(
             renderer,
             provider,
             state,
             output_size,
             source,
-            &accum_textures[previous_index],
-            &accum_textures[previous_index],
-            &previous_view,
-            &output_view,
+            accum_pair.texture(previous_index),
+            accum_pair.texture(previous_index),
+            accum_pair.view(previous_index),
+            accum_pair.view(next_index),
             pipelines,
         )?;
         std::mem::swap(&mut previous_index, &mut next_index);
@@ -426,47 +449,32 @@ where
 {
     let clipping_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-    let clipping_textures = [
-        create_rgba8_texture(
-            state.device,
-            "rizum_clip_provider_clipping_cache_a",
-            output_size,
-            clipping_usage,
-        ),
-        create_rgba8_texture(
-            state.device,
-            "rizum_clip_provider_clipping_cache_b",
-            output_size,
-            clipping_usage,
-        ),
-    ];
+    let clipping_pair = StreamingTexturePair::new(
+        state.device,
+        "rizum_clip_provider_clipping_cache_a",
+        "rizum_clip_provider_clipping_cache_b",
+        output_size,
+        clipping_usage,
+    );
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
 
-    {
-        let initial_view =
-            clipping_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-        clear_rgba8_texture(
-            state.encoder_mut(),
-            &initial_view,
-            "rizum_clip_provider_clipping_initial_clear",
-        );
-    }
+    clear_rgba8_texture(
+        state.encoder_mut(),
+        clipping_pair.view(previous_index),
+        "rizum_clip_provider_clipping_initial_clear",
+    );
 
     {
         let (_raster_cache, source_view) =
             raster_view_with_provider(renderer, provider, state, base)?;
-        let previous_view =
-            clipping_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-        let output_view =
-            clipping_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
         let (_mask_cache, mask_view) = mask_view_with_provider(
             renderer,
             provider,
             output_size,
             base.mask_key,
             base.key.layer_id,
-            &previous_view,
+            clipping_pair.view(previous_index),
         )?;
         encode_normal_source_pass(
             state.device,
@@ -474,9 +482,9 @@ where
             &pipelines.alpha_pipeline,
             &pipelines.bind_group_layout,
             &source_view,
-            &previous_view,
+            clipping_pair.view(previous_index),
             mask_view.as_ref(),
-            &output_view,
+            clipping_pair.view(next_index),
             raster_source_uniform_bytes(base),
             "rizum_clip_provider_clipping_base_pass",
         );
@@ -487,17 +495,13 @@ where
     for clipped_source in clipped {
         let (_raster_cache, source_view) =
             raster_view_with_provider(renderer, provider, state, *clipped_source)?;
-        let previous_view =
-            clipping_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-        let output_view =
-            clipping_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
         let (_mask_cache, mask_view) = mask_view_with_provider(
             renderer,
             provider,
             output_size,
             clipped_source.mask_key,
             clipped_source.key.layer_id,
-            &previous_view,
+            clipping_pair.view(previous_index),
         )?;
         encode_normal_source_pass(
             state.device,
@@ -509,9 +513,9 @@ where
             ),
             &pipelines.bind_group_layout,
             &source_view,
-            &previous_view,
+            clipping_pair.view(previous_index),
             mask_view.as_ref(),
-            &output_view,
+            clipping_pair.view(next_index),
             raster_source_uniform_bytes(*clipped_source),
             "rizum_clip_provider_clipping_clipped_pass",
         );
@@ -519,7 +523,7 @@ where
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
-    Ok(clipping_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default()))
+    Ok(clipping_pair.into_view(previous_index))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -537,54 +541,39 @@ where
 {
     let container_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-    let container_textures = [
-        create_rgba8_texture(
-            state.device,
-            "rizum_clip_provider_container_cache_a",
-            output_size,
-            container_usage,
-        ),
-        create_rgba8_texture(
-            state.device,
-            "rizum_clip_provider_container_cache_b",
-            output_size,
-            container_usage,
-        ),
-    ];
+    let container_pair = StreamingTexturePair::new(
+        state.device,
+        "rizum_clip_provider_container_cache_a",
+        "rizum_clip_provider_container_cache_b",
+        output_size,
+        container_usage,
+    );
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
 
-    {
-        let initial_view =
-            container_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-        clear_rgba8_texture(
-            state.encoder_mut(),
-            &initial_view,
-            "rizum_clip_provider_container_initial_clear",
-        );
-    }
+    clear_rgba8_texture(
+        state.encoder_mut(),
+        container_pair.view(previous_index),
+        "rizum_clip_provider_container_initial_clear",
+    );
 
     for child in children {
-        let previous_view =
-            container_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());
-        let output_view =
-            container_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
         encode_source_with_provider(
             renderer,
             provider,
             state,
             output_size,
             child,
-            &container_textures[previous_index],
+            container_pair.texture(previous_index),
             fallback_texture,
-            &previous_view,
-            &output_view,
+            container_pair.view(previous_index),
+            container_pair.view(next_index),
             pipelines,
         )?;
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
-    Ok(container_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default()))
+    Ok(container_pair.into_view(previous_index))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -606,32 +595,26 @@ where
 {
     let through_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-    let through_textures = [
-        create_rgba8_texture(
-            state.device,
-            "rizum_clip_provider_through_after_a",
-            output_size,
-            through_usage,
-        ),
-        create_rgba8_texture(
-            state.device,
-            "rizum_clip_provider_through_after_b",
-            output_size,
-            through_usage,
-        ),
-    ];
+    let through_pair = StreamingTexturePair::new(
+        state.device,
+        "rizum_clip_provider_through_after_a",
+        "rizum_clip_provider_through_after_b",
+        output_size,
+        through_usage,
+    );
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
+    let before_view = before_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
     for (child_index, child) in children.iter().enumerate() {
-        let previous_texture = if child_index == 0 {
-            before_texture
+        let (previous_texture, previous_view) = if child_index == 0 {
+            (before_texture, &before_view)
         } else {
-            &through_textures[previous_index]
+            (
+                through_pair.texture(previous_index),
+                through_pair.view(previous_index),
+            )
         };
-        let previous_view = previous_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let child_output_view =
-            through_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
         encode_source_with_provider(
             renderer,
             provider,
@@ -640,18 +623,17 @@ where
             child,
             previous_texture,
             fallback_texture,
-            &previous_view,
-            &child_output_view,
+            previous_view,
+            through_pair.view(next_index),
             pipelines,
         )?;
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
-    let before_view = before_texture.create_view(&wgpu::TextureViewDescriptor::default());
     let after_view = if children.is_empty() {
-        before_texture.create_view(&wgpu::TextureViewDescriptor::default())
+        &before_view
     } else {
-        through_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default())
+        through_pair.view(previous_index)
     };
     let (_mask_cache, mask_view) = mask_view_with_provider(
         renderer,
@@ -668,7 +650,7 @@ where
         state.encoder_mut(),
         &pipelines.through_pipeline,
         &pipelines.bind_group_layout,
-        &after_view,
+        after_view,
         &before_view,
         mask_view.as_ref(),
         output_view,
