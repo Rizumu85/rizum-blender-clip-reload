@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod container;
+pub mod external;
 pub mod metadata;
 pub mod tiles;
 
@@ -10,11 +11,12 @@ use std::path::Path;
 
 use clip_model::{CanvasSize, LayerId};
 use container::{ChunkKind, ClipContainer};
+use external::decode_external_tile_blob;
 use metadata::{read_mask_layer_source_from_sqlite, read_raster_layer_source_from_sqlite};
 use tiles::{
-    AlphaTileImage, RgbaTileImage, alpha_tile_blob_len, decode_alpha_tiles,
-    decode_external_tile_blob, decode_gray_rgba_tiles, decode_mono_rgba_tiles, decode_rgba_tiles,
-    gray_rgba_tile_blob_len, mono_rgba_tile_blob_len, rgba_tile_blob_len,
+    AlphaTileImage, RgbaTileImage, alpha_tile_blob_len, decode_alpha_tiles, decode_gray_rgba_tiles,
+    decode_mono_rgba_tiles, decode_rgba_tiles, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len,
+    rgba_tile_blob_len,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -589,11 +591,12 @@ mod tests {
     use std::path::Path;
 
     use crate::container::ClipContainer;
+    use crate::external::decode_external_tile_blob;
     use crate::metadata::{
         read_filter_layer_source_from_sqlite, read_layer_graph_records_from_sqlite,
         read_raster_layer_source_from_sqlite,
     };
-    use crate::tiles::{decode_external_tile_blob, decode_rgba_tiles, rgba_tile_blob_len};
+    use crate::tiles::{decode_rgba_tiles, rgba_tile_blob_len};
 
     use super::*;
 
