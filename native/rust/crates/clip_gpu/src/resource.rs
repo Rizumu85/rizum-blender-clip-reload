@@ -195,9 +195,8 @@ impl GpuRenderer {
                 mapped_at_creation: true,
             });
             {
-                let padded = padded_rows(upload.pixels, layout);
                 let mut mapped = staging.slice(..).get_mapped_range_mut();
-                mapped.copy_from_slice(&padded);
+                write_padded_rows(mapped.slice(..), upload.pixels, layout);
             }
             staging.unmap();
 
@@ -300,9 +299,8 @@ impl GpuRenderer {
                 mapped_at_creation: true,
             });
             {
-                let padded = padded_mask_rows(upload.pixels, layout);
                 let mut mapped = staging.slice(..).get_mapped_range_mut();
-                mapped.copy_from_slice(&padded);
+                write_padded_mask_rows(mapped.slice(..), upload.pixels, layout);
             }
             staging.unmap();
 
@@ -412,27 +410,60 @@ impl RgbaTextureLayout {
     }
 }
 
-fn padded_rows(src: &[u8], layout: RgbaTextureLayout) -> Vec<u8> {
-    let mut dst = vec![0u8; layout.padded_len];
-    for row in 0..(layout.unpadded_len / layout.unpadded_bytes_per_row as usize) {
-        let src_start = row * layout.unpadded_bytes_per_row as usize;
-        let src_end = src_start + layout.unpadded_bytes_per_row as usize;
-        let dst_start = row * layout.padded_bytes_per_row as usize;
-        let dst_end = dst_start + layout.unpadded_bytes_per_row as usize;
-        dst[dst_start..dst_end].copy_from_slice(&src[src_start..src_end]);
+fn write_padded_rows(dst: wgpu::WriteOnly<'_, [u8]>, src: &[u8], layout: RgbaTextureLayout) {
+    write_padded_texture_rows(
+        dst,
+        src,
+        layout.unpadded_bytes_per_row as usize,
+        layout.padded_bytes_per_row as usize,
+        layout.unpadded_len,
+    );
+}
+
+fn write_padded_mask_rows(dst: wgpu::WriteOnly<'_, [u8]>, src: &[u8], layout: MaskTextureLayout) {
+    write_padded_texture_rows(
+        dst,
+        src,
+        layout.unpadded_bytes_per_row as usize,
+        layout.padded_bytes_per_row as usize,
+        layout.unpadded_len,
+    );
+}
+
+fn write_padded_texture_rows(
+    mut dst: wgpu::WriteOnly<'_, [u8]>,
+    src: &[u8],
+    unpadded_bytes_per_row: usize,
+    padded_bytes_per_row: usize,
+    unpadded_len: usize,
+) {
+    if padded_bytes_per_row == unpadded_bytes_per_row {
+        dst.copy_from_slice(src);
+        return;
     }
+
+    dst.fill(0);
+    for row in 0..(unpadded_len / unpadded_bytes_per_row) {
+        let src_start = row * unpadded_bytes_per_row;
+        let src_end = src_start + unpadded_bytes_per_row;
+        let dst_start = row * padded_bytes_per_row;
+        let dst_end = dst_start + unpadded_bytes_per_row;
+        dst.slice(dst_start..dst_end)
+            .copy_from_slice(&src[src_start..src_end]);
+    }
+}
+
+#[cfg(test)]
+fn padded_rows(src: &[u8], layout: RgbaTextureLayout) -> Vec<u8> {
+    let mut dst = vec![255u8; layout.padded_len];
+    write_padded_rows(wgpu::WriteOnly::from_mut(dst.as_mut_slice()), src, layout);
     dst
 }
 
+#[cfg(test)]
 fn padded_mask_rows(src: &[u8], layout: MaskTextureLayout) -> Vec<u8> {
-    let mut dst = vec![0u8; layout.padded_len];
-    for row in 0..(layout.unpadded_len / layout.unpadded_bytes_per_row as usize) {
-        let src_start = row * layout.unpadded_bytes_per_row as usize;
-        let src_end = src_start + layout.unpadded_bytes_per_row as usize;
-        let dst_start = row * layout.padded_bytes_per_row as usize;
-        let dst_end = dst_start + layout.unpadded_bytes_per_row as usize;
-        dst[dst_start..dst_end].copy_from_slice(&src[src_start..src_end]);
-    }
+    let mut dst = vec![255u8; layout.padded_len];
+    write_padded_mask_rows(wgpu::WriteOnly::from_mut(dst.as_mut_slice()), src, layout);
     dst
 }
 
