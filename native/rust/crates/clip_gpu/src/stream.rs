@@ -3,12 +3,13 @@ use clip_model::CanvasSize;
 use crate::blend::raster_source_pipeline;
 use crate::pass::{
     NormalStackPipelines, create_lut_filter_texture, encode_lut_filter_pass,
-    encode_normal_source_pass,
+    encode_normal_source_pass, encode_normal_source_pass_scissored,
 };
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend, lut_filter_uniform_bytes,
     raster_source_uniform_bytes, solid_source_uniform_bytes,
 };
+use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_groups::{
     render_clipping_run_with_provider, render_container_with_provider,
     render_through_group_with_provider,
@@ -76,6 +77,10 @@ impl GpuRenderer {
             accum_pair.view(previous_index),
             "rizum_clip_provider_normal_initial_clear",
         );
+        state.clear_rgba8_texture(
+            accum_pair.view(next_index),
+            "rizum_clip_provider_normal_spare_clear",
+        );
 
         let updated = encode_sources_with_provider(
             self,
@@ -124,8 +129,9 @@ fn encode_sources_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    let mut dirty_bounds = None;
     for source in sources {
-        encode_source_with_provider(
+        let did_write = encode_source_with_provider(
             renderer,
             provider,
             state,
@@ -136,8 +142,11 @@ where
             accum_pair.view(previous_index),
             accum_pair.view(next_index),
             pipelines,
+            &mut dirty_bounds,
         )?;
-        std::mem::swap(&mut previous_index, &mut next_index);
+        if did_write {
+            std::mem::swap(&mut previous_index, &mut next_index);
+        }
     }
     Ok((previous_index, next_index))
 }
@@ -154,14 +163,18 @@ pub(crate) fn encode_source_with_provider<P>(
     previous_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
     pipelines: &NormalStackPipelines,
-) -> Result<(), P::Error>
+    dirty_bounds: &mut Option<CanvasRect>,
+) -> Result<bool, P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
     match source {
         GpuNormalStackSource::Raster(raster) => {
-            let (raster_cache, source_view) =
-                raster_view_with_provider(renderer, provider, state, *raster)?;
+            let (raster_cache, source_view, source_bounds) =
+                raster_view_with_provider(renderer, provider, state, output_size, *raster)?;
+            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, source_bounds) else {
+                return Ok(false);
+            };
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
                 provider,
@@ -170,7 +183,7 @@ where
                 raster.key.layer_id,
                 previous_view,
             )?;
-            encode_normal_source_pass(
+            encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
                 raster_source_pipeline(
@@ -189,10 +202,13 @@ where
                 output_view,
                 raster_source_uniform_bytes(*raster),
                 "rizum_clip_provider_normal_raster_pass",
+                pass_bounds,
             );
             state.retain_raster_cache(raster_cache);
             state.retain_optional_mask_cache(mask_cache);
             state.finish_pass()?;
+            *dirty_bounds = Some(pass_bounds);
+            Ok(true)
         }
         GpuNormalStackSource::ClippingRun { base, clipped } => {
             let clipping_cache = render_clipping_run_with_provider(
@@ -204,7 +220,11 @@ where
                 clipped,
                 pipelines,
             )?;
-            encode_normal_source_pass(
+            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, clipping_cache.bounds())
+            else {
+                return Ok(false);
+            };
+            encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
                 raster_source_pipeline(
@@ -223,9 +243,12 @@ where
                 output_view,
                 generated_raster_source_uniform_bytes_with_blend(1.0, false, base.blend_mode),
                 "rizum_clip_provider_clipping_resolve_pass",
+                pass_bounds,
             );
             state.retain_intermediate_cache(clipping_cache);
             state.finish_pass()?;
+            *dirty_bounds = Some(pass_bounds);
+            Ok(true)
         }
         GpuNormalStackSource::Container {
             children,
@@ -242,6 +265,10 @@ where
                 fallback_texture,
                 pipelines,
             )?;
+            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, container_cache.bounds())
+            else {
+                return Ok(false);
+            };
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
                 provider,
@@ -252,7 +279,7 @@ where
                     .unwrap_or(clip_model::LayerId(0)),
                 previous_view,
             )?;
-            encode_normal_source_pass(
+            encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
                 raster_source_pipeline(
@@ -275,31 +302,36 @@ where
                     *blend_mode,
                 ),
                 "rizum_clip_provider_container_resolve_pass",
+                pass_bounds,
             );
             state.retain_intermediate_cache(container_cache);
             state.retain_optional_mask_cache(mask_cache);
             state.finish_pass()?;
+            *dirty_bounds = Some(pass_bounds);
+            Ok(true)
         }
         GpuNormalStackSource::ThroughGroup {
             children,
             opacity,
             mask_key,
-        } => {
-            render_through_group_with_provider(
-                renderer,
-                provider,
-                state,
-                output_size,
-                children,
-                *opacity,
-                *mask_key,
-                previous_texture,
-                fallback_texture,
-                output_view,
-                pipelines,
-            )?;
-        }
+        } => render_through_group_with_provider(
+            renderer,
+            provider,
+            state,
+            output_size,
+            children,
+            *opacity,
+            *mask_key,
+            previous_texture,
+            fallback_texture,
+            output_view,
+            pipelines,
+            dirty_bounds,
+        ),
         GpuNormalStackSource::SolidColor { color, opacity } => {
+            let Some(full_bounds) = CanvasRect::full(output_size) else {
+                return Ok(false);
+            };
             encode_normal_source_pass(
                 state.device(),
                 state.encoder_mut(),
@@ -313,6 +345,8 @@ where
                 "rizum_clip_provider_solid_pass",
             );
             state.finish_pass()?;
+            *dirty_bounds = Some(full_bounds);
+            Ok(true)
         }
         GpuNormalStackSource::LutFilter {
             lut_rgba,
@@ -320,6 +354,9 @@ where
             mask_key,
             filter_mode,
         } => {
+            let Some(full_bounds) = CanvasRect::full(output_size) else {
+                return Ok(false);
+            };
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
                 provider,
@@ -352,17 +389,26 @@ where
             state.retain_optional_mask_cache(mask_cache);
             state.retain_lut_texture(lut_texture);
             state.finish_pass()?;
+            *dirty_bounds = Some(full_bounds);
+            Ok(true)
         }
     }
-    Ok(())
 }
 
 pub(crate) fn raster_view_with_provider<P>(
     renderer: &GpuRenderer,
     provider: &mut P,
     state: &mut StreamingEncoder<'_, P::Error>,
+    output_size: CanvasSize,
     source: GpuNormalRasterSource,
-) -> Result<(GpuRasterResourceCache, wgpu::TextureView), P::Error>
+) -> Result<
+    (
+        GpuRasterResourceCache,
+        wgpu::TextureView,
+        Option<CanvasRect>,
+    ),
+    P::Error,
+>
 where
     P: GpuNormalStackResourceProvider,
 {
@@ -374,11 +420,22 @@ where
             render_mipmap_id: source.key.render_mipmap_id,
         })
         .map_err(P::Error::from)?;
-    state.push_drawn_resource(resource.info());
+    let info = resource.info();
+    state.push_drawn_resource(info);
+    let bounds = CanvasRect::from_source(source.offset_x, source.offset_y, info.size, output_size);
     let view = resource
         .texture()
         .create_view(&wgpu::TextureViewDescriptor::default());
-    Ok((cache, view))
+    Ok((cache, view, bounds))
+}
+
+pub(crate) fn pass_bounds_for_change(
+    dirty_bounds: Option<CanvasRect>,
+    change_bounds: Option<CanvasRect>,
+) -> Option<CanvasRect> {
+    change_bounds.map(|change_bounds| {
+        union_optional(dirty_bounds, Some(change_bounds)).expect("change bounds must be present")
+    })
 }
 
 pub(crate) fn mask_view_with_provider<'a, P>(

@@ -7,6 +7,7 @@ use crate::source_params::{
     generated_raster_source_uniform_bytes, generated_raster_source_uniform_bytes_with_blend,
     lut_filter_uniform_bytes, raster_source_uniform_bytes, solid_source_uniform_bytes,
 };
+use crate::stream_bounds::CanvasRect;
 use crate::types::{
     GpuNormalRasterSource, GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode,
     GpuRasterDrawOutput, GpuRasterStackOutput,
@@ -1593,6 +1594,67 @@ pub(crate) fn encode_normal_source_pass(
     uniform_bytes: [u8; 48],
     label: &'static str,
 ) {
+    encode_normal_source_pass_with_load(
+        device,
+        encoder,
+        pipeline,
+        bind_group_layout,
+        source_view,
+        dest_view,
+        mask_view,
+        output_view,
+        uniform_bytes,
+        label,
+        wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
+        None,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn encode_normal_source_pass_scissored(
+    device: &wgpu::Device,
+    encoder: &mut wgpu::CommandEncoder,
+    pipeline: &wgpu::RenderPipeline,
+    bind_group_layout: &wgpu::BindGroupLayout,
+    source_view: &wgpu::TextureView,
+    dest_view: &wgpu::TextureView,
+    mask_view: &wgpu::TextureView,
+    output_view: &wgpu::TextureView,
+    uniform_bytes: [u8; 48],
+    label: &'static str,
+    scissor: CanvasRect,
+) {
+    encode_normal_source_pass_with_load(
+        device,
+        encoder,
+        pipeline,
+        bind_group_layout,
+        source_view,
+        dest_view,
+        mask_view,
+        output_view,
+        uniform_bytes,
+        label,
+        wgpu::LoadOp::Load,
+        Some(scissor),
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode_normal_source_pass_with_load(
+    device: &wgpu::Device,
+    encoder: &mut wgpu::CommandEncoder,
+    pipeline: &wgpu::RenderPipeline,
+    bind_group_layout: &wgpu::BindGroupLayout,
+    source_view: &wgpu::TextureView,
+    dest_view: &wgpu::TextureView,
+    mask_view: &wgpu::TextureView,
+    output_view: &wgpu::TextureView,
+    uniform_bytes: [u8; 48],
+    label: &'static str,
+    load: wgpu::LoadOp<wgpu::Color>,
+    scissor: Option<CanvasRect>,
+) {
     let uniform = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("rizum_clip_normal_source_uniform"),
         size: uniform_bytes.len() as wgpu::BufferAddress,
@@ -1632,7 +1694,7 @@ pub(crate) fn encode_normal_source_pass(
             view: output_view,
             resolve_target: None,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
+                load,
                 store: wgpu::StoreOp::Store,
             },
             depth_slice: None,
@@ -1644,6 +1706,9 @@ pub(crate) fn encode_normal_source_pass(
     });
     pass.set_pipeline(pipeline);
     pass.set_bind_group(0, &bind_group, &[]);
+    if let Some(scissor) = scissor {
+        pass.set_scissor_rect(scissor.x, scissor.y, scissor.width, scissor.height);
+    }
     pass.draw(0..3, 0..1);
 }
 

@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use clip_model::CanvasSize;
 
 use crate::pass::{clear_rgba8_texture, create_rgba8_texture};
+use crate::stream_bounds::CanvasRect;
 use crate::{GpuMaskResourceCache, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError};
 
 const MAX_STREAMING_PASSES_PER_SUBMISSION: usize = 6;
@@ -53,15 +54,28 @@ impl StreamingTexturePair {
 pub(crate) struct RenderedStreamingCache {
     pair: StreamingTexturePair,
     output_index: usize,
+    bounds: Option<CanvasRect>,
 }
 
 impl RenderedStreamingCache {
-    pub(crate) fn new(pair: StreamingTexturePair, output_index: usize) -> Self {
-        Self { pair, output_index }
+    pub(crate) fn new(
+        pair: StreamingTexturePair,
+        output_index: usize,
+        bounds: Option<CanvasRect>,
+    ) -> Self {
+        Self {
+            pair,
+            output_index,
+            bounds,
+        }
     }
 
     pub(crate) fn view(&self) -> &wgpu::TextureView {
         self.pair.view(self.output_index)
+    }
+
+    pub(crate) fn bounds(&self) -> Option<CanvasRect> {
+        self.bounds
     }
 
     fn byte_len(&self) -> usize {

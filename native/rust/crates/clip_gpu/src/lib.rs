@@ -8,6 +8,7 @@ pub mod resource;
 mod shaders;
 mod source_params;
 pub mod stream;
+mod stream_bounds;
 mod stream_groups;
 mod stream_state;
 pub mod types;
