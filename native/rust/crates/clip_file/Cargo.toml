@@ -1,0 +1,12 @@
+[package]
+name = "clip_file"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+clip_model = { path = "../clip_model" }
+flate2 = "1.1.9"
+rusqlite = { version = "0.40.1", features = ["bundled", "serialize"] }

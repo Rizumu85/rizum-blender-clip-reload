@@ -1,7 +1,0 @@
-﻿You are a read-only long-context helper. Work in this Clip Studio Paint reverse-engineering project.
-
-Task: read docs/AI_MEMORY.md and the tail of docs/analysis.md, then list only genuinely still-open, native-plausible hypotheses for why Vector_SizePressure.clip has 151 output-only hard-edge pixels while baseline/flow/opacity random/opacity pressure are exact.
-
-Do not propose metric-only tweaks already rejected: amount1=1.4, radius scale, hard span minus 0.5, duplicate-center skip, alpha occupancy skip, distance-fraction interpolation, hidden thickness axis, queue+648/context+628 crop, first-sample skip, second submit, row clipping, biased secondary scalar, generic spacing floor.
-
-For each remaining hypothesis, cite the exact function/address or importer function that would need inspection. Prefer short bullets. If nothing strong remains, say so and explain what evidence would be needed next.

@@ -1,0 +1,13 @@
+[package]
+name = "clip_runtime"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+clip_file = { path = "../clip_file" }
+clip_gpu = { path = "../clip_gpu" }
+clip_graph = { path = "../clip_graph" }
+clip_model = { path = "../clip_model" }

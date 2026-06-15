@@ -1,11 +1,32 @@
-# analysis.md 鈥?`.clip` Format Findings
+# `.clip` Format Findings
+
+## Current Scope Notice
+
+As of 2026-06-14, the active project scope is raster-only Blender import and verification. Vector strokes/fills, bubble/frame renderers, and text renderers are no longer supported targets in this repository.
+
+Historical vector/native-material notes below are preserved as evidence and rejected-hypothesis history. Do not continue that line unless Rizum explicitly reopens it.
+
+## 2026-06-14 Terra Masked Clipped Preserve Fix
+
+`Ref_Terra404_Live2D` exposed a clipped masked raster layer inside `前髪/アンテナ`: layer `959` (`LayerType=3`, Normal, clipped) had raw alpha `189` at sampled blade pixels, but its layer mask reduced the effective alpha to about `18..19`. The preserve-alpha clipping path used raw source alpha as the recolor strength, so it ignored the layer mask and pushed the blade from the CSP range around `[78,95,102]` to a cyan-biased `[81,144,147]`.
+
+The accepted fix makes clipped preserve compositing use the same source strength model for all blend modes: colour strength is `source_alpha_after_layer_mask * layer_opacity`, deliberately before clip-base attenuation. The clip base still controls the clipped layer's regular alpha/bbox and the preserve-vs-regular choice, but it is not multiplied into the colour blend strength once the layer is inside the base-owned clipping cache. This covers Normal, Add/Add Glow, and non-Normal/non-Add modes, including future masked clipped layers.
+
+Implementation note: the caller now passes `source_alpha_u8` (mask applied, clip not applied) into `_composite_clipped_image()`. This avoids recovering source strength from already-clipped alpha via division, which can amplify uint8 edge quantization. Native evidence is kept in the reverse-engineering workspace, not this importer repo: `E:\Documents\Claude\Projects\rizum-clip-studio-paint\docs\native-evidence\clipped-preserve-mask-strength.md`. The importer-side conclusion is that downstream blend strength must not bypass layer masks or pre-multiply clip strength into the preserve colour pass. Verification on the final rule:
+
+- `Ref_Terra404_Live2D`: `max=255`, `mean=0.034796`; premul `max=4`, `mean=0.022643`, `premul_visible_px=76978`. The remaining full-image max is transparent-RGB/export-convention noise or low-level premultiplied rounding scale, not the prior structural eye/skirt/clipped-highlight error.
+- `Test_AddGlowMultiply`: raw `max=5`, `mean=0.067557`; premul `max=3`, `mean=0.062212`.
+- `Test_AddGlowMultiplyClipping`: raw/premul `max=1`, `visible_px=0`.
+- `Test_ClippingEdge` stayed bit-perfect.
+- `Test_ToneCurve` stayed at `max=17`, `mean=0.0182`.
+- `Test_Mask` stayed bit-perfect.
 
 ## Prior Art (used)
 
-- **Inochi2D / clip-d** ([github.com/Inochi2D/clip-d](https://github.com/Inochi2D/clip-d)) 鈥?high-level chunk format SPEC.md.
-- **LavenderSnek / clipdecode** ([github.com/LavenderSnek/clipdecode](https://github.com/LavenderSnek/clipdecode)) 鈥?Rust parser; SPEC.md documents `ExternalTableAndColumnName` and `ExternalChunk` mapping.
-- **Kazuhito00 / clip_studio_paint_tool** ([github.com/Kazuhito00/clip_studio_paint_tool](https://github.com/Kazuhito00/clip_studio_paint_tool), MIT) 鈥?**practical Python decoder we verified against our sample**. Returns BGRA per layer at canvas resolution.
-- **ctrlcctrlv / libmarugarou** ([github.com/ctrlcctrlv/libmarugarou](https://github.com/ctrlcctrlv/libmarugarou), Apache 2.0) 鈥?Python `split_clip` reference for chunk walking; based on 2019 Rasen Suihei code.
+- **Inochi2D / clip-d** ([github.com/Inochi2D/clip-d](https://github.com/Inochi2D/clip-d)): high-level chunk format SPEC.md.
+- **LavenderSnek / clipdecode** ([github.com/LavenderSnek/clipdecode](https://github.com/LavenderSnek/clipdecode)): Rust parser; SPEC.md documents `ExternalTableAndColumnName` and `ExternalChunk` mapping.
+- **Kazuhito00 / clip_studio_paint_tool** ([github.com/Kazuhito00/clip_studio_paint_tool](https://github.com/Kazuhito00/clip_studio_paint_tool), MIT): practical Python decoder verified against this repo's sample. Returns BGRA per layer at canvas resolution.
+- **ctrlcctrlv / libmarugarou** ([github.com/ctrlcctrlv/libmarugarou](https://github.com/ctrlcctrlv/libmarugarou), Apache 2.0): Python `split_clip` reference for chunk walking; based on 2019 Rasen Suihei code.
 
 Conclusion: chunk container, SQLite schema, and tile decode for full-color raster layers are all solved by existing OSS. We do **not** need to re-derive these.
 
@@ -1645,7 +1666,7 @@ Size-pressure thickness/axis closure: fresh IDA decompiles saved in the reverse 
 
 Size-pressure graph-root ordering recheck: `0x1431F6480` returns quadratic roots in native order `(-b - sqrt)/(2a)` then `(-b + sqrt)/(2a)`, while the importer had tested them in the opposite order. A source-exec probe that changed the importer graph helper to native root ordering and native `0 <= t < 1` acceptance was exactly neutral: `Vector_SizePressure` stayed `visible=151`, and `Vector_OpacityPressure`, `Vector_OpacityRandom_50`, `Vector_FlowPressure_50`, `Vector_Flow_50`, and `Vector_Baseline` stayed pixel-exact. For current graph5/graph6, the midpoint-bounded quadratic spans are effectively monotonic in x, so the root-order detail is a real native nuance but not the missing SizePressure rule.
 
-Size-pressure queue `+648` / `0.3*size` state audit (superseded by the `context+628` closure below): a Claude long-context helper suggested `0x14260DB90` might contain a size-dependent pre-flush crop. IDA rejects the simple crop interpretation but leaves a narrower conditional rect-helper path. The branch tests queue `+648` and chooses either `queue+296 * 0.3` when `queue+464` is set or `queue+472` otherwise, then rounds that value into `0x142643BF0`. `0x142643BF0` writes draw-context `+632/+636/+640` only when context `+628` is enabled. `0x14263F410` consults `context+632` through `0x14266E1E0`, which adjusts/intersects the integer dab/block rect; it is not the hard circular pixel formula in `0x142640150`. Later IDA evidence resolved `context+628` as the water-color row-writer mode flag, and current SizePressure leaves it off.
+Size-pressure queue `+648` / `0.3*size` state audit (superseded by the `context+628` closure below): an external long-context helper suggested `0x14260DB90` might contain a size-dependent pre-flush crop. IDA rejects the simple crop interpretation but leaves a narrower conditional rect-helper path. The branch tests queue `+648` and chooses either `queue+296 * 0.3` when `queue+464` is set or `queue+472` otherwise, then rounds that value into `0x142643BF0`. `0x142643BF0` writes draw-context `+632/+636/+640` only when context `+628` is enabled. `0x14263F410` consults `context+632` through `0x14266E1E0`, which adjusts/intersects the integer dab/block rect; it is not the hard circular pixel formula in `0x142640150`. Later IDA evidence resolved `context+628` as the water-color row-writer mode flag, and current SizePressure leaves it off.
 
 Size-pressure spline-length short-span audit: `sub_1431FFEC0` has a misleading Hex-Rays return-type artifact around the rough-length shortcut. The decompile appears to return `int(rough/4)` for short spans, but the caller expects the double result in `xmm0`, and after `cvttsd2si` the rough length remains in `xmm0` on that path. No-edit importer probes confirm the current rough/then-refine model: a short-bucket-length variant regresses `Vector_SizePressure` to about `visible=330` and breaks exact guards badly; `ceil_refine_length` is neutral for SizePressure but causes small guard diffs; `t_steps_from_rough` is exactly neutral. Do not reopen spline short-span bucket length unless new native evidence contradicts this.
 
@@ -1661,9 +1682,9 @@ Size-pressure PSD-layer residual triage update: direct comparison against the PS
 
 Size-pressure hard-row and field-map closure: live IDA MCP checks on `127.0.0.1:13337` and `13338` both reached `CLIPStudioPaint.exe` for this pass, so port identity must still be verified each session. The hard no-AA row path is now closed against the current importer: `sub_142640150` uses raw x, `y - 0.5`, `sqrt(radius^2 - dy^2) - 0.4`, inclusive spans, and full coverage; `sub_14263F410` keeps the circular hard handoff; `sub_14263AC30` matches the 16-bit build-up/direct-max paths; and final alpha flush remains `(*u16 - 1) >> 7`. Therefore the remaining `151` output-only pixels are not row coverage, alpha conversion, or final composite. Re-reading `sub_1422CBAE0` also resolves the compact point flags: compact `u32+32` maps to native node `+64`, while compact tail `u32+80/+84` maps to node `+112/+116` and is not a hidden point-flag field; current compact `f32+64..+76` values are zero. Forced linear/all-corner sampling remains rejected: it reduces the SizePressure metric diagnostically but breaks exact guard samples and contradicts the confirmed `0x2081 -> PWVectorSplineCurve` route.
 
-Size-pressure Claude-helper suspect audit: a long-context helper proposed `style+408` material opacity, `StyleFlag&0x1004` flow rescaling, endpoint-result SizeEffector interpolation, and per-segment `PWBrushDraw+104/+112` size switching. IDA and no-edit probes reject these as current causes. In `sub_1422D8550`, `style+408` is the runtime hardness/softness scalar (`BrushStyle.Hardness` maps to `style+0x198`), and the current SQLite row has `Hardness=1.0`; therefore `v26` stays false and the `v19 *= (1.5 - v23 * 0.5)` branch is inactive. The flow-rescale guard is exactly `(*(_DWORD *)(style+120) & 0x1004) == 4`; current `StyleFlag=0x1c240` gives `0x1000`, not `4`, so that branch is also inactive. A no-edit source-exec variant that evaluated `SizeEffector=0x31` at segment endpoints and interpolated the already-evaluated result regressed `Vector_SizePressure` from `visible=151` to `156`, matching the native rule that `0x1422CC1E0` interpolates sample context lanes first and `0x1422D8550 -> 0x142568040` evaluates the effector per emitted dab. Finally, `0x14255C980` passes its `a3` selector through to `0x14255DFE0`; the active caller `0x1425A4100 -> 0x1422CC1E0` uses `a3=0`, so the ordinary route uses `PWBrushDraw+104` as the size argument. `PWBrushDraw+112` belongs to the `a3 != 0` secondary-resource path and is not a hidden per-segment radius source for this saved stroke. `0x1422D8140` / `0x1425597A0` were also re-read in this audit and only prepare inactive color/subcolor/mix descriptors for this fixture, not a coordinate or radius transform.
+Size-pressure long-context helper suspect audit: a long-context helper proposed `style+408` material opacity, `StyleFlag&0x1004` flow rescaling, endpoint-result SizeEffector interpolation, and per-segment `PWBrushDraw+104/+112` size switching. IDA and no-edit probes reject these as current causes. In `sub_1422D8550`, `style+408` is the runtime hardness/softness scalar (`BrushStyle.Hardness` maps to `style+0x198`), and the current SQLite row has `Hardness=1.0`; therefore `v26` stays false and the `v19 *= (1.5 - v23 * 0.5)` branch is inactive. The flow-rescale guard is exactly `(*(_DWORD *)(style+120) & 0x1004) == 4`; current `StyleFlag=0x1c240` gives `0x1000`, not `4`, so that branch is also inactive. A no-edit source-exec variant that evaluated `SizeEffector=0x31` at segment endpoints and interpolated the already-evaluated result regressed `Vector_SizePressure` from `visible=151` to `156`, matching the native rule that `0x1422CC1E0` interpolates sample context lanes first and `0x1422D8550 -> 0x142568040` evaluates the effector per emitted dab. Finally, `0x14255C980` passes its `a3` selector through to `0x14255DFE0`; the active caller `0x1425A4100 -> 0x1422CC1E0` uses `a3=0`, so the ordinary route uses `PWBrushDraw+104` as the size argument. `PWBrushDraw+112` belongs to the `a3 != 0` secondary-resource path and is not a hidden per-segment radius source for this saved stroke. `0x1422D8140` / `0x1425597A0` were also re-read in this audit and only prepare inactive color/subcolor/mix descriptors for this fixture, not a coordinate or radius transform.
 
-Size-pressure spline-centre and helper audit follow-up: a tempting remaining centreline hypothesis was that `PWVectorSplineCurve` slot `+0x68` might walk a chord/polyline approximation for distance and leave the emitted sample x/y on that approximation while returning only an approximate `t` for the dynamic lanes. Live IDA rejects that. `sub_142626EE0` forwards the six limited spline controls into `sub_143200C90`; `sub_143200C90` walks `int(length * 0.25)` chords only to locate the target distance, computes `t = ((i + 1) - overshoot / chord_len) * step`, then calls `sub_143200940` again at that refined `t` and writes that true spline point to the sample record. The importer already mirrors this shape by calling `_native_spline_t_at_distance` and `_native_spline_point_from_controls` with the same `t`; forced compact-point/output integer variants regress the target (`visible=309..340`), so this is not the remaining `151`-pixel cause. A small global dab-centre shift sweep is also only diagnostic (`+0.2,+0.2` improves `visible=151 -> 147`) and has no active native transform support. A second long-context Claude CLI audit produced no new active candidates beyond already closed sampler/row/effector facts. As an extra guard on the earlier global-pressure conclusion, `Vector_GlobalPressure_Default.clip` and `Vector_GlobalPressure_StrongCurve.clip` both still verify pixel-exact in the importer, reinforcing that global/device pressure is baked into saved point scalars for these reopened documents rather than applied as a hidden runtime `SizeEffector` curve.
+Size-pressure spline-centre and helper audit follow-up: a tempting remaining centreline hypothesis was that `PWVectorSplineCurve` slot `+0x68` might walk a chord/polyline approximation for distance and leave the emitted sample x/y on that approximation while returning only an approximate `t` for the dynamic lanes. Live IDA rejects that. `sub_142626EE0` forwards the six limited spline controls into `sub_143200C90`; `sub_143200C90` walks `int(length * 0.25)` chords only to locate the target distance, computes `t = ((i + 1) - overshoot / chord_len) * step`, then calls `sub_143200940` again at that refined `t` and writes that true spline point to the sample record. The importer already mirrors this shape by calling `_native_spline_t_at_distance` and `_native_spline_point_from_controls` with the same `t`; forced compact-point/output integer variants regress the target (`visible=309..340`), so this is not the remaining `151`-pixel cause. A small global dab-centre shift sweep is also only diagnostic (`+0.2,+0.2` improves `visible=151 -> 147`) and has no active native transform support. A second external long-context audit produced no new active candidates beyond already closed sampler/row/effector facts. As an extra guard on the earlier global-pressure conclusion, `Vector_GlobalPressure_Default.clip` and `Vector_GlobalPressure_StrongCurve.clip` both still verify pixel-exact in the importer, reinforcing that global/device pressure is baked into saved point scalars for these reopened documents rather than applied as a hidden runtime `SizeEffector` curve.
 
 Size-pressure r2 continuation after switching away from IDA MCP: command-line r2 rechecked the active no-pattern submit and spline sampler. In `0x14255DFE0`, both the offset-list and ordinary submit branches multiply draw-local x/y/radius by `PWBrushDraw+0x108` (`draw+264`) before `0x14260F550`; `PWBrushDraw+0x110` (`draw+272`) is only seen scaling a prepared scalar at `0x14255E14C` before colour/mix descriptor handling, not the geometry fields. In `0x1422CC1E0`, the vtable `+0x68` return is copied from `xmm0` to `xmm6` at `0x1422CC5F3..5F6`, and the following lane interpolation at `0x1422CC603..6AB` uses that same `xmm6` for compact fields `+0x44/+0x48/+...`; later point generation also uses the same parameter. r2 of `0x142626EE0 -> 0x143200C90` confirms the spline helper computes `steps=int(length*0.25)` clamped to `4..255`, walks chords only to find the target, calls `0x143200940` again at the refined `t`, stores the true spline point, and returns that `t`. Therefore the arc-distance-fraction interpolation probe remains a shape diagnostic, not native semantics, and `draw+272` remains rejected as the missing `0.997`-style radius shrink.
 
@@ -2746,7 +2767,7 @@ diagnostic `amount1=1.5` to `1.4`. Continue looking for a native-backed
 size-path-specific footprint/sample-distribution nuance rather than generic
 row, span, interval, or `0x31` changes.
 
-A read-only Claude Code helper suggested rechecking a possible
+A read-only external helper suggested rechecking a possible
 `0x1422CC1E0` segment-start sample suppression. Current-trace replay rejects
 the useful forms: skipping only the `residual_in == 0` first sample is exactly
 neutral (`visible=153`), and skipping every segment's first sample only reaches
@@ -2905,7 +2926,7 @@ soft-AA/profile footprint still has an unrecovered local phase/edge nuance.
 ordinary-dab scalar fixes, the remaining AA compact `0x41` family was reopened
 from the native V4 renderer side. Windows r2 confirmed
 `CSVec4Draw::RenderCurve @ 0x12466E50` and its `FillPolygon` callees in
-`iswCoreTG.dll` image base `0x12240000`. A read-only Claude Code helper used
+`iswCoreTG.dll` image base `0x12240000`. A read-only external helper used
 IDA MCP on the `iswCoreTG.dll` database at port `13338` and agreed with the r2
 disassembly. The key block is `0x12467A8C..0x12467B5B`: native calls
 `CSBezier::CalcLengthFast`, divides by `*(draw+0x158)`, truncates to an integer
@@ -3121,7 +3142,7 @@ residual precision as a strong remaining lever. Globally perturbing
 `154`. Source-exec variants that quantise the cross-segment residual carry are
 similarly weak: floor/round at `1e-3` or `1e-2` leaves the metric in
 `152..154`, and even resetting residual to `0.0` every segment only reaches
-`148`. A Claude Code helper proposed remaining suspects, but Codex audit
+`148`. An external helper proposed remaining suspects, but Codex audit
 rejects its old `VECTOR_PRESSURE_SIZE_RADIUS_SCALE=1.05` route for the current
 native no-pattern branch because the active code uses `native_radius_base =
 width` before `_draw_native_dab_rgba`; the legacy constant was already
@@ -3257,7 +3278,7 @@ called `0` times, while `_draw_native_dab_rgba` was called `220` times by other
 stroke work. That temporary patch was reverted.
 
 Fresh detail dump
-`E:\Documents\Claude\Projects\rizum-blender-clip-reload\tmp_vector_probe\aa41_detail_codex_20260604.json`
+`<project-root>\tmp_vector_probe\aa41_detail_codex_20260604.json`
 confirms the four AA-family `0x41` records are `brush_style_id=10`,
 `width=3.0`, two points, point flags `[0x401, 0x0]`. The native cubic tails are
 not absent: p0 tail0 equals p0, p0 tail1 is the forward control; p1 tail0 is a
@@ -3289,8 +3310,8 @@ is `mean=0.610175`, `visible=24477`; current guard metrics are still
 
 The relevant saved r2 dumps are:
 
-- `E:\Documents\Claude\Projects\rizum-clip-studio-paint\tmp_r2_iswcore\v4_renderstroke_curve_fill_store_pdf_20260605_codex.txt`
-- `E:\Documents\Claude\Projects\rizum-clip-studio-paint\tmp_r2_iswcore\v4_initialize_pdf_20260605_codex.txt`
+- `<reverse-workspace>\tmp_r2_iswcore\v4_renderstroke_curve_fill_store_pdf_20260605_codex.txt`
+- `<reverse-workspace>\tmp_r2_iswcore\v4_initialize_pdf_20260605_codex.txt`
 
 Native `CSVec4Draw::Initialize @ 0x124667C0` seeds
 `draw+0x158 = max(1, int(offscreen_resolution * 0.15 / 25.4 * 16))` and
@@ -3313,3 +3334,191 @@ Do not keep tuning `radius=width*0.99`, the 16 half-cap count, or bbox constants
 as semantics. The next meaningful code experiment should be a narrow native
 scanline/alpha probe for the wide-`0x41` polygon path, not another scalar
 capsule sweep.
+
+## 2026-06-14 Clipped Base Cache Ownership
+
+Native evidence in the adjacent reverse workspace showed that a base layer and
+its clipped siblings resolve through a base-owned cache, not through the
+already-accumulated group buffer. The importer now routes every raster base
+followed by clipped siblings through `_render_clipping_group`, not only
+non-Normal bases. The base cache must use the base layer's masked alpha; using
+raw base alpha caused false opaque linework in Terra's upper hair pixels.
+
+Verification on `Ref_Terra404_Live2D.clip` improved the full-image
+premultiplied max diff from 85 to 14 and reduced the old eye/highlight/lower
+skirt probe points to 0-2/255. The remaining largest Terra residuals are small
+bottom-edge semi-transparent green/cyan color differences. Guard samples
+`Test_Mask`, `Test_ClippingEdge`, `Test_AddGlowMultiply`, and `Test_ToneCurve`
+remained stable after the change.
+
+Follow-up on the bottom-edge residual showed that it was not caused by the
+Add/Add Glow formula itself. The affected pixels passed through only a small
+number of Add Glow layers. The remaining error was in clipped Add/Add Glow
+preserve strength: the importer used clip-attenuated `effective_strength`,
+which weakened colour inside the base-owned clipping cache. Switching that
+branch to source/mask strength reduced Terra's full-image premultiplied max
+diff from 14 to 4 while keeping the same guard samples stable.
+
+## 2026-06-15 Straight Uint8 Compositor Migration
+
+The importer now uses straight `uint8` RGBA as the main compositor buffer. This
+matches CSP's byte-domain caches better than premultiplied float because RGB
+can remain meaningful when alpha is zero; fresh canvases and isolated clipping
+caches are initialized as transparent white (`RGB=255`, `A=0`). The legacy
+premultiplied-float compositor branch remains only for compatibility with
+debug/selected-render callers that pass float buffers.
+
+The Add/Add Glow path now writes the native byte blend result directly back into
+the straight buffer, including the alpha channel from `_blend_add_u8()` or
+`_blend_add_glow_u8()`. This removes the old premul-to-straight-to-premul
+round-trip at the main compositor boundary, while still keeping existing
+sample-backed blend formulas for modes whose real native call path is not fully
+proven.
+
+An audit suggested wiring recovered `RenderBlendModeCall` formulas for
+Multiply, Overlay, Soft Light, Color Dodge, and Color Burn. Follow-up corrected
+the Color Dodge mapping: case 260 is not Color Dodge; `LayerComposite=9`
+Color Dodge is case 516 and uses the Photoshop-style dodge currently in the
+importer. Do not replace Color Dodge with the case 260 formula
+`255*(s+d-255)/s`. Alpha-weighted Soft Light/Multiply-style formulas still
+regressed `Test_SoftLight` and `Test_AddGlowMultiply`, so keep those formulas
+out of the importer until the exact internal case mapping and call-site
+argument evidence are recovered for those samples.
+
+Verification after the straight-buffer migration:
+
+- `Test_Clipping`, `Test_Mask`, `Test_ClippingEdge`, `Test_ColorDodge`, and
+  `Test_ColorBurn`: exact.
+- `Test_AddGlow`: premultiplied max `1`, visible `0`.
+- `Test_SoftLight`: premultiplied max `1`, visible `0`.
+- `Test_AddGlowMultiplyClipping`: premultiplied max `1`, visible `0`.
+- `Test_ToneCurve`: unchanged known residual, premultiplied max `17`.
+- `Test_AddGlowMultiply`: premultiplied max `3`, visible `1016540`.
+- `Ref_Kabi_Live2D`: premultiplied max `208`, visible `47889`. The prior
+  staged loader has the same max pixel `(1372,782)` and value, so this is a
+  pre-existing white-eye semantic gap rather than a straight-compositor
+  regression; the straight compositor reduces Kabi visible premul-diff pixels
+  from about `239469` to `47889`.
+
+Follow-up reverse-analysis resolved the Color Dodge contradiction. Ordinary
+layer Color Dodge does pass through `RenderBlendModeCall`, but it maps to case
+516, not case 260. Case 516 computes the Photoshop-style dodge target
+(`d*255/(255-s)`, clamped to `255` when `s+d>255`) and then blends toward it
+with source alpha. This matches `Test_ColorDodge.clip`: at pixel `(282,64)`,
+the upper layer is `s=[84,51,250], a=255`, the destination before the layer is
+`d=[226,226,226], a=255`, and CSP's reference output is `[255,255,255]`.
+The case 260 formula `255*(s+d-255)/s` gives `[166,110,225]`, proving only
+that case 260 was misidentified as Color Dodge. Keep Color Dodge on the current
+formula.
+
+A paired experiment then changed the straight compositor only for
+Multiply/Overlay/Soft Light to use alpha-weighted recovered helpers plus the
+`LABEL_149`-style outer writeback `out_pm = blended * dst_a + src_pm *
+(1-dst_a)`. This still regressed the guards and was reverted:
+
+- `Test_SoftLight`: from premultiplied max `1`, visible `0` to max `8`,
+  visible `24993`.
+- `Test_AddGlowMultiplyClipping`: from premultiplied max `1`, visible `0` to
+  premultiplied max `51`, visible `26544`.
+- `Test_AddGlowMultiply`: from premultiplied max `3` to premultiplied max
+  `30`.
+
+The cleanest Soft Light counterexample is opaque, so the outer alpha writeback
+cannot explain it away. In `Test_SoftLight.clip` at `(315,72)`, the source is
+`[84,51,250,255]`, the destination before the Soft Light layer is also
+`[84,51,250,255]`, and CSP's reference is `[65,27,252,255]`. The current
+W3C-style Soft Light path produces `[65,27,252]`; the recovered pow helper
+produces `[57,19,252]`. Ask the reverse workspace to re-check whether
+`LayerComposite=15` maps to the claimed internal case, whether the pow
+parameter/sign is reversed or quantized differently, and whether this helper is
+for a different Soft Light variant.
+
+After reverse follow-up confirmed case 770 is a non-raster Soft Light variant,
+a narrower experiment left Soft Light on the current W3C formula and enabled
+the recovered `LABEL_149`/alpha-weighted path only for Multiply and Overlay.
+This also regressed and was reverted:
+
+- `Test_AddGlowMultiplyClipping`: from premultiplied max `1`, visible `0` to
+  premultiplied max `51`, visible `26544`.
+- `Test_AddGlowMultiply`: from premultiplied max `3` to premultiplied max
+  `30`.
+- `Test_SoftLight` stayed stable, confirming this second regression comes from
+  the Multiply/Overlay trial rather than Soft Light.
+
+`Test_AddGlowMultiplyClipping` is the sharp guard here: its clipped Multiply
+stack is within one level using the current preserve path, but breaks badly
+when case 257 plus `LABEL_149` writeback is applied to that clipped-cache
+context. Ask the reverse workspace to verify whether clipped siblings use the
+same case 257 path, whether the destination passed to case 257 is the base cache
+or a different below-cache view, and whether the preserve/cache resolve path
+applies Multiply outside the ordinary `RenderRGB100_32bit` LABEL_149 writeback.
+
+A further scoped attempt tried to use case 257 only for non-clipped
+`MULTIPLY` layers with `LayerOpacity < 256`, leaving clipped Multiply and
+opaque Multiply on the current W3C path. This preserved
+`Test_AddGlowMultiply` and `Test_AddGlowMultiplyClipping`, but regressed
+`Ref_Terra404_Live2D`: Terra contains three non-clipped semi-opacity Multiply
+layers (`456` opacity `230`, `625` opacity `179`, `670` opacity `179`), and
+the trial changed Terra from the current premultiplied max `4` to `9`
+(`premul_visible_px=46877`). The trial was reverted. Therefore the safe
+condition is not simply "non-clipped and opacity < 256"; those Terra layers are
+real raster CSBitmapLayer cases and still prefer the current W3C-style path in
+the importer. Ask the reverse workspace to determine what additional native
+dispatch/context distinguishes case 257 users from these Terra layers.
+
+Reverse follow-up then resolved the case 257 confusion: `CreateLayer` case
+`0x101` constructs `CSToneLayer`, not an ordinary `CSBitmapLayer` Multiply
+raster layer. Treat the recovered case 257 masked-alpha multiply as a tone/filter
+layer path until native evidence proves otherwise. Do not apply it to ordinary
+`LayerComposite=2` raster Multiply.
+
+An `importer-audit-round2` spike also tried to replace the remaining
+premultiplied helper semantics around THROUGH/filter opacity with more
+straight-uint8-like behavior. Both attempts were rejected and reverted:
+
+- Replacing `_blend_straight_toward` with direct straight RGBA interpolation did
+  not improve the guard samples. On isolated Terra THROUGH+mask groups it
+  produced very large old-vs-new differences (`max` up to `254`) because
+  transparent-white cache RGB gets linearly mixed into masked edges. Without a
+  native reference for that exact intermediate cache, this is too risky.
+- Replacing the NORMAL path with an integer `EffectCacheResolve`-style
+  alpha-over helper regressed guard samples: `Test_Saturation` went from
+  `max=2` to `max=10`, and `Test_ToneCurve` went from `max=17` to `max=68`.
+
+The current float premultiplied NORMAL and `_blend_straight_toward` paths should
+therefore stay in place until the reverse workspace identifies the exact
+`EffectCacheResolve` input buffers, rounding rules, and THROUGH mask/opacity
+call context.
+
+### Kabi Clipped Folder And Hidden Sibling Cache Fix
+
+`Ref_Kabi_Live2D` exposed two clipping-cache bugs that were separate from the
+blend-mode formula work.
+
+First, the base eye-white layer is followed by a clipped sibling that is itself
+a folder. The importer originally tried to decode that sibling as a direct
+raster layer, got `None`, and skipped the folder's children. IDA supports the
+fix: `CSGroupLayer::Render @ 0x122f1380` creates a same-size child offscreen,
+initializes its transparent RGB to white (`[offscreen+0xAC] = 0xFFFFFF`), then
+iterates child pointers and calls each child's virtual `Render` via
+`vtable+912`. A clipped folder sibling is therefore a recursive render target,
+not a direct raster mipmap.
+
+Second, after the folder recursion fix, the remaining `premul_visible_px=37948`
+was dominated by a hidden clipped sibling in the face chain. At `(1584,648)` the
+importer wrote layer `289` into the clipped base cache even though its
+`LayerVisibility` bit 0 was off; CSP's reference stayed on the visible face
+base. Native render entry points support skipping it: `CSBitmapLayer::Render @
+0x122d6b20` immediately returns when `this+123` is false, and group rendering
+delegates to each child's own render method. `_render_clipping_group` now skips
+invisible siblings, and `_render_chain` only creates an isolated clipping group
+when the clipped run contains at least one visible clipped sibling.
+
+Verification after the visibility fix:
+
+- `Ref_Kabi_Live2D`: `premul_max 64 -> 47`, `premul_visible_px 37948 -> 1119`.
+- `Test_ClippingEdge`: exact.
+- `Test_AddGlowMultiplyClipping`: premultiplied max `1`, visible `0`.
+- `Test_SoftLight`: premultiplied max `1`, visible `0`.
+- `Test_ColorDodge`: exact.
+- `Test_AddGlowMultiply`: unchanged known residual, premultiplied max `3`.

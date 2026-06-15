@@ -1,0 +1,17 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/clip_model",
+    "crates/clip_file",
+    "crates/clip_graph",
+    "crates/clip_gpu",
+    "crates/clip_runtime",
+    "crates/clip_capi",
+    "crates/clip_cli",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.95"
+license = "UNLICENSED"
+publish = false

@@ -1,8 +1,0 @@
-I don't see any "task 1.5" numbering in `docs/plan.md` or `docs/AI_MEMORY.md` — plan.md has 3 Directions and AI_MEMORY.md has bullets under "Next Native Targets," but neither uses numbered tasks.
-
-This numbering likely came from a previous conversation turn that's been compacted. Could you clarify what task 1.5 is? For example:
-
-- Is it one of the SizePressure next-target bullets from AI_MEMORY.md (e.g., "Size-only branches in style/draw setup before `sub_1422D8550`")?
-- Something else from the earlier conversation?
-
-Once I know what the task is, I'll hand it off to Codex per your instructions.

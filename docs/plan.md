@@ -1,61 +1,69 @@
 # Plan
 
-Last reconciled: 2026-06-05
+Last reconciled: 2026-06-15
 
 ## Purpose
 
-This file records durable project directions only. Do not update it for every probe, rejected hypothesis, address trace, or metric change.
+This file records durable project directions. Do not update it for every probe, rejected hypothesis, address trace, or metric change.
 
 - Current compact state: `docs/AI_MEMORY.md`
 - Full evidence and rejected hypotheses: `docs/analysis.md`
 - User-facing design context: `docs/design.md`
-- Native-analysis workflow: `E:\Documents\Claude\Projects\rizum-clip-studio-paint\R2_COMMANDLINE_WORKFLOW.md`
-- Windows/WSL decompiler split: `E:\Documents\Claude\Projects\rizum-clip-studio-paint\R2_HYBRID_DECOMP_WORKFLOW.md`
+- Native rewrite direction: `docs/native-direct-load-rewrite.md`
 
-## Direction 1: Native Vector Fidelity
+## Direction 1: Raster Fidelity First
 
-Goal: Match CSP's native no-pattern vector rendering for the isolated vector samples without sample-specific overfits.
+Goal: improve flattened `.clip` output for raster artwork without reopening vector, bubble/frame, or text rendering.
 
 Current focus:
 
-- Improve isolated vector fixtures first; `Vector_SizePressure.clip` remains
-  paused while other non-exact semantics are harvested.
-- For rough balloon/frame/material objects, keep the current native-backed
-  point-family and interval-dab previews narrow; exactness needs the native
-  retained material quad/row writer, not broader fallback outline tuning.
-- Current native target: `Test_Vector` wide-`0x41` V4 pen-head rendering. The
-  16 half-cap point bridge is native-backed for the large capsule; the next
-  useful boundary is native `FillPolygon` fixed-point scan conversion and
-  alpha/composite behavior.
-- Preserve the exact native guards already solved for baseline, flow, opacity random, and opacity pressure.
+- Keep both loader entrypoints aligned: `clip_loader.py` and `clip_studio_importer/clip_loader.py`.
+- Keep the main compositor on straight `uint8` RGBA buffers so transparent cache RGB, Add/Add Glow byte alpha, and future native byte-domain blend work are expressible.
+- Continue raster layer semantics: folders, masks, clipping, THROUGH groups, blend modes, adjustment/filter layers, visibility bit flags, and sidecar PNG output.
+- Keep `LayerVisibility` as a bit flag: values `0` and `2` are hidden; values `1` and `3` are visible.
+- Use targeted sample improvements with guard samples before accepting compositor changes.
+- Treat vector, bubble/frame, and text layers as unsupported/skipped content in this repo.
 
-Update this direction only when the active blocker changes or a major native-rendering milestone is reached.
+Open raster targets:
 
-## Direction 2: General `.clip` Fidelity
+- `Ref_Terra404_Live2D`: complex clipped/grouped highlight stacks and bottom-edge clipped blend residuals are now close; remaining differences are low-level rounding-scale pixels.
+- `Test_AddGlowMultiply`: Add Glow base plus clipped standard-preserve siblings now routes through the native GPU path; remaining residual is low-level (`raw_max=5`, `premul_max=3`).
+- `Ref_Kabi_Live2D`: the former large white-eye residual is fixed; the remaining known max is a tiny local block around `(1738,799)`.
+- Non-zero render or mask offsets should stay sample-driven and guarded.
 
-Goal: Keep improving flattened `.clip` output while preserving verified raster, layer, mask, clipping, blend, adjustment, and vector behavior.
+## Direction 2: Blender Add-on Workflow
+
+Goal: keep the Blender importer usable until the native direct-load rewrite replaces the Python sidecar workflow.
+
+Current focus:
+
+- Preserve the sidecar PNG cache path only for the current Python implementation.
+- Keep manual reload and non-blocking auto-reload behavior stable.
+- Rebuild `clip_studio_importer.zip` whenever package code changes.
+
+## Direction 3: Native Image Loading Rewrite
+
+Goal: replace the Python compositor/sidecar PNG workflow with a native GPU renderer and Blender image-datablock integration.
 
 Current policy:
 
-- Prefer recovered CSP data and native-backed rules over tuned constants.
-- For new native evidence, use the adjacent workspace's hybrid workflow:
-  IDA/Hex-Rays for decompilation, xrefs, structure recovery, and database notes
-  when useful; Windows/WSL r2 for stable CLI evidence and decompiler comparison.
-  Arkana remains optional only.
-- Treat WSL `pdg`/`pdd` and Windows `pdc` as reading aids; confirm behavior with disassembly/xrefs/strings or importer probes before changing semantics.
-- Keep unsupported features conservative until a targeted sample or native trace supports them.
-- Treat text/frame/material/gradation fallbacks as preview layers unless their native renderer path is proven.
+- Rust plus `wgpu` is the chosen renderer direction, with a thin C++ OpenImageIO plugin boundary and a stock Blender image-datablock bridge.
+- External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch.
+- Current native milestone: continue strict GPU coverage for raster adjustment/filter layers, remaining byte-domain blend quantization, and large-stack GPU performance. Ordinary raster blend modes `LayerComposite=1..26` plus `36` are enabled, isolated containers can resolve with supported non-NORMAL blend modes, clipping runs support non-NORMAL raster bases plus clipped raster siblings, THROUGH groups clear the clip base for following clipped layers, and LUT-style adjustment/filter layers now route through a dedicated GPU pass: Tone Curve (`FilterLayerInfo` type `3`) and Gradient Map (`type 9`). `IllustrationBlendModes.clip`, `IllustrationBlendModes2.clip`, `Test_AddGlowMultiply.clip`, `Test_ToneCurve.clip`, `Test_Gradiation.clip`, and `Test_RealArt.clip --gpu-support-check` are fully routed but still have residual formula/quantization or performance work; improve correctness only with source-backed native evidence and guard samples.
+- Large-stack performance is now a throughput and scheduling issue rather than an OOM blocker. Strict GPU raster uploads use source-sized offscreen textures with shader-side canvas offsets and per-resource staging submission. The host-facing normal render path uses a recursive streaming GPU source provider: the main selector builds a metadata-only GPU source tree/resource plan, then raster/mask tile payloads are decoded and uploaded at point of use inside containers, clipping runs, THROUGH groups, and filters. `ClipSession` holds the opened `.clip` container so the render hot path no longer rereads the file for every layer. `Test_RealArt.clip` now full-renders and compares against `Test_RealArt.png` without wgpu OOM (`raw_max=5`, `premul_max=2`), but still takes about 89s on this machine. The next native performance step is reducing repeated SQLite metadata queries, tile decode/upload overhead, and full-canvas intermediate cache cost without introducing CPU compositor fallback, post-processing, or a global all-layer texture cache.
+- Native raster extraction now applies render offscreen placement through `LayerRenderOffscrOffsetX/Y`, matching the existing mask placement model and the known `Ref_Terra404_Live2D` negative-X render sources. This removes a structural decode gap before further large-reference GPU work.
+- Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.
+- Native support diagnostics use a metadata-only strict selector. `clip_cli --gpu-support-check` validates graph, raster source, mask source, and LUT-filter support without tile decode, GPU initialization, or rendering; it must remain diagnostics only, not a fallback renderer.
+- `clip_cli --gpu-trace-pixel <x> <y>` is available for native GPU prefix tracing and now includes per-source before/after/input pixels. Current open traces point to a Subtract alpha/rounding boundary feeding Color Dodge/Color Burn in `IllustrationBlendModes.clip`, plus a Pin Light/Hue/Saturation residual in `IllustrationBlendModes2.clip`; rejected broad fixes should remain in evidence, not shader code.
+- If the OIIO/native direct-load path is accepted, remove the Python compositor/loader and sidecar PNG implementation instead of keeping compatibility or fallback paths.
+- This direction is about flattened raster loading only; it does not restore vector, bubble/frame, or text renderer compatibility.
 
-Update this direction only when the project changes scope or a broad class of `.clip` features becomes supported.
+## Direction 4: Documentation Hygiene
 
-## Direction 3: Agent Handoff Hygiene
-
-Goal: Make new conversations start from the right state quickly.
+Goal: make new conversations start from the right state quickly.
 
 Current policy:
 
 - Keep `docs/AI_MEMORY.md` as the short current-state memory.
-- Keep `docs/analysis.md` as the evidence log.
+- Keep `docs/analysis.md` as the append-only historical evidence log.
 - Keep this file as durable direction, not a running checklist.
-
-Update this direction only when the documentation structure changes.

@@ -1,0 +1,10 @@
+[package]
+name = "clip_graph"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+clip_model = { path = "../clip_model" }

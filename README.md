@@ -1,35 +1,23 @@
 # Blender Clip Studio Importer
 
-Blender add-on for reading Clip Studio Paint `.clip` files as flattened image textures. The current implementation decodes the `.clip`, writes a sidecar PNG cache next to the source file, and loads that PNG as a regular Blender image.
+Blender add-on for loading Clip Studio Paint `.clip` files as flattened raster image textures.
+
+The current path decodes `.clip` in Python, writes a sidecar PNG cache next to the source file, and loads that PNG as a normal Blender image.
 
 ## Status
 
-The MVP is delivered and the project is in multi-layer fidelity work. Package version: `0.8.22`.
+Package version: `0.8.22`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
-- Paper/background layers, raster-like masked layers, folders, masks, opacity, visibility bit flags, clipping layers, and offscreen group compositing.
-- Observed CSP blend modes used by the supplied samples.
-- Blender import operator, manual reload operator, and non-blocking auto-reload.
+- Paper/background layers, masks, opacity, `LayerVisibility` bit flags, clipping layers, folders, and offscreen group compositing.
+- Observed CSP blend modes, plus current adjustment/filter-layer support used by the supplied samples.
+- Blender import, manual reload, and non-blocking auto-reload.
 
 Known fidelity gaps:
-- `Ref_Terra404_Live2D` still has localized color differences after the sampled `LayerType=3` mask, masked THROUGH group, and clipped Add Glow effective-alpha fixes.
-- `Test_AddGlowMultiply` shows unresolved Add Glow base plus clipped Multiply/Normal group semantics.
-- Non-zero layer offsets are detected but not implemented until a supplied sample requires them.
-- Vector and text rendering have partial native-backed preview support. The current vector blocker is `Vector_SizePressure`, which is close but not pixel-exact.
-- 3D, grayscale, monochrome, animation timelines, and write-back are out of scope.
-
-## Roadmap
-
-Current track:
-- Finish `.clip` semantics in Python first: blend modes, masks, clipping, folder/group behavior, and real-art fidelity.
-- Keep the Blender add-on stable through the sidecar PNG path while the format rules are still changing.
-
-Native track, later:
-- Move the verified decoder/compositor core to C++ or Rust for speed and lower memory churn.
-- Revisit an OpenImageIO `ImageInput` plugin so Blender can potentially load `.clip` through the normal image path.
-- If that succeeds, use `.clip` as the actual Blender Image filepath and keep sidecar PNG only as fallback/debug output.
-- Let generic image auto-reload plugins handle `.clip` reloads when they watch `Image.filepath` and call `image.reload()`.
+- `Ref_Terra404_Live2D` still has localized differences around complex highlight, clipping, and group stacks.
+- `Test_AddGlowMultiply` still isolates Add Glow base plus clipped Multiply/Normal group behavior.
+- Vector, bubble/frame, text, 3D, animation timelines, and write-back are out of scope.
 
 ## Install
 
@@ -45,27 +33,22 @@ Native track, later:
 3. Blender loads the decoded sidecar PNG at `<source>.clip.png`.
 4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Reload from .clip` in the Image Editor N-panel.
 
-## Native Loader Notes
-
-An initial Blender 5.0.1 spike found:
-- Blender can load a valid PNG even when renamed to `.clip`.
-- Blender's bundled OpenImageIO exposes a configurable `plugin_searchpath`.
-- An external OIIO plugin may eventually make `.clip` load like PSD/PNG without a visible sidecar.
-
-Blocker before the next native spike:
-- Get Blender-matched OIIO headers/libs.
-- Use a compatible MSVC toolchain.
-- Build a fake `ImageInput` plugin that returns a known test image before porting the real `.clip` decoder.
-
 ## Project Layout
 
 - `clip_studio_importer/` - Blender add-on package.
 - `clip_studio_importer.zip` - installable add-on zip.
 - `clip_loader.py` - project-root development copy of the decoder/compositor.
-- `docs/AI_MEMORY.md` - current agent-readable state and next reverse-engineering target.
+- `docs/AI_MEMORY.md` - current compact agent-readable state.
 - `docs/analysis.md` - technical findings and sample-specific investigations.
 - `docs/design.md` - Blender UX and user-facing behavior.
-- `docs/plan.md` - current directions and tracked implementation work.
+- `docs/plan.md` - durable directions and open work.
+
+## Roadmap
+
+- Improve Python raster fidelity first: masks, clipping, folder/group behavior, blend modes, and adjustment/filter layers.
+- Keep the sidecar PNG workflow stable while raster semantics are still changing.
+- Later, port the verified raster decoder/compositor core to C++ or Rust if performance requires it.
+- Later, evaluate an OpenImageIO `ImageInput` plugin so Blender can load `.clip` through the normal image path. If accepted, this replaces the Python compositor/loader and sidecar PNG workflow instead of keeping compatibility or fallback paths.
 
 ## Verification Samples
 
@@ -74,8 +57,8 @@ The repository root contains `.clip` files and CSP-exported `.png` files used as
 - `Illustration.clip/png` - single-layer MVP decode.
 - `Illustration4K.clip/png` - large multi-layer alpha-over baseline.
 - `Test_RealArt.clip/png` - real artwork smoke test for masks, groups, clipping, and folder semantics.
-- `Ref_Wuwu_Live2D.clip/png` - visibility bit-flag regression sample.
 - `Test_ClippingEdge.clip/png` and `Test_ClippingEdge4K.clip/png` - root-level clipped edge alpha samples.
 - `Ref_Emuri_Live2D_2024.clip/png` - clipped Add Glow sample.
 - `Test_AddGlowMultiply.clip/png` - unresolved clipping group structure sample.
+- `Test_ToneCurve.clip/png` - adjustment/filter-layer regression sample.
 - `Ref_Terra404_Live2D.clip/png` - real artwork follow-up sample for mask and THROUGH group semantics.
