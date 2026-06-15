@@ -84,7 +84,6 @@ impl GpuRenderer {
                 &initial_view,
                 "rizum_clip_provider_normal_initial_clear",
             );
-            state.flush()?;
         }
 
         let updated = encode_sources_with_provider(
@@ -457,7 +456,6 @@ where
             &initial_view,
             "rizum_clip_provider_clipping_initial_clear",
         );
-        state.flush()?;
     }
 
     {
@@ -569,7 +567,6 @@ where
             &initial_view,
             "rizum_clip_provider_container_initial_clear",
         );
-        state.flush()?;
     }
 
     for child in children {
