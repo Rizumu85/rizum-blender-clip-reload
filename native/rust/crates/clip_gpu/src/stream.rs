@@ -232,7 +232,7 @@ where
                 output_size,
                 raster.mask_key,
                 raster.key.layer_id,
-                fallback_texture,
+                previous_view,
             )?;
             encode_normal_source_pass(
                 state.device,
@@ -249,7 +249,7 @@ where
                 &pipelines.bind_group_layout,
                 &source_view,
                 previous_view,
-                &mask_view,
+                mask_view.as_ref(),
                 output_view,
                 raster_source_uniform_bytes(*raster),
                 "rizum_clip_provider_normal_raster_pass",
@@ -264,10 +264,8 @@ where
                 output_size,
                 *base,
                 clipped,
-                fallback_texture,
                 pipelines,
             )?;
-            let mask_view = fallback_texture.create_view(&wgpu::TextureViewDescriptor::default());
             encode_normal_source_pass(
                 state.device,
                 state.encoder_mut(),
@@ -283,7 +281,7 @@ where
                 &pipelines.bind_group_layout,
                 &clipping_view,
                 previous_view,
-                &mask_view,
+                previous_view,
                 output_view,
                 generated_raster_source_uniform_bytes_with_blend(1.0, false, base.blend_mode),
                 "rizum_clip_provider_clipping_resolve_pass",
@@ -313,7 +311,7 @@ where
                 mask_key
                     .map(|key| key.layer_id)
                     .unwrap_or(clip_model::LayerId(0)),
-                fallback_texture,
+                previous_view,
             )?;
             encode_normal_source_pass(
                 state.device,
@@ -330,7 +328,7 @@ where
                 &pipelines.bind_group_layout,
                 &container_view,
                 previous_view,
-                &mask_view,
+                mask_view.as_ref(),
                 output_view,
                 generated_raster_source_uniform_bytes_with_blend(
                     *opacity,
@@ -361,16 +359,14 @@ where
             )?;
         }
         GpuNormalStackSource::SolidColor { color, opacity } => {
-            let source_view = fallback_texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let mask_view = fallback_texture.create_view(&wgpu::TextureViewDescriptor::default());
             encode_normal_source_pass(
                 state.device,
                 state.encoder_mut(),
                 &pipelines.alpha_pipeline,
                 &pipelines.bind_group_layout,
-                &source_view,
                 previous_view,
-                &mask_view,
+                previous_view,
+                previous_view,
                 output_view,
                 solid_source_uniform_bytes(*color, *opacity),
                 "rizum_clip_provider_solid_pass",
@@ -391,7 +387,7 @@ where
                 mask_key
                     .map(|key| key.layer_id)
                     .unwrap_or(clip_model::LayerId(0)),
-                fallback_texture,
+                previous_view,
             )?;
             let lut_texture =
                 create_lut_filter_texture(state.device, renderer_context_queue(renderer), lut_rgba)
@@ -403,7 +399,7 @@ where
                 &pipelines.lut_filter_pipeline,
                 &pipelines.bind_group_layout,
                 previous_view,
-                &mask_view,
+                mask_view.as_ref(),
                 &lut_view,
                 output_view,
                 lut_filter_uniform_bytes(*opacity, mask_key.is_some(), *filter_mode),
@@ -423,7 +419,6 @@ fn render_clipping_run_with_provider<P>(
     output_size: CanvasSize,
     base: GpuNormalRasterSource,
     clipped: &[GpuNormalRasterSource],
-    fallback_texture: &wgpu::Texture,
     pipelines: &NormalStackPipelines,
 ) -> Result<wgpu::TextureView, P::Error>
 where
@@ -471,7 +466,7 @@ where
             output_size,
             base.mask_key,
             base.key.layer_id,
-            fallback_texture,
+            &previous_view,
         )?;
         encode_normal_source_pass(
             state.device,
@@ -480,7 +475,7 @@ where
             &pipelines.bind_group_layout,
             &source_view,
             &previous_view,
-            &mask_view,
+            mask_view.as_ref(),
             &output_view,
             raster_source_uniform_bytes(base),
             "rizum_clip_provider_clipping_base_pass",
@@ -502,7 +497,7 @@ where
             output_size,
             clipped_source.mask_key,
             clipped_source.key.layer_id,
-            fallback_texture,
+            &previous_view,
         )?;
         encode_normal_source_pass(
             state.device,
@@ -515,7 +510,7 @@ where
             &pipelines.bind_group_layout,
             &source_view,
             &previous_view,
-            &mask_view,
+            mask_view.as_ref(),
             &output_view,
             raster_source_uniform_bytes(*clipped_source),
             "rizum_clip_provider_clipping_clipped_pass",
@@ -666,7 +661,7 @@ where
         mask_key
             .map(|key| key.layer_id)
             .unwrap_or(clip_model::LayerId(0)),
-        fallback_texture,
+        &before_view,
     )?;
     encode_normal_source_pass(
         state.device,
@@ -675,7 +670,7 @@ where
         &pipelines.bind_group_layout,
         &after_view,
         &before_view,
-        &mask_view,
+        mask_view.as_ref(),
         output_view,
         generated_raster_source_uniform_bytes(opacity, mask_key.is_some()),
         "rizum_clip_provider_through_resolve_pass",
@@ -708,22 +703,19 @@ where
     Ok((cache, view))
 }
 
-fn mask_view_with_provider<P>(
+fn mask_view_with_provider<'a, P>(
     renderer: &GpuRenderer,
     provider: &mut P,
     output_size: CanvasSize,
     mask_key: Option<GpuMaskResourceKey>,
     owner_layer_id: clip_model::LayerId,
-    fallback_texture: &wgpu::Texture,
-) -> Result<(Option<GpuMaskResourceCache>, wgpu::TextureView), P::Error>
+    fallback_view: &'a wgpu::TextureView,
+) -> Result<(Option<GpuMaskResourceCache>, MaskTextureView<'a>), P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
     let Some(mask_key) = mask_key else {
-        return Ok((
-            None,
-            fallback_texture.create_view(&wgpu::TextureViewDescriptor::default()),
-        ));
+        return Ok((None, MaskTextureView::Borrowed(fallback_view)));
     };
     let cache = provider.mask_resource(renderer, mask_key)?;
     let resource = cache
@@ -744,11 +736,25 @@ where
     let view = resource
         .texture()
         .create_view(&wgpu::TextureViewDescriptor::default());
-    Ok((Some(cache), view))
+    Ok((Some(cache), MaskTextureView::Owned(view)))
 }
 
 fn renderer_context_queue(renderer: &GpuRenderer) -> &wgpu::Queue {
     &renderer.context.queue
+}
+
+enum MaskTextureView<'a> {
+    Borrowed(&'a wgpu::TextureView),
+    Owned(wgpu::TextureView),
+}
+
+impl MaskTextureView<'_> {
+    fn as_ref(&self) -> &wgpu::TextureView {
+        match self {
+            Self::Borrowed(view) => view,
+            Self::Owned(view) => view,
+        }
+    }
 }
 
 fn lut_filter_label(filter_mode: GpuLutFilterMode) -> &'static str {
