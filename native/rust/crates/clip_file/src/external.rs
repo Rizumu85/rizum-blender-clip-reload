@@ -12,11 +12,152 @@ pub struct ExternalTileBlob {
     pub bytes: Vec<u8>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalTileBlock {
+    pub tile_index: usize,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalTileBlocks {
+    pub external_id: String,
+    pub blocks: Vec<ExternalTileBlock>,
+}
+
 pub fn decode_external_tile_blob(
     body: &[u8],
     empty_fill: u8,
     expected_len: Option<usize>,
 ) -> Result<ExternalTileBlob, ClipFileError> {
+    let mut output = match expected_len {
+        Some(expected_len) => vec![empty_fill; expected_len],
+        None => Vec::new(),
+    };
+    let mut output_len = 0usize;
+
+    let visited = visit_external_data_blocks(body, |block| {
+        match block.payload {
+            ExternalBlockPayload::Compressed(compressed) => append_inflated_bytes(
+                &mut output,
+                &mut output_len,
+                compressed,
+                block.uncompressed_len,
+                expected_len,
+            )?,
+            ExternalBlockPayload::Empty => append_empty_bytes(
+                &mut output,
+                &mut output_len,
+                empty_fill,
+                block.uncompressed_len,
+                expected_len,
+            )?,
+        }
+        Ok(expected_len
+            .map(|expected_len| output_len < expected_len)
+            .unwrap_or(true))
+    })?;
+
+    if expected_len.is_some() {
+        output.truncate(output_len);
+    }
+
+    Ok(ExternalTileBlob {
+        external_id: visited.external_id,
+        bytes: output,
+    })
+}
+
+pub fn decode_external_tile_blocks(
+    body: &[u8],
+    empty_fill: u8,
+    per_tile_len: usize,
+    expected_tile_count: usize,
+    wanted_tile_indices: &[usize],
+) -> Result<ExternalTileBlocks, ClipFileError> {
+    let mut wanted = wanted_tile_indices.to_vec();
+    wanted.sort_unstable();
+    wanted.dedup();
+    if wanted
+        .last()
+        .is_some_and(|tile_index| *tile_index >= expected_tile_count)
+    {
+        return Err(ClipFileError::UnexpectedTileCount {
+            expected: expected_tile_count,
+            actual: wanted.last().copied().unwrap_or(0) + 1,
+        });
+    }
+
+    let mut next_wanted = 0usize;
+    let mut blocks = Vec::with_capacity(wanted.len());
+    let visited = visit_external_data_blocks(body, |block| {
+        if block.index >= expected_tile_count {
+            return Ok(false);
+        }
+        if wanted.get(next_wanted).copied() != Some(block.index) {
+            return Ok(true);
+        }
+        next_wanted += 1;
+        if block.uncompressed_len != per_tile_len {
+            return Err(ClipFileError::InvalidExternalDataBlock(
+                "unexpected tile block size",
+            ));
+        }
+
+        let bytes = match block.payload {
+            ExternalBlockPayload::Compressed(compressed) => {
+                inflate_block_to_vec(compressed, block.uncompressed_len)?
+            }
+            ExternalBlockPayload::Empty => vec![empty_fill; block.uncompressed_len],
+        };
+        blocks.push(ExternalTileBlock {
+            tile_index: block.index,
+            bytes,
+        });
+        Ok(next_wanted < wanted.len())
+    })?;
+
+    if visited.data_block_count < expected_tile_count {
+        return Err(ClipFileError::UnexpectedTileCount {
+            expected: expected_tile_count,
+            actual: visited.data_block_count,
+        });
+    }
+    if blocks.len() != wanted.len() {
+        return Err(ClipFileError::UnexpectedTileCount {
+            expected: wanted.len(),
+            actual: blocks.len(),
+        });
+    }
+
+    Ok(ExternalTileBlocks {
+        external_id: visited.external_id,
+        blocks,
+    })
+}
+
+struct VisitedExternalBlocks {
+    external_id: String,
+    data_block_count: usize,
+}
+
+struct ExternalBlockData<'a> {
+    index: usize,
+    uncompressed_len: usize,
+    payload: ExternalBlockPayload<'a>,
+}
+
+enum ExternalBlockPayload<'a> {
+    Compressed(&'a [u8]),
+    Empty,
+}
+
+fn visit_external_data_blocks<F>(
+    body: &[u8],
+    mut visit: F,
+) -> Result<VisitedExternalBlocks, ClipFileError>
+where
+    F: FnMut(ExternalBlockData<'_>) -> Result<bool, ClipFileError>,
+{
     let mut pos = 0usize;
     let id_len = read_be_u64(body, &mut pos)? as usize;
     let id_end = pos
@@ -31,12 +172,7 @@ pub fn decode_external_tile_blob(
     pos = id_end;
     skip(body, &mut pos, 8)?;
 
-    let mut output = match expected_len {
-        Some(expected_len) => vec![empty_fill; expected_len],
-        None => Vec::new(),
-    };
-    let mut output_len = 0usize;
-
+    let mut data_block_count = 0usize;
     while pos < body.len() {
         if body.len().saturating_sub(pos) < 8 {
             break;
@@ -83,6 +219,7 @@ pub fn decode_external_tile_blob(
                 .ok_or(ClipFileError::InvalidExternalDataBlock(
                     "block end overflow",
                 ))?;
+        let mut should_continue = true;
 
         match name.as_str() {
             "BlockDataBeginChunk" => {
@@ -91,7 +228,7 @@ pub fn decode_external_tile_blob(
                 skip(body, &mut pos, 8)?;
                 let exists = read_be_u32(body, &mut pos)?;
 
-                if exists > 0 {
+                let payload = if exists > 0 {
                     let inner_len = read_be_u32(body, &mut pos)? as usize;
                     let compressed_len = read_le_u32(body, &mut pos)? as usize;
                     let compressed_end = pos.checked_add(compressed_len).ok_or(
@@ -100,31 +237,28 @@ pub fn decode_external_tile_blob(
                     let compressed = body.get(pos..compressed_end).ok_or(
                         ClipFileError::InvalidExternalDataBlock("truncated compressed block"),
                     )?;
-                    append_inflated_bytes(
-                        &mut output,
-                        &mut output_len,
-                        compressed,
-                        uncompressed_len,
-                        expected_len,
-                    )?;
                     block_end = inner_start
                         .checked_add(24)
                         .and_then(|offset| offset.checked_add(inner_len))
                         .ok_or(ClipFileError::InvalidExternalDataBlock(
                             "data block end overflow",
                         ))?;
+                    ExternalBlockPayload::Compressed(compressed)
                 } else {
-                    append_empty_bytes(
-                        &mut output,
-                        &mut output_len,
-                        empty_fill,
-                        uncompressed_len,
-                        expected_len,
-                    )?;
                     block_end = inner_start.checked_add(20).ok_or(
                         ClipFileError::InvalidExternalDataBlock("empty block end overflow"),
                     )?;
-                }
+                    ExternalBlockPayload::Empty
+                };
+
+                should_continue = visit(ExternalBlockData {
+                    index: data_block_count,
+                    uncompressed_len,
+                    payload,
+                })?;
+                data_block_count = data_block_count
+                    .checked_add(1)
+                    .ok_or(ClipFileError::TileSizeOverflow)?;
             }
             "BlockStatus" | "BlockCheckSum" => {
                 block_end =
@@ -169,21 +303,33 @@ pub fn decode_external_tile_blob(
         }
         pos = block_end;
 
-        if let Some(expected_len) = expected_len
-            && output_len >= expected_len
-        {
+        if !should_continue {
             break;
         }
     }
 
-    if expected_len.is_some() {
-        output.truncate(output_len);
-    }
-
-    Ok(ExternalTileBlob {
+    Ok(VisitedExternalBlocks {
         external_id,
-        bytes: output,
+        data_block_count,
     })
+}
+
+fn inflate_block_to_vec(
+    compressed: &[u8],
+    uncompressed_len: usize,
+) -> Result<Vec<u8>, ClipFileError> {
+    let mut output = Vec::with_capacity(uncompressed_len);
+    let mut decoder = ZlibDecoder::new(compressed);
+    decoder
+        .read_to_end(&mut output)
+        .map_err(ClipFileError::Zlib)?;
+    if output.len() != uncompressed_len {
+        return Err(ClipFileError::UnexpectedDecompressedSize {
+            expected: uncompressed_len,
+            actual: output.len(),
+        });
+    }
+    Ok(output)
 }
 
 fn append_inflated_bytes(
@@ -348,3 +494,7 @@ fn read_le_u32(bytes: &[u8], pos: &mut usize) -> Result<u32, ClipFileError> {
     *pos = end;
     Ok(value)
 }
+
+#[cfg(test)]
+#[path = "external_tests.rs"]
+mod tests;

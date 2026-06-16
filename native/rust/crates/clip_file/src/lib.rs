@@ -5,6 +5,7 @@ mod error;
 pub mod external;
 pub mod metadata;
 mod read;
+mod tile_region;
 pub mod tiles;
 
 pub use error::ClipFileError;

@@ -4,15 +4,19 @@ use clip_model::{CanvasSize, LayerId, Rect};
 
 use crate::ClipFileError;
 use crate::container::ClipContainer;
-use crate::external::decode_external_tile_blob;
+use crate::external::{decode_external_tile_blob, decode_external_tile_blocks};
 use crate::metadata::{
     self, read_mask_layer_source_from_sqlite, read_raster_layer_source_from_sqlite,
 };
+use crate::tile_region::{
+    TileBlockRef, decode_gray_tile_blocks_region, decode_mono_tile_blocks_region,
+    decode_rgba_tile_blocks_region, tile_indices_for_region,
+};
 use crate::tiles::{
-    AlphaTileImage, RgbaTileImage, alpha_tile_blob_len, decode_alpha_tiles, decode_gray_rgba_tiles,
-    decode_gray_rgba_tiles_region, decode_mono_rgba_tiles, decode_mono_rgba_tiles_region,
-    decode_rgba_tiles, decode_rgba_tiles_region, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len,
-    rgba_tile_blob_len,
+    AlphaTileImage, GRAY_RGBA_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES, RgbaTileImage,
+    alpha_tile_blob_len, decode_alpha_tiles, decode_gray_rgba_tiles, decode_gray_rgba_tiles_region,
+    decode_mono_rgba_tiles, decode_mono_rgba_tiles_region, decode_rgba_tiles,
+    decode_rgba_tiles_region, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len, rgba_tile_blob_len,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -228,10 +232,19 @@ fn decode_raster_source_rgba_region(
         .external_data_body(&source.external_id)
         .ok_or_else(|| ClipFileError::MissingExternalData(source.external_id.clone()))?;
     let color_type = source.color_type.unwrap_or(0);
-    let expected_len = match color_type {
-        0 => rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
-        1 => gray_rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
-        2 => mono_rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
+    let (expected_len, per_tile_len) = match color_type {
+        0 => (
+            rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
+            RGBA_TILE_BYTES,
+        ),
+        1 => (
+            gray_rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
+            GRAY_RGBA_TILE_BYTES,
+        ),
+        2 => (
+            mono_rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
+            MONO_RGBA_TILE_BYTES,
+        ),
         _ => {
             return Err(ClipFileError::UnsupportedLayerColorType {
                 layer_id,
@@ -239,22 +252,62 @@ fn decode_raster_source_rgba_region(
             });
         }
     };
-    let blob = decode_external_tile_blob(body, 0, Some(expected_len))?;
+    let tile_indices = tile_indices_for_region(
+        source.pixel_size.width,
+        source.pixel_size.height,
+        source_region,
+    )?;
+    let expected_tile_count = expected_len / per_tile_len;
+    if tile_indices.len() == expected_tile_count {
+        let blob = decode_external_tile_blob(body, 0, Some(expected_len))?;
+        return match color_type {
+            0 => decode_rgba_tiles_region(
+                &blob.bytes,
+                source.pixel_size.width,
+                source.pixel_size.height,
+                source_region,
+            ),
+            1 => decode_gray_rgba_tiles_region(
+                &blob.bytes,
+                source.pixel_size.width,
+                source.pixel_size.height,
+                source_region,
+            ),
+            2 => decode_mono_rgba_tiles_region(
+                &blob.bytes,
+                source.pixel_size.width,
+                source.pixel_size.height,
+                source_region,
+            ),
+            _ => unreachable!("unsupported raster color type should have returned earlier"),
+        };
+    }
+
+    let tile_blocks =
+        decode_external_tile_blocks(body, 0, per_tile_len, expected_tile_count, &tile_indices)?;
+    let block_refs: Vec<_> = tile_blocks
+        .blocks
+        .iter()
+        .map(|block| TileBlockRef {
+            tile_index: block.tile_index,
+            bytes: &block.bytes,
+        })
+        .collect();
     match color_type {
-        0 => decode_rgba_tiles_region(
-            &blob.bytes,
+        0 => decode_rgba_tile_blocks_region(
+            &block_refs,
             source.pixel_size.width,
             source.pixel_size.height,
             source_region,
         ),
-        1 => decode_gray_rgba_tiles_region(
-            &blob.bytes,
+        1 => decode_gray_tile_blocks_region(
+            &block_refs,
             source.pixel_size.width,
             source.pixel_size.height,
             source_region,
         ),
-        2 => decode_mono_rgba_tiles_region(
-            &blob.bytes,
+        2 => decode_mono_tile_blocks_region(
+            &block_refs,
             source.pixel_size.width,
             source.pixel_size.height,
             source_region,
