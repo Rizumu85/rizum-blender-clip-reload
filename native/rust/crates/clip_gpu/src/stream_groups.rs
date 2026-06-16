@@ -7,7 +7,8 @@ use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider}
 use crate::stream_bounds::CanvasRect;
 use crate::stream_resources::{
     known_clipping_run_activity, known_raster_source_bounds, known_stack_activity,
-    mask_view_with_provider, pass_bounds_for_change, raster_view_with_provider,
+    mask_view_with_provider, pass_bounds_for_change, preserving_pass_bounds_for_change,
+    raster_view_with_provider,
 };
 use crate::stream_state::{RenderedStreamingCache, StreamingEncoder, StreamingTexturePair};
 use crate::{GpuMaskResourceKey, GpuNormalRasterSource, GpuRenderer};
@@ -93,10 +94,16 @@ where
         if matches!(known_source_bounds, Some(None)) {
             continue;
         }
+        if let Some(source_bounds) = known_source_bounds {
+            if preserving_pass_bounds_for_change(dirty_bounds, source_bounds).is_none() {
+                continue;
+            }
+        }
         let (raster_cache, source_view, effective_clipped_source, uploaded_source_bounds) =
             raster_view_with_provider(renderer, provider, state, output_size, *clipped_source)?;
         let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-        let Some(pass_bounds) = pass_bounds_for_change(dirty_bounds, source_bounds) else {
+        let Some(pass_bounds) = preserving_pass_bounds_for_change(dirty_bounds, source_bounds)
+        else {
             continue;
         };
         let (mask_cache, mask_view) = mask_view_with_provider(

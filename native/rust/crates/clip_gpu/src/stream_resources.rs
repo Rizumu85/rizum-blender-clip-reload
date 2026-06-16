@@ -60,6 +60,17 @@ pub(crate) fn pass_bounds_for_change(
     })
 }
 
+pub(crate) fn preserving_pass_bounds_for_change(
+    dirty_bounds: Option<CanvasRect>,
+    change_bounds: Option<CanvasRect>,
+) -> Option<CanvasRect> {
+    let dirty_bounds = dirty_bounds?;
+    let change_bounds = change_bounds?;
+    dirty_bounds
+        .intersects(change_bounds)
+        .then_some(dirty_bounds)
+}
+
 pub(crate) fn known_raster_source_bounds<P>(
     provider: &P,
     source: GpuNormalRasterSource,
@@ -216,7 +227,11 @@ mod tests {
 
     use clip_model::{CanvasSize, LayerId, Rgba8};
 
-    use super::{KnownSourceActivity, known_clipping_run_activity, known_stack_activity};
+    use super::{
+        KnownSourceActivity, known_clipping_run_activity, known_stack_activity,
+        preserving_pass_bounds_for_change,
+    };
+    use crate::stream_bounds::CanvasRect;
     use crate::{
         GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
         GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError,
@@ -322,6 +337,48 @@ mod tests {
                 CanvasSize::new(8, 8),
             ),
             KnownSourceActivity::Empty
+        );
+    }
+
+    #[test]
+    fn preserving_pass_bounds_do_not_expand_dirty_area() {
+        let dirty = CanvasRect {
+            x: 10,
+            y: 10,
+            width: 12,
+            height: 12,
+        };
+        let larger_source = CanvasRect {
+            x: 0,
+            y: 0,
+            width: 40,
+            height: 40,
+        };
+
+        assert_eq!(
+            preserving_pass_bounds_for_change(Some(dirty), Some(larger_source)),
+            Some(dirty)
+        );
+    }
+
+    #[test]
+    fn preserving_pass_bounds_skip_non_overlapping_source() {
+        let dirty = CanvasRect {
+            x: 10,
+            y: 10,
+            width: 12,
+            height: 12,
+        };
+        let outside_source = CanvasRect {
+            x: 30,
+            y: 30,
+            width: 4,
+            height: 4,
+        };
+
+        assert_eq!(
+            preserving_pass_bounds_for_change(Some(dirty), Some(outside_source)),
+            None
         );
     }
 

@@ -57,6 +57,13 @@ impl CanvasRect {
         }
     }
 
+    pub(crate) fn intersects(self, other: Self) -> bool {
+        self.x < other.right()
+            && other.x < self.right()
+            && self.y < other.bottom()
+            && other.y < self.bottom()
+    }
+
     fn right(self) -> u32 {
         self.x + self.width
     }
@@ -115,5 +122,27 @@ mod tests {
         };
         assert_eq!(union_optional(Some(rect), None), Some(rect));
         assert_eq!(union_optional(None, Some(rect)), Some(rect));
+    }
+
+    #[test]
+    fn rect_intersection_rejects_touching_edges() {
+        let rect = CanvasRect {
+            x: 1,
+            y: 1,
+            width: 4,
+            height: 4,
+        };
+        assert!(rect.intersects(CanvasRect {
+            x: 4,
+            y: 4,
+            width: 2,
+            height: 2,
+        }));
+        assert!(!rect.intersects(CanvasRect {
+            x: 5,
+            y: 1,
+            width: 2,
+            height: 2,
+        }));
     }
 }
