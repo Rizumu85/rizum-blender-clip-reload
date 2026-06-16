@@ -51,6 +51,14 @@ class FakeImage(dict):
         self.packed = True
 
 
+class BlenderIntBoundedFakeImage(FakeImage):
+    def __setitem__(self, key, value) -> None:
+        if isinstance(value, int) and not isinstance(value, bool):
+            if value < -(2**31) or value > 2**31 - 1:
+                raise OverflowError("Python int too large to convert to C int")
+        super().__setitem__(key, value)
+
+
 class FakeImages(dict):
     def new(self, name: str, *, width: int, height: int, alpha: bool, float_buffer: bool):
         image = FakeImage(name, width, height)
@@ -302,6 +310,62 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(
             image[native_bridge.CLIP_SUPPORT_LOCATIONS_KEY],
             "layer 9 node 4 Filter\nlayer 10 node 5 Raster",
+        )
+
+    def test_large_support_byte_counts_do_not_overflow_blender_idprops(self) -> None:
+        bpy = FakeBpy()
+        result = FakeRenderer().render_rgba8("sample.clip")
+        result = native_bridge.NativeRenderResult(
+            clip_path=result.clip_path,
+            width=result.width,
+            height=result.height,
+            root_layer_id=result.root_layer_id,
+            layer_count=result.layer_count,
+            external_data_count=result.external_data_count,
+            renderer_abi=result.renderer_abi,
+            renderer_version=result.renderer_version,
+            source_mtime=result.source_mtime,
+            source_size=result.source_size,
+            source_sha256=result.source_sha256,
+            pixels_rgba8=result.pixels_rgba8,
+            support_summary=native_bridge.NativeSupportSummary(
+                source_count=343,
+                unsupported_count=0,
+                raster_count=343,
+                raster_bytes=33_476_800_000,
+                max_raster_layer_id=10,
+                max_raster_width=8_192,
+                max_raster_height=8_192,
+                max_raster_bytes=3_221_225_472,
+                mask_count=6,
+                mask_bytes=2_415_919_104,
+                max_mask_layer_id=11,
+                max_mask_width=8_192,
+                max_mask_height=8_192,
+                max_mask_bytes=2_415_919_104,
+                report="Full native support for 343 source(s).",
+                details=(),
+            ),
+        )
+        image = BlenderIntBoundedFakeImage("sample", 1, 1)
+
+        native_bridge.create_or_update_image(bpy, result, image=image)
+
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY],
+            "33476800000",
+        )
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY],
+            "3221225472",
+        )
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY],
+            "2415919104",
+        )
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY],
+            "2415919104",
         )
 
     def test_update_records_unknown_support_when_summary_unavailable(self) -> None:

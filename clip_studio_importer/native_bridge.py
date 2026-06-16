@@ -14,6 +14,8 @@ from typing import Any
 
 
 EXPECTED_ABI_VERSION = 1
+BLENDER_IDPROP_INT_MIN = -(2**31)
+BLENDER_IDPROP_INT_MAX = 2**31 - 1
 
 CLIP_SOURCE_KEY = "clip_source"
 CLIP_MTIME_KEY = "clip_mtime"
@@ -788,17 +790,21 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
     image[CLIP_SUPPORT_SOURCE_COUNT_KEY] = summary.source_count
     image[CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY] = summary.unsupported_count
     image[CLIP_SUPPORT_RASTER_COUNT_KEY] = summary.raster_count
-    image[CLIP_SUPPORT_RASTER_BYTES_KEY] = summary.raster_bytes
+    image[CLIP_SUPPORT_RASTER_BYTES_KEY] = _blender_idprop_int(summary.raster_bytes)
     image[CLIP_SUPPORT_MAX_RASTER_LAYER_KEY] = summary.max_raster_layer_id
     image[CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY] = summary.max_raster_width
     image[CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY] = summary.max_raster_height
-    image[CLIP_SUPPORT_MAX_RASTER_BYTES_KEY] = summary.max_raster_bytes
+    image[CLIP_SUPPORT_MAX_RASTER_BYTES_KEY] = _blender_idprop_int(
+        summary.max_raster_bytes
+    )
     image[CLIP_SUPPORT_MASK_COUNT_KEY] = summary.mask_count
-    image[CLIP_SUPPORT_MASK_BYTES_KEY] = summary.mask_bytes
+    image[CLIP_SUPPORT_MASK_BYTES_KEY] = _blender_idprop_int(summary.mask_bytes)
     image[CLIP_SUPPORT_MAX_MASK_LAYER_KEY] = summary.max_mask_layer_id
     image[CLIP_SUPPORT_MAX_MASK_WIDTH_KEY] = summary.max_mask_width
     image[CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY] = summary.max_mask_height
-    image[CLIP_SUPPORT_MAX_MASK_BYTES_KEY] = summary.max_mask_bytes
+    image[CLIP_SUPPORT_MAX_MASK_BYTES_KEY] = _blender_idprop_int(
+        summary.max_mask_bytes
+    )
 
 
 def _clear_reload_error(image: Any) -> None:
@@ -834,6 +840,13 @@ def _parse_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _blender_idprop_int(value: int) -> int | str:
+    number = int(value)
+    if BLENDER_IDPROP_INT_MIN <= number <= BLENDER_IDPROP_INT_MAX:
+        return number
+    return str(number)
 
 
 def _rgba8_to_blender_float_sequence(pixels: bytes, width: int, height: int) -> Any:
