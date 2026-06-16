@@ -1,0 +1,151 @@
+use std::fmt;
+
+use clip_graph::{RenderNodeId, RenderNodeKind};
+use clip_model::{LayerId, Rgba8};
+
+#[derive(Debug)]
+pub struct SimpleRasterStackGpuResult {
+    pub image: Option<clip_file::tiles::RgbaTileImage>,
+    pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
+    pub unsupported: Vec<SimpleRasterStackUnsupported>,
+    pub differing_bytes_from_last_drawn: Option<usize>,
+}
+
+#[derive(Debug)]
+pub struct NormalRasterStackGpuResult {
+    pub image: Option<clip_file::tiles::RgbaTileImage>,
+    pub source_count: usize,
+    pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
+    pub mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
+    pub unsupported: Vec<SimpleRasterStackUnsupported>,
+}
+
+#[derive(Debug)]
+pub struct NormalRasterStackSupportResult {
+    pub source_count: usize,
+    pub resource_stats: NormalRasterStackResourceStats,
+    pub unsupported: Vec<SimpleRasterStackUnsupported>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct NormalRasterStackResourceStats {
+    pub raster_count: usize,
+    pub raster_bytes: u64,
+    pub max_raster_layer_id: Option<LayerId>,
+    pub max_raster_width: u32,
+    pub max_raster_height: u32,
+    pub max_raster_bytes: u64,
+    pub mask_count: usize,
+    pub mask_bytes: u64,
+    pub max_mask_layer_id: Option<LayerId>,
+    pub max_mask_width: u32,
+    pub max_mask_height: u32,
+    pub max_mask_bytes: u64,
+}
+
+#[derive(Debug)]
+pub struct NormalRasterStackPixelTraceResult {
+    pub source_count: usize,
+    pub samples: Vec<NormalRasterStackPixelTraceSample>,
+    pub unsupported: Vec<SimpleRasterStackUnsupported>,
+}
+
+#[derive(Debug)]
+pub struct NormalRasterStackPixelTraceSample {
+    pub source_index: usize,
+    pub source: String,
+    pub before_rgba: Option<Rgba8>,
+    pub rgba: Rgba8,
+    pub inputs: Vec<NormalRasterStackPixelTraceInput>,
+}
+
+#[derive(Debug)]
+pub struct NormalRasterStackPixelTraceInput {
+    pub role: String,
+    pub render_node_id: Option<u32>,
+    pub layer_id: Option<u32>,
+    pub blend_mode: Option<String>,
+    pub opacity: Option<f32>,
+    pub rgba: Option<Rgba8>,
+    pub mask_alpha: Option<u8>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SimpleRasterStackUnsupported {
+    pub render_node_id: RenderNodeId,
+    pub layer_id: LayerId,
+    pub kind: RenderNodeKind,
+    pub reason: SimpleRasterStackUnsupportedReason,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SimpleRasterStackUnsupportedReason {
+    Paper,
+    Clipping,
+    Composite(u32),
+    Opacity(u16),
+    OpacityOutOfRange(u16),
+    Mask,
+    MaskSize { width: u32, height: u32 },
+    NonCanvasSizedRaster { width: u32, height: u32 },
+    RasterColorType(Option<u32>),
+    RequiresAlphaCompositing,
+    PaperSemantics,
+    PaperColorMissing,
+    ContainerSemantics,
+    InsideUnsupportedContainer,
+    Filter,
+    UnsupportedLayerKind(u32),
+}
+
+impl fmt::Display for SimpleRasterStackUnsupportedReason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Paper => f.write_str("paper fill is not in the strict raster stack pass"),
+            Self::Clipping => f.write_str("clipping requires clip-base compositing"),
+            Self::Composite(composite) => {
+                write!(f, "LayerComposite {composite} is not direct copy")
+            }
+            Self::Opacity(opacity) => write!(f, "LayerOpacity {opacity} requires opacity handling"),
+            Self::OpacityOutOfRange(opacity) => {
+                write!(
+                    f,
+                    "LayerOpacity {opacity} is outside the supported 0..256 range"
+                )
+            }
+            Self::Mask => f.write_str("layer mask requires mask sampling"),
+            Self::MaskSize { width, height } => {
+                write!(f, "mask size {width}x{height} does not match the canvas")
+            }
+            Self::NonCanvasSizedRaster { width, height } => write!(
+                f,
+                "raster size {width}x{height} requires placement metadata",
+            ),
+            Self::RasterColorType(color_type) => {
+                write!(f, "raster colour type {color_type:?} is not supported")
+            }
+            Self::RequiresAlphaCompositing => {
+                f.write_str("stacked non-opaque raster requires alpha compositing")
+            }
+            Self::PaperSemantics => {
+                f.write_str("paper layer has unsupported clip, mask, or composite semantics")
+            }
+            Self::PaperColorMissing => f.write_str("paper layer has no decoded paper colour"),
+            Self::ContainerSemantics => {
+                f.write_str("container requires folder compositing semantics")
+            }
+            Self::InsideUnsupportedContainer => {
+                f.write_str("node is inside an unsupported container")
+            }
+            Self::Filter => f.write_str("filter layer is not in the strict raster stack pass"),
+            Self::UnsupportedLayerKind(kind) => write!(f, "unsupported layer kind {kind}"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DrawRasterLayerGpuResult {
+    pub image: clip_file::tiles::RgbaTileImage,
+    pub resource_info: clip_gpu::GpuRasterResourceInfo,
+    pub differing_bytes: usize,
+}

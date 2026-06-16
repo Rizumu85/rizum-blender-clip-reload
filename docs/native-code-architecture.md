@@ -458,7 +458,7 @@ native/
       clip_file/       # .clip container, SQLite metadata, external tile decode.
       clip_graph/      # Render graph and tile dependency planning.
       clip_gpu/        # wgpu device, resources, shaders, passes, readback.
-      clip_runtime/    # Session orchestration and cache lifetime.
+      clip_runtime/    # Session orchestration, runtime API types, cache lifetime.
       clip_capi/       # Small C ABI exported to the C++ OIIO adapter.
       clip_cli/        # Developer CLI for benchmarks and reference comparisons.
   oiio/
@@ -556,6 +556,18 @@ Owns:
 - Holding parsed file state, render graph, GPU renderer, and caches together.
 - Public Rust interface for reading full images or regions.
 - Error conversion into stable runtime errors.
+- Public runtime result and diagnostic types used by CLI/C ABI callers.
+
+Current split:
+
+- `lib.rs`: session orchestration and render execution wiring.
+- `error.rs`: `RuntimeError` and error-source/display conversion.
+- `results.rs`: public GPU/support/trace result structs and unsupported-reason
+  types.
+- `filter_lut.rs` plus filter helpers: filter payload parsing and LUT models.
+- `gpu_provider.rs`: runtime GPU resource provider and resource-plan helpers.
+- `source_crop.rs`: source/mask crop helpers.
+- `support.rs`: metadata-only strict support selector.
 
 Does not own:
 

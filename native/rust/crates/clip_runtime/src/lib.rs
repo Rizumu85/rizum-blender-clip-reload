@@ -1,18 +1,26 @@
 #![forbid(unsafe_code)]
 
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
 use std::path::{Path, PathBuf};
 
 use clip_file::ClipFileSummary;
 use clip_graph::{LayerGraphInput, RenderNodeId, RenderNodeKind, RenderPlan};
 use clip_model::{CanvasSize, LayerId, LayerOpacity, Rect, Rgba8};
 
+mod error;
 mod filter_lut;
 mod gpu_provider;
+mod results;
 mod source_crop;
 mod support;
+
+pub use error::RuntimeError;
+pub use results::{
+    DrawRasterLayerGpuResult, NormalRasterStackGpuResult, NormalRasterStackPixelTraceInput,
+    NormalRasterStackPixelTraceResult, NormalRasterStackPixelTraceSample,
+    NormalRasterStackResourceStats, NormalRasterStackSupportResult, SimpleRasterStackGpuResult,
+    SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason,
+};
 
 use filter_lut::{PlannedLutFilterMode, lut_filter_rgba};
 use gpu_provider::{
@@ -47,92 +55,6 @@ const LAYER_COMPOSITE_SATURATION: u32 = 24;
 const LAYER_COMPOSITE_COLOR: u32 = 25;
 const LAYER_COMPOSITE_BRIGHTNESS: u32 = 26;
 const LAYER_COMPOSITE_DIVIDE: u32 = 36;
-
-#[derive(Debug)]
-pub enum RuntimeError {
-    File(clip_file::ClipFileError),
-    Graph(clip_graph::RenderPlanError),
-    Gpu(clip_gpu::GpuRenderError),
-    MissingRasterRenderMipmap {
-        layer_id: LayerId,
-    },
-    MissingPlannedRasterLayer {
-        layer_id: LayerId,
-    },
-    UnsupportedRenderPlan {
-        unsupported: Vec<SimpleRasterStackUnsupported>,
-    },
-    EmptyRenderPlan,
-    InvalidRegion,
-    OutputBufferTooSmall {
-        expected: usize,
-        actual: usize,
-    },
-}
-
-impl From<clip_file::ClipFileError> for RuntimeError {
-    fn from(value: clip_file::ClipFileError) -> Self {
-        Self::File(value)
-    }
-}
-
-impl From<clip_graph::RenderPlanError> for RuntimeError {
-    fn from(value: clip_graph::RenderPlanError) -> Self {
-        Self::Graph(value)
-    }
-}
-
-impl From<clip_gpu::GpuRenderError> for RuntimeError {
-    fn from(value: clip_gpu::GpuRenderError) -> Self {
-        Self::Gpu(value)
-    }
-}
-
-impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::File(err) => write!(f, "{err}"),
-            Self::Graph(err) => write!(f, "{err}"),
-            Self::Gpu(err) => write!(f, "{err}"),
-            Self::MissingRasterRenderMipmap { layer_id } => {
-                write!(
-                    f,
-                    "planned raster layer {} has no render mipmap",
-                    layer_id.0
-                )
-            }
-            Self::MissingPlannedRasterLayer { layer_id } => {
-                write!(
-                    f,
-                    "layer {} is not a visible planned raster layer",
-                    layer_id.0
-                )
-            }
-            Self::UnsupportedRenderPlan { unsupported } => write!(
-                f,
-                "strict native NORMAL renderer does not yet support {} planned nodes",
-                unsupported.len(),
-            ),
-            Self::EmptyRenderPlan => f.write_str("render plan has no drawable native sources"),
-            Self::InvalidRegion => f.write_str("requested image region is outside the canvas"),
-            Self::OutputBufferTooSmall { expected, actual } => write!(
-                f,
-                "output buffer too small: expected at least {expected} bytes, got {actual}",
-            ),
-        }
-    }
-}
-
-impl Error for RuntimeError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::File(err) => Some(err),
-            Self::Graph(err) => Some(err),
-            Self::Gpu(err) => Some(err),
-            _ => None,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct ClipSession {
@@ -2007,153 +1929,6 @@ impl ClipSession {
             .as_ref()
             .expect("rendered image was populated"))
     }
-}
-
-#[derive(Debug)]
-pub struct SimpleRasterStackGpuResult {
-    pub image: Option<clip_file::tiles::RgbaTileImage>,
-    pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
-    pub unsupported: Vec<SimpleRasterStackUnsupported>,
-    pub differing_bytes_from_last_drawn: Option<usize>,
-}
-
-#[derive(Debug)]
-pub struct NormalRasterStackGpuResult {
-    pub image: Option<clip_file::tiles::RgbaTileImage>,
-    pub source_count: usize,
-    pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
-    pub mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
-    pub unsupported: Vec<SimpleRasterStackUnsupported>,
-}
-
-#[derive(Debug)]
-pub struct NormalRasterStackSupportResult {
-    pub source_count: usize,
-    pub resource_stats: NormalRasterStackResourceStats,
-    pub unsupported: Vec<SimpleRasterStackUnsupported>,
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct NormalRasterStackResourceStats {
-    pub raster_count: usize,
-    pub raster_bytes: u64,
-    pub max_raster_layer_id: Option<LayerId>,
-    pub max_raster_width: u32,
-    pub max_raster_height: u32,
-    pub max_raster_bytes: u64,
-    pub mask_count: usize,
-    pub mask_bytes: u64,
-    pub max_mask_layer_id: Option<LayerId>,
-    pub max_mask_width: u32,
-    pub max_mask_height: u32,
-    pub max_mask_bytes: u64,
-}
-
-#[derive(Debug)]
-pub struct NormalRasterStackPixelTraceResult {
-    pub source_count: usize,
-    pub samples: Vec<NormalRasterStackPixelTraceSample>,
-    pub unsupported: Vec<SimpleRasterStackUnsupported>,
-}
-
-#[derive(Debug)]
-pub struct NormalRasterStackPixelTraceSample {
-    pub source_index: usize,
-    pub source: String,
-    pub before_rgba: Option<Rgba8>,
-    pub rgba: Rgba8,
-    pub inputs: Vec<NormalRasterStackPixelTraceInput>,
-}
-
-#[derive(Debug)]
-pub struct NormalRasterStackPixelTraceInput {
-    pub role: String,
-    pub render_node_id: Option<u32>,
-    pub layer_id: Option<u32>,
-    pub blend_mode: Option<String>,
-    pub opacity: Option<f32>,
-    pub rgba: Option<Rgba8>,
-    pub mask_alpha: Option<u8>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SimpleRasterStackUnsupported {
-    pub render_node_id: RenderNodeId,
-    pub layer_id: LayerId,
-    pub kind: RenderNodeKind,
-    pub reason: SimpleRasterStackUnsupportedReason,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum SimpleRasterStackUnsupportedReason {
-    Paper,
-    Clipping,
-    Composite(u32),
-    Opacity(u16),
-    OpacityOutOfRange(u16),
-    Mask,
-    MaskSize { width: u32, height: u32 },
-    NonCanvasSizedRaster { width: u32, height: u32 },
-    RasterColorType(Option<u32>),
-    RequiresAlphaCompositing,
-    PaperSemantics,
-    PaperColorMissing,
-    ContainerSemantics,
-    InsideUnsupportedContainer,
-    Filter,
-    UnsupportedLayerKind(u32),
-}
-
-impl fmt::Display for SimpleRasterStackUnsupportedReason {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Paper => f.write_str("paper fill is not in the strict raster stack pass"),
-            Self::Clipping => f.write_str("clipping requires clip-base compositing"),
-            Self::Composite(composite) => {
-                write!(f, "LayerComposite {composite} is not direct copy")
-            }
-            Self::Opacity(opacity) => write!(f, "LayerOpacity {opacity} requires opacity handling"),
-            Self::OpacityOutOfRange(opacity) => {
-                write!(
-                    f,
-                    "LayerOpacity {opacity} is outside the supported 0..256 range"
-                )
-            }
-            Self::Mask => f.write_str("layer mask requires mask sampling"),
-            Self::MaskSize { width, height } => {
-                write!(f, "mask size {width}x{height} does not match the canvas")
-            }
-            Self::NonCanvasSizedRaster { width, height } => write!(
-                f,
-                "raster size {width}x{height} requires placement metadata",
-            ),
-            Self::RasterColorType(color_type) => {
-                write!(f, "raster colour type {color_type:?} is not supported")
-            }
-            Self::RequiresAlphaCompositing => {
-                f.write_str("stacked non-opaque raster requires alpha compositing")
-            }
-            Self::PaperSemantics => {
-                f.write_str("paper layer has unsupported clip, mask, or composite semantics")
-            }
-            Self::PaperColorMissing => f.write_str("paper layer has no decoded paper colour"),
-            Self::ContainerSemantics => {
-                f.write_str("container requires folder compositing semantics")
-            }
-            Self::InsideUnsupportedContainer => {
-                f.write_str("node is inside an unsupported container")
-            }
-            Self::Filter => f.write_str("filter layer is not in the strict raster stack pass"),
-            Self::UnsupportedLayerKind(kind) => write!(f, "unsupported layer kind {kind}"),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct DrawRasterLayerGpuResult {
-    pub image: clip_file::tiles::RgbaTileImage,
-    pub resource_info: clip_gpu::GpuRasterResourceInfo,
-    pub differing_bytes: usize,
 }
 
 #[derive(Debug)]
