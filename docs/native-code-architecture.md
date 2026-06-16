@@ -414,16 +414,15 @@ Progress:
   interaction around `(266,244)` and `IllustrationBlendModes2.png` at a
   Pin Light/Hue/Saturation chain around `(427,138)`.
 
-Completed nineteenth milestone foundation: native LUT adjustment/filter GPU
-pass.
+Completed nineteenth milestone foundation: native adjustment/filter GPU pass.
 
 - Read `FilterLayerInfo` records for filter layers without teaching `clip_gpu`
   about SQLite or `.clip` storage.
 - Support the filter types whose Python-side formulas reduce to a faithful
-  1D LUT or luminosity LUT: Brightness/Contrast, Level Correction, Tone Curve,
-  Color Balance, Invert/Reverse Gradient, Posterization, Threshold, and
-  Gradient Map.
-- Keep unsupported filter types explicit until each has a dedicated native
+  1D LUT, luminosity LUT, or native HSV-adjust shader: Brightness/Contrast,
+  Level Correction, Tone Curve, HSL, Color Balance, Invert/Reverse Gradient,
+  Posterization, Threshold, and Gradient Map.
+- Keep unknown future filter types explicit until each has a dedicated native
   parameter model and shader.
 
 Result: `clip_file::metadata` exposes `read_filter_layer_source_from_sqlite`
@@ -432,15 +431,15 @@ filter-payload parsing and byte-domain 256-entry LUT construction for
 `FilterLayerInfo` type `1` Brightness/Contrast, type `2` Level Correction,
 type `3` Tone Curve, type `5` Color Balance, type `6`
 Invert/Reverse Gradient, type `7` Posterization, type `8` Threshold, and type
-`9` Gradient Map. Runtime accepts those filters when their
-composite/mask/opacity semantics are in the strict supported subset, uploads
-any layer mask through the existing mask cache, and passes a LUT mode to
-`clip_gpu`: RGB channel indexing for channel-wise filters,
-Python-matching threshold luminosity indexing for Threshold, and byte-domain
-luminosity indexing for Gradient Map. `clip_gpu` applies the LUT in one
-dedicated wgpu filter pass against the accumulated straight RGBA image while
-preserving alpha. HSL (`4`) remains unsupported because it needs a dedicated
-native model/shader rather than the existing channel LUT pass.
+`9` Gradient Map, and parses type `4` HSL parameters for the native HSV-adjust
+shader mode. Runtime accepts those filters when their composite/mask/opacity
+semantics are in the strict supported subset, uploads any layer mask through
+the existing mask cache, and passes a filter mode to `clip_gpu`: RGB channel
+indexing for channel-wise LUT filters, Python-matching threshold luminosity
+indexing for Threshold, byte-domain luminosity indexing for Gradient Map, and
+HSL hue/saturation/value adjustment matching the Python formula. `clip_gpu`
+applies the filter in one dedicated wgpu pass against the accumulated straight
+RGBA image while preserving alpha.
 `Test_ToneCurve.clip --gpu-normal-stack` and
 `Test_Gradiation.clip --gpu-normal-stack` report `unsupported=0` with one
 filter mask each; C ABI comparisons match the Python verifier baselines:

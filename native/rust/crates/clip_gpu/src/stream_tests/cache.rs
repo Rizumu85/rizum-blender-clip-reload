@@ -354,6 +354,38 @@ fn streamed_threshold_lut_filter_uses_threshold_luminance_weights() {
 }
 
 #[test]
+fn streamed_hsl_filter_matches_python_hsv_adjust_formula() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(29);
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(29),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![120, 80, 200, 255],
+        },
+    )]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source(key)),
+        GpuNormalStackSource::LutFilter {
+            lut_rgba: identity_lut(),
+            opacity: 1.0,
+            mask_key: None,
+            filter_mode: hsl_mode(30.0, -25.0, 40.0),
+        },
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw streamed HSL filter");
+
+    let mut expected = [255, 255, 255, 0].repeat(9);
+    expected[((4 * 4) as usize)..((4 * 4 + 4) as usize)].copy_from_slice(&[205, 122, 222, 255]);
+    assert_eq!(output.pixels, expected);
+}
+
+#[test]
 fn streamed_cropped_mask_uses_fill_value_outside_texture() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = raster_key(10);

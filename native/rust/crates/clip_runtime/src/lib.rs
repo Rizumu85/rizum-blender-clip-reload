@@ -3052,6 +3052,15 @@ fn gpu_normal_stack_source(draw: &StrictRasterStackDraw) -> clip_gpu::GpuNormalS
                 PlannedLutFilterMode::ToneCurveRgb => clip_gpu::GpuLutFilterMode::ToneCurveRgb,
                 PlannedLutFilterMode::GradientMapLum => clip_gpu::GpuLutFilterMode::GradientMapLum,
                 PlannedLutFilterMode::ThresholdLum => clip_gpu::GpuLutFilterMode::ThresholdLum,
+                PlannedLutFilterMode::Hsl {
+                    hue_degrees,
+                    saturation,
+                    luminosity,
+                } => clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
+                    hue_degrees,
+                    saturation,
+                    luminosity,
+                }),
             },
         },
     }
@@ -3082,6 +3091,15 @@ fn gpu_lut_filter_mode(mode: PlannedLutFilterMode) -> clip_gpu::GpuLutFilterMode
         PlannedLutFilterMode::ToneCurveRgb => clip_gpu::GpuLutFilterMode::ToneCurveRgb,
         PlannedLutFilterMode::GradientMapLum => clip_gpu::GpuLutFilterMode::GradientMapLum,
         PlannedLutFilterMode::ThresholdLum => clip_gpu::GpuLutFilterMode::ThresholdLum,
+        PlannedLutFilterMode::Hsl {
+            hue_degrees,
+            saturation,
+            luminosity,
+        } => clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
+            hue_degrees,
+            saturation,
+            luminosity,
+        }),
     }
 }
 
@@ -3358,6 +3376,7 @@ mod tests {
             filter_node(4, 13, 1),
             filter_node(5, 14, 1),
             filter_node(6, 15, 1),
+            filter_node(7, 16, 1),
         ]);
         session.filter_sources.insert(
             LayerId(10),
@@ -3386,13 +3405,16 @@ mod tests {
                 color_balance_payload([1, 0, 0, 0, 43, -48, 48, 0, 0, 0]),
             ),
         );
+        session
+            .filter_sources
+            .insert(LayerId(16), filter_source(16, 4, hsl_payload(30, -25, 40)));
 
         let selection = session
             .select_gpu_normal_render_stack(gpu_selector_options())
             .expect("select synthetic LUT filters");
 
         assert!(selection.unsupported.is_empty());
-        assert_eq!(selection.sources.len(), 6);
+        assert_eq!(selection.sources.len(), 7);
         for (source, (input, expected, expected_mode)) in selection.sources.iter().zip([
             (
                 64usize,
@@ -3423,6 +3445,15 @@ mod tests {
                 226usize,
                 [231, 212, 231],
                 clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+            ),
+            (
+                128usize,
+                [128, 128, 128],
+                clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
+                    hue_degrees: 30.0,
+                    saturation: -25.0,
+                    luminosity: 40.0,
+                }),
             ),
         ]) {
             let clip_gpu::GpuNormalStackSource::LutFilter {
@@ -4193,6 +4224,14 @@ mod tests {
     fn color_balance_payload(values: [i32; 10]) -> Vec<u8> {
         let mut payload = Vec::with_capacity(40);
         for value in values {
+            payload.extend_from_slice(&value.to_be_bytes());
+        }
+        payload
+    }
+
+    fn hsl_payload(hue: i32, saturation: i32, luminosity: i32) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(12);
+        for value in [hue, saturation, luminosity] {
             payload.extend_from_slice(&value.to_be_bytes());
         }
         payload

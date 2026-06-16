@@ -3,18 +3,23 @@ pub(crate) enum PlannedLutFilterMode {
     ToneCurveRgb,
     GradientMapLum,
     ThresholdLum,
+    Hsl {
+        hue_degrees: f32,
+        saturation: f32,
+        luminosity: f32,
+    },
 }
 
 const TONE_CURVE_COMPACT_STRIDE: usize = 0x82;
 const FILTER_TYPE_BRIGHTNESS_CONTRAST: u32 = 1;
 const FILTER_TYPE_LEVEL_CORRECTION: u32 = 2;
 const FILTER_TYPE_TONE_CURVE: u32 = 3;
+const FILTER_TYPE_HSL: u32 = 4;
 const FILTER_TYPE_COLOR_BALANCE: u32 = 5;
 const FILTER_TYPE_INVERT: u32 = 6;
 const FILTER_TYPE_POSTERIZATION: u32 = 7;
 const FILTER_TYPE_THRESHOLD: u32 = 8;
 const FILTER_TYPE_GRADIENT_MAP: u32 = 9;
-const GRADIENT_STOP_DENOMINATOR: f32 = 32768.0 * 256.0 / 255.0;
 
 pub(crate) fn lut_filter_rgba(
     filter_type: u32,
@@ -36,6 +41,18 @@ pub(crate) fn lut_filter_rgba(
             PlannedLutFilterMode::ToneCurveRgb,
             tone_curve_lut_rgba(payload)?,
         )),
+        FILTER_TYPE_HSL => {
+            let (hue_degrees, saturation, luminosity) = hsl_params(payload)?;
+            Some((
+                "HueSaturationLuminosity",
+                PlannedLutFilterMode::Hsl {
+                    hue_degrees,
+                    saturation,
+                    luminosity,
+                },
+                identity_lut_rgba(),
+            ))
+        }
         FILTER_TYPE_COLOR_BALANCE => Some((
             "ColorBalance",
             PlannedLutFilterMode::ToneCurveRgb,
@@ -59,7 +76,7 @@ pub(crate) fn lut_filter_rgba(
         FILTER_TYPE_GRADIENT_MAP => Some((
             "GradientMap",
             PlannedLutFilterMode::GradientMapLum,
-            gradient_map_lut_rgba(payload)?,
+            gradient_map::gradient_map_lut_rgba(payload)?,
         )),
         _ => None,
     }
@@ -121,6 +138,14 @@ fn invert_lut_rgba() -> Vec<u8> {
         *value = 255 - input as u8;
     }
     uniform_rgb_lut_rgba(&lut)
+}
+
+fn hsl_params(payload: &[u8]) -> Option<(f32, f32, f32)> {
+    Some((
+        read_be_i32(payload, 0)? as f32,
+        read_be_i32(payload, 4)? as f32,
+        read_be_i32(payload, 8)? as f32,
+    ))
 }
 
 fn posterization_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
@@ -353,54 +378,12 @@ fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
     Some(lut)
 }
 
-fn gradient_map_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
-    if payload.len() < 28 {
-        return None;
-    }
-    let count = read_be_i32(payload, 12)?;
-    if count <= 0 {
-        return None;
-    }
-    let mut nodes = Vec::new();
-    let mut offset = 28usize;
-    for _ in 0..count {
-        if offset.checked_add(28)? > payload.len() {
-            break;
-        }
-        let r_raw = read_be_u32(payload, offset)?;
-        let g_raw = read_be_u32(payload, offset + 4)?;
-        let b_raw = read_be_u32(payload, offset + 8)?;
-        let stop_raw = read_be_u32(payload, offset + 20)?;
-        nodes.push((
-            stop_raw as f32 / GRADIENT_STOP_DENOMINATOR,
-            [
-                gradient_color_byte(r_raw),
-                gradient_color_byte(g_raw),
-                gradient_color_byte(b_raw),
-            ],
-        ));
-        offset += 28;
-    }
-    if nodes.is_empty() {
-        return None;
-    }
-    nodes.sort_by(|left, right| left.0.total_cmp(&right.0));
-
-    let mut lut_rgba = vec![0u8; 256 * 4];
-    for input in 0..256usize {
-        let lum = input as f32 / 255.0;
-        let color = gradient_map_color_at_lum(lum, &nodes);
-        let out = input * 4;
-        lut_rgba[out] = color[0];
-        lut_rgba[out + 1] = color[1];
-        lut_rgba[out + 2] = color[2];
-        lut_rgba[out + 3] = 255;
-    }
-    Some(lut_rgba)
-}
-
 fn uniform_rgb_lut_rgba(lut: &[u8; 256]) -> Vec<u8> {
     rgb_luts_rgba(lut, lut, lut)
+}
+
+fn identity_lut_rgba() -> Vec<u8> {
+    uniform_rgb_lut_rgba(&identity_lut())
 }
 
 fn rgb_luts_rgba(red: &[u8; 256], green: &[u8; 256], blue: &[u8; 256]) -> Vec<u8> {
@@ -421,41 +404,6 @@ fn identity_lut() -> [u8; 256] {
         *value = index as u8;
     }
     lut
-}
-
-fn gradient_color_byte(raw_channel: u32) -> u8 {
-    let compact = ((raw_channel >> 16) & 0xffff) as f32;
-    (compact / 256.0 + 0.5).floor().clamp(0.0, 255.0) as u8
-}
-
-fn gradient_map_color_at_lum(lum: f32, nodes: &[(f32, [u8; 3])]) -> [u8; 3] {
-    let (first_pos, first_color) = nodes[0];
-    if lum <= first_pos {
-        return first_color;
-    }
-    let (last_pos, last_color) = nodes[nodes.len() - 1];
-    if lum >= last_pos {
-        return last_color;
-    }
-    for pair in nodes.windows(2) {
-        let (p0, c0) = pair[0];
-        let (p1, c1) = pair[1];
-        if lum >= p0 && lum <= p1 {
-            let t = ((lum - p0) / (p1 - p0).max(1e-6)).clamp(0.0, 1.0);
-            return [
-                lerp_gradient_byte(c0[0], c1[0], t),
-                lerp_gradient_byte(c0[1], c1[1], t),
-                lerp_gradient_byte(c0[2], c1[2], t),
-            ];
-        }
-    }
-    last_color
-}
-
-fn lerp_gradient_byte(start: u8, end: u8, t: f32) -> u8 {
-    (f32::from(start) * (1.0 - t) + f32::from(end) * t + 0.5)
-        .floor()
-        .clamp(0.0, 255.0) as u8
 }
 
 fn clamp_i32_to_byte(value: i32) -> u8 {
@@ -486,3 +434,6 @@ mod tests;
 
 #[path = "filter_color_balance.rs"]
 mod color_balance;
+
+#[path = "filter_gradient_map.rs"]
+mod gradient_map;

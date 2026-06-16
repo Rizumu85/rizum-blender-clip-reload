@@ -4,7 +4,7 @@ use clip_graph::RenderNodeId;
 use clip_model::{CanvasSize, LayerId};
 
 use crate::{
-    GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey, GpuMaskUpload,
+    GpuHslFilterParams, GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey, GpuMaskUpload,
     GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuRasterBlendMode,
     GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload, GpuRenderError, GpuRenderer,
 };
@@ -187,6 +187,14 @@ pub(super) fn inverted_tone_curve_lut() -> Vec<u8> {
     lut
 }
 
+pub(super) fn identity_lut() -> Vec<u8> {
+    let mut lut = Vec::with_capacity(256 * 4);
+    for value in 0..=255u8 {
+        lut.extend_from_slice(&[value, value, value, 255]);
+    }
+    lut
+}
+
 pub(super) fn threshold_lut(threshold: i32) -> Vec<u8> {
     let mut lut = Vec::with_capacity(256 * 4);
     for value in 0..=255i32 {
@@ -198,4 +206,12 @@ pub(super) fn threshold_lut(threshold: i32) -> Vec<u8> {
 
 pub(super) fn lut_mode() -> GpuLutFilterMode {
     GpuLutFilterMode::ToneCurveRgb
+}
+
+pub(super) fn hsl_mode(hue_degrees: f32, saturation: f32, luminosity: f32) -> GpuLutFilterMode {
+    GpuLutFilterMode::Hsl(GpuHslFilterParams {
+        hue_degrees,
+        saturation,
+        luminosity,
+    })
 }

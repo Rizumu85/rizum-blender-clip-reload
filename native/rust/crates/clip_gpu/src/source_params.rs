@@ -153,6 +153,11 @@ pub(crate) fn lut_filter_uniform_bytes_with_target_origin_and_mask(
     bytes[0..4].copy_from_slice(&opacity.to_ne_bytes());
     bytes[4..8].copy_from_slice(&(u32::from(has_mask)).to_ne_bytes());
     bytes[8..12].copy_from_slice(&lut_filter_mode_kind(filter_mode).to_ne_bytes());
+    if let GpuLutFilterMode::Hsl(params) = filter_mode {
+        bytes[12..16].copy_from_slice(&params.hue_degrees.to_ne_bytes());
+        bytes[24..28].copy_from_slice(&params.saturation.to_ne_bytes());
+        bytes[28..32].copy_from_slice(&params.luminosity.to_ne_bytes());
+    }
     bytes[16..20].copy_from_slice(&target_origin.0.to_ne_bytes());
     bytes[20..24].copy_from_slice(&target_origin.1.to_ne_bytes());
     bytes[32..36].copy_from_slice(&mask_sampling.origin_x.to_ne_bytes());
@@ -186,6 +191,7 @@ fn lut_filter_mode_kind(filter_mode: GpuLutFilterMode) -> u32 {
         GpuLutFilterMode::ToneCurveRgb => 0,
         GpuLutFilterMode::GradientMapLum => 1,
         GpuLutFilterMode::ThresholdLum => 2,
+        GpuLutFilterMode::Hsl(_) => 3,
     }
 }
 
@@ -227,7 +233,10 @@ fn mask_sampling_fill(mask_sampling: GpuMaskSamplingInfo) -> f32 {
 mod tests {
     use clip_model::LayerId;
 
-    use crate::{GpuNormalRasterSource, GpuRasterBlendMode, GpuRasterResourceKey};
+    use crate::{
+        GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource, GpuRasterBlendMode,
+        GpuRasterResourceKey,
+    };
 
     use super::{
         generated_raster_source_uniform_bytes_with_blend_and_origins,
@@ -288,5 +297,24 @@ mod tests {
         assert_eq!(&bytes[8..12], &1u32.to_ne_bytes());
         assert_eq!(&bytes[16..20], &11i32.to_ne_bytes());
         assert_eq!(&bytes[20..24], &12i32.to_ne_bytes());
+    }
+
+    #[test]
+    fn hsl_filter_records_parameters_in_padding_slots() {
+        let bytes = lut_filter_uniform_bytes_with_target_origin(
+            1.0,
+            false,
+            GpuLutFilterMode::Hsl(GpuHslFilterParams {
+                hue_degrees: 30.0,
+                saturation: -25.0,
+                luminosity: 40.0,
+            }),
+            (0, 0),
+        );
+
+        assert_eq!(&bytes[8..12], &3u32.to_ne_bytes());
+        assert_eq!(&bytes[12..16], &30.0f32.to_ne_bytes());
+        assert_eq!(&bytes[24..28], &(-25.0f32).to_ne_bytes());
+        assert_eq!(&bytes[28..32], &40.0f32.to_ne_bytes());
     }
 }

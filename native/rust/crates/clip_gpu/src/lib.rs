@@ -31,6 +31,6 @@ pub use resource::{
 };
 pub use stream::GpuNormalStackResourceProvider;
 pub use types::{
-    GpuLutFilterMode, GpuNormalRasterSource, GpuNormalStackChunk, GpuNormalStackSource,
-    GpuRasterBlendMode, GpuRasterDrawOutput, GpuRasterStackOutput,
+    GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource, GpuNormalStackChunk,
+    GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput, GpuRasterStackOutput,
 };

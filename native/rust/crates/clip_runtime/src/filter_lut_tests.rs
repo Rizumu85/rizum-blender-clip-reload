@@ -4,7 +4,7 @@ use clip_model::LayerId;
 
 use super::{
     FILTER_TYPE_BRIGHTNESS_CONTRAST, FILTER_TYPE_COLOR_BALANCE, FILTER_TYPE_GRADIENT_MAP,
-    FILTER_TYPE_INVERT, FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION,
+    FILTER_TYPE_HSL, FILTER_TYPE_INVERT, FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION,
     FILTER_TYPE_THRESHOLD, PlannedLutFilterMode, lut_filter_rgba,
 };
 
@@ -102,6 +102,31 @@ fn threshold_lut_matches_python_formula_anchors() {
 }
 
 #[test]
+fn hsl_filter_parses_python_hsv_adjust_parameters() {
+    let payload = hsl_payload(30, -25, 40);
+    let (name, mode, lut) = lut_filter_rgba(FILTER_TYPE_HSL, &payload).expect("build HSL filter");
+
+    assert_eq!(name, "HueSaturationLuminosity");
+    let PlannedLutFilterMode::Hsl {
+        hue_degrees,
+        saturation,
+        luminosity,
+    } = mode
+    else {
+        panic!("HSL filter should use the HSL GPU mode");
+    };
+    assert_eq!(hue_degrees, 30.0);
+    assert_eq!(saturation, -25.0);
+    assert_eq!(luminosity, 40.0);
+    for input in [0usize, 64, 128, 255] {
+        assert_eq!(
+            &lut[input * 4..input * 4 + 4],
+            [input as u8, input as u8, input as u8, 255].as_slice()
+        );
+    }
+}
+
+#[test]
 fn color_balance_lut_matches_preserve_luminosity_python_formula_anchors() {
     let payload = color_balance_payload([1, 0, 0, 0, 43, -48, 48, 0, 0, 0]);
 
@@ -148,6 +173,7 @@ fn color_balance_lut_matches_normal_python_formula_anchors() {
 fn malformed_lut_filter_payloads_fail_closed() {
     assert!(lut_filter_rgba(FILTER_TYPE_BRIGHTNESS_CONTRAST, &[0; 7]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_LEVEL_CORRECTION, &[0; 0x3f]).is_none());
+    assert!(lut_filter_rgba(FILTER_TYPE_HSL, &[0; 11]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_COLOR_BALANCE, &[0; 39]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_POSTERIZATION, &[0; 3]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_THRESHOLD, &[0; 3]).is_none());
@@ -193,6 +219,14 @@ fn level_payload(group: [u16; 5]) -> Vec<u8> {
 fn color_balance_payload(values: [i32; 10]) -> Vec<u8> {
     let mut payload = Vec::with_capacity(40);
     for value in values {
+        payload.extend_from_slice(&value.to_be_bytes());
+    }
+    payload
+}
+
+fn hsl_payload(hue: i32, saturation: i32, luminosity: i32) -> Vec<u8> {
+    let mut payload = Vec::with_capacity(12);
+    for value in [hue, saturation, luminosity] {
         payload.extend_from_slice(&value.to_be_bytes());
     }
     payload

@@ -68,11 +68,19 @@ pub enum GpuRasterBlendMode {
     VividLight,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GpuLutFilterMode {
     ToneCurveRgb,
     GradientMapLum,
     ThresholdLum,
+    Hsl(GpuHslFilterParams),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GpuHslFilterParams {
+    pub hue_degrees: f32,
+    pub saturation: f32,
+    pub luminosity: f32,
 }
 
 #[derive(Clone, Debug)]
