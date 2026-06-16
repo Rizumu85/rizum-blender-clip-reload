@@ -543,6 +543,18 @@ Owns:
 - GPU adjustment/filter passes.
 - Final RGBA readback for OIIO.
 
+Current split:
+
+- `pass.rs`: direct raster-copy draw probes and pass module wiring.
+- `pass_pipeline.rs`: normal-stack pipeline, texture, clear, and pass encoding
+  helpers shared by direct and streaming renderers.
+- `pass_normal.rs` and `pass_normal_encode.rs`: direct/debug normal-stack entry
+  points and source dispatch.
+- `pass_clipping.rs`, `pass_container.rs`, and `pass_through.rs`: direct/debug
+  clipping cache, isolated container cache, and THROUGH group execution.
+- `stream*.rs`: host-facing recursive provider streaming renderer, cropped
+  cache state, resource retention, and streaming group/clipping/THROUGH helpers.
+
 Does not own:
 
 - `.clip` metadata interpretation.
@@ -565,15 +577,22 @@ Owns:
 
 Current split:
 
-- `lib.rs`: session orchestration and render execution wiring.
+- `lib.rs`: session construction, metadata preloading, and accessors.
 - `blend.rs`: strict raster blend-mode selection and GPU blend-mode mapping.
 - `error.rs`: `RuntimeError` and error-source/display conversion.
 - `results.rs`: public GPU/support/trace result structs and unsupported-reason
   types.
 - `filter_lut.rs` plus filter helpers: filter payload parsing and LUT models.
+- `gpu_api.rs`: developer/runtime GPU entry points for layer draw, stack draw,
+  trace, and normal-stack render output.
 - `gpu_provider.rs`: runtime GPU resource provider and resource-plan helpers.
+- `region.rs`: host-facing cached `read_rgba8_region` path.
+- `selector_tree.rs`, `selector_gpu.rs`, `selector_gpu_resources.rs`,
+  `selector_strict.rs`, and `selector_strict_decode.rs`: strict selector
+  traversal, GPU resource planning, and decoded debug/trace selector support.
 - `source_crop.rs`: source/mask crop helpers.
-- `support.rs`: metadata-only strict support selector.
+- `support.rs`, `support_select.rs`, and `support_checks.rs`: metadata-only
+  strict support selector and resource statistics.
 
 Does not own:
 

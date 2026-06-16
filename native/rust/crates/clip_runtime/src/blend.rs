@@ -1,4 +1,4 @@
-use crate::StrictRasterStackOptions;
+use crate::stack_plan::StrictRasterStackOptions;
 
 pub(crate) const LAYER_COMPOSITE_DARKEN: u32 = 1;
 pub(crate) const LAYER_COMPOSITE_MULTIPLY: u32 = 2;
