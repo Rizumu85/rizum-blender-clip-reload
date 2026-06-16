@@ -28,8 +28,16 @@ CLIP_SUPPORT_SOURCE_COUNT_KEY = "clip_support_source_count"
 CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY = "clip_support_unsupported_count"
 CLIP_SUPPORT_RASTER_COUNT_KEY = "clip_support_raster_count"
 CLIP_SUPPORT_RASTER_BYTES_KEY = "clip_support_raster_bytes"
+CLIP_SUPPORT_MAX_RASTER_LAYER_KEY = "clip_support_max_raster_layer"
+CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY = "clip_support_max_raster_width"
+CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY = "clip_support_max_raster_height"
+CLIP_SUPPORT_MAX_RASTER_BYTES_KEY = "clip_support_max_raster_bytes"
 CLIP_SUPPORT_MASK_COUNT_KEY = "clip_support_mask_count"
 CLIP_SUPPORT_MASK_BYTES_KEY = "clip_support_mask_bytes"
+CLIP_SUPPORT_MAX_MASK_LAYER_KEY = "clip_support_max_mask_layer"
+CLIP_SUPPORT_MAX_MASK_WIDTH_KEY = "clip_support_max_mask_width"
+CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY = "clip_support_max_mask_height"
+CLIP_SUPPORT_MAX_MASK_BYTES_KEY = "clip_support_max_mask_bytes"
 
 RELOAD_STATUS_OK = "ok"
 RELOAD_STATUS_STALE = "stale_source"
@@ -66,8 +74,16 @@ class NativeSupportSummary:
     unsupported_count: int
     raster_count: int
     raster_bytes: int
+    max_raster_layer_id: int
+    max_raster_width: int
+    max_raster_height: int
+    max_raster_bytes: int
     mask_count: int
     mask_bytes: int
+    max_mask_layer_id: int
+    max_mask_width: int
+    max_mask_height: int
+    max_mask_bytes: int
     report: str
     details: tuple[str, ...] = ()
 
@@ -253,8 +269,16 @@ class NativeRendererLibrary:
             unsupported_count=int(info.unsupported_count),
             raster_count=int(info.raster_count),
             raster_bytes=int(info.raster_bytes),
+            max_raster_layer_id=int(info.max_raster_layer_id),
+            max_raster_width=int(info.max_raster_width),
+            max_raster_height=int(info.max_raster_height),
+            max_raster_bytes=int(info.max_raster_bytes),
             mask_count=int(info.mask_count),
             mask_bytes=int(info.mask_bytes),
+            max_mask_layer_id=int(info.max_mask_layer_id),
+            max_mask_width=int(info.max_mask_width),
+            max_mask_height=int(info.max_mask_height),
+            max_mask_bytes=int(info.max_mask_bytes),
             report=summary_line,
             details=detail_lines,
         )
@@ -474,8 +498,16 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
     image[CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY] = summary.unsupported_count
     image[CLIP_SUPPORT_RASTER_COUNT_KEY] = summary.raster_count
     image[CLIP_SUPPORT_RASTER_BYTES_KEY] = summary.raster_bytes
+    image[CLIP_SUPPORT_MAX_RASTER_LAYER_KEY] = summary.max_raster_layer_id
+    image[CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY] = summary.max_raster_width
+    image[CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY] = summary.max_raster_height
+    image[CLIP_SUPPORT_MAX_RASTER_BYTES_KEY] = summary.max_raster_bytes
     image[CLIP_SUPPORT_MASK_COUNT_KEY] = summary.mask_count
     image[CLIP_SUPPORT_MASK_BYTES_KEY] = summary.mask_bytes
+    image[CLIP_SUPPORT_MAX_MASK_LAYER_KEY] = summary.max_mask_layer_id
+    image[CLIP_SUPPORT_MAX_MASK_WIDTH_KEY] = summary.max_mask_width
+    image[CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY] = summary.max_mask_height
+    image[CLIP_SUPPORT_MAX_MASK_BYTES_KEY] = summary.max_mask_bytes
 
 
 def _clear_reload_error(image: Any) -> None:

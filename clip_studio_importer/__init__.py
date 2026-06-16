@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 31),
+    "version": (0, 8, 32),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -109,6 +109,107 @@ def _short_diagnostic(message: str, limit: int = 120) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 1] + "…"
+
+
+def _image_int_property(img, key: str, default: int = 0) -> int:
+    try:
+        return int(img.get(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _format_byte_count(value: int) -> str:
+    if value <= 0:
+        return "0 B"
+    amount = float(value)
+    for unit in ("B", "KiB", "MiB", "GiB"):
+        if amount < 1024.0 or unit == "GiB":
+            if unit == "B":
+                return f"{int(amount)} {unit}"
+            return f"{amount:.1f} {unit}"
+        amount /= 1024.0
+    return f"{value} B"
+
+
+def _support_resource_lines(img) -> list[str]:
+    source_count = _image_int_property(img, native_bridge.CLIP_SUPPORT_SOURCE_COUNT_KEY)
+    unsupported_count = _image_int_property(
+        img,
+        native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
+    )
+    raster_count = _image_int_property(img, native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY)
+    raster_bytes = _image_int_property(img, native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY)
+    mask_count = _image_int_property(img, native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY)
+    mask_bytes = _image_int_property(img, native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY)
+    lines = [
+        f"Sources: {source_count}; unsupported: {unsupported_count}",
+        f"Raster resources: {raster_count}, {_format_byte_count(raster_bytes)}",
+        f"Mask resources: {mask_count}, {_format_byte_count(mask_bytes)}",
+    ]
+    max_raster_layer = _image_int_property(
+        img,
+        native_bridge.CLIP_SUPPORT_MAX_RASTER_LAYER_KEY,
+    )
+    if max_raster_layer:
+        width = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY)
+        height = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY)
+        bytes_ = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY)
+        lines.append(
+            "Largest raster: "
+            f"layer {max_raster_layer}, {width}x{height}, {_format_byte_count(bytes_)}"
+        )
+    max_mask_layer = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_LAYER_KEY)
+    if max_mask_layer:
+        width = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_WIDTH_KEY)
+        height = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY)
+        bytes_ = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY)
+        lines.append(
+            "Largest mask: "
+            f"layer {max_mask_layer}, {width}x{height}, {_format_byte_count(bytes_)}"
+        )
+    return lines
+
+
+def _support_diagnostic_text(img) -> str:
+    clip_path = img.get(CLIP_SOURCE_KEY, "")
+    status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
+    support_status = img.get(native_bridge.CLIP_SUPPORT_STATUS_KEY, "")
+    width = _image_int_property(img, native_bridge.CLIP_CANVAS_WIDTH_KEY)
+    height = _image_int_property(img, native_bridge.CLIP_CANVAS_HEIGHT_KEY)
+    lines = [
+        "Clip Studio native render diagnostics",
+        f"Source: {clip_path}",
+        f"Status: {_reload_status_label(status)}",
+        "Mode: Native renderer",
+    ]
+    if width and height:
+        lines.append(f"Canvas: {width}x{height}")
+    renderer_abi = _image_int_property(img, native_bridge.CLIP_RENDERER_ABI_KEY)
+    if renderer_abi:
+        lines.append(f"Renderer ABI: {renderer_abi}")
+    root_layer = _image_int_property(img, native_bridge.CLIP_ROOT_LAYER_KEY)
+    layer_count = _image_int_property(img, native_bridge.CLIP_LAYER_COUNT_KEY)
+    external_count = _image_int_property(img, native_bridge.CLIP_EXTERNAL_COUNT_KEY)
+    if root_layer or layer_count or external_count:
+        lines.append(
+            f"Root layer: {root_layer}; layers: {layer_count}; "
+            f"external chunks: {external_count}"
+        )
+    if support_status:
+        lines.append(f"Native support: {_support_status_label(support_status)}")
+    report = img.get(native_bridge.CLIP_SUPPORT_REPORT_KEY, "")
+    if report:
+        lines.append(f"Support report: {report}")
+    lines.extend(_support_resource_lines(img))
+    support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
+    detail_lines = [line for line in str(support_details).splitlines() if line]
+    if detail_lines:
+        lines.append("Unsupported details:")
+        lines.extend(detail_lines)
+    error = img.get(native_bridge.CLIP_RELOAD_ERROR_KEY, "")
+    if error:
+        lines.append(f"Render error: {error}")
+    return "\n".join(lines)
 
 
 def _schedule_async_decode(
@@ -232,6 +333,26 @@ class IMAGE_OT_toggle_clip_support_details(Operator):
         img[CLIP_SUPPORT_DETAILS_EXPANDED_KEY] = not bool(
             img.get(CLIP_SUPPORT_DETAILS_EXPANDED_KEY, False)
         )
+        return {"FINISHED"}
+
+
+class IMAGE_OT_copy_clip_support_diagnostics(Operator):
+    """Copy the selected .clip image's native diagnostics to the clipboard."""
+    bl_idname = "image.copy_clip_support_diagnostics"
+    bl_label = "Copy Support Diagnostics"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        space = getattr(context, "space_data", None)
+        img = getattr(space, "image", None) if space else None
+        return img is not None and CLIP_SOURCE_KEY in img.keys()
+
+    def execute(self, context):
+        context.window_manager.clipboard = _support_diagnostic_text(
+            context.space_data.image
+        )
+        self.report({"INFO"}, "Copied Clip Studio diagnostics")
         return {"FINISHED"}
 
 
@@ -502,6 +623,11 @@ class IMAGE_PT_clip_studio(Panel):
                     text=_short_diagnostic(support_report),
                     icon="INFO",
                 )
+            for line in _support_resource_lines(img):
+                layout.label(
+                    text=_short_diagnostic(line),
+                    icon="BLANK1",
+                )
             support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
             detail_lines = [line for line in str(support_details).splitlines() if line]
             expanded = bool(img.get(CLIP_SUPPORT_DETAILS_EXPANDED_KEY, False))
@@ -534,6 +660,11 @@ class IMAGE_PT_clip_studio(Panel):
                     ),
                     icon="INFO",
                 )
+            layout.operator(
+                IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
+                text="Copy support diagnostics",
+                icon="COPYDOWN",
+            )
         if status == native_bridge.RELOAD_STATUS_MISSING:
             layout.label(text="Packed pixels are still visible.", icon="INFO")
         elif status == native_bridge.RELOAD_STATUS_ERROR:
@@ -566,6 +697,7 @@ _classes = (
     IMPORT_OT_clip_studio,
     IMAGE_OT_reload_clip_studio,
     IMAGE_OT_toggle_clip_support_details,
+    IMAGE_OT_copy_clip_support_diagnostics,
     IMAGE_PT_clip_studio,
 )
 

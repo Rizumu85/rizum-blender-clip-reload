@@ -85,8 +85,16 @@ class FakeRenderer:
                 unsupported_count=0,
                 raster_count=1,
                 raster_bytes=4,
+                max_raster_layer_id=10,
+                max_raster_width=1,
+                max_raster_height=1,
+                max_raster_bytes=4,
                 mask_count=0,
                 mask_bytes=0,
+                max_mask_layer_id=0,
+                max_mask_width=0,
+                max_mask_height=0,
+                max_mask_bytes=0,
                 report="Full native support for 2 source(s).",
                 details=(),
             ),
@@ -126,8 +134,16 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY], 4)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_LAYER_KEY], 10)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY], 1)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY], 1)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY], 4)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY], 0)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_LAYER_KEY], 0)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_WIDTH_KEY], 0)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY], 0)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY], 0)
         self.assertIn("Full native support", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_DETAILS_KEY], "")
 
@@ -149,8 +165,16 @@ class NativeBridgeTests(unittest.TestCase):
                 unsupported_count=2,
                 raster_count=1,
                 raster_bytes=4,
+                max_raster_layer_id=9,
+                max_raster_width=2,
+                max_raster_height=2,
+                max_raster_bytes=16,
                 mask_count=1,
                 mask_bytes=2,
+                max_mask_layer_id=10,
+                max_mask_width=1,
+                max_mask_height=2,
+                max_mask_bytes=2,
                 report="2 unsupported node(s).",
                 details=(
                     "- layer 9 node 4 Filter: filter layer is not supported",

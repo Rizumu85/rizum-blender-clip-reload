@@ -16,8 +16,9 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 6. The `Native renderer library` preference is only needed as an override for
    the packaged library.
 7. The Image Editor N-panel shows native render status, native support summary,
-   missing-source state, and the latest native render error for the selected
-   `.clip` image.
+   support resource statistics, missing-source state, and the latest native
+   render error for the selected `.clip` image. The support report can be
+   copied to the clipboard for issue reports.
 
 ## Later Native Workflow
 
@@ -67,9 +68,10 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 ## Current UX Gaps
 
 - Background render progress is only shown as a small `Rendering in background` label when the image panel is visible.
-- Unsupported layer features are summarized at image level with counts and
-  unsupported layer/node details. The panel previews the first few entries and
-  can expand to show the full support-detail list stored on the image.
+- Unsupported layer features are summarized at image level with counts,
+  resource statistics, and unsupported layer/node details. The panel previews
+  the first few entries, can expand to show the full support-detail list stored
+  on the image, and can copy the full support report to the clipboard.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.

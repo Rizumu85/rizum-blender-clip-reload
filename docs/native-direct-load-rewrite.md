@@ -171,9 +171,11 @@ Result:
 - `clip_renderer_session_support_info` exposes the runtime metadata-only support
   selector through the C ABI. The C report includes a summary line plus the
   unsupported layer/node list. The Python bridge stores support status, source
-  count, unsupported count, raster/mask resource counts, summary report, and
-  `clip_support_details` on the Blender image; the Image Editor panel previews
-  the first few detail lines and can expand to show the full stored list.
+  count, unsupported count, raster/mask resource counts, largest raster/mask
+  resource metadata, summary report, and `clip_support_details` on the Blender
+  image; the Image Editor panel previews the first few detail lines, can expand
+  to show the full stored list, and can copy a complete support report to the
+  clipboard.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
