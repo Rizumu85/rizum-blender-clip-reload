@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 46),
+    "version": (0, 8, 47),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -132,6 +132,10 @@ def _image_has_property(img, key: str) -> bool:
         return key in img.keys()
     except AttributeError:
         return key in img
+
+
+def _native_bridge_key(attribute_name: str, fallback: str) -> str:
+    return getattr(native_bridge, attribute_name, fallback)
 
 
 def _format_seconds(value: float) -> str:
@@ -288,13 +292,37 @@ def _support_diagnostic_text(img) -> str:
 
 def _timing_phase_lines(img) -> list[str]:
     phases = [
-        ("Native worker", native_bridge.CLIP_PHASE_WORKER_SECONDS_KEY),
-        ("Worker output read", native_bridge.CLIP_PHASE_OUTPUT_READ_SECONDS_KEY),
-        ("RGBA8 to Blender floats", native_bridge.CLIP_PHASE_CONVERT_SECONDS_KEY),
-        ("Blender foreach_set", native_bridge.CLIP_PHASE_FOREACH_SECONDS_KEY),
-        ("Blender image update", native_bridge.CLIP_PHASE_UPDATE_SECONDS_KEY),
-        ("Blender image pack", native_bridge.CLIP_PHASE_PACK_SECONDS_KEY),
-        ("Blender upload total", native_bridge.CLIP_PHASE_UPLOAD_SECONDS_KEY),
+        (
+            "Native worker",
+            _native_bridge_key("CLIP_PHASE_WORKER_SECONDS_KEY", "clip_phase_worker_seconds"),
+        ),
+        (
+            "Worker output read",
+            _native_bridge_key(
+                "CLIP_PHASE_OUTPUT_READ_SECONDS_KEY",
+                "clip_phase_output_read_seconds",
+            ),
+        ),
+        (
+            "RGBA8 to Blender floats",
+            _native_bridge_key("CLIP_PHASE_CONVERT_SECONDS_KEY", "clip_phase_convert_seconds"),
+        ),
+        (
+            "Blender foreach_set",
+            _native_bridge_key("CLIP_PHASE_FOREACH_SECONDS_KEY", "clip_phase_foreach_seconds"),
+        ),
+        (
+            "Blender image update",
+            _native_bridge_key("CLIP_PHASE_UPDATE_SECONDS_KEY", "clip_phase_update_seconds"),
+        ),
+        (
+            "Blender image pack",
+            _native_bridge_key("CLIP_PHASE_PACK_SECONDS_KEY", "clip_phase_pack_seconds"),
+        ),
+        (
+            "Blender upload total",
+            _native_bridge_key("CLIP_PHASE_UPLOAD_SECONDS_KEY", "clip_phase_upload_seconds"),
+        ),
     ]
     lines = []
     for label, key in phases:

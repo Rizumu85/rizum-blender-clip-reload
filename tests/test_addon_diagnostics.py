@@ -260,6 +260,42 @@ class AddonDiagnosticsTests(unittest.TestCase):
         labels = [label for label, _icon in panel.layout.labels]
         self.assertTrue(any(label.startswith("Elapsed: ") for label in labels))
 
+    def test_panel_tolerates_stale_native_bridge_without_timing_constants(self) -> None:
+        addon = _load_addon_module()
+        timing_attributes = [
+            "CLIP_PHASE_WORKER_SECONDS_KEY",
+            "CLIP_PHASE_OUTPUT_READ_SECONDS_KEY",
+            "CLIP_PHASE_CONVERT_SECONDS_KEY",
+            "CLIP_PHASE_FOREACH_SECONDS_KEY",
+            "CLIP_PHASE_UPDATE_SECONDS_KEY",
+            "CLIP_PHASE_PACK_SECONDS_KEY",
+            "CLIP_PHASE_UPLOAD_SECONDS_KEY",
+        ]
+        originals = {
+            name: getattr(addon.native_bridge, name)
+            for name in timing_attributes
+            if hasattr(addon.native_bridge, name)
+        }
+        try:
+            for name in originals:
+                delattr(addon.native_bridge, name)
+            image = {
+                addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+                addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_OK,
+                "clip_phase_upload_seconds": 1.25,
+            }
+            panel = addon.IMAGE_PT_clip_studio()
+            panel.layout = FakeLayout()
+            context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+
+            panel.draw(context)
+
+            labels = [label for label, _icon in panel.layout.labels]
+            self.assertIn("Blender upload total: 1.2s", labels)
+        finally:
+            for name, value in originals.items():
+                setattr(addon.native_bridge, name, value)
+
     def test_panel_expands_all_support_details(self) -> None:
         addon = _load_addon_module()
         image = {
