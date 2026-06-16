@@ -3039,19 +3039,26 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
                 render_mipmap_id: source.key.render_mipmap_id,
             })
         })?;
-        let placed = clip_file::read_resolved_raster_layer_source_rgba_from_container(
+        let visible = source_crop::visible_raster_source_decode_region(
+            meta.source.pixel_size,
+            meta.source.offset_x,
+            meta.source.offset_y,
+            self.canvas,
+        )?
+        .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
+        let image = clip_file::read_resolved_raster_layer_source_rgba_region_from_container(
             self.container,
             &meta.source,
+            visible.source_rect,
         )?;
-        let placed = source_crop::crop_raster_to_canvas(placed, self.canvas)?;
         self.raster_offsets
-            .insert(source.key, (placed.offset_x, placed.offset_y));
+            .insert(source.key, (visible.offset_x, visible.offset_y));
         let upload = clip_gpu::GpuRasterUpload {
             layer_id: meta.layer_id,
             render_node_id: meta.render_node_id,
             render_mipmap_id: meta.render_mipmap_id,
-            size: CanvasSize::new(placed.image.width, placed.image.height),
-            pixels: &placed.image.pixels,
+            size: CanvasSize::new(image.width, image.height),
+            pixels: &image.pixels,
         };
         Ok(renderer.upload_raster_resources(&[upload])?)
     }
