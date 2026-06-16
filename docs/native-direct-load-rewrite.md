@@ -1,6 +1,6 @@
 # Native Direct-Load Rewrite
 
-Last updated: 2026-06-15
+Last updated: 2026-06-16
 
 ## Decision
 
@@ -120,6 +120,51 @@ Second milestone result:
 - Synthetic timing shows the bridge is viable, but Python-side `uint8 ->
   float32` conversion is the main large-image cost: 4096x4096 measured
   `125.927 ms` conversion and `58.130 ms` Blender upload on this machine.
+
+## Completed Blender Add-on Bridge Milestone
+
+Move the stock Blender datablock bridge from spike into the installable add-on.
+
+Scope:
+
+- Keep `.clip` parsing, tile decode, and compositing inside the native Rust
+  runtime.
+- Add a thin Python bridge that calls the Rust C ABI and uploads final RGBA8
+  pixels into Blender.
+- Create or update generated `bpy.types.Image` datablocks and pack the latest
+  rendered pixels into the `.blend`.
+- Store `.clip` source/render metadata on native images so manual reload and the
+  background watcher can update the same datablock.
+- Keep the existing Python sidecar path only as the current default path until
+  the accepted native path replaces it fully.
+
+Result:
+
+- `clip_studio_importer/native_bridge.py` loads `clip_capi` with `ctypes`,
+  checks ABI version `1`, opens native sessions, reads image metadata, renders
+  full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
+  converts those bytes to Blender float pixels for `foreach_set`.
+- The add-on exposes `Use native renderer` and `Native renderer library`
+  preferences. Native imports create generated images without sidecar PNGs,
+  pack them by default, and store source path, source mtime, canvas metadata,
+  renderer ABI, and reload status custom properties.
+- `Reload from .clip` and the non-blocking watcher update native images through
+  the C ABI/generated-image path, while sidecar images continue to use the
+  existing PNG reload path.
+- Unit coverage uses fake Blender image/data objects to lock image creation,
+  pixel upload, source metadata, packing, and size-mismatch rejection. A direct
+  Python smoke against `native/rust/target/release/clip_capi.dll` and
+  `img/Test_Clipping.clip` returned `512x512`, ABI `1`, and first pixel
+  `[0,0,224,255]`.
+
+Remaining bridge work:
+
+- Add load-time source freshness scanning for packed native images.
+- Decide how native renderer binaries are packaged/discovered for installed
+  add-ons.
+- Promote native renderer mode from explicit opt-in to the accepted/default
+  Blender import path, then delete the Python compositor/loader and sidecar PNG
+  workflow.
 
 ## Completed Third Milestone Foundation
 

@@ -1,36 +1,22 @@
 """
-Clip Studio Paint (.clip) Importer — Blender add-on.
+Clip Studio Paint (.clip) Importer for Blender.
 
-Adds:
-  • File > Import > Clip Studio (.clip) — decodes a .clip file, writes a PNG
-    sidecar (foo.clip → foo.clip.png), and loads that PNG as a regular
-    file-backed Blender Image.
-  • A "Reload from .clip" button in the Image Editor's N panel for any image
-    that came from a .clip — re-decodes synchronously and refreshes.
-  • A built-in background watcher (default ON) that polls every imported
-    .clip's mtime. When a .clip changes, decoding runs on a daemon thread,
-    so Blender's UI stays responsive; the Image refreshes when decoding
-    finishes (typically ~1.5–3 s for a 4K file with 3 layers).
-  • Layer masks: decoded and multiplied into per-layer alpha before compositing.
-  • Paper layers: LayerType 1584 is treated as an opaque background color.
-  • Group layers: LayerType 2 children are composited offscreen, then blended
-    back through the group's own blend mode and opacity.
-  • Blend modes: framework supports Normal / Multiply / Screen / Overlay /
-    Hard Light / Soft Light / Add / Subtract / Difference / Lighten / Darken /
-    Color Dodge / Color Burn. CSP's LayerComposite integer→mode mapping is
-    populated empirically — unknown integers fall back to Normal with a log
-    warning that names the integer (so you can map it).
+The default importer path decodes a .clip file with the Python compositor,
+writes a sidecar PNG cache, and loads that PNG as a file-backed Blender Image.
+The optional native renderer path calls the Rust C ABI, uploads RGBA pixels
+into a generated Blender Image, packs the latest render into the .blend, and
+stores .clip source-tracking properties for reload/watch updates.
 
-No external auto-reload add-on is required, but the PNG sidecar is also
-compatible with `Auto_Reload_Blender_addon` if you have it installed.
-
-Pure stdlib + numpy. No Pillow, no OpenCV.
+No external auto-reload add-on is required. The sidecar PNG remains compatible
+with external image-reload tools when the Python path is selected.
 """
+
+from __future__ import annotations
 
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 22),
+    "version": (0, 8, 23),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -45,11 +31,13 @@ from bpy.props import BoolProperty, FloatProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
 
+from . import native_bridge
 from .clip_loader import ClipFile, save_png
 
 
 CLIP_SOURCE_KEY = "clip_source"   # custom prop on Image: path to source .clip
 CLIP_MTIME_KEY = "clip_mtime"     # custom prop on Image: last-seen mtime (str)
+CLIP_NATIVE_KEY = native_bridge.CLIP_NATIVE_KEY
 ADDON_PKG = __package__
 
 
@@ -83,7 +71,12 @@ def _decode_clip_to_sidecar_png(clip_path: str) -> str:
     return png_path
 
 
-def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
+def _native_library_path() -> str | None:
+    path = getattr(_addon_prefs(), "native_library_path", "")
+    return path.strip() or None
+
+
+def _import_clip_as_sidecar_image(clip_path: str) -> bpy.types.Image:
     """Decode + sidecar + load. Returns a file-backed Blender Image.
     Synchronous (called from the import operator on the main thread).
     """
@@ -94,6 +87,21 @@ def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
     img[CLIP_SOURCE_KEY] = clip_path
     img[CLIP_MTIME_KEY] = str(os.path.getmtime(clip_path))
     return img
+
+
+def _import_clip_as_native_image(clip_path: str) -> bpy.types.Image:
+    return native_bridge.import_clip_as_image(
+        clip_path,
+        bpy_module=bpy,
+        library_path=_native_library_path(),
+        pack=True,
+    )
+
+
+def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
+    if _addon_prefs().use_native_renderer:
+        return _import_clip_as_native_image(clip_path)
+    return _import_clip_as_sidecar_image(clip_path)
 
 
 def _addon_prefs():
@@ -154,9 +162,21 @@ class IMAGE_OT_reload_clip_studio(Operator):
             self.report({"ERROR"}, f"Source .clip not found: {clip_path!r}")
             return {"CANCELLED"}
         try:
-            _decode_clip_to_sidecar_png(clip_path)
-            img[CLIP_MTIME_KEY] = str(os.path.getmtime(clip_path))
-            img.reload()
+            if img.get(CLIP_NATIVE_KEY):
+                result = native_bridge.render_clip_rgba8(
+                    clip_path,
+                    library_path=_native_library_path(),
+                )
+                native_bridge.create_or_update_image(
+                    bpy,
+                    result,
+                    image=img,
+                    pack=True,
+                )
+            else:
+                _decode_clip_to_sidecar_png(clip_path)
+                img[CLIP_MTIME_KEY] = str(os.path.getmtime(clip_path))
+                img.reload()
         except Exception as exc:
             self.report({"ERROR"}, f"Reload failed: {exc}")
             return {"CANCELLED"}
@@ -170,20 +190,34 @@ class IMAGE_OT_reload_clip_studio(Operator):
 # Threading model:
 #   - `_watcher_tick` runs on the MAIN thread (it's a bpy.app.timers callback).
 #     It only detects .clip mtime changes and spawns worker threads.
-#   - Worker threads run `_async_decode`: pure stdlib + numpy decode + write PNG.
-#     On success they `bpy.app.timers.register(_on_main, first_interval=0.0)`
-#     to hop the img.reload() back to the main thread with sub-frame latency.
+#   - Worker threads run `_async_decode`: either Python sidecar decode or
+#     native C ABI render. On success they register `_on_main` with a timer to
+#     apply Blender image updates on the main thread with sub-frame latency.
 #   - bpy.* state mutation only happens on the main thread.
 # --------------------------------------------------------------------------- #
 
-def _async_decode(clip_path: str, image_name: str):
-    """Worker-thread entry point. Decode the .clip → write PNG. Then schedule
-    an img.reload() back on the main thread immediately (no waiting for next
-    watcher tick).
+def _async_decode(
+    clip_path: str,
+    image_name: str,
+    *,
+    use_native: bool,
+    native_library_path: str | None,
+):
+    """Worker-thread entry point for sidecar decode or native render.
+
+    Blender image mutation is scheduled back onto the main thread immediately,
+    without waiting for the next watcher tick.
     """
     success = False
+    native_result = None
     try:
-        _decode_clip_to_sidecar_png(clip_path)
+        if use_native:
+            native_result = native_bridge.render_clip_rgba8(
+                clip_path,
+                library_path=native_library_path,
+            )
+        else:
+            _decode_clip_to_sidecar_png(clip_path)
         success = True
     except Exception as exc:
         print(f"[clip_studio_importer] async decode failed for {clip_path}: {exc}")
@@ -201,11 +235,19 @@ def _async_decode(clip_path: str, image_name: str):
     def _on_main():
         img = bpy.data.images.get(image_name)
         if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
-            try:
-                img[CLIP_MTIME_KEY] = str(os.path.getmtime(clip_path))
-            except OSError:
-                pass
-            img.reload()
+            if use_native and native_result is not None:
+                native_bridge.create_or_update_image(
+                    bpy,
+                    native_result,
+                    image=img,
+                    pack=True,
+                )
+            else:
+                try:
+                    img[CLIP_MTIME_KEY] = str(os.path.getmtime(clip_path))
+                except OSError:
+                    pass
+                img.reload()
             try:
                 if _addon_prefs().debug:
                     print(f"[clip_studio_importer] reloaded {clip_path}")
@@ -267,6 +309,10 @@ def _watcher_tick():
             threading.Thread(
                 target=_async_decode,
                 args=(clip_path, img.name),
+                kwargs={
+                    "use_native": bool(img.get(CLIP_NATIVE_KEY)),
+                    "native_library_path": _native_library_path(),
+                },
                 daemon=True,
             ).start()
 
@@ -312,6 +358,17 @@ class CSI_AddonPreferences(AddonPreferences):
         description="Print extra info to the system console.",
         default=False,
     )
+    use_native_renderer: BoolProperty(
+        name="Use native renderer",
+        description="Import .clip files through the Rust C ABI without writing sidecar PNGs.",
+        default=False,
+    )
+    native_library_path: StringProperty(
+        name="Native renderer library",
+        description="Path to clip_capi.dll, libclip_capi.so, or libclip_capi.dylib.",
+        default="",
+        subtype="FILE_PATH",
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -320,6 +377,10 @@ class CSI_AddonPreferences(AddonPreferences):
         row.enabled = self.auto_reload
         row.prop(self, "poll_interval")
         layout.prop(self, "debug")
+        layout.prop(self, "use_native_renderer")
+        native_row = layout.row()
+        native_row.enabled = self.use_native_renderer
+        native_row.prop(self, "native_library_path")
         layout.label(
             text="Save a .clip in CSP — Blender's UI stays responsive while it decodes in the background.",
             icon="INFO",
@@ -342,8 +403,13 @@ class IMAGE_PT_clip_studio(Panel):
         img = context.space_data.image
         layout = self.layout
         clip_path = img.get(CLIP_SOURCE_KEY, "")
+        is_native = bool(img.get(CLIP_NATIVE_KEY))
         layout.label(text=f"Source: {os.path.basename(clip_path)}")
-        layout.label(text=f"PNG: {os.path.basename(img.filepath)}")
+        layout.label(text="Mode: Native renderer" if is_native else "Mode: Sidecar PNG")
+        if is_native:
+            layout.label(text=f"Status: {img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, 'unknown')}")
+        else:
+            layout.label(text=f"PNG: {os.path.basename(img.filepath)}")
         layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, icon="FILE_REFRESH")
         prefs = _addon_prefs()
         layout.prop(prefs, "auto_reload", text="Auto-reload on .clip change")

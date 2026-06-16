@@ -632,6 +632,11 @@ Persistence rules:
   - `rizum_clip_height`
   - `rizum_clip_renderer_version`
   - `rizum_clip_reload_status`
+- The current add-on bridge reuses the existing `clip_source` / `clip_mtime`
+  keys for panel/watch integration and adds native-specific keys such as
+  `clip_native_renderer`, `clip_renderer_abi`, and `clip_reload_status`. This is
+  Blender add-on state, not a native runtime API; a final accepted native path
+  may migrate property names while deleting the sidecar workflow.
 - On Blender `load_post`, the add-on scans images with `rizum_clip_source`. If
   the source exists and is newer/different, it asks the native runtime to render
   and updates the image pixels. If the source is missing, it keeps the packed
