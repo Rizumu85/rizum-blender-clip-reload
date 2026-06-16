@@ -23,6 +23,8 @@ mod source_crop;
 mod stack_plan;
 mod support;
 mod tile_silo_estimate;
+mod tile_silo_occupancy;
+mod tile_silo_options;
 
 pub use error::RuntimeError;
 pub use results::{

@@ -109,11 +109,15 @@ CHNKExta compressed/empty block split is the stronger signal.
 Sample estimates with `tile_size=256`:
 
 - `Test_RealArt.clip`: raster metadata slots `131712`, raster compressed tiles
-  `2220`, raster empty tiles `129492`, mask compressed tiles `223`, semantic
-  barriers `67`, collapsible raster/clipping segments `75`.
+  `2220`, compressed raster tile events `2220` across `237` active canvas
+  tiles (`max=60`, `mean=9.37`), raster empty tiles `129492`, mask compressed
+  tiles `223`, semantic barriers `67`, collapsible raster/clipping segments
+  `75`.
 - `Ref_Terra404_Live2D.clip`: raster metadata slots `326040`, raster compressed
-  tiles `4826`, raster empty tiles `321214`, mask compressed tiles `2052`,
-  semantic barriers `220`, collapsible raster/clipping segments `178`.
+  tiles `4826`, compressed raster tile events `4826` across `361` active
+  canvas tiles (`max=123`, `mean=13.37`), raster empty tiles `321214`, mask
+  compressed tiles `2052`, semantic barriers `220`, collapsible
+  raster/clipping segments `178`.
 - `Ref_绫音Aya_Live2D.clip`: raster metadata slots `55575`, raster compressed
   tiles `924`, raster empty tiles `54651`, mask compressed tiles `2`, semantic
   barriers `47`, collapsible raster/clipping segments `42`.
@@ -160,6 +164,22 @@ Verification after the milestone:
 Next quantity-level work is tile-local work lists and pass collapse for
 raster/clipping stretches. Filters, THROUGH groups, and isolated containers
 remain semantic barriers until faithful tile-local models exist.
+
+## Compressed Occupancy Planner
+
+The tile-silo diagnostic now has the first Silicate-shaped planner input:
+`clip_file::external` can enumerate compressed CHNKExta tile coordinates
+without inflating pixel payloads, and `clip_runtime` projects those source tile
+coordinates through raster offsets into canvas tile event counts. The old
+metadata rectangle count is kept for comparison; the new compressed event count
+is the exact sparse work-list signal for an atlas renderer.
+
+This does not change the main renderer yet. Its purpose is to make the next
+milestone measurable: atlas-backed raster/mask tile storage plus per-canvas-tile
+ordered source events for raster/clipping stretches. RealArt and Terra both show
+two orders of magnitude fewer compressed raster tile events than metadata raster
+tile events, so this remains a quantity-level optimization direction rather
+than local pass tuning.
 
 ## Worker Setup Optimization
 

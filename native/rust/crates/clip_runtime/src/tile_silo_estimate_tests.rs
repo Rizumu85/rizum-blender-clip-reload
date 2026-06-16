@@ -17,6 +17,10 @@ fn estimates_clipping_sample_without_rendering() {
     assert_eq!(estimate.raster_source_count, 2);
     assert_eq!(estimate.clipping_run_count, 1);
     assert!(estimate.raster_tile_event_count >= 4);
+    assert!(estimate.compressed_raster_tile_event_count > 0);
+    assert!(estimate.compressed_raster_tile_event_count <= estimate.raster_tile_event_count);
+    assert!(estimate.active_compressed_canvas_tile_count > 0);
+    assert!(estimate.active_compressed_canvas_tile_count <= estimate.active_canvas_tile_count);
     assert!(estimate.collapsible_segment_count >= 1);
 }
 

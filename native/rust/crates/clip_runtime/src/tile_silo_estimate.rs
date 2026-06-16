@@ -3,13 +3,10 @@ use std::collections::HashSet;
 use clip_gpu::{GpuClippedStackSource, GpuMaskResourceKey, GpuNormalStackSource};
 use clip_model::CanvasSize;
 
-use clip_file::tiles::{
-    GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES,
-    alpha_tile_blob_len, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len, rgba_tile_blob_len,
-};
-
 use crate::results::NativeTileSiloEstimateResult;
-use crate::stack_plan::{GpuRenderStackSelection, StrictRasterStackOptions};
+use crate::stack_plan::GpuRenderStackSelection;
+use crate::tile_silo_occupancy;
+use crate::tile_silo_options::tile_silo_options;
 use crate::{ClipSession, RuntimeError, source_crop};
 
 impl ClipSession {
@@ -34,44 +31,11 @@ impl ClipSession {
     }
 }
 
-fn tile_silo_options() -> StrictRasterStackOptions {
-    StrictRasterStackOptions {
-        allow_alpha_compositing: true,
-        allow_paper: true,
-        allow_layer_opacity: true,
-        allow_masks: true,
-        allow_clipping_runs: true,
-        allow_container_isolation: true,
-        allow_through_groups: true,
-        allow_add_blend: true,
-        allow_add_glow_blend: true,
-        allow_color_burn_blend: true,
-        allow_color_dodge_blend: true,
-        allow_extended_blends: true,
-        allow_glow_dodge_blend: true,
-        allow_hard_mix_blend: true,
-        allow_hsl_blends: true,
-        allow_simple_blends: true,
-        allow_soft_light_blend: true,
-        allow_lut_filters: true,
-        allow_vivid_light_blend: true,
-        allow_w3c_blends: true,
-        allow_initial_terminal_container_elision: true,
-    }
-}
-
-fn tile_cols(width: u32) -> Result<usize, RuntimeError> {
-    let cols = width
-        .checked_add(clip_file::tiles::TILE_SIZE as u32 - 1)
-        .map(|width| width / clip_file::tiles::TILE_SIZE as u32)
-        .ok_or(clip_file::ClipFileError::TileSizeOverflow)?;
-    Ok(usize::try_from(cols).map_err(|_| clip_file::ClipFileError::TileSizeOverflow)?)
-}
-
 struct TileSiloEstimateBuilder<'a> {
     session: &'a ClipSession,
     result: NativeTileSiloEstimateResult,
     raster_events_by_tile: Vec<u32>,
+    compressed_raster_events_by_tile: Vec<u32>,
     seen_rasters: HashSet<clip_gpu::GpuRasterResourceKey>,
     seen_masks: HashSet<GpuMaskResourceKey>,
 }
@@ -120,16 +84,21 @@ impl<'a> TileSiloEstimateBuilder<'a> {
                 mask_empty_tile_slot_count: 0,
                 external_compressed_bytes: 0,
                 raster_tile_event_count: 0,
+                compressed_raster_tile_event_count: 0,
                 solid_tile_event_count: 0,
                 active_canvas_tile_count: 0,
                 max_raster_events_per_tile: 0,
                 mean_raster_events_per_active_tile: 0.0,
+                active_compressed_canvas_tile_count: 0,
+                max_compressed_raster_events_per_tile: 0,
+                mean_compressed_raster_events_per_active_tile: 0.0,
                 collapsible_segment_count: 0,
                 collapsible_source_event_count: 0,
                 semantic_barrier_count: 0,
                 unsupported_count,
             },
             raster_events_by_tile: vec![0; tile_slots],
+            compressed_raster_events_by_tile: vec![0; tile_slots],
             seen_rasters: HashSet::new(),
             seen_masks: HashSet::new(),
         })
@@ -293,10 +262,19 @@ impl<'a> TileSiloEstimateBuilder<'a> {
             true,
         )?;
         self.result.raster_tile_event_count += tile_count;
+        let block_inspection = tile_silo_occupancy::inspect_raster_blocks(self.session, metadata)?;
+        tile_silo_occupancy::add_compressed_raster_tile_events(
+            &mut self.compressed_raster_events_by_tile,
+            self.result.canvas,
+            self.result.canvas_tiles_x,
+            self.result.tile_size,
+            metadata,
+            &block_inspection.compressed_tiles,
+        )?;
         if self.seen_rasters.insert(source.key) {
             self.result.unique_raster_resource_count += 1;
             self.result.raster_tile_slot_count += tile_count;
-            self.add_raster_block_stats(metadata)?;
+            self.add_raster_block_stats(block_inspection.stats);
         }
         Ok(())
     }
@@ -322,84 +300,17 @@ impl<'a> TileSiloEstimateBuilder<'a> {
             metadata.offset_y,
             false,
         )?;
-        self.add_mask_block_stats(metadata)?;
-        Ok(())
-    }
-
-    fn add_raster_block_stats(
-        &mut self,
-        source: &clip_file::metadata::RasterLayerSource,
-    ) -> Result<(), RuntimeError> {
-        let color_type = source.color_type.unwrap_or(0);
-        let (expected_len, per_tile_len) = match color_type {
-            0 => (
-                rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
-                RGBA_TILE_BYTES,
-            ),
-            1 => (
-                gray_rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
-                GRAY_RGBA_TILE_BYTES,
-            ),
-            2 => (
-                mono_rgba_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?,
-                MONO_RGBA_TILE_BYTES,
-            ),
-            _ => {
-                return Err(clip_file::ClipFileError::UnsupportedLayerColorType {
-                    layer_id: source.layer.id,
-                    color_type: source.color_type,
-                }
-                .into());
-            }
-        };
-        let stats = self.inspect_source_blocks(
-            &source.external_id,
-            source.pixel_size.width,
-            per_tile_len,
-            expected_len,
-        )?;
-        self.result.raster_compressed_tile_slot_count += stats.compressed_block_count as u64;
-        self.result.raster_empty_tile_slot_count += stats.empty_block_count as u64;
-        self.result.external_compressed_bytes += stats.compressed_bytes;
-        Ok(())
-    }
-
-    fn add_mask_block_stats(
-        &mut self,
-        source: &clip_file::metadata::MaskLayerSource,
-    ) -> Result<(), RuntimeError> {
-        let expected_len = alpha_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?;
-        let stats = self.inspect_source_blocks(
-            &source.external_id,
-            source.pixel_size.width,
-            MASK_TILE_BYTES,
-            expected_len,
-        )?;
+        let stats = tile_silo_occupancy::inspect_mask_block_stats(self.session, metadata)?;
         self.result.mask_compressed_tile_slot_count += stats.compressed_block_count as u64;
         self.result.mask_empty_tile_slot_count += stats.empty_block_count as u64;
         self.result.external_compressed_bytes += stats.compressed_bytes;
         Ok(())
     }
 
-    fn inspect_source_blocks(
-        &self,
-        external_id: &str,
-        source_width: u32,
-        per_tile_len: usize,
-        expected_len: usize,
-    ) -> Result<clip_file::external::ExternalTileBlockStats, RuntimeError> {
-        let body = self
-            .session
-            .container
-            .external_data_body(external_id)
-            .ok_or_else(|| clip_file::ClipFileError::MissingExternalData(external_id.to_owned()))?;
-        let expected_tile_count = expected_len / per_tile_len;
-        Ok(clip_file::external::inspect_external_tile_blocks(
-            body,
-            per_tile_len,
-            expected_tile_count,
-            tile_cols(source_width)?,
-        )?)
+    fn add_raster_block_stats(&mut self, stats: clip_file::external::ExternalTileBlockStats) {
+        self.result.raster_compressed_tile_slot_count += stats.compressed_block_count as u64;
+        self.result.raster_empty_tile_slot_count += stats.empty_block_count as u64;
+        self.result.external_compressed_bytes += stats.compressed_bytes;
     }
 
     fn source_tile_count(
@@ -467,6 +378,25 @@ impl<'a> TileSiloEstimateBuilder<'a> {
         if self.result.active_canvas_tile_count > 0 {
             self.result.mean_raster_events_per_active_tile =
                 active_event_total as f64 / self.result.active_canvas_tile_count as f64;
+        }
+
+        let mut active_compressed_event_total = 0u64;
+        for events in self.compressed_raster_events_by_tile {
+            if events == 0 {
+                continue;
+            }
+            self.result.active_compressed_canvas_tile_count += 1;
+            self.result.max_compressed_raster_events_per_tile = self
+                .result
+                .max_compressed_raster_events_per_tile
+                .max(events);
+            active_compressed_event_total += u64::from(events);
+        }
+        self.result.compressed_raster_tile_event_count = active_compressed_event_total;
+        if self.result.active_compressed_canvas_tile_count > 0 {
+            self.result.mean_compressed_raster_events_per_active_tile =
+                active_compressed_event_total as f64
+                    / self.result.active_compressed_canvas_tile_count as f64;
         }
         self.result
     }

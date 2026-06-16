@@ -13,6 +13,12 @@ pub struct ExternalTileBlockStats {
     pub compressed_tile_bounds: Option<ExternalTileBlockBounds>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalTileBlockInspection {
+    pub stats: ExternalTileBlockStats,
+    pub compressed_tiles: Vec<ExternalCompressedTile>,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ExternalTileBlockBounds {
     pub tile_x: usize,
@@ -21,17 +27,52 @@ pub struct ExternalTileBlockBounds {
     pub tile_height: usize,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ExternalCompressedTile {
+    pub tile_index: usize,
+    pub tile_x: usize,
+    pub tile_y: usize,
+    pub compressed_bytes: usize,
+}
+
 pub fn inspect_external_tile_blocks(
     body: &[u8],
     per_tile_len: usize,
     expected_tile_count: usize,
     tile_cols: usize,
 ) -> Result<ExternalTileBlockStats, ClipFileError> {
+    Ok(inspect_external_tile_blocks_inner(
+        body,
+        per_tile_len,
+        expected_tile_count,
+        tile_cols,
+        false,
+    )?
+    .stats)
+}
+
+pub fn inspect_external_tile_blocks_with_compressed_tiles(
+    body: &[u8],
+    per_tile_len: usize,
+    expected_tile_count: usize,
+    tile_cols: usize,
+) -> Result<ExternalTileBlockInspection, ClipFileError> {
+    inspect_external_tile_blocks_inner(body, per_tile_len, expected_tile_count, tile_cols, true)
+}
+
+fn inspect_external_tile_blocks_inner(
+    body: &[u8],
+    per_tile_len: usize,
+    expected_tile_count: usize,
+    tile_cols: usize,
+    collect_compressed_tiles: bool,
+) -> Result<ExternalTileBlockInspection, ClipFileError> {
     if tile_cols == 0 {
         return Err(ClipFileError::TileSizeOverflow);
     }
 
     let mut bounds = CompressedTileBoundsBuilder::default();
+    let mut compressed_tiles = Vec::new();
     let mut stats = ExternalTileBlockStats {
         external_id: String::new(),
         block_count: 0,
@@ -70,6 +111,14 @@ pub fn inspect_external_tile_blocks(
                     .checked_add(compressed.len() as u64)
                     .ok_or(ClipFileError::TileSizeOverflow)?;
                 bounds.include(block.index, tile_cols);
+                if collect_compressed_tiles {
+                    compressed_tiles.push(ExternalCompressedTile {
+                        tile_index: block.index,
+                        tile_x: block.index % tile_cols,
+                        tile_y: block.index / tile_cols,
+                        compressed_bytes: compressed.len(),
+                    });
+                }
             }
             ExternalBlockPayload::Empty => {
                 stats.empty_block_count = stats
@@ -91,7 +140,10 @@ pub fn inspect_external_tile_blocks(
 
     stats.external_id = visited.external_id;
     stats.compressed_tile_bounds = bounds.finish();
-    Ok(stats)
+    Ok(ExternalTileBlockInspection {
+        stats,
+        compressed_tiles,
+    })
 }
 
 #[derive(Default)]

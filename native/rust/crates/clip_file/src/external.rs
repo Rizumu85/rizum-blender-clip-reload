@@ -11,7 +11,11 @@ use crate::ClipFileError;
 use crate::tile_region::TileBlockSelection;
 use reader::{read_be_u32, read_be_u64, read_le_u32, read_utf16_be, skip};
 pub use selection::decode_external_tile_blocks;
-pub use stats::{ExternalTileBlockBounds, ExternalTileBlockStats, inspect_external_tile_blocks};
+pub use stats::{
+    ExternalCompressedTile, ExternalTileBlockBounds, ExternalTileBlockInspection,
+    ExternalTileBlockStats, inspect_external_tile_blocks,
+    inspect_external_tile_blocks_with_compressed_tiles,
+};
 pub use types::{ExternalTileBlob, ExternalTileBlock, ExternalTileBlocks};
 
 const BLOCK_NAME_MARKER: u32 = 0x0042_006c;

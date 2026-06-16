@@ -6,6 +6,7 @@ use clip_model::Rect;
 
 use super::{
     decode_external_tile_blocks, inspect_external_tile_blocks,
+    inspect_external_tile_blocks_with_compressed_tiles,
     visit_external_non_empty_tile_block_selection, visit_external_tile_block_selection,
 };
 use crate::tile_region::tile_block_selection_for_region;
@@ -87,6 +88,32 @@ fn block_stats_do_not_inflate_compressed_blocks() {
     assert_eq!(bounds.tile_y, 0);
     assert_eq!(bounds.tile_width, 2);
     assert_eq!(bounds.tile_height, 1);
+}
+
+#[test]
+fn compressed_tile_inspection_records_sparse_tile_coordinates_without_inflating() {
+    let body = external_body(&[
+        compressed_data_block(&[1, 2, 3, 4]),
+        empty_data_block(4),
+        corrupt_compressed_data_block(4),
+        empty_data_block(4),
+    ]);
+
+    let inspection = inspect_external_tile_blocks_with_compressed_tiles(&body, 4, 4, 2).unwrap();
+
+    assert_eq!(inspection.stats.external_id, "external");
+    assert_eq!(inspection.stats.block_count, 4);
+    assert_eq!(inspection.stats.compressed_block_count, 2);
+    assert_eq!(inspection.stats.empty_block_count, 2);
+    assert_eq!(inspection.compressed_tiles.len(), 2);
+    assert_eq!(inspection.compressed_tiles[0].tile_index, 0);
+    assert_eq!(inspection.compressed_tiles[0].tile_x, 0);
+    assert_eq!(inspection.compressed_tiles[0].tile_y, 0);
+    assert!(inspection.compressed_tiles[0].compressed_bytes > 0);
+    assert_eq!(inspection.compressed_tiles[1].tile_index, 2);
+    assert_eq!(inspection.compressed_tiles[1].tile_x, 0);
+    assert_eq!(inspection.compressed_tiles[1].tile_y, 1);
+    assert!(inspection.compressed_tiles[1].compressed_bytes > 0);
 }
 
 #[test]

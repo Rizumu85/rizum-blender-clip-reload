@@ -96,7 +96,10 @@ Current policy:
   `clip_cli --tile-silo-estimate` showed RealArt/Terra/Aya-class samples have
   canvas-sized raster metadata but very low compressed CHNKExta tile occupancy;
   the first implementation now uses those compressed-present bounds for sparse
-  decode/upload and empty-tile skipping. A follow-up source review of
+  decode/upload and empty-tile skipping. The diagnostic also projects exact
+  compressed source tiles into canvas tile events, giving the next atlas
+  renderer a concrete work-list target instead of a metadata rectangle guess.
+  A follow-up source review of
   Avarel/silicate confirms that the next order-of-magnitude milestone is
   per-canvas-tile ordered work lists from the strict render plan plus
   atlas-backed raster/mask tile storage, then collapsing raster/clipping

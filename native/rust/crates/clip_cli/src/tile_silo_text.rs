@@ -58,6 +58,13 @@ pub(crate) fn tile_silo_estimate_text(
         estimate.mean_raster_events_per_active_tile,
     ));
     lines.push(format!(
+        "  compressed tile events raster_tile_events={} active_tiles={} max_raster_events_per_tile={} mean_raster_events_per_active_tile={:.2}",
+        estimate.compressed_raster_tile_event_count,
+        estimate.active_compressed_canvas_tile_count,
+        estimate.max_compressed_raster_events_per_tile,
+        estimate.mean_compressed_raster_events_per_active_tile,
+    ));
+    lines.push(format!(
         "  collapse estimate collapsible_segments={} collapsible_source_events={} semantic_barriers={}",
         estimate.collapsible_segment_count,
         estimate.collapsible_source_event_count,
@@ -86,6 +93,7 @@ mod tests {
 
         assert!(report.contains("tile-silo estimate canvas=512x512 tile_size=256"));
         assert!(report.contains("source kinds rasters=2"));
+        assert!(report.contains("compressed tile events"));
         assert!(report.contains("collapse estimate"));
     }
 }
