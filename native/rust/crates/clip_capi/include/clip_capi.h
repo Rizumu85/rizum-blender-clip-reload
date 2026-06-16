@@ -19,6 +19,7 @@ typedef enum ClipRendererStatus {
     ClipRendererStatus_OpenFailed = 3,
     ClipRendererStatus_InvalidRegion = 4,
     ClipRendererStatus_ReadFailed = 5,
+    ClipRendererStatus_BufferTooSmall = 6,
 } ClipRendererStatus;
 
 typedef struct ClipRendererImageInfo {
@@ -28,6 +29,23 @@ typedef struct ClipRendererImageInfo {
     size_t layer_count;
     size_t external_data_count;
 } ClipRendererImageInfo;
+
+typedef struct ClipRendererSupportInfo {
+    size_t source_count;
+    size_t unsupported_count;
+    size_t raster_count;
+    uint64_t raster_bytes;
+    uint32_t max_raster_layer_id;
+    uint32_t max_raster_width;
+    uint32_t max_raster_height;
+    uint64_t max_raster_bytes;
+    size_t mask_count;
+    uint64_t mask_bytes;
+    uint32_t max_mask_layer_id;
+    uint32_t max_mask_width;
+    uint32_t max_mask_height;
+    uint64_t max_mask_bytes;
+} ClipRendererSupportInfo;
 
 uint32_t clip_renderer_abi_version(void);
 
@@ -51,6 +69,13 @@ ClipRendererStatus clip_renderer_session_read_rgba8(
     uint32_t height,
     uint8_t* out_pixels,
     size_t out_len);
+
+ClipRendererStatus clip_renderer_session_support_info(
+    ClipRendererSession* session,
+    ClipRendererSupportInfo* out_info,
+    char* out_report,
+    size_t report_len,
+    size_t* out_required_report_len);
 
 #ifdef __cplusplus
 }

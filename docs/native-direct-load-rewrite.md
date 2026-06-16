@@ -168,6 +168,10 @@ Result:
   render failures store `clip_reload_status=error` plus `clip_reload_error`,
   successful renders clear old errors, missing sources store `missing_source`,
   and the Image Editor panel displays readable status/error messages.
+- `clip_renderer_session_support_info` exposes the runtime metadata-only support
+  selector through the C ABI. The Python bridge stores support status, source
+  count, unsupported count, raster/mask resource counts, and a short support
+  report on the Blender image, and the Image Editor panel displays that summary.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -177,7 +181,7 @@ Result:
 Remaining bridge work:
 
 - Improve user-facing diagnostics for native render failures and unsupported
-  layer semantics beyond the current image-level status/error display.
+  layer semantics beyond the current image-level status/error/support summary.
 
 ## Completed Third Milestone Foundation
 

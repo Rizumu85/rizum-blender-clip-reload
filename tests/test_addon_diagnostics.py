@@ -110,6 +110,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
             addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_ERROR,
             addon.native_bridge.CLIP_RELOAD_ERROR_KEY: "native renderer failed loudly",
+            addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_UNSUPPORTED,
+            addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "2 unsupported node(s); first layer 9 node 4 Filter",
         }
         panel = addon.IMAGE_PT_clip_studio()
         panel.layout = FakeLayout()
@@ -119,6 +121,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
 
         labels = [label for label, _icon in panel.layout.labels]
         self.assertIn("Status: Render failed", labels)
+        self.assertIn("Native support: Unsupported nodes", labels)
+        self.assertIn("2 unsupported node(s); first layer 9 node 4 Filter", labels)
         self.assertIn("Error: native renderer failed loudly", labels)
 
     def test_status_label_shortens_unknown_values(self) -> None:
@@ -129,6 +133,10 @@ class AddonDiagnosticsTests(unittest.TestCase):
             "Source missing",
         )
         self.assertEqual(addon._reload_status_label("future_status"), "Unknown")
+        self.assertEqual(
+            addon._support_status_label(addon.native_bridge.SUPPORT_STATUS_FULL),
+            "Full native support",
+        )
         self.assertLessEqual(len(addon._short_diagnostic("x" * 200)), 120)
 
 

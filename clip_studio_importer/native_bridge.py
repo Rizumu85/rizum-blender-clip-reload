@@ -21,12 +21,24 @@ CLIP_LAYER_COUNT_KEY = "clip_layer_count"
 CLIP_EXTERNAL_COUNT_KEY = "clip_external_data_count"
 CLIP_RELOAD_STATUS_KEY = "clip_reload_status"
 CLIP_RELOAD_ERROR_KEY = "clip_reload_error"
+CLIP_SUPPORT_STATUS_KEY = "clip_support_status"
+CLIP_SUPPORT_REPORT_KEY = "clip_support_report"
+CLIP_SUPPORT_SOURCE_COUNT_KEY = "clip_support_source_count"
+CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY = "clip_support_unsupported_count"
+CLIP_SUPPORT_RASTER_COUNT_KEY = "clip_support_raster_count"
+CLIP_SUPPORT_RASTER_BYTES_KEY = "clip_support_raster_bytes"
+CLIP_SUPPORT_MASK_COUNT_KEY = "clip_support_mask_count"
+CLIP_SUPPORT_MASK_BYTES_KEY = "clip_support_mask_bytes"
 
 RELOAD_STATUS_OK = "ok"
 RELOAD_STATUS_STALE = "stale_source"
 RELOAD_STATUS_MISSING = "missing_source"
 RELOAD_STATUS_REFRESHING = "refreshing"
 RELOAD_STATUS_ERROR = "error"
+
+SUPPORT_STATUS_FULL = "full"
+SUPPORT_STATUS_UNSUPPORTED = "unsupported"
+SUPPORT_STATUS_UNKNOWN = "unknown"
 
 
 class NativeBridgeError(RuntimeError):
@@ -44,6 +56,18 @@ class NativeRenderResult:
     renderer_abi: int
     source_mtime: float | None
     pixels_rgba8: bytes
+    support_summary: "NativeSupportSummary | None" = None
+
+
+@dataclass(frozen=True)
+class NativeSupportSummary:
+    source_count: int
+    unsupported_count: int
+    raster_count: int
+    raster_bytes: int
+    mask_count: int
+    mask_bytes: int
+    report: str
 
 
 @dataclass(frozen=True)
@@ -62,6 +86,25 @@ class _ClipRendererImageInfo(ctypes.Structure):
         ("root_layer_id", ctypes.c_uint32),
         ("layer_count", ctypes.c_size_t),
         ("external_data_count", ctypes.c_size_t),
+    ]
+
+
+class _ClipRendererSupportInfo(ctypes.Structure):
+    _fields_ = [
+        ("source_count", ctypes.c_size_t),
+        ("unsupported_count", ctypes.c_size_t),
+        ("raster_count", ctypes.c_size_t),
+        ("raster_bytes", ctypes.c_uint64),
+        ("max_raster_layer_id", ctypes.c_uint32),
+        ("max_raster_width", ctypes.c_uint32),
+        ("max_raster_height", ctypes.c_uint32),
+        ("max_raster_bytes", ctypes.c_uint64),
+        ("mask_count", ctypes.c_size_t),
+        ("mask_bytes", ctypes.c_uint64),
+        ("max_mask_layer_id", ctypes.c_uint32),
+        ("max_mask_width", ctypes.c_uint32),
+        ("max_mask_height", ctypes.c_uint32),
+        ("max_mask_bytes", ctypes.c_uint64),
     ]
 
 
@@ -92,6 +135,7 @@ class NativeRendererLibrary:
             info = _ClipRendererImageInfo()
             status = self._dll.clip_renderer_session_info(session, ctypes.byref(info))
             self._raise_if_error(status, "read native clip info")
+            support_summary = self._support_summary(session)
 
             pixel_len = int(info.width) * int(info.height) * 4
             pixels = (ctypes.c_uint8 * pixel_len)()
@@ -121,6 +165,7 @@ class NativeRendererLibrary:
                 renderer_abi=self.abi_version,
                 source_mtime=source_mtime,
                 pixels_rgba8=bytes(pixels),
+                support_summary=support_summary,
             )
         finally:
             self._dll.clip_renderer_session_close(session)
@@ -157,6 +202,55 @@ class NativeRendererLibrary:
             ctypes.c_size_t,
         ]
         self._dll.clip_renderer_session_read_rgba8.restype = ctypes.c_int
+
+        try:
+            self._support_info_fn = self._dll.clip_renderer_session_support_info
+        except AttributeError:
+            self._support_info_fn = None
+        if self._support_info_fn is not None:
+            self._support_info_fn.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(_ClipRendererSupportInfo),
+                ctypes.c_char_p,
+                ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_size_t),
+            ]
+            self._support_info_fn.restype = ctypes.c_int
+
+    def _support_summary(self, session: ctypes.c_void_p) -> NativeSupportSummary | None:
+        if self._support_info_fn is None:
+            return None
+        info = _ClipRendererSupportInfo()
+        required_len = ctypes.c_size_t(0)
+        buffer_len = 4096
+        report = ctypes.create_string_buffer(buffer_len)
+        status = self._support_info_fn(
+            session,
+            ctypes.byref(info),
+            report,
+            buffer_len,
+            ctypes.byref(required_len),
+        )
+        if status == 6 and required_len.value > buffer_len:
+            buffer_len = int(required_len.value)
+            report = ctypes.create_string_buffer(buffer_len)
+            status = self._support_info_fn(
+                session,
+                ctypes.byref(info),
+                report,
+                buffer_len,
+                ctypes.byref(required_len),
+            )
+        self._raise_if_error(status, "read native support info")
+        return NativeSupportSummary(
+            source_count=int(info.source_count),
+            unsupported_count=int(info.unsupported_count),
+            raster_count=int(info.raster_count),
+            raster_bytes=int(info.raster_bytes),
+            mask_count=int(info.mask_count),
+            mask_bytes=int(info.mask_bytes),
+            report=report.value.decode("utf-8", errors="replace"),
+        )
 
     def _raise_if_error(self, status: int, action: str) -> None:
         if status == 0:
@@ -352,7 +446,27 @@ def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_ROOT_LAYER_KEY] = result.root_layer_id
     image[CLIP_LAYER_COUNT_KEY] = result.layer_count
     image[CLIP_EXTERNAL_COUNT_KEY] = result.external_data_count
+    _write_support_properties(image, result.support_summary)
     write_reload_status(image, RELOAD_STATUS_OK)
+
+
+def _write_support_properties(image: Any, summary: NativeSupportSummary | None) -> None:
+    if summary is None:
+        image[CLIP_SUPPORT_STATUS_KEY] = SUPPORT_STATUS_UNKNOWN
+        image[CLIP_SUPPORT_REPORT_KEY] = "Native support summary unavailable."
+        return
+    image[CLIP_SUPPORT_STATUS_KEY] = (
+        SUPPORT_STATUS_FULL
+        if summary.unsupported_count == 0
+        else SUPPORT_STATUS_UNSUPPORTED
+    )
+    image[CLIP_SUPPORT_REPORT_KEY] = summary.report
+    image[CLIP_SUPPORT_SOURCE_COUNT_KEY] = summary.source_count
+    image[CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY] = summary.unsupported_count
+    image[CLIP_SUPPORT_RASTER_COUNT_KEY] = summary.raster_count
+    image[CLIP_SUPPORT_RASTER_BYTES_KEY] = summary.raster_bytes
+    image[CLIP_SUPPORT_MASK_COUNT_KEY] = summary.mask_count
+    image[CLIP_SUPPORT_MASK_BYTES_KEY] = summary.mask_bytes
 
 
 def _clear_reload_error(image: Any) -> None:
@@ -393,4 +507,5 @@ def _status_name(status: int) -> str:
         3: "OpenFailed",
         4: "InvalidRegion",
         5: "ReadFailed",
+        6: "BufferTooSmall",
     }.get(status, f"status {status}")

@@ -21,6 +21,7 @@ pub enum ClipRendererStatus {
     OpenFailed = 3,
     InvalidRegion = 4,
     ReadFailed = 5,
+    BufferTooSmall = 6,
 }
 
 #[repr(C)]
@@ -31,6 +32,25 @@ pub struct ClipRendererImageInfo {
     pub root_layer_id: u32,
     pub layer_count: usize,
     pub external_data_count: usize,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ClipRendererSupportInfo {
+    pub source_count: usize,
+    pub unsupported_count: usize,
+    pub raster_count: usize,
+    pub raster_bytes: u64,
+    pub max_raster_layer_id: u32,
+    pub max_raster_width: u32,
+    pub max_raster_height: u32,
+    pub max_raster_bytes: u64,
+    pub mask_count: usize,
+    pub mask_bytes: u64,
+    pub max_mask_layer_id: u32,
+    pub max_mask_width: u32,
+    pub max_mask_height: u32,
+    pub max_mask_bytes: u64,
 }
 
 pub struct ClipRendererSession {
@@ -156,6 +176,101 @@ pub extern "C" fn clip_renderer_session_read_rgba8(
     }
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn clip_renderer_session_support_info(
+    session: *mut ClipRendererSession,
+    out_info: *mut ClipRendererSupportInfo,
+    out_report: *mut c_char,
+    report_len: usize,
+    out_required_report_len: *mut usize,
+) -> ClipRendererStatus {
+    clear_last_error();
+    if session.is_null() || out_info.is_null() {
+        set_last_error("session and out_info must be non-null");
+        return ClipRendererStatus::NullArgument;
+    }
+
+    let session = unsafe { &mut *session };
+    match session.inner.check_normal_raster_stack_support() {
+        Ok(result) => {
+            let stats = result.resource_stats;
+            unsafe {
+                *out_info = ClipRendererSupportInfo {
+                    source_count: result.source_count,
+                    unsupported_count: result.unsupported.len(),
+                    raster_count: stats.raster_count,
+                    raster_bytes: stats.raster_bytes,
+                    max_raster_layer_id: stats.max_raster_layer_id.map_or(0, |layer_id| layer_id.0),
+                    max_raster_width: stats.max_raster_width,
+                    max_raster_height: stats.max_raster_height,
+                    max_raster_bytes: stats.max_raster_bytes,
+                    mask_count: stats.mask_count,
+                    mask_bytes: stats.mask_bytes,
+                    max_mask_layer_id: stats.max_mask_layer_id.map_or(0, |layer_id| layer_id.0),
+                    max_mask_width: stats.max_mask_width,
+                    max_mask_height: stats.max_mask_height,
+                    max_mask_bytes: stats.max_mask_bytes,
+                };
+            }
+            write_support_report(
+                &support_report(result.source_count, &result.unsupported),
+                out_report,
+                report_len,
+                out_required_report_len,
+            )
+        }
+        Err(err) => {
+            set_last_runtime_error(&err);
+            ClipRendererStatus::ReadFailed
+        }
+    }
+}
+
+fn support_report(
+    source_count: usize,
+    unsupported: &[clip_runtime::SimpleRasterStackUnsupported],
+) -> String {
+    if unsupported.is_empty() {
+        return format!("Full native support for {source_count} source(s).");
+    }
+    let first = &unsupported[0];
+    format!(
+        "{} unsupported node(s); first layer {} node {} {:?}: {}",
+        unsupported.len(),
+        first.layer_id.0,
+        first.render_node_id.0,
+        first.kind,
+        first.reason,
+    )
+}
+
+fn write_support_report(
+    report: &str,
+    out_report: *mut c_char,
+    report_len: usize,
+    out_required_report_len: *mut usize,
+) -> ClipRendererStatus {
+    let bytes = report.as_bytes();
+    let required_len = bytes.len() + 1;
+    if !out_required_report_len.is_null() {
+        unsafe {
+            *out_required_report_len = required_len;
+        }
+    }
+    if out_report.is_null() || report_len == 0 {
+        return ClipRendererStatus::Ok;
+    }
+    if report_len < required_len {
+        set_last_error("support report buffer is too small");
+        return ClipRendererStatus::BufferTooSmall;
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(bytes.as_ptr(), out_report.cast::<u8>(), bytes.len());
+        *out_report.add(bytes.len()) = 0;
+    }
+    ClipRendererStatus::Ok
+}
+
 fn clear_last_error() {
     LAST_ERROR.with(|slot| {
         *slot.borrow_mut() = None;
@@ -213,6 +328,41 @@ mod tests {
             ClipRendererStatus::Ok,
         );
         assert_eq!(pixel, [226, 226, 226, 255]);
+
+        let mut support = ClipRendererSupportInfo {
+            source_count: 0,
+            unsupported_count: 0,
+            raster_count: 0,
+            raster_bytes: 0,
+            max_raster_layer_id: 0,
+            max_raster_width: 0,
+            max_raster_height: 0,
+            max_raster_bytes: 0,
+            mask_count: 0,
+            mask_bytes: 0,
+            max_mask_layer_id: 0,
+            max_mask_width: 0,
+            max_mask_height: 0,
+            max_mask_bytes: 0,
+        };
+        let mut report = [0i8; 128];
+        let mut required_report_len = 0usize;
+        assert_eq!(
+            clip_renderer_session_support_info(
+                session,
+                &mut support,
+                report.as_mut_ptr(),
+                report.len(),
+                &mut required_report_len,
+            ),
+            ClipRendererStatus::Ok,
+        );
+        assert!(support.source_count > 0);
+        assert_eq!(support.unsupported_count, 0);
+        assert!(support.raster_count > 0);
+        assert!(required_report_len > 1);
+        let report = unsafe { CStr::from_ptr(report.as_ptr()) }.to_str().unwrap();
+        assert!(report.contains("Full native support"));
 
         clip_renderer_session_close(session);
     }

@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 28),
+    "version": (0, 8, 29),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -83,6 +83,22 @@ def _reload_status_icon(status: str) -> str:
         native_bridge.RELOAD_STATUS_MISSING: "ERROR",
         native_bridge.RELOAD_STATUS_REFRESHING: "SORTTIME",
         native_bridge.RELOAD_STATUS_ERROR: "ERROR",
+    }.get(status, "INFO")
+
+
+def _support_status_label(status: str) -> str:
+    return {
+        native_bridge.SUPPORT_STATUS_FULL: "Full native support",
+        native_bridge.SUPPORT_STATUS_UNSUPPORTED: "Unsupported nodes",
+        native_bridge.SUPPORT_STATUS_UNKNOWN: "Support unknown",
+    }.get(status, "Support unknown")
+
+
+def _support_status_icon(status: str) -> str:
+    return {
+        native_bridge.SUPPORT_STATUS_FULL: "CHECKMARK",
+        native_bridge.SUPPORT_STATUS_UNSUPPORTED: "ERROR",
+        native_bridge.SUPPORT_STATUS_UNKNOWN: "INFO",
     }.get(status, "INFO")
 
 
@@ -452,6 +468,18 @@ class IMAGE_PT_clip_studio(Panel):
             text=f"Status: {_reload_status_label(status)}",
             icon=_reload_status_icon(status),
         )
+        support_status = img.get(native_bridge.CLIP_SUPPORT_STATUS_KEY, "")
+        if support_status:
+            layout.label(
+                text=f"Native support: {_support_status_label(support_status)}",
+                icon=_support_status_icon(support_status),
+            )
+            support_report = img.get(native_bridge.CLIP_SUPPORT_REPORT_KEY, "")
+            if support_report:
+                layout.label(
+                    text=_short_diagnostic(support_report),
+                    icon="INFO",
+                )
         if status == native_bridge.RELOAD_STATUS_MISSING:
             layout.label(text="Packed pixels are still visible.", icon="INFO")
         elif status == native_bridge.RELOAD_STATUS_ERROR:

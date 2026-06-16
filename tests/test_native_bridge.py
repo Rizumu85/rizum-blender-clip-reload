@@ -80,6 +80,15 @@ class FakeRenderer:
             renderer_abi=native_bridge.EXPECTED_ABI_VERSION,
             source_mtime=123.5,
             pixels_rgba8=bytes([0, 128, 255, 255]),
+            support_summary=native_bridge.NativeSupportSummary(
+                source_count=2,
+                unsupported_count=0,
+                raster_count=1,
+                raster_bytes=4,
+                mask_count=0,
+                mask_bytes=0,
+                report="Full native support for 2 source(s).",
+            ),
         )
 
 
@@ -108,6 +117,73 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_CANVAS_WIDTH_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_CANVAS_HEIGHT_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_STATUS_KEY],
+            native_bridge.SUPPORT_STATUS_FULL,
+        )
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_SOURCE_COUNT_KEY], 2)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY], 0)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY], 1)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY], 4)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY], 0)
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY], 0)
+        self.assertIn("Full native support", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
+
+    def test_update_records_unsupported_support_summary(self) -> None:
+        bpy = FakeBpy()
+        result = FakeRenderer().render_rgba8("sample.clip")
+        result = native_bridge.NativeRenderResult(
+            clip_path=result.clip_path,
+            width=result.width,
+            height=result.height,
+            root_layer_id=result.root_layer_id,
+            layer_count=result.layer_count,
+            external_data_count=result.external_data_count,
+            renderer_abi=result.renderer_abi,
+            source_mtime=result.source_mtime,
+            pixels_rgba8=result.pixels_rgba8,
+            support_summary=native_bridge.NativeSupportSummary(
+                source_count=3,
+                unsupported_count=2,
+                raster_count=1,
+                raster_bytes=4,
+                mask_count=1,
+                mask_bytes=2,
+                report="2 unsupported node(s); first layer 9 node 4 Filter: filter layer is not supported",
+            ),
+        )
+
+        image = native_bridge.create_or_update_image(bpy, result)
+
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_STATUS_KEY],
+            native_bridge.SUPPORT_STATUS_UNSUPPORTED,
+        )
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY], 2)
+        self.assertIn("first layer 9", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
+
+    def test_update_records_unknown_support_when_summary_unavailable(self) -> None:
+        bpy = FakeBpy()
+        result = FakeRenderer().render_rgba8("sample.clip")
+        result = native_bridge.NativeRenderResult(
+            clip_path=result.clip_path,
+            width=result.width,
+            height=result.height,
+            root_layer_id=result.root_layer_id,
+            layer_count=result.layer_count,
+            external_data_count=result.external_data_count,
+            renderer_abi=result.renderer_abi,
+            source_mtime=result.source_mtime,
+            pixels_rgba8=result.pixels_rgba8,
+        )
+
+        image = native_bridge.create_or_update_image(bpy, result)
+
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_STATUS_KEY],
+            native_bridge.SUPPORT_STATUS_UNKNOWN,
+        )
+        self.assertIn("unavailable", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
 
     def test_successful_update_clears_previous_reload_error(self) -> None:
         bpy = FakeBpy()
