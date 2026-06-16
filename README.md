@@ -6,7 +6,7 @@ The importer calls the Rust C ABI, uploads RGBA pixels into a generated Blender 
 
 ## Status
 
-Package version: `0.8.30`.
+Package version: `0.8.31`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
@@ -14,7 +14,7 @@ Implemented:
 - Observed CSP blend modes, plus current adjustment/filter-layer support used by the supplied samples.
 - Blender import, manual reload, non-blocking auto-reload, and packed-image freshness checks after opening a `.blend`.
 - Native renderer bridge for Blender generated images through packaged `clip_capi`.
-- Image-panel diagnostics for native render status, missing sources, render errors, native support summaries, and bounded unsupported-layer details.
+- Image-panel diagnostics for native render status, missing sources, render errors, native support summaries, and expandable unsupported-layer details.
 
 Known fidelity gaps:
 - Remaining native GPU differences are low-level formula/quantization cases on complex blend/filter samples.

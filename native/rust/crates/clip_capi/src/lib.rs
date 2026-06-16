@@ -234,16 +234,10 @@ fn support_report(
         return format!("Full native support for {source_count} source(s).");
     }
     let mut report = format!("{} unsupported node(s).", unsupported.len());
-    for item in unsupported.iter().take(8) {
+    for item in unsupported {
         report.push_str(&format!(
             "\n- layer {} node {} {:?}: {}",
             item.layer_id.0, item.render_node_id.0, item.kind, item.reason,
-        ));
-    }
-    if unsupported.len() > 8 {
-        report.push_str(&format!(
-            "\n- ... {} more unsupported node(s)",
-            unsupported.len() - 8,
         ));
     }
     report
@@ -373,7 +367,7 @@ mod tests {
     }
 
     #[test]
-    fn support_report_lists_bounded_unsupported_details() {
+    fn support_report_lists_all_unsupported_details() {
         use clip_graph::{RenderNodeId, RenderNodeKind};
         use clip_model::LayerId;
         use clip_runtime::{SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason};
@@ -396,7 +390,12 @@ mod tests {
         assert!(report.contains(
             "- layer 16 node 11 Filter: filter layer is not in the strict raster stack pass"
         ));
-        assert!(!report.contains("- layer 17 node 12"));
-        assert!(report.ends_with("- ... 2 more unsupported node(s)"));
+        assert!(report.contains(
+            "- layer 17 node 12 Filter: filter layer is not in the strict raster stack pass"
+        ));
+        assert!(report.contains(
+            "- layer 18 node 13 Filter: filter layer is not in the strict raster stack pass"
+        ));
+        assert!(!report.contains("more unsupported node(s)"));
     }
 }

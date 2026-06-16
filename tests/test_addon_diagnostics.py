@@ -90,17 +90,17 @@ def _load_addon_module():
 class FakeLayout:
     def __init__(self) -> None:
         self.labels: list[tuple[str, str | None]] = []
-        self.operators: list[str] = []
-        self.props: list[str] = []
+        self.operators: list[tuple[str, dict]] = []
+        self.props: list[tuple[str, dict]] = []
 
     def label(self, *, text: str, icon: str | None = None) -> None:
         self.labels.append((text, icon))
 
-    def operator(self, operator_id: str, *, icon: str | None = None) -> None:
-        self.operators.append(operator_id)
+    def operator(self, operator_id: str, **kwargs) -> None:
+        self.operators.append((operator_id, kwargs))
 
-    def prop(self, _owner, property_name: str, **_kwargs) -> None:
-        self.props.append(property_name)
+    def prop(self, _owner, property_name: str, **kwargs) -> None:
+        self.props.append((property_name, kwargs))
 
 
 class AddonDiagnosticsTests(unittest.TestCase):
@@ -114,7 +114,11 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "2 unsupported node(s).",
             addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
                 "- layer 9 node 4 Filter\n"
-                "- layer 10 node 5 Raster"
+                "- layer 10 node 5 Raster\n"
+                "- layer 11 node 6 Filter\n"
+                "- layer 12 node 7 Raster\n"
+                "- layer 13 node 8 Filter\n"
+                "- layer 14 node 9 Raster"
             ),
         }
         panel = addon.IMAGE_PT_clip_studio()
@@ -129,7 +133,62 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("2 unsupported node(s).", labels)
         self.assertIn("- layer 9 node 4 Filter", labels)
         self.assertIn("- layer 10 node 5 Raster", labels)
+        self.assertIn("- layer 11 node 6 Filter", labels)
+        self.assertIn("- layer 12 node 7 Raster", labels)
+        self.assertNotIn("- layer 13 node 8 Filter", labels)
+        self.assertNotIn("- layer 14 node 9 Raster", labels)
+        self.assertIn("2 more unsupported item(s)", labels)
         self.assertIn("Error: native renderer failed loudly", labels)
+        self.assertIn(
+            (
+                addon.IMAGE_OT_toggle_clip_support_details.bl_idname,
+                {"text": "Show all unsupported details", "icon": "TRIA_RIGHT"},
+            ),
+            panel.layout.operators,
+        )
+        self.assertNotIn(addon.CLIP_SUPPORT_DETAILS_EXPANDED_KEY, image)
+
+    def test_panel_expands_all_support_details(self) -> None:
+        addon = _load_addon_module()
+        image = {
+            addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+            addon.CLIP_SUPPORT_DETAILS_EXPANDED_KEY: True,
+            addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_OK,
+            addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_UNSUPPORTED,
+            addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "5 unsupported node(s).",
+            addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: "\n".join(
+                f"- layer {index} node {index + 1} Filter" for index in range(1, 6)
+            ),
+        }
+        panel = addon.IMAGE_PT_clip_studio()
+        panel.layout = FakeLayout()
+        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+
+        panel.draw(context)
+
+        labels = [label for label, _icon in panel.layout.labels]
+        self.assertIn("- layer 1 node 2 Filter", labels)
+        self.assertIn("- layer 5 node 6 Filter", labels)
+        self.assertNotIn("1 more unsupported item(s)", labels)
+        self.assertIn(
+            (
+                addon.IMAGE_OT_toggle_clip_support_details.bl_idname,
+                {"text": "Show fewer unsupported details", "icon": "TRIA_DOWN"},
+            ),
+            panel.layout.operators,
+        )
+
+    def test_toggle_support_details_operator_flips_image_state(self) -> None:
+        addon = _load_addon_module()
+        image = {addon.CLIP_SOURCE_KEY: "C:/art/sample.clip"}
+        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+        operator = addon.IMAGE_OT_toggle_clip_support_details()
+
+        self.assertEqual(operator.execute(context), {"FINISHED"})
+        self.assertTrue(image[addon.CLIP_SUPPORT_DETAILS_EXPANDED_KEY])
+
+        self.assertEqual(operator.execute(context), {"FINISHED"})
+        self.assertFalse(image[addon.CLIP_SUPPORT_DETAILS_EXPANDED_KEY])
 
     def test_status_label_shortens_unknown_values(self) -> None:
         addon = _load_addon_module()

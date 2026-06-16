@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 30),
+    "version": (0, 8, 31),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -35,6 +35,8 @@ from . import native_bridge
 CLIP_SOURCE_KEY = "clip_source"   # custom prop on Image: path to source .clip
 CLIP_MTIME_KEY = "clip_mtime"     # custom prop on Image: last-seen mtime (str)
 CLIP_NATIVE_KEY = native_bridge.CLIP_NATIVE_KEY
+CLIP_SUPPORT_DETAILS_EXPANDED_KEY = "clip_support_details_expanded"
+SUPPORT_DETAIL_PREVIEW_LINES = 4
 ADDON_PKG = __package__
 
 
@@ -210,6 +212,26 @@ class IMAGE_OT_reload_clip_studio(Operator):
             self.report({"ERROR"}, f"Reload failed: {exc}")
             return {"CANCELLED"}
         self.report({"INFO"}, f"Reloaded {os.path.basename(clip_path)}")
+        return {"FINISHED"}
+
+
+class IMAGE_OT_toggle_clip_support_details(Operator):
+    """Toggle the support-detail list for the selected .clip image."""
+    bl_idname = "image.toggle_clip_support_details"
+    bl_label = "Toggle Support Details"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        space = getattr(context, "space_data", None)
+        img = getattr(space, "image", None) if space else None
+        return img is not None and CLIP_SOURCE_KEY in img.keys()
+
+    def execute(self, context):
+        img = context.space_data.image
+        img[CLIP_SUPPORT_DETAILS_EXPANDED_KEY] = not bool(
+            img.get(CLIP_SUPPORT_DETAILS_EXPANDED_KEY, False)
+        )
         return {"FINISHED"}
 
 
@@ -482,14 +504,34 @@ class IMAGE_PT_clip_studio(Panel):
                 )
             support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
             detail_lines = [line for line in str(support_details).splitlines() if line]
-            for detail in detail_lines[:4]:
+            expanded = bool(img.get(CLIP_SUPPORT_DETAILS_EXPANDED_KEY, False))
+            visible_details = (
+                detail_lines
+                if expanded
+                else detail_lines[:SUPPORT_DETAIL_PREVIEW_LINES]
+            )
+            for detail in visible_details:
                 layout.label(
                     text=_short_diagnostic(detail),
                     icon="DOT",
                 )
-            if len(detail_lines) > 4:
+            if len(detail_lines) > SUPPORT_DETAIL_PREVIEW_LINES:
+                label = (
+                    "Show fewer unsupported details"
+                    if expanded
+                    else "Show all unsupported details"
+                )
+                layout.operator(
+                    IMAGE_OT_toggle_clip_support_details.bl_idname,
+                    text=label,
+                    icon="TRIA_DOWN" if expanded else "TRIA_RIGHT",
+                )
+            if not expanded and len(detail_lines) > SUPPORT_DETAIL_PREVIEW_LINES:
                 layout.label(
-                    text=f"{len(detail_lines) - 4} more unsupported item(s)",
+                    text=(
+                        f"{len(detail_lines) - SUPPORT_DETAIL_PREVIEW_LINES} "
+                        "more unsupported item(s)"
+                    ),
                     icon="INFO",
                 )
         if status == native_bridge.RELOAD_STATUS_MISSING:
@@ -523,6 +565,7 @@ _classes = (
     CSI_AddonPreferences,
     IMPORT_OT_clip_studio,
     IMAGE_OT_reload_clip_studio,
+    IMAGE_OT_toggle_clip_support_details,
     IMAGE_PT_clip_studio,
 )
 
