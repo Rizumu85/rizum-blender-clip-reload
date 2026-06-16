@@ -3,9 +3,9 @@ use std::path::Path;
 use clip_model::LayerId;
 
 use super::{
-    FILTER_TYPE_BRIGHTNESS_CONTRAST, FILTER_TYPE_GRADIENT_MAP, FILTER_TYPE_INVERT,
-    FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION, FILTER_TYPE_THRESHOLD,
-    PlannedLutFilterMode, lut_filter_rgba,
+    FILTER_TYPE_BRIGHTNESS_CONTRAST, FILTER_TYPE_COLOR_BALANCE, FILTER_TYPE_GRADIENT_MAP,
+    FILTER_TYPE_INVERT, FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION,
+    FILTER_TYPE_THRESHOLD, PlannedLutFilterMode, lut_filter_rgba,
 };
 
 #[test]
@@ -102,9 +102,53 @@ fn threshold_lut_matches_python_formula_anchors() {
 }
 
 #[test]
+fn color_balance_lut_matches_preserve_luminosity_python_formula_anchors() {
+    let payload = color_balance_payload([1, 0, 0, 0, 43, -48, 48, 0, 0, 0]);
+
+    let (name, mode, lut) =
+        lut_filter_rgba(FILTER_TYPE_COLOR_BALANCE, &payload).expect("build color balance LUT");
+
+    assert_eq!(name, "ColorBalance");
+    assert!(matches!(mode, PlannedLutFilterMode::ToneCurveRgb));
+    for (input, expected) in [
+        (0usize, [0, 0, 0]),
+        (64, [81, 30, 84]),
+        (128, [144, 88, 146]),
+        (192, [201, 164, 203]),
+        (226, [231, 212, 231]),
+        (255, [255, 255, 255]),
+    ] {
+        assert_eq!(&lut[input * 4..input * 4 + 3], expected.as_slice());
+    }
+}
+
+#[test]
+fn color_balance_lut_matches_normal_python_formula_anchors() {
+    let payload = color_balance_payload([0, -20, 10, 35, 40, -30, 15, 25, 0, -50]);
+
+    let (name, mode, lut) =
+        lut_filter_rgba(FILTER_TYPE_COLOR_BALANCE, &payload).expect("build color balance LUT");
+
+    assert_eq!(name, "ColorBalance");
+    assert!(matches!(mode, PlannedLutFilterMode::ToneCurveRgb));
+    for (input, expected) in [
+        (0usize, [0, 0, 0]),
+        (32, [29, 23, 36]),
+        (64, [76, 52, 70]),
+        (128, [152, 115, 133]),
+        (192, [218, 184, 195]),
+        (226, [250, 222, 228]),
+        (255, [255, 255, 255]),
+    ] {
+        assert_eq!(&lut[input * 4..input * 4 + 3], expected.as_slice());
+    }
+}
+
+#[test]
 fn malformed_lut_filter_payloads_fail_closed() {
     assert!(lut_filter_rgba(FILTER_TYPE_BRIGHTNESS_CONTRAST, &[0; 7]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_LEVEL_CORRECTION, &[0; 0x3f]).is_none());
+    assert!(lut_filter_rgba(FILTER_TYPE_COLOR_BALANCE, &[0; 39]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_POSTERIZATION, &[0; 3]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_THRESHOLD, &[0; 3]).is_none());
     assert!(lut_filter_rgba(99, &[]).is_none());
@@ -142,6 +186,14 @@ fn level_payload(group: [u16; 5]) -> Vec<u8> {
     let mut payload = vec![0u8; 0x40];
     for (index, value) in group.iter().enumerate() {
         payload[index * 2..index * 2 + 2].copy_from_slice(&value.to_be_bytes());
+    }
+    payload
+}
+
+fn color_balance_payload(values: [i32; 10]) -> Vec<u8> {
+    let mut payload = Vec::with_capacity(40);
+    for value in values {
+        payload.extend_from_slice(&value.to_be_bytes());
     }
     payload
 }

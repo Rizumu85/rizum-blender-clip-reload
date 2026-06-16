@@ -9,6 +9,7 @@ const TONE_CURVE_COMPACT_STRIDE: usize = 0x82;
 const FILTER_TYPE_BRIGHTNESS_CONTRAST: u32 = 1;
 const FILTER_TYPE_LEVEL_CORRECTION: u32 = 2;
 const FILTER_TYPE_TONE_CURVE: u32 = 3;
+const FILTER_TYPE_COLOR_BALANCE: u32 = 5;
 const FILTER_TYPE_INVERT: u32 = 6;
 const FILTER_TYPE_POSTERIZATION: u32 = 7;
 const FILTER_TYPE_THRESHOLD: u32 = 8;
@@ -34,6 +35,11 @@ pub(crate) fn lut_filter_rgba(
             "ToneCurve",
             PlannedLutFilterMode::ToneCurveRgb,
             tone_curve_lut_rgba(payload)?,
+        )),
+        FILTER_TYPE_COLOR_BALANCE => Some((
+            "ColorBalance",
+            PlannedLutFilterMode::ToneCurveRgb,
+            color_balance::color_balance_lut_rgba(payload)?,
         )),
         FILTER_TYPE_INVERT => Some((
             "Invert",
@@ -477,3 +483,6 @@ fn read_be_u16(bytes: &[u8], offset: usize) -> Option<u16> {
 #[cfg(test)]
 #[path = "filter_lut_tests.rs"]
 mod tests;
+
+#[path = "filter_color_balance.rs"]
+mod color_balance;

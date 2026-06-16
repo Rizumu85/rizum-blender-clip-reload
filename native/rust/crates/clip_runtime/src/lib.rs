@@ -3357,6 +3357,7 @@ mod tests {
             filter_node(3, 12, 1),
             filter_node(4, 13, 1),
             filter_node(5, 14, 1),
+            filter_node(6, 15, 1),
         ]);
         session.filter_sources.insert(
             LayerId(10),
@@ -3377,19 +3378,52 @@ mod tests {
             LayerId(14),
             filter_source(14, 8, 128i32.to_be_bytes().to_vec()),
         );
+        session.filter_sources.insert(
+            LayerId(15),
+            filter_source(
+                15,
+                5,
+                color_balance_payload([1, 0, 0, 0, 43, -48, 48, 0, 0, 0]),
+            ),
+        );
 
         let selection = session
             .select_gpu_normal_render_stack(gpu_selector_options())
             .expect("select synthetic LUT filters");
 
         assert!(selection.unsupported.is_empty());
-        assert_eq!(selection.sources.len(), 5);
+        assert_eq!(selection.sources.len(), 6);
         for (source, (input, expected, expected_mode)) in selection.sources.iter().zip([
-            (64usize, 51u8, clip_gpu::GpuLutFilterMode::ToneCurveRgb),
-            (64usize, 24u8, clip_gpu::GpuLutFilterMode::ToneCurveRgb),
-            (64usize, 191u8, clip_gpu::GpuLutFilterMode::ToneCurveRgb),
-            (64usize, 85u8, clip_gpu::GpuLutFilterMode::ToneCurveRgb),
-            (128usize, 255u8, clip_gpu::GpuLutFilterMode::ThresholdLum),
+            (
+                64usize,
+                [51, 51, 51],
+                clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+            ),
+            (
+                64usize,
+                [24, 24, 24],
+                clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+            ),
+            (
+                64usize,
+                [191, 191, 191],
+                clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+            ),
+            (
+                64usize,
+                [85, 85, 85],
+                clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+            ),
+            (
+                128usize,
+                [255, 255, 255],
+                clip_gpu::GpuLutFilterMode::ThresholdLum,
+            ),
+            (
+                226usize,
+                [231, 212, 231],
+                clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+            ),
         ]) {
             let clip_gpu::GpuNormalStackSource::LutFilter {
                 lut_rgba,
@@ -3400,10 +3434,7 @@ mod tests {
                 panic!("source was not represented as a LUT filter");
             };
             assert_eq!(*filter_mode, expected_mode);
-            assert_eq!(
-                &lut_rgba[input * 4..input * 4 + 3],
-                [expected; 3].as_slice()
-            );
+            assert_eq!(&lut_rgba[input * 4..input * 4 + 3], expected.as_slice());
         }
     }
 
@@ -4155,6 +4186,14 @@ mod tests {
         let mut payload = vec![0u8; 0x40];
         for (index, value) in group.iter().enumerate() {
             payload[index * 2..index * 2 + 2].copy_from_slice(&value.to_be_bytes());
+        }
+        payload
+    }
+
+    fn color_balance_payload(values: [i32; 10]) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(40);
+        for value in values {
+            payload.extend_from_slice(&value.to_be_bytes());
         }
         payload
     }
