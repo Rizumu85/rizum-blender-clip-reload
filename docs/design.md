@@ -8,13 +8,14 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 
 1. Install the Blender add-on from `clip_studio_importer.zip`.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
-3. By default, the add-on decodes the `.clip`, writes a sidecar PNG cache at
-   `<file>.clip.png`, and loads that PNG as a normal Blender image.
-4. When the source `.clip` is saved again, auto-reload watches the file timestamp and refreshes the Blender image after the background decode finishes.
+3. By default, the add-on calls the packaged `clip_capi` native renderer,
+   uploads the returned RGBA pixels into a generated Blender image, and packs
+   the rendered pixels into the `.blend`.
+4. When the source `.clip` is saved again, auto-reload watches the file timestamp and refreshes the Blender image after the background render finishes.
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
-6. If `Use native renderer` is enabled, import/reload uses the packaged
-   `clip_capi` native generated-image bridge instead of writing a sidecar PNG.
-   The `Native renderer library` preference is only needed as an override.
+6. If `Use native renderer` is disabled, import/reload uses the older Python
+   sidecar PNG path. The `Native renderer library` preference is only needed as
+   an override for the packaged library.
 
 ## Later Native Workflow
 
@@ -53,7 +54,8 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 ## Interaction Principles
 
 - Keep the Blender UI responsive while reloading large `.clip` files.
-- Treat the PNG sidecar as a cache, not as the user-facing source of truth.
+- Treat the PNG sidecar as a temporary Python-path cache, not as the user-facing
+  source of truth.
 - In the native bridge, pack rendered pixels into the `.blend` by default so
   reopening a project never shows an empty texture while waiting for source
   reload.
@@ -66,12 +68,12 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 - Background decode progress is only shown as a small `Decoding in background` label when the image panel is visible.
 - Unknown or unsupported layer features are currently console warnings, not surfaced in Blender's UI.
-- Sidecar import/reload writes a PNG next to the `.clip`; there is no cache-location preference.
-- Native renderer mode is still explicit opt-in. The installable zip now carries
-  the locally built release `clip_capi` library for automatic discovery, while
-  the preference path remains an override.
+- Sidecar import/reload writes a PNG next to the `.clip`; it remains only as a
+  temporary explicit path while the native bridge is promoted.
+- Native renderer mode is now the default, but the Python compositor/sidecar
+  workflow has not been removed yet.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize unsupported layer kinds or skipped semantics in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.
-  It is not yet the accepted/default path, and the Python compositor/sidecar
-  workflow has not been removed.
+  The remaining native-path acceptance work is deleting the Python
+  compositor/sidecar workflow and improving user-facing diagnostics.

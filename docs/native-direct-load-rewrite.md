@@ -135,8 +135,8 @@ Scope:
   rendered pixels into the `.blend`.
 - Store `.clip` source/render metadata on native images so manual reload and the
   background watcher can update the same datablock.
-- Keep the existing Python sidecar path only as the current default path until
-  the accepted native path replaces it fully.
+- Keep the existing Python sidecar path only as a temporary explicit option
+  until the accepted native path replaces it fully.
 
 Result:
 
@@ -144,13 +144,13 @@ Result:
   checks ABI version `1`, opens native sessions, reads image metadata, renders
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
-- The add-on exposes `Use native renderer` and `Native renderer library`
-  preferences. Native imports create generated images without sidecar PNGs,
-  pack them by default, and store source path, source mtime, canvas metadata,
-  renderer ABI, and reload status custom properties. The installable add-on zip
-  now includes the local release `clip_capi` library under
-  `clip_studio_importer/native/`; the library path preference is an override,
-  not the normal packaged path.
+- The add-on enables `Use native renderer` by default and exposes `Native
+  renderer library` as an override preference. Native imports create generated
+  images without sidecar PNGs, pack them by default, and store source path,
+  source mtime, canvas metadata, renderer ABI, and reload status custom
+  properties. The installable add-on zip includes the local release `clip_capi`
+  library under `clip_studio_importer/native/`; the library path preference is
+  an override, not the normal packaged path.
 - `Reload from .clip` and the non-blocking watcher update native images through
   the C ABI/generated-image path, while sidecar images continue to use the
   existing PNG reload path.
@@ -166,9 +166,8 @@ Result:
 
 Remaining bridge work:
 
-- Promote native renderer mode from explicit opt-in to the accepted/default
-  Blender import path, then delete the Python compositor/loader and sidecar PNG
-  workflow.
+- Delete the Python compositor/loader and sidecar PNG workflow once the native
+  path owns the whole Blender import/reload workflow.
 
 ## Completed Third Milestone Foundation
 

@@ -2,18 +2,18 @@
 
 Blender add-on for loading Clip Studio Paint `.clip` files as flattened raster image textures.
 
-The default path decodes `.clip` in Python, writes a sidecar PNG cache next to the source file, and loads that PNG as a normal Blender image. An optional native renderer mode calls the Rust C ABI, uploads RGBA pixels into a generated Blender image datablock, and packs the latest render into the `.blend` without writing a sidecar PNG.
+The default path calls the Rust C ABI, uploads RGBA pixels into a generated Blender image datablock, and packs the latest render into the `.blend` without writing a sidecar PNG. The older Python sidecar PNG path is still available as an explicit temporary option while the native path is promoted.
 
 ## Status
 
-Package version: `0.8.25`.
+Package version: `0.8.26`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
 - Paper/background layers, masks, opacity, `LayerVisibility` bit flags, clipping layers, folders, and offscreen group compositing.
 - Observed CSP blend modes, plus current adjustment/filter-layer support used by the supplied samples.
-- Blender import, manual reload, and non-blocking auto-reload.
-- Optional native renderer bridge for Blender generated images through packaged `clip_capi`, including packed-image freshness checks after opening a `.blend`.
+- Blender import, manual reload, non-blocking auto-reload, and packed-image freshness checks after opening a `.blend`.
+- Default native renderer bridge for Blender generated images through packaged `clip_capi`.
 
 Known fidelity gaps:
 - Remaining native GPU differences are low-level formula/quantization cases on complex blend/filter samples.
@@ -30,10 +30,10 @@ Known fidelity gaps:
 
 1. In Blender, choose `File > Import > Clip Studio (.clip)`.
 2. Select a `.clip` file.
-3. In the default mode, Blender loads the decoded sidecar PNG at `<source>.clip.png`.
+3. Blender creates or updates a generated image from the packaged native renderer and packs the rendered pixels into the `.blend`.
 4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Reload from .clip` in the Image Editor N-panel.
 
-To test the native path, enable `Use native renderer` in the add-on preferences. The installable zip includes the locally built release `clip_capi` library under `clip_studio_importer/native/`, so `Native renderer library` is only needed as an override. In this mode the add-on creates or updates a generated Blender image, stores `.clip` source metadata on it, repacks the rendered pixels after import/reload, and checks packed native images again when a `.blend` is opened.
+`Use native renderer` is enabled by default. The installable zip includes the locally built release `clip_capi` library under `clip_studio_importer/native/`, so `Native renderer library` is only needed as an override. Turning off `Use native renderer` uses the older Python sidecar PNG path.
 
 ## Build Package
 
@@ -60,8 +60,8 @@ The package script writes `clip_studio_importer.zip` and, by default, requires a
 
 ## Roadmap
 
-- Keep the sidecar PNG workflow stable only as the current Python implementation.
-- Continue the native direct-load rewrite toward making the Rust renderer path the accepted Blender import path.
+- Keep the sidecar PNG workflow only as the temporary Python implementation.
+- Continue the native direct-load rewrite toward deleting the Python sidecar path.
 - Replace and then remove the Python compositor/loader and sidecar PNG workflow once the native path owns import, reload, source tracking, and packaging end to end.
 
 ## Verification Samples

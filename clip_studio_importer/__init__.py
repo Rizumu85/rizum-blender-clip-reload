@@ -1,11 +1,11 @@
 """
 Clip Studio Paint (.clip) Importer for Blender.
 
-The default importer path decodes a .clip file with the Python compositor,
-writes a sidecar PNG cache, and loads that PNG as a file-backed Blender Image.
-The optional native renderer path calls the Rust C ABI, uploads RGBA pixels
-into a generated Blender Image, packs the latest render into the .blend, and
-stores .clip source-tracking properties for reload/watch updates.
+The default importer path calls the Rust C ABI, uploads RGBA pixels into a
+generated Blender Image, packs the latest render into the .blend, and stores
+.clip source-tracking properties for reload/watch updates. The Python sidecar
+PNG path is still available as an explicit temporary compatibility option while
+the native path is promoted.
 
 No external auto-reload add-on is required. The sidecar PNG remains compatible
 with external image-reload tools when the Python path is selected.
@@ -16,7 +16,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 25),
+    "version": (0, 8, 26),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -486,7 +486,7 @@ class CSI_AddonPreferences(AddonPreferences):
     use_native_renderer: BoolProperty(
         name="Use native renderer",
         description="Import .clip files through the Rust C ABI without writing sidecar PNGs.",
-        default=False,
+        default=True,
     )
     native_library_path: StringProperty(
         name="Native renderer library",
