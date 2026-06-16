@@ -351,6 +351,7 @@ where
             *opacity,
             *mask_key,
             previous_texture,
+            previous_view,
             fallback_texture,
             output_view,
             pipelines,

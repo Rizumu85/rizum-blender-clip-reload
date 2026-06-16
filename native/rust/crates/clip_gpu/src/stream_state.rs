@@ -6,7 +6,8 @@ use crate::pass::{WHITE_TRANSPARENT, create_rgba8_texture};
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuMaskResourceCache, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError};
 
-const MAX_STREAMING_PASSES_PER_SUBMISSION: usize = 12;
+// Submit-only intermediate flushes can batch more passes; retained GPU bytes remain the hard cap.
+const MAX_STREAMING_PASSES_PER_SUBMISSION: usize = 48;
 const MAX_STREAMING_RETAINED_RESOURCE_BYTES: usize = 256 * 1024 * 1024;
 
 pub(crate) struct StreamingTexturePair {

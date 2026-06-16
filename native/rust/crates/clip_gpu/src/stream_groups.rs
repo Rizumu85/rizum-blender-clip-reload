@@ -235,6 +235,7 @@ pub(crate) fn render_through_group_with_provider<P>(
     opacity: f32,
     mask_key: Option<GpuMaskResourceKey>,
     before_texture: &wgpu::Texture,
+    before_view: &wgpu::TextureView,
     fallback_texture: &wgpu::Texture,
     output_view: &wgpu::TextureView,
     pipelines: &NormalStackPipelines,
@@ -259,7 +260,6 @@ where
     );
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
-    let before_view = before_texture.create_view(&wgpu::TextureViewDescriptor::default());
     state.clear_rgba8_texture_pair(
         through_pair.view(previous_index),
         through_pair.view(next_index),
@@ -280,7 +280,7 @@ where
             state.encoder_mut(),
             &pipelines.alpha_pipeline,
             &pipelines.bind_group_layout,
-            &before_view,
+            before_view,
             through_pair.view(previous_index),
             through_pair.view(previous_index),
             through_pair.view(next_index),
@@ -302,7 +302,7 @@ where
     for (child_index, child) in children.iter().enumerate() {
         let (previous_texture, previous_view) = if cache_global_bounds.is_none() && child_index == 0
         {
-            (before_texture, &before_view)
+            (before_texture, before_view)
         } else {
             (
                 through_pair.texture(previous_index),
@@ -343,7 +343,7 @@ where
         mask_key
             .map(|key| key.layer_id)
             .unwrap_or(clip_model::LayerId(0)),
-        &before_view,
+        before_view,
     )?;
     let Some(pass_bounds) = through_resolve_bounds(*parent_dirty_bounds, after_dirty_bounds) else {
         return Ok(false);
@@ -354,7 +354,7 @@ where
         &pipelines.through_pipeline,
         &pipelines.bind_group_layout,
         after_view,
-        &before_view,
+        before_view,
         mask_view.as_ref(),
         output_view,
         generated_raster_source_uniform_bytes_with_blend_and_origins(
