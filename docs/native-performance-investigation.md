@@ -209,11 +209,60 @@ Verification after this milestone:
   Ref_Terra404_Live2D.png` is `premul_max=5` in about 3.943s.
 
 The remaining order-of-magnitude path is still a fuller atlas architecture:
-decode/upload compressed `.clip` tiles directly into atlas storage, represent
-masks and clipping relationships as tile events, and reduce per-run atlas copy
-cost. This milestone proves the pass-collapse execution shape inside the
-accepted streaming renderer without adding fallback compositing or
-post-processing.
+represent masks and clipping relationships as tile events and grow the faithful
+tile-local segments beyond ordinary raster runs. This milestone proves the
+pass-collapse execution shape inside the accepted streaming renderer without
+adding fallback compositing or post-processing.
+
+## Direct Compressed Tile Chunk Events
+
+The third Silicate-shaped milestone removes the per-source texture copy from
+eligible raster-run collapse on the runtime path:
+
+- `clip_file::atlas_chunks` decodes selected non-empty CHNKExta tile blocks
+  directly into RGBA atlas tile chunks. It does not build a full CPU atlas and
+  does not emit chunks for empty tile blocks.
+- `clip_gpu::GpuNormalStackResourceProvider` now has a tile-atlas hook:
+  providers may return ordered atlas chunks plus per-source resource info for a
+  planned raster run. A full-atlas pixels hook remains for tests or alternate
+  providers, but the runtime provider uses tile chunks.
+- `clip_runtime::RuntimeGpuResourceProvider` fills the hook from the existing
+  sparse decode region and compressed-present tile selection. Each compressed
+  source tile chunk becomes its own tile-silo event with the same opacity/blend
+  semantics as the source raster.
+- `clip_gpu::stream_tile_silo` tries provider-backed tile chunks before falling
+  back to full-atlas pixels or the previous per-source texture-copy path. The
+  shader already uses `textureLoad`, so chunk events can safely skip atlas holes
+  instead of clearing or uploading transparent empty regions.
+- `clip_gpu::stream_tile_silo_upload` owns atlas texture creation and both
+  upload forms, keeping `stream_tile_silo.rs` focused on planning/encoding and
+  below the production file-size guideline.
+
+This is still scoped to the same conservative raster-run eligibility: unmasked
+ordinary raster sources with supported Normal/standard blend modes. Masks,
+clipping-run nodes, filters, THROUGH groups, containers as source nodes, and
+byte-domain special blends remain semantic barriers.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
+- Guard release comparisons remain stable: `Test_Clipping`,
+  `Test_ClippingEdge`, and `Test_FolderNested` exact; `Test_Mask`
+  `raw_max=1` / `premul_max=1`; `Test_ToneCurve` `raw_max=17` /
+  `premul_max=17`; `Test_AddGlowMultiply` `raw_max=5` / `premul_max=3`.
+- Direct release executable comparisons on this machine:
+  `Test_RealArt.clip` stays `raw_max=5` / `premul_max=2` in about 2.560s;
+  `Ref_Terra404_Live2D.clip` stays `premul_max=5` in about 3.834s.
+- Worker-mode timings on this machine:
+  `Test_RealArt.clip --blender-render-rgba --blender-render-json` is about
+  2.180s; `Ref_Terra404_Live2D.clip --blender-render-rgba
+  --blender-render-json` is about 3.322s.
+
+The next large lever is no longer ordinary raster-run source upload. It is
+making more source types tile-local: mask atlas events, clipping-base/clipped
+relationships, and eventually larger faithful raster/clipping segments. Filters,
+THROUGH groups, isolated containers, and byte-domain special blends should stay
+barriers until their tile-local semantics are explicitly modelled.
 
 ## Compressed Occupancy Planner
 
@@ -244,14 +293,16 @@ constructing every normal-stack pipeline for each short-lived worker process.
 Release worker timings on this machine:
 
 - `Test_RealArt.clip --blender-render-rgba --blender-render-json` improved from
-  about 2.511s after sparse uploads to about 2.175s.
+  about 2.511s after sparse uploads to about 2.180s with direct raster tile
+  chunks active.
 - `Ref_Terra404_Live2D.clip --blender-render-rgba --blender-render-json`
-  improved from about 3.610s to about 3.379s.
+  improved from about 3.610s to about 3.322s with direct raster tile chunks
+  active.
 
 This is a real fixed-cost reduction, but it is not the next order-of-magnitude
-lever. The same runs still draw hundreds of raster resources (`341` for
-RealArt, `709` for Terra). The next large step remains a Silicate-style
-tile-silo renderer that collapses raster/clipping stretches.
+lever. The same runs still draw hundreds of raster resources (`343` for
+RealArt, `715` for Terra). The next large step remains a Silicate-style
+tile-silo renderer that makes masks and clipping relationships tile-local.
 
 ## Non-Goals
 

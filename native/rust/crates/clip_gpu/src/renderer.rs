@@ -42,6 +42,14 @@ pub enum GpuRenderError {
         expected: clip_model::CanvasSize,
         actual: clip_model::CanvasSize,
     },
+    RasterAtlasSizeMismatch {
+        expected: clip_model::CanvasSize,
+        actual: clip_model::CanvasSize,
+    },
+    RasterAtlasResourceCountMismatch {
+        expected: usize,
+        actual: usize,
+    },
     MaskResourceSizeMismatch {
         layer_id: clip_model::LayerId,
         expected: clip_model::CanvasSize,
@@ -119,6 +127,15 @@ impl fmt::Display for GpuRenderError {
                 f,
                 "GPU raster resource {} has size {}x{}, expected {}x{}",
                 layer_id.0, actual.width, actual.height, expected.width, expected.height,
+            ),
+            Self::RasterAtlasSizeMismatch { expected, actual } => write!(
+                f,
+                "GPU raster atlas has size {}x{}, expected {}x{}",
+                actual.width, actual.height, expected.width, expected.height,
+            ),
+            Self::RasterAtlasResourceCountMismatch { expected, actual } => write!(
+                f,
+                "GPU raster atlas reported {actual} resources, expected {expected}",
             ),
             Self::MaskResourceSizeMismatch {
                 layer_id,

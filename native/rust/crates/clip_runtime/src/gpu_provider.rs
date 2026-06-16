@@ -165,6 +165,14 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         Ok(renderer.upload_raster_resources(&[upload])?)
     }
 
+    fn raster_run_atlas_tile_pixels(
+        &mut self,
+        sources: &[clip_gpu::GpuRasterAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<clip_gpu::GpuRasterAtlasTilePixels>, Self::Error> {
+        self.build_raster_run_atlas_tile_pixels(sources, atlas_size)
+    }
+
     fn mask_resource(
         &mut self,
         renderer: &clip_gpu::GpuRenderer,
@@ -226,6 +234,101 @@ impl RuntimeGpuResourceProvider<'_> {
             self.canvas,
         )?)
     }
+
+    fn build_raster_run_atlas_tile_pixels(
+        &mut self,
+        sources: &[clip_gpu::GpuRasterAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<clip_gpu::GpuRasterAtlasTilePixels>, RuntimeError> {
+        if sources.is_empty() {
+            return Ok(None);
+        }
+
+        let mut chunks = Vec::new();
+        let mut resources = Vec::with_capacity(sources.len());
+        for request in sources {
+            let meta = self
+                .plan
+                .rasters
+                .get(&request.source.key)
+                .cloned()
+                .ok_or_else(|| {
+                    RuntimeError::Gpu(clip_gpu::GpuRenderError::MissingRasterResource {
+                        layer_id: request.source.key.layer_id,
+                        render_mipmap_id: request.source.key.render_mipmap_id,
+                    })
+                })?;
+            let visible = self
+                .decode_region_for_source(request.source, &meta.source)?
+                .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
+            if request.size
+                != CanvasSize::new(visible.source_rect.width, visible.source_rect.height)
+                || request.offset_x != visible.offset_x
+                || request.offset_y != visible.offset_y
+            {
+                return Ok(None);
+            }
+
+            let source_chunks =
+                clip_file::read_resolved_raster_layer_source_rgba_region_atlas_chunks_from_container(
+                    self.container,
+                    &meta.source,
+                    visible.source_rect,
+                    atlas_size,
+                    request.atlas_x,
+                    request.atlas_y,
+                )?;
+            for chunk in source_chunks {
+                let local_x = chunk
+                    .x
+                    .checked_sub(request.atlas_x)
+                    .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+                let local_y = chunk
+                    .y
+                    .checked_sub(request.atlas_y)
+                    .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+                let offset_x = i32::try_from(i64::from(visible.offset_x) + i64::from(local_x))
+                    .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+                let offset_y = i32::try_from(i64::from(visible.offset_y) + i64::from(local_y))
+                    .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+                let size = CanvasSize::new(chunk.width, chunk.height);
+                chunks.push(clip_gpu::GpuRasterAtlasTileChunk {
+                    source: request.source,
+                    atlas_x: chunk.x,
+                    atlas_y: chunk.y,
+                    size,
+                    offset_x,
+                    offset_y,
+                    pixels: chunk.pixels,
+                });
+            }
+
+            self.raster_offsets
+                .insert(request.source.key, (visible.offset_x, visible.offset_y));
+            resources.push(clip_gpu::GpuRasterResourceInfo {
+                key: request.source.key,
+                render_node_id: meta.render_node_id,
+                size: request.size,
+                byte_len: rgba_byte_len(request.size)?,
+            });
+        }
+
+        Ok(Some(clip_gpu::GpuRasterAtlasTilePixels {
+            size: atlas_size,
+            chunks,
+            resources,
+        }))
+    }
+}
+
+fn rgba_byte_len(size: CanvasSize) -> Result<usize, RuntimeError> {
+    usize::try_from(
+        u64::from(size.width)
+            .checked_mul(u64::from(size.height))
+            .and_then(|pixels| pixels.checked_mul(4))
+            .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?,
+    )
+    .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow.into())
 }
 
 pub(crate) fn plan_gpu_mask_resource(

@@ -1,9 +1,16 @@
+use std::collections::HashMap;
+
 use clip_graph::RenderNodeId;
 use clip_model::CanvasSize;
 
 use super::common::*;
 use crate::stream_tile_silo::raster_silo_run_len;
-use crate::{GpuDeviceConfig, GpuNormalStackSource, GpuRasterBlendMode, GpuRenderer};
+use crate::{
+    GpuDeviceConfig, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
+    GpuNormalStackResourceProvider, GpuNormalStackSource, GpuRasterAtlasPixels,
+    GpuRasterAtlasSource, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo,
+    GpuRasterResourceKey, GpuRenderError, GpuRenderer,
+};
 
 #[test]
 fn streamed_tile_silo_collapses_opaque_normal_raster_run() {
@@ -63,6 +70,56 @@ fn streamed_tile_silo_collapses_opaque_normal_raster_run() {
     assert_eq!(output.pixels, expected);
     assert_eq!(provider.raster_request_count(red_key), 1);
     assert_eq!(provider.raster_request_count(blue_key), 1);
+}
+
+#[test]
+fn streamed_tile_silo_accepts_provider_backed_atlas_pixels() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let red_key = raster_key(140);
+    let blue_key = raster_key(141);
+    let mut provider = AtlasInlineProvider::new(vec![
+        (
+            red_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(140),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [255, 0, 0, 255].repeat(4),
+            },
+        ),
+        (
+            blue_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(141),
+                size: CanvasSize::new(2, 2),
+                offset: (2, 1),
+                pixels: [0, 0, 255, 255].repeat(4),
+            },
+        ),
+    ]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source_at(red_key, 1, 1)),
+        GpuNormalStackSource::Raster(raster_source_at(blue_key, 2, 1)),
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(5, 4), &sources, &mut provider)
+        .expect("draw provider-backed atlas tile-silo run");
+
+    let mut expected = [255, 255, 255, 0].repeat(20);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 5 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[255, 0, 0, 255]);
+        }
+        for x in 2..=3 {
+            let offset = ((y * 5 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 0, 255, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
 }
 
 #[test]
@@ -236,4 +293,95 @@ fn tile_silo_planner_stops_at_masks_and_byte_domain_blends() {
         ),
         1
     );
+}
+
+struct AtlasInlineProvider {
+    rasters: HashMap<GpuRasterResourceKey, AtlasInlineRaster>,
+    atlas_requests: usize,
+    raster_requests: usize,
+}
+
+struct AtlasInlineRaster {
+    render_node_id: RenderNodeId,
+    size: CanvasSize,
+    offset: (i32, i32),
+    pixels: Vec<u8>,
+}
+
+impl AtlasInlineProvider {
+    fn new(rasters: Vec<(GpuRasterResourceKey, AtlasInlineRaster)>) -> Self {
+        Self {
+            rasters: rasters.into_iter().collect(),
+            atlas_requests: 0,
+            raster_requests: 0,
+        }
+    }
+}
+
+impl GpuNormalStackResourceProvider for AtlasInlineProvider {
+    type Error = GpuRenderError;
+
+    fn raster_resource(
+        &mut self,
+        _renderer: &GpuRenderer,
+        _source: GpuNormalRasterSource,
+    ) -> Result<GpuRasterResourceCache, Self::Error> {
+        self.raster_requests += 1;
+        Err(GpuRenderError::NotImplemented)
+    }
+
+    fn raster_resource_size(&self, source: GpuNormalRasterSource) -> Option<CanvasSize> {
+        self.rasters.get(&source.key).map(|raster| raster.size)
+    }
+
+    fn raster_resource_offset(&self, source: GpuNormalRasterSource) -> Option<(i32, i32)> {
+        self.rasters.get(&source.key).map(|raster| raster.offset)
+    }
+
+    fn raster_run_atlas_pixels(
+        &mut self,
+        sources: &[GpuRasterAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<GpuRasterAtlasPixels>, Self::Error> {
+        self.atlas_requests += 1;
+        let mut pixels = vec![0u8; (atlas_size.width * atlas_size.height * 4) as usize];
+        let mut resources = Vec::with_capacity(sources.len());
+        for request in sources {
+            let raster = self.rasters.get(&request.source.key).ok_or(
+                GpuRenderError::MissingRasterResource {
+                    layer_id: request.source.key.layer_id,
+                    render_mipmap_id: request.source.key.render_mipmap_id,
+                },
+            )?;
+            for y in 0..raster.size.height {
+                let src = (y * raster.size.width * 4) as usize;
+                let dst =
+                    (((request.atlas_y + y) * atlas_size.width + request.atlas_x) * 4) as usize;
+                let len = (raster.size.width * 4) as usize;
+                pixels[dst..dst + len].copy_from_slice(&raster.pixels[src..src + len]);
+            }
+            resources.push(GpuRasterResourceInfo {
+                key: request.source.key,
+                render_node_id: raster.render_node_id,
+                size: raster.size,
+                byte_len: raster.pixels.len(),
+            });
+        }
+        Ok(Some(GpuRasterAtlasPixels {
+            size: atlas_size,
+            pixels,
+            resources,
+        }))
+    }
+
+    fn mask_resource(
+        &mut self,
+        _renderer: &GpuRenderer,
+        key: GpuMaskResourceKey,
+    ) -> Result<GpuMaskResourceCache, Self::Error> {
+        Err(GpuRenderError::MissingMaskResource {
+            layer_id: key.layer_id,
+            mask_mipmap_id: key.mask_mipmap_id,
+        })
+    }
 }

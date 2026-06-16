@@ -28,7 +28,7 @@ pub(crate) struct AtlasLayout {
 #[derive(Clone)]
 pub(crate) struct PreparedSiloSource {
     pub(crate) source: GpuNormalRasterSource,
-    pub(crate) cache: GpuRasterResourceCache,
+    pub(crate) cache: Option<GpuRasterResourceCache>,
     pub(crate) info: GpuRasterResourceInfo,
     pub(crate) offset: (i32, i32),
     pub(crate) bounds: CanvasRect,

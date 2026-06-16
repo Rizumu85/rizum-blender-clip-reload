@@ -16,7 +16,10 @@ use crate::stream_groups::{
     render_clipping_run_with_provider, render_container_clipping_run_with_provider,
     render_container_with_provider,
 };
-pub use crate::stream_provider::GpuNormalStackResourceProvider;
+pub use crate::stream_provider::{
+    GpuNormalStackResourceProvider, GpuRasterAtlasPixels, GpuRasterAtlasSource,
+    GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
+};
 use crate::stream_resources::{
     known_clipped_sibling_activity, known_raster_source_bounds, mask_view_with_provider,
     pass_bounds_for_change, raster_view_with_provider,
