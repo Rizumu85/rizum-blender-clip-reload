@@ -39,6 +39,11 @@ pub trait GpuNormalStackResourceProvider {
         None
     }
 
+    fn raster_resource_offset(&self, source: GpuNormalRasterSource) -> Option<(i32, i32)> {
+        let _ = source;
+        None
+    }
+
     fn mask_resource(
         &mut self,
         renderer: &GpuRenderer,
@@ -180,7 +185,7 @@ where
             if matches!(known_source_bounds, Some(None)) {
                 return Ok(false);
             }
-            let (raster_cache, source_view, uploaded_source_bounds) =
+            let (raster_cache, source_view, effective_raster, uploaded_source_bounds) =
                 raster_view_with_provider(renderer, provider, state, output_size, *raster)?;
             let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
             let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, source_bounds) else {
@@ -211,7 +216,7 @@ where
                 previous_view,
                 mask_view.as_ref(),
                 output_view,
-                raster_source_uniform_bytes(*raster),
+                raster_source_uniform_bytes(effective_raster),
                 "rizum_clip_provider_normal_raster_pass",
                 pass_bounds,
             );

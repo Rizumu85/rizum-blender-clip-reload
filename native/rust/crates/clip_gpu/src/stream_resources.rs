@@ -18,6 +18,7 @@ pub(crate) fn raster_view_with_provider<P>(
     (
         GpuRasterResourceCache,
         wgpu::TextureView,
+        GpuNormalRasterSource,
         Option<CanvasRect>,
     ),
     P::Error,
@@ -35,11 +36,19 @@ where
         .map_err(P::Error::from)?;
     let info = resource.info();
     state.push_drawn_resource(info);
-    let bounds = CanvasRect::from_source(source.offset_x, source.offset_y, info.size, output_size);
+    let (offset_x, offset_y) = provider
+        .raster_resource_offset(source)
+        .unwrap_or((source.offset_x, source.offset_y));
+    let effective_source = GpuNormalRasterSource {
+        offset_x,
+        offset_y,
+        ..source
+    };
+    let bounds = CanvasRect::from_source(offset_x, offset_y, info.size, output_size);
     let view = resource
         .texture()
         .create_view(&wgpu::TextureViewDescriptor::default());
-    Ok((cache, view, bounds))
+    Ok((cache, view, effective_source, bounds))
 }
 
 pub(crate) fn pass_bounds_for_change(

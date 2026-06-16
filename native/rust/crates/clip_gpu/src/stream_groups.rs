@@ -33,7 +33,7 @@ where
     if matches!(known_source_bounds, Some(None)) {
         return Ok(RenderedStreamingCache::empty());
     }
-    let (raster_cache, source_view, uploaded_source_bounds) =
+    let (raster_cache, source_view, effective_base, uploaded_source_bounds) =
         raster_view_with_provider(renderer, provider, state, output_size, base)?;
     let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
     let Some(pass_bounds) = pass_bounds_for_change(None, source_bounds) else {
@@ -77,7 +77,7 @@ where
             clipping_pair.view(previous_index),
             mask_view.as_ref(),
             clipping_pair.view(next_index),
-            raster_source_uniform_bytes(base),
+            raster_source_uniform_bytes(effective_base),
             "rizum_clip_provider_clipping_base_pass",
             pass_bounds,
         );
@@ -93,7 +93,7 @@ where
         if matches!(known_source_bounds, Some(None)) {
             continue;
         }
-        let (raster_cache, source_view, uploaded_source_bounds) =
+        let (raster_cache, source_view, effective_clipped_source, uploaded_source_bounds) =
             raster_view_with_provider(renderer, provider, state, output_size, *clipped_source)?;
         let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
         let Some(pass_bounds) = pass_bounds_for_change(dirty_bounds, source_bounds) else {
@@ -120,7 +120,7 @@ where
             clipping_pair.view(previous_index),
             mask_view.as_ref(),
             clipping_pair.view(next_index),
-            raster_source_uniform_bytes(*clipped_source),
+            raster_source_uniform_bytes(effective_clipped_source),
             "rizum_clip_provider_clipping_clipped_pass",
             pass_bounds,
         );

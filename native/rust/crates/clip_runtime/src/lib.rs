@@ -9,6 +9,7 @@ use clip_file::ClipFileSummary;
 use clip_graph::{LayerGraphInput, RenderNodeId, RenderNodeKind, RenderPlan};
 use clip_model::{CanvasSize, LayerId, LayerOpacity, Rect, Rgba8};
 
+mod source_crop;
 mod support;
 
 const LAYER_COMPOSITE_THROUGH: u32 = 30;
@@ -2988,6 +2989,7 @@ struct RuntimeGpuResourceProvider<'a> {
     container: &'a clip_file::container::ClipContainer,
     canvas: CanvasSize,
     plan: GpuResourcePlan,
+    raster_offsets: HashMap<clip_gpu::GpuRasterResourceKey, (i32, i32)>,
     mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
     reported_masks: HashSet<clip_gpu::GpuMaskResourceKey>,
 }
@@ -3002,6 +3004,7 @@ impl<'a> RuntimeGpuResourceProvider<'a> {
             container,
             canvas,
             plan,
+            raster_offsets: HashMap::new(),
             mask_resources: Vec::new(),
             reported_masks: HashSet::new(),
         }
@@ -3016,6 +3019,13 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             .rasters
             .get(&source.key)
             .map(|meta| meta.source.pixel_size)
+    }
+
+    fn raster_resource_offset(
+        &self,
+        source: clip_gpu::GpuNormalRasterSource,
+    ) -> Option<(i32, i32)> {
+        self.raster_offsets.get(&source.key).copied()
     }
 
     fn raster_resource(
@@ -3033,6 +3043,9 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             self.container,
             &meta.source,
         )?;
+        let placed = source_crop::crop_raster_to_canvas(placed, self.canvas)?;
+        self.raster_offsets
+            .insert(source.key, (placed.offset_x, placed.offset_y));
         let upload = clip_gpu::GpuRasterUpload {
             layer_id: meta.layer_id,
             render_node_id: meta.render_node_id,
