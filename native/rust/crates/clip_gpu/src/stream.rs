@@ -6,8 +6,9 @@ use crate::pass::{
     NormalStackPipelines, encode_normal_source_pass, encode_normal_source_pass_scissored,
 };
 use crate::source_params::{
-    generated_raster_source_uniform_bytes_with_blend_and_origins, lut_filter_uniform_bytes,
-    raster_source_uniform_bytes_with_target_origin, solid_source_uniform_bytes,
+    generated_raster_source_uniform_bytes_with_blend_and_origins,
+    lut_filter_uniform_bytes_with_target_origin, raster_source_uniform_bytes_with_target_origin,
+    solid_source_uniform_bytes,
 };
 use crate::stream_bounds::CanvasRect;
 use crate::stream_groups::{
@@ -416,7 +417,12 @@ where
                 mask_view.as_ref(),
                 &lut_view,
                 output_view,
-                lut_filter_uniform_bytes(*opacity, mask_key.is_some(), *filter_mode),
+                lut_filter_uniform_bytes_with_target_origin(
+                    *opacity,
+                    mask_key.is_some(),
+                    *filter_mode,
+                    target_origin,
+                ),
                 lut_filter_label(*filter_mode),
                 local_pass_bounds(pass_bounds, target_origin),
             );

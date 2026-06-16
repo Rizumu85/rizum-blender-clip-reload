@@ -4,7 +4,7 @@ use clip_graph::RenderNodeId;
 use clip_model::{CanvasSize, LayerId};
 
 use crate::{
-    GpuDeviceConfig, GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey,
+    GpuDeviceConfig, GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey, GpuMaskUpload,
     GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuNormalStackSource,
     GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload,
     GpuRenderError, GpuRenderer,
@@ -12,6 +12,7 @@ use crate::{
 
 struct InlineProvider {
     rasters: HashMap<GpuRasterResourceKey, InlineRaster>,
+    masks: HashMap<GpuMaskResourceKey, InlineMask>,
 }
 
 struct InlineRaster {
@@ -21,11 +22,23 @@ struct InlineRaster {
     pixels: Vec<u8>,
 }
 
+struct InlineMask {
+    render_node_id: RenderNodeId,
+    size: CanvasSize,
+    pixels: Vec<u8>,
+}
+
 impl InlineProvider {
     fn new(rasters: Vec<(GpuRasterResourceKey, InlineRaster)>) -> Self {
         Self {
             rasters: rasters.into_iter().collect(),
+            masks: HashMap::new(),
         }
+    }
+
+    fn with_masks(mut self, masks: Vec<(GpuMaskResourceKey, InlineMask)>) -> Self {
+        self.masks = masks.into_iter().collect();
+        self
     }
 }
 
@@ -63,10 +76,23 @@ impl GpuNormalStackResourceProvider for InlineProvider {
 
     fn mask_resource(
         &mut self,
-        _renderer: &GpuRenderer,
-        _key: GpuMaskResourceKey,
+        renderer: &GpuRenderer,
+        key: GpuMaskResourceKey,
     ) -> Result<GpuMaskResourceCache, Self::Error> {
-        unreachable!("stream origin fixtures have no masks")
+        let mask = self
+            .masks
+            .get(&key)
+            .ok_or(GpuRenderError::MissingMaskResource {
+                layer_id: key.layer_id,
+                mask_mipmap_id: key.mask_mipmap_id,
+            })?;
+        renderer.upload_mask_resources(&[GpuMaskUpload {
+            layer_id: key.layer_id,
+            render_node_id: mask.render_node_id,
+            mask_mipmap_id: key.mask_mipmap_id,
+            size: mask.size,
+            pixels: &mask.pixels,
+        }])
     }
 }
 
@@ -332,6 +358,61 @@ fn streamed_lut_filter_scissors_to_existing_dirty_bounds() {
     assert_eq!(output.pixels, expected);
 }
 
+#[test]
+fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(9);
+    let mask_key = mask_key(9);
+    let mut mask_pixels = vec![0u8; 4 * 4];
+    mask_pixels[2 * 4 + 2] = 255;
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(9),
+            size: CanvasSize::new(2, 2),
+            offset: (1, 1),
+            pixels: [255, 0, 0, 255].repeat(4),
+        },
+    )])
+    .with_masks(vec![(
+        mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(90),
+            size: CanvasSize::new(4, 4),
+            pixels: mask_pixels,
+        },
+    )]);
+    let sources = [GpuNormalStackSource::Container {
+        children: vec![
+            GpuNormalStackSource::Raster(raster_source(key)),
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: inverted_tone_curve_lut(),
+                opacity: 1.0,
+                mask_key: Some(mask_key),
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+        ],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw streamed masked LUT filter inside cropped container");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 4 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[255, 0, 0, 255]);
+        }
+    }
+    expected[((2 * 4 + 2) * 4) as usize..((2 * 4 + 2) * 4 + 4) as usize]
+        .copy_from_slice(&[0, 255, 255, 255]);
+    assert_eq!(output.pixels, expected);
+}
+
 fn raster_source(key: GpuRasterResourceKey) -> GpuNormalRasterSource {
     raster_source_at(key, 1, 1)
 }
@@ -355,6 +436,13 @@ fn raster_key(id: u32) -> GpuRasterResourceKey {
     GpuRasterResourceKey {
         layer_id: LayerId(id),
         render_mipmap_id: id,
+    }
+}
+
+fn mask_key(id: u32) -> GpuMaskResourceKey {
+    GpuMaskResourceKey {
+        layer_id: LayerId(id + 100),
+        mask_mipmap_id: id + 200,
     }
 }
 

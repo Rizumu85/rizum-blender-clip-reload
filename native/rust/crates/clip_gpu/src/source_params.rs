@@ -90,11 +90,22 @@ pub(crate) fn lut_filter_uniform_bytes(
     opacity: f32,
     has_mask: bool,
     filter_mode: GpuLutFilterMode,
-) -> [u8; 16] {
-    let mut bytes = [0u8; 16];
+) -> [u8; 32] {
+    lut_filter_uniform_bytes_with_target_origin(opacity, has_mask, filter_mode, (0, 0))
+}
+
+pub(crate) fn lut_filter_uniform_bytes_with_target_origin(
+    opacity: f32,
+    has_mask: bool,
+    filter_mode: GpuLutFilterMode,
+    target_origin: (i32, i32),
+) -> [u8; 32] {
+    let mut bytes = [0u8; 32];
     bytes[0..4].copy_from_slice(&opacity.to_ne_bytes());
     bytes[4..8].copy_from_slice(&(u32::from(has_mask)).to_ne_bytes());
     bytes[8..12].copy_from_slice(&lut_filter_mode_kind(filter_mode).to_ne_bytes());
+    bytes[16..20].copy_from_slice(&target_origin.0.to_ne_bytes());
+    bytes[20..24].copy_from_slice(&target_origin.1.to_ne_bytes());
     bytes
 }
 
@@ -158,6 +169,7 @@ mod tests {
 
     use super::{
         generated_raster_source_uniform_bytes_with_blend_and_origins,
+        lut_filter_uniform_bytes_with_target_origin,
         raster_source_uniform_bytes_with_target_origin,
     };
 
@@ -198,5 +210,21 @@ mod tests {
         assert_eq!(&bytes[36..40], &8i32.to_ne_bytes());
         assert_eq!(&bytes[40..44], &9i32.to_ne_bytes());
         assert_eq!(&bytes[44..48], &10i32.to_ne_bytes());
+    }
+
+    #[test]
+    fn lut_filter_records_target_origin() {
+        let bytes = lut_filter_uniform_bytes_with_target_origin(
+            0.75,
+            true,
+            crate::GpuLutFilterMode::GradientMapLum,
+            (11, 12),
+        );
+
+        assert_eq!(&bytes[0..4], &0.75f32.to_ne_bytes());
+        assert_eq!(&bytes[4..8], &1u32.to_ne_bytes());
+        assert_eq!(&bytes[8..12], &1u32.to_ne_bytes());
+        assert_eq!(&bytes[16..20], &11i32.to_ne_bytes());
+        assert_eq!(&bytes[20..24], &12i32.to_ne_bytes());
     }
 }

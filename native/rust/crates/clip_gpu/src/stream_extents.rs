@@ -71,13 +71,10 @@ where
             current_bounds,
             current_unknown,
         ),
-        GpuNormalStackSource::SolidColor { .. }
-        | GpuNormalStackSource::LutFilter {
-            mask_key: Some(_), ..
-        } => CanvasRect::full(output_size)
+        GpuNormalStackSource::SolidColor { .. } => CanvasRect::full(output_size)
             .map(KnownStackBounds::Bounded)
             .unwrap_or(KnownStackBounds::Empty),
-        GpuNormalStackSource::LutFilter { mask_key: None, .. } => {
+        GpuNormalStackSource::LutFilter { .. } => {
             if current_unknown {
                 KnownStackBounds::Unknown
             } else {
@@ -267,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn masked_lut_filter_keeps_full_canvas_bounds() {
+    fn masked_lut_filter_keeps_prior_bounded_stack_bounds() {
         let key = raster_key(1);
         let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
         let sources = vec![
@@ -282,6 +279,30 @@ mod tests {
                 filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
             },
         ];
+
+        assert_eq!(
+            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+            KnownStackBounds::Bounded(CanvasRect {
+                x: 1,
+                y: 1,
+                width: 2,
+                height: 2,
+            })
+        );
+    }
+
+    #[test]
+    fn leading_masked_lut_filter_keeps_full_canvas_bounds() {
+        let provider = SizeProvider::new(&[]);
+        let sources = vec![GpuNormalStackSource::LutFilter {
+            lut_rgba: Vec::new(),
+            opacity: 1.0,
+            mask_key: Some(GpuMaskResourceKey {
+                layer_id: LayerId(9),
+                mask_mipmap_id: 10,
+            }),
+            filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
+        }];
 
         assert_eq!(
             known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
