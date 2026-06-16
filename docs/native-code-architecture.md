@@ -561,6 +561,7 @@ Owns:
 Current split:
 
 - `lib.rs`: session orchestration and render execution wiring.
+- `blend.rs`: strict raster blend-mode selection and GPU blend-mode mapping.
 - `error.rs`: `RuntimeError` and error-source/display conversion.
 - `results.rs`: public GPU/support/trace result structs and unsupported-reason
   types.
