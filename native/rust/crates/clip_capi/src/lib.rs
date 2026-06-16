@@ -233,15 +233,20 @@ fn support_report(
     if unsupported.is_empty() {
         return format!("Full native support for {source_count} source(s).");
     }
-    let first = &unsupported[0];
-    format!(
-        "{} unsupported node(s); first layer {} node {} {:?}: {}",
-        unsupported.len(),
-        first.layer_id.0,
-        first.render_node_id.0,
-        first.kind,
-        first.reason,
-    )
+    let mut report = format!("{} unsupported node(s).", unsupported.len());
+    for item in unsupported.iter().take(8) {
+        report.push_str(&format!(
+            "\n- layer {} node {} {:?}: {}",
+            item.layer_id.0, item.render_node_id.0, item.kind, item.reason,
+        ));
+    }
+    if unsupported.len() > 8 {
+        report.push_str(&format!(
+            "\n- ... {} more unsupported node(s)",
+            unsupported.len() - 8,
+        ));
+    }
+    report
 }
 
 fn write_support_report(
@@ -365,5 +370,33 @@ mod tests {
         assert!(report.contains("Full native support"));
 
         clip_renderer_session_close(session);
+    }
+
+    #[test]
+    fn support_report_lists_bounded_unsupported_details() {
+        use clip_graph::{RenderNodeId, RenderNodeKind};
+        use clip_model::LayerId;
+        use clip_runtime::{SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason};
+
+        let unsupported: Vec<_> = (0..10)
+            .map(|index| SimpleRasterStackUnsupported {
+                render_node_id: RenderNodeId(index + 4),
+                layer_id: LayerId(index + 9),
+                kind: RenderNodeKind::Filter,
+                reason: SimpleRasterStackUnsupportedReason::Filter,
+            })
+            .collect();
+
+        let report = support_report(12, &unsupported);
+
+        assert!(report.starts_with("10 unsupported node(s)."));
+        assert!(report.contains(
+            "- layer 9 node 4 Filter: filter layer is not in the strict raster stack pass"
+        ));
+        assert!(report.contains(
+            "- layer 16 node 11 Filter: filter layer is not in the strict raster stack pass"
+        ));
+        assert!(!report.contains("- layer 17 node 12"));
+        assert!(report.ends_with("- ... 2 more unsupported node(s)"));
     }
 }

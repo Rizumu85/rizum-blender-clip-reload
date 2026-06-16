@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 29),
+    "version": (0, 8, 30),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -478,6 +478,18 @@ class IMAGE_PT_clip_studio(Panel):
             if support_report:
                 layout.label(
                     text=_short_diagnostic(support_report),
+                    icon="INFO",
+                )
+            support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
+            detail_lines = [line for line in str(support_details).splitlines() if line]
+            for detail in detail_lines[:4]:
+                layout.label(
+                    text=_short_diagnostic(detail),
+                    icon="DOT",
+                )
+            if len(detail_lines) > 4:
+                layout.label(
+                    text=f"{len(detail_lines) - 4} more unsupported item(s)",
                     icon="INFO",
                 )
         if status == native_bridge.RELOAD_STATUS_MISSING:

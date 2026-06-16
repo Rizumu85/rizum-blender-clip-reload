@@ -12,3 +12,6 @@ crate-type = ["staticlib", "cdylib"]
 [dependencies]
 clip_model = { path = "../clip_model" }
 clip_runtime = { path = "../clip_runtime" }
+
+[dev-dependencies]
+clip_graph = { path = "../clip_graph" }

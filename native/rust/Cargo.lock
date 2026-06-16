@@ -132,6 +132,7 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 name = "clip_capi"
 version = "0.1.0"
 dependencies = [
+ "clip_graph",
  "clip_model",
  "clip_runtime",
 ]

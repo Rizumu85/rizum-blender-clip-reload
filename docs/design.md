@@ -67,10 +67,10 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 ## Current UX Gaps
 
 - Background render progress is only shown as a small `Rendering in background` label when the image panel is visible.
-- Unsupported layer features are summarized at image level with counts and the
-  first unsupported layer reason. A full layer-by-layer diagnostic view is not
-  implemented yet.
-- Fidelity failures are only visible through rendered image differences; Blender does not yet summarize unsupported layer kinds or skipped semantics in the UI.
+- Unsupported layer features are summarized at image level with counts and a
+  bounded list of unsupported layer/node details. A full expandable
+  layer-by-layer diagnostic view is not implemented yet.
+- Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.
   The remaining native-path UX work is a richer layer-by-layer support view

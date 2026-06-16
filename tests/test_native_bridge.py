@@ -88,6 +88,7 @@ class FakeRenderer:
                 mask_count=0,
                 mask_bytes=0,
                 report="Full native support for 2 source(s).",
+                details=(),
             ),
         )
 
@@ -128,6 +129,7 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY], 0)
         self.assertIn("Full native support", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_DETAILS_KEY], "")
 
     def test_update_records_unsupported_support_summary(self) -> None:
         bpy = FakeBpy()
@@ -149,7 +151,11 @@ class NativeBridgeTests(unittest.TestCase):
                 raster_bytes=4,
                 mask_count=1,
                 mask_bytes=2,
-                report="2 unsupported node(s); first layer 9 node 4 Filter: filter layer is not supported",
+                report="2 unsupported node(s).",
+                details=(
+                    "- layer 9 node 4 Filter: filter layer is not supported",
+                    "- layer 10 node 5 Raster: raster colour type None is not supported",
+                ),
             ),
         )
 
@@ -160,7 +166,9 @@ class NativeBridgeTests(unittest.TestCase):
             native_bridge.SUPPORT_STATUS_UNSUPPORTED,
         )
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY], 2)
-        self.assertIn("first layer 9", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_REPORT_KEY], "2 unsupported node(s).")
+        self.assertIn("layer 9", image[native_bridge.CLIP_SUPPORT_DETAILS_KEY])
+        self.assertIn("layer 10", image[native_bridge.CLIP_SUPPORT_DETAILS_KEY])
 
     def test_update_records_unknown_support_when_summary_unavailable(self) -> None:
         bpy = FakeBpy()
@@ -184,6 +192,7 @@ class NativeBridgeTests(unittest.TestCase):
             native_bridge.SUPPORT_STATUS_UNKNOWN,
         )
         self.assertIn("unavailable", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_DETAILS_KEY], "")
 
     def test_successful_update_clears_previous_reload_error(self) -> None:
         bpy = FakeBpy()

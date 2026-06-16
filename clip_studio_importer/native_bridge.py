@@ -23,6 +23,7 @@ CLIP_RELOAD_STATUS_KEY = "clip_reload_status"
 CLIP_RELOAD_ERROR_KEY = "clip_reload_error"
 CLIP_SUPPORT_STATUS_KEY = "clip_support_status"
 CLIP_SUPPORT_REPORT_KEY = "clip_support_report"
+CLIP_SUPPORT_DETAILS_KEY = "clip_support_details"
 CLIP_SUPPORT_SOURCE_COUNT_KEY = "clip_support_source_count"
 CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY = "clip_support_unsupported_count"
 CLIP_SUPPORT_RASTER_COUNT_KEY = "clip_support_raster_count"
@@ -68,6 +69,7 @@ class NativeSupportSummary:
     mask_count: int
     mask_bytes: int
     report: str
+    details: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -242,6 +244,10 @@ class NativeRendererLibrary:
                 ctypes.byref(required_len),
             )
         self._raise_if_error(status, "read native support info")
+        decoded_report = report.value.decode("utf-8", errors="replace")
+        report_lines = decoded_report.splitlines()
+        summary_line = report_lines[0] if report_lines else ""
+        detail_lines = tuple(line for line in report_lines[1:] if line)
         return NativeSupportSummary(
             source_count=int(info.source_count),
             unsupported_count=int(info.unsupported_count),
@@ -249,7 +255,8 @@ class NativeRendererLibrary:
             raster_bytes=int(info.raster_bytes),
             mask_count=int(info.mask_count),
             mask_bytes=int(info.mask_bytes),
-            report=report.value.decode("utf-8", errors="replace"),
+            report=summary_line,
+            details=detail_lines,
         )
 
     def _raise_if_error(self, status: int, action: str) -> None:
@@ -454,6 +461,7 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
     if summary is None:
         image[CLIP_SUPPORT_STATUS_KEY] = SUPPORT_STATUS_UNKNOWN
         image[CLIP_SUPPORT_REPORT_KEY] = "Native support summary unavailable."
+        image[CLIP_SUPPORT_DETAILS_KEY] = ""
         return
     image[CLIP_SUPPORT_STATUS_KEY] = (
         SUPPORT_STATUS_FULL
@@ -461,6 +469,7 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
         else SUPPORT_STATUS_UNSUPPORTED
     )
     image[CLIP_SUPPORT_REPORT_KEY] = summary.report
+    image[CLIP_SUPPORT_DETAILS_KEY] = "\n".join(summary.details)
     image[CLIP_SUPPORT_SOURCE_COUNT_KEY] = summary.source_count
     image[CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY] = summary.unsupported_count
     image[CLIP_SUPPORT_RASTER_COUNT_KEY] = summary.raster_count
