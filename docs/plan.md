@@ -60,7 +60,7 @@ Goal: replace the Python compositor/sidecar PNG workflow with a native GPU rende
 Current policy:
 
 - Rust plus `wgpu` is the chosen renderer direction, with a thin C++ OpenImageIO plugin boundary and a stock Blender image-datablock bridge.
-- External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch. The C ABI now has a byte-buffer session entry point (`clip_renderer_session_open_memory`) for future `IOProxy` / ImBuf source bridge callers, but the C++ OIIO adapter still needs explicit proxy-open wiring before memory-backed OIIO reads are supported.
+- External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch. The C ABI has a byte-buffer session entry point (`clip_renderer_session_open_memory`), and the C++ OIIO adapter now supports `IOProxy` memory opens by reading `oiio:ioproxy` bytes into Rust memory sessions without temp files. This is host-integration plumbing for OIIO/ImBuf callers, not a replacement for the accepted generated-image Blender add-on path.
 - Current native milestone: the stock Blender image-datablock bridge is the
   add-on runtime path. The add-on calls `clip_capi`, creates generated/packed
   Blender images, records source metadata, and updates those images through

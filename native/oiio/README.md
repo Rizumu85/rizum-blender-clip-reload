@@ -59,11 +59,13 @@ path.
 ## Probe
 
 The CMake project also builds `clip_oiio_probe`, a tiny executable that asks
-OpenImageIO to load the plugin and read the current Rust-backed placeholder
-image.
+OpenImageIO to load the plugin and read the current Rust-backed image. Pass
+`--memory` to force the OIIO `IOProxy` path instead of opening the filesystem
+path directly.
 
 ```powershell
 native\oiio\build\Release\clip_oiio_probe.exe native\oiio\build\Release img\Test_Clipping.clip
+native\oiio\build\Release\clip_oiio_probe.exe --memory native\oiio\build\Release img\Test_Clipping.clip
 ```
 
 Expected output shape:
@@ -117,10 +119,11 @@ Completed: the adapter now calls the Rust C ABI.
 
 - `clip_renderer_session_open` owns filesystem `.clip` parsing.
 - `clip_renderer_session_open_memory` owns byte-buffer `.clip` parsing for
-  future `IOProxy` / ImBuf source bridge callers.
+  `IOProxy` / ImBuf source bridge callers.
 - `clip_renderer_session_info` provides real canvas dimensions for `ImageSpec`.
-- `clip_renderer_session_read_rgba8` provides deterministic placeholder pixels
-  until the GPU renderer exists.
+- `clip_renderer_session_read_rgba8` provides RGBA pixels from the Rust runtime.
+- `supports("ioproxy")` reports memory-input support to OIIO hosts, and
+  `oiio:ioproxy` config opens route through the Rust memory-session ABI.
 
 The C++ adapter must remain glue only.
 
@@ -133,7 +136,7 @@ Verified on this machine with Blender 5.0.1 and its bundled OpenImageIO 3.0.9.1:
 - The Blender image-datablock bridge spike consumes the Rust-backed OIIO bytes
   and creates a generated 512x512 image without writing a sidecar PNG.
 
-Current limitation: `IOProxy` support is still not wired in the C++ adapter.
-The Rust/C ABI foundation now exists through `clip_renderer_session_open_memory`;
-the remaining adapter work is to read the proxy bytes and open the session
-through that function instead of routing memory input through a filesystem path.
+Current limitation: external OIIO plugin discovery still does not make stock
+Blender's `bpy.data.images.load(".clip")` work as a native file-backed image
+format. That remains an ImBuf/source bridge or upstream Blender integration
+problem, not an OIIO adapter parsing problem.

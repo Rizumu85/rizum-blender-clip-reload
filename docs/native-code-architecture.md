@@ -62,10 +62,13 @@ Completed fourth milestone foundation: OIIO adapter wired to the Rust C ABI.
 - Do not move parser or renderer behavior into C++.
 
 Result: the adapter uses `clip_renderer_session_open`,
-`clip_renderer_session_info`, and `clip_renderer_session_read_rgba8`. Blender
-5.0.1's Python OpenImageIO module now sees real `.clip` metadata through the
-plugin: `Test_Clipping.clip` opens as 512x512 and `Ref_Terra404_Live2D.clip`
-opens as 4800x6100. Pixels are still deterministic native placeholders.
+`clip_renderer_session_open_memory`, `clip_renderer_session_info`, and
+`clip_renderer_session_read_rgba8`. Filesystem opens and OIIO `IOProxy`
+memory opens both route into Rust sessions. Blender 5.0.1's Python OpenImageIO
+module now sees real `.clip` metadata through the plugin: `Test_Clipping.clip`
+opens as 512x512 and `Ref_Terra404_Live2D.clip` opens as 4800x6100. External
+plugin discovery still does not make stock Blender's image loader accept
+`.clip` as a native file-backed format without an ImBuf/source bridge.
 
 Completed fifth milestone foundation: native raster data extraction below
 `clip_file`.
@@ -605,6 +608,7 @@ Owns:
 - OpenImageIO plugin registration.
 - `ImageInput` subclass and ImageSpec setup.
 - Calls into `clip_capi`.
+- Filesystem-path and `IOProxy` byte-buffer session opens.
 
 Does not own:
 

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <limits>
 #include <string>
+#include <vector>
 
 OIIO_PLUGIN_NAMESPACE_BEGIN
 
@@ -44,6 +45,20 @@ has_clip_magic(Filesystem::IOProxy* proxy)
            && header == kClipMagic;
 }
 
+bool
+read_proxy_bytes(Filesystem::IOProxy* proxy, std::vector<std::uint8_t>& bytes)
+{
+    if (!proxy)
+        return false;
+
+    const std::size_t len = proxy->size();
+    if (len < kClipMagic.size())
+        return false;
+
+    bytes.resize(len);
+    return proxy->pread(bytes.data(), bytes.size(), 0) == bytes.size();
+}
+
 class ClipInput final : public ImageInput {
 public:
     ClipInput() = default;
@@ -53,6 +68,8 @@ public:
 
     int supports(string_view feature) const override
     {
+        if (feature == "ioproxy")
+            return 1;
         return 0;
     }
 
@@ -70,9 +87,9 @@ public:
     {
         close();
 
-        if (name.empty()) {
-            errorfmt(".clip OIIO adapter currently requires a filesystem path");
-            return false;
+        if (Filesystem::IOProxy* proxy = ioproxy()) {
+            const std::string display_name = name.empty() ? "<IOProxy>" : name;
+            return open_proxy_session(display_name, proxy, spec);
         }
 
         if (!has_clip_magic(name)) {
@@ -95,8 +112,97 @@ public:
             return false;
         }
 
+        return open_session(name, session, spec);
+    }
+
+    bool open(const std::string& name, ImageSpec& spec,
+              const ImageSpec& config) override
+    {
+        close();
+
+        const std::string display_name = name.empty() ? "<IOProxy>" : name;
+        Filesystem::IOProxy* proxy = ioproxy();
+        const ParamValue* param = config.find_attribute("oiio:ioproxy",
+                                                        TypeDesc::PTR);
+        if (!proxy && param)
+            proxy = param->get<Filesystem::IOProxy*>();
+        if (!proxy)
+            return open(name, spec);
+
+        return open_proxy_session(display_name, proxy, spec);
+    }
+
+    bool close() override
+    {
+        if (m_session) {
+            clip_renderer_session_close(m_session);
+            m_session = nullptr;
+        }
+        m_opened = false;
+        return true;
+    }
+
+    bool read_native_scanline(int subimage, int miplevel, int y, int z,
+                              void* data) override
+    {
+        if (!m_opened || subimage != 0 || miplevel != 0 || z != 0
+            || y < 0 || y >= m_spec.height || !m_session) {
+            return false;
+        }
+
+        const auto out_len = static_cast<std::size_t>(m_spec.width)
+                             * static_cast<std::size_t>(kChannelCount);
+        ClipRendererStatus status = clip_renderer_session_read_rgba8(
+            m_session, 0, static_cast<std::uint32_t>(y),
+            static_cast<std::uint32_t>(m_spec.width), 1,
+            static_cast<std::uint8_t*>(data), out_len);
+        if (status != ClipRendererStatus_Ok) {
+            errorfmt("clip renderer scanline read failed at y={}: {}",
+                     y, renderer_error());
+            return false;
+        }
+
+        return true;
+    }
+
+private:
+    bool open_proxy_session(const std::string& display_name,
+                            Filesystem::IOProxy* proxy, ImageSpec& spec)
+    {
+        if (!has_clip_magic(proxy)) {
+            errorfmt("{} is not a CLIP file", display_name);
+            return false;
+        }
+
+        if (clip_renderer_abi_version() != CLIP_RENDERER_ABI_VERSION) {
+            errorfmt("clip renderer ABI mismatch: adapter expects {}, library reports {}",
+                     CLIP_RENDERER_ABI_VERSION, clip_renderer_abi_version());
+            return false;
+        }
+
+        std::vector<std::uint8_t> bytes;
+        if (!read_proxy_bytes(proxy, bytes)) {
+            errorfmt("could not read {} through IOProxy", display_name);
+            return false;
+        }
+
+        ClipRendererSession* session = nullptr;
+        ClipRendererStatus status = clip_renderer_session_open_memory(
+            bytes.data(), bytes.size(), &session);
+        if (status != ClipRendererStatus_Ok || !session) {
+            errorfmt("clip renderer memory open failed for {}: {}",
+                     display_name, renderer_error());
+            return false;
+        }
+
+        return open_session(display_name, session, spec);
+    }
+
+    bool open_session(const std::string& name, ClipRendererSession* session,
+                      ImageSpec& spec)
+    {
         ClipRendererImageInfo info {};
-        status = clip_renderer_session_info(session, &info);
+        ClipRendererStatus status = clip_renderer_session_info(session, &info);
         if (status != ClipRendererStatus_Ok) {
             errorfmt("clip renderer metadata failed for {}: {}", name,
                      renderer_error());
@@ -150,40 +256,6 @@ public:
         return true;
     }
 
-    bool close() override
-    {
-        if (m_session) {
-            clip_renderer_session_close(m_session);
-            m_session = nullptr;
-        }
-        m_opened = false;
-        return true;
-    }
-
-    bool read_native_scanline(int subimage, int miplevel, int y, int z,
-                              void* data) override
-    {
-        if (!m_opened || subimage != 0 || miplevel != 0 || z != 0
-            || y < 0 || y >= m_spec.height || !m_session) {
-            return false;
-        }
-
-        const auto out_len = static_cast<std::size_t>(m_spec.width)
-                             * static_cast<std::size_t>(kChannelCount);
-        ClipRendererStatus status = clip_renderer_session_read_rgba8(
-            m_session, 0, static_cast<std::uint32_t>(y),
-            static_cast<std::uint32_t>(m_spec.width), 1,
-            static_cast<std::uint8_t*>(data), out_len);
-        if (status != ClipRendererStatus_Ok) {
-            errorfmt("clip renderer scanline read failed at y={}: {}", y,
-                     renderer_error());
-            return false;
-        }
-
-        return true;
-    }
-
-private:
     static const char* renderer_error()
     {
         const char* message = clip_renderer_last_error();
