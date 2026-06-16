@@ -14,6 +14,8 @@ mod stream_effects;
 mod stream_extents;
 mod stream_groups;
 mod stream_resources;
+#[cfg(test)]
+mod stream_resources_tests;
 mod stream_state;
 #[cfg(test)]
 mod stream_tests;

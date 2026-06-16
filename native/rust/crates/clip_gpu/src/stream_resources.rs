@@ -2,7 +2,7 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
-use crate::stream_effects::source_can_affect_output;
+use crate::stream_effects::{raster_can_affect_output, source_can_affect_output};
 use crate::stream_state::StreamingEncoder;
 use crate::{
     GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskSamplingInfo,
@@ -132,6 +132,42 @@ where
     known_raster_activity(provider, base, output_size)
 }
 
+pub(crate) fn known_clipped_sibling_activity<P>(
+    provider: &P,
+    base: GpuNormalRasterSource,
+    clipped: &[GpuNormalRasterSource],
+    output_size: CanvasSize,
+) -> KnownSourceActivity
+where
+    P: GpuNormalStackResourceProvider,
+{
+    let base_bounds = match known_raster_source_bounds(provider, base, output_size) {
+        Some(Some(bounds)) => Some(bounds),
+        Some(None) => return KnownSourceActivity::Empty,
+        None => None,
+    };
+    let mut activity = KnownSourceActivity::Empty;
+    for clipped_source in clipped {
+        if !raster_can_affect_output(*clipped_source) {
+            continue;
+        }
+        match known_raster_source_bounds(provider, *clipped_source, output_size) {
+            Some(Some(bounds)) => {
+                let Some(base_bounds) = base_bounds else {
+                    activity = KnownSourceActivity::Unknown;
+                    continue;
+                };
+                if base_bounds.intersects(bounds) {
+                    return KnownSourceActivity::Writes;
+                }
+            }
+            Some(None) => {}
+            None => activity = KnownSourceActivity::Unknown,
+        }
+    }
+    activity
+}
+
 fn known_source_activity<P>(
     provider: &P,
     source: &GpuNormalStackSource,
@@ -252,190 +288,6 @@ impl MaskTextureView<'_> {
         match self {
             Self::Borrowed(view) => view,
             Self::Owned(view) => view,
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashMap;
-
-    use clip_model::{CanvasSize, LayerId, Rgba8};
-
-    use super::{
-        KnownSourceActivity, known_clipping_run_activity, known_stack_activity,
-        preserving_pass_bounds_for_change,
-    };
-    use crate::stream_bounds::CanvasRect;
-    use crate::{
-        GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
-        GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError,
-        GpuRenderer,
-    };
-
-    struct SizeProvider {
-        sizes: HashMap<GpuRasterResourceKey, CanvasSize>,
-    }
-
-    impl SizeProvider {
-        fn new(sizes: &[(GpuRasterResourceKey, CanvasSize)]) -> Self {
-            Self {
-                sizes: sizes.iter().copied().collect(),
-            }
-        }
-    }
-
-    impl crate::stream::GpuNormalStackResourceProvider for SizeProvider {
-        type Error = GpuRenderError;
-
-        fn raster_resource(
-            &mut self,
-            _renderer: &GpuRenderer,
-            _source: GpuNormalRasterSource,
-        ) -> Result<GpuRasterResourceCache, Self::Error> {
-            unreachable!("activity checks must not request raster resources")
-        }
-
-        fn raster_resource_size(&self, source: GpuNormalRasterSource) -> Option<CanvasSize> {
-            self.sizes.get(&source.key).copied()
-        }
-
-        fn mask_resource(
-            &mut self,
-            _renderer: &GpuRenderer,
-            _key: GpuMaskResourceKey,
-        ) -> Result<GpuMaskResourceCache, Self::Error> {
-            unreachable!("activity checks must not request mask resources")
-        }
-    }
-
-    #[test]
-    fn off_canvas_container_stack_is_known_empty() {
-        let key = raster_key(1);
-        let provider = SizeProvider::new(&[(key, CanvasSize::new(8, 8))]);
-        let sources = vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Raster(raster_source(key, 40, 40))],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }];
-
-        assert_eq!(
-            known_stack_activity(&provider, &sources, CanvasSize::new(32, 32)),
-            KnownSourceActivity::Empty
-        );
-    }
-
-    #[test]
-    fn unknown_raster_size_keeps_stack_activity_unknown() {
-        let provider = SizeProvider::new(&[]);
-        let sources = vec![GpuNormalStackSource::Raster(raster_source(
-            raster_key(1),
-            40,
-            40,
-        ))];
-
-        assert_eq!(
-            known_stack_activity(&provider, &sources, CanvasSize::new(32, 32)),
-            KnownSourceActivity::Unknown
-        );
-    }
-
-    #[test]
-    fn visible_solid_marks_stack_as_writing() {
-        let provider = SizeProvider::new(&[]);
-        let sources = vec![GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 255,
-                g: 255,
-                b: 255,
-                a: 255,
-            },
-            opacity: 1.0,
-        }];
-
-        assert_eq!(
-            known_stack_activity(&provider, &sources, CanvasSize::new(32, 32)),
-            KnownSourceActivity::Writes
-        );
-    }
-
-    #[test]
-    fn off_canvas_clipping_base_is_known_empty() {
-        let key = raster_key(1);
-        let provider = SizeProvider::new(&[(key, CanvasSize::new(8, 8))]);
-
-        assert_eq!(
-            known_clipping_run_activity(
-                &provider,
-                raster_source(key, -16, -16),
-                CanvasSize::new(8, 8),
-            ),
-            KnownSourceActivity::Empty
-        );
-    }
-
-    #[test]
-    fn preserving_pass_bounds_do_not_expand_dirty_area() {
-        let dirty = CanvasRect {
-            x: 10,
-            y: 10,
-            width: 12,
-            height: 12,
-        };
-        let larger_source = CanvasRect {
-            x: 0,
-            y: 0,
-            width: 40,
-            height: 40,
-        };
-
-        assert_eq!(
-            preserving_pass_bounds_for_change(Some(dirty), Some(larger_source)),
-            Some(dirty)
-        );
-    }
-
-    #[test]
-    fn preserving_pass_bounds_skip_non_overlapping_source() {
-        let dirty = CanvasRect {
-            x: 10,
-            y: 10,
-            width: 12,
-            height: 12,
-        };
-        let outside_source = CanvasRect {
-            x: 30,
-            y: 30,
-            width: 4,
-            height: 4,
-        };
-
-        assert_eq!(
-            preserving_pass_bounds_for_change(Some(dirty), Some(outside_source)),
-            None
-        );
-    }
-
-    fn raster_source(
-        key: GpuRasterResourceKey,
-        offset_x: i32,
-        offset_y: i32,
-    ) -> GpuNormalRasterSource {
-        GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x,
-            offset_y,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }
-    }
-
-    fn raster_key(id: u32) -> GpuRasterResourceKey {
-        GpuRasterResourceKey {
-            layer_id: LayerId(id),
-            render_mipmap_id: id,
         }
     }
 }

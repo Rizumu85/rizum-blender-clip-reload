@@ -18,8 +18,8 @@ use crate::stream_groups::{
     render_through_group_with_provider,
 };
 use crate::stream_resources::{
-    known_raster_source_bounds, mask_view_with_provider, pass_bounds_for_change,
-    raster_view_with_provider,
+    known_clipped_sibling_activity, known_raster_source_bounds, mask_view_with_provider,
+    pass_bounds_for_change, raster_view_with_provider,
 };
 use crate::stream_state::{StreamingEncoder, StreamingTexturePair};
 use crate::{
@@ -241,6 +241,23 @@ where
             Ok(true)
         }
         GpuNormalStackSource::ClippingRun { base, clipped } => {
+            if known_clipped_sibling_activity(provider, *base, clipped, output_size).is_empty() {
+                let base_source = GpuNormalStackSource::Raster(*base);
+                return encode_source_with_provider(
+                    renderer,
+                    provider,
+                    state,
+                    output_size,
+                    target_origin,
+                    &base_source,
+                    previous_texture,
+                    fallback_texture,
+                    previous_view,
+                    output_view,
+                    pipelines,
+                    dirty_bounds,
+                );
+            }
             let clipping_cache = render_clipping_run_with_provider(
                 renderer,
                 provider,
