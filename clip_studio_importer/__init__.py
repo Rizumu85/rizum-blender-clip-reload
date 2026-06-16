@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 40),
+    "version": (0, 8, 41),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -813,8 +813,12 @@ class CSI_AddonPreferences(AddonPreferences):
         default=False,
     )
     native_library_path: StringProperty(
-        name="Native renderer library",
-        description="Optional override path to clip_capi.dll, libclip_capi.so, or libclip_capi.dylib.",
+        name="Native renderer override",
+        description=(
+            "Optional override path to clip_capi.dll, libclip_capi.so, or "
+            "libclip_capi.dylib. Leave empty to use the renderer packaged "
+            "inside the add-on."
+        ),
         default="",
         subtype="FILE_PATH",
     )
@@ -827,6 +831,23 @@ class CSI_AddonPreferences(AddonPreferences):
         row.prop(self, "poll_interval")
         layout.prop(self, "debug")
         layout.prop(self, "native_library_path")
+        override_path = str(getattr(self, "native_library_path", "") or "").strip()
+        packaged_path = native_bridge.packaged_renderer_library_path()
+        if override_path:
+            layout.label(
+                text="Native renderer override is set; packaged renderer is ignored.",
+                icon="INFO",
+            )
+        elif packaged_path:
+            layout.label(
+                text="Packaged native renderer found; override can stay empty.",
+                icon="CHECKMARK",
+            )
+        else:
+            layout.label(
+                text="Packaged native renderer missing; set an override path.",
+                icon="ERROR",
+            )
         layout.label(
             text="Save a .clip in CSP - Blender's UI stays responsive while it renders in the background.",
             icon="INFO",

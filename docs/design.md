@@ -15,8 +15,8 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    freshness metadata and refreshes the Blender image after the background
    render finishes.
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
-6. The `Native renderer library` preference is only needed as an override for
-   the packaged library.
+6. The `Native renderer override` preference is optional. Leave it empty to use
+   the native renderer packaged inside the add-on.
 7. The Image Editor N-panel shows native render status, elapsed and last render
    timing, renderer version, native support summary, support resource
    statistics, missing-source state, and the latest native render error for the
@@ -58,7 +58,7 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   - `Auto-reload on .clip change`
   - `Poll interval (seconds)`
   - `Debug log`
-  - `Native renderer library`
+  - `Native renderer override`
 
 ## Interaction Principles
 

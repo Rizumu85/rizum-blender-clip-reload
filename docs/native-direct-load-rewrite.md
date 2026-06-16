@@ -145,14 +145,13 @@ Result:
   checks ABI version `1`, opens native sessions, reads image metadata, renders
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
-- The add-on exposes `Native renderer library` as an override preference. Native
-  imports create generated images without sidecar PNGs, pack them by default,
-  and store source path, source mtime, source size, source SHA-256, canvas
-  metadata, renderer ABI, renderer version, and reload status custom
-  properties. The installable add-on zip includes the local release
-  `clip_capi` library under
-  `clip_studio_importer/native/`; the library path preference is an override,
-  not the normal packaged path.
+- The add-on exposes `Native renderer override` as an optional override
+  preference. Native imports create generated images without sidecar PNGs, pack
+  them by default, and store source path, source mtime, source size, source
+  SHA-256, canvas metadata, renderer ABI, renderer version, and reload status
+  custom properties. The installable add-on zip includes the local release
+  `clip_capi` library under `clip_studio_importer/native/`; the override can
+  stay empty when the packaged renderer is found.
 - `Reload from .clip` and the non-blocking watcher update images through the C
   ABI/generated-image path only.
 - Blender `load_post` now scans packed native images, checks the stored source

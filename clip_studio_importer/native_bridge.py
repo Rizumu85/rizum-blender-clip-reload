@@ -551,6 +551,16 @@ def resolve_renderer_library(
     if env_path:
         return env_path
 
+    packaged_path = packaged_renderer_library_path()
+    if packaged_path:
+        return packaged_path
+
+    raise NativeBridgeError(
+        "native renderer library not found; set RIZUM_CLIP_RENDERER_DLL or configure the add-on path"
+    )
+
+
+def packaged_renderer_library_path() -> str | None:
     module_dir = Path(__file__).resolve().parent
     candidates = [
         module_dir / "clip_capi.dll",
@@ -563,10 +573,7 @@ def resolve_renderer_library(
     for candidate in candidates:
         if candidate.exists():
             return str(candidate)
-
-    raise NativeBridgeError(
-        "native renderer library not found; set RIZUM_CLIP_RENDERER_DLL or configure the add-on path"
-    )
+    return None
 
 
 def source_file_sha256(path: str | os.PathLike[str]) -> str:

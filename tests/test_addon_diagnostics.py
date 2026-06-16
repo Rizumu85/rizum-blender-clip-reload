@@ -110,6 +110,7 @@ class FakeLayout:
         self.labels: list[tuple[str, str | None]] = []
         self.operators: list[tuple[str, dict]] = []
         self.props: list[tuple[str, dict]] = []
+        self.enabled = True
 
     def label(self, *, text: str, icon: str | None = None) -> None:
         self.labels.append((text, icon))
@@ -120,8 +121,34 @@ class FakeLayout:
     def prop(self, _owner, property_name: str, **kwargs) -> None:
         self.props.append((property_name, kwargs))
 
+    def row(self):
+        return self
+
 
 class AddonDiagnosticsTests(unittest.TestCase):
+    def test_preferences_draw_explains_empty_native_renderer_override(self) -> None:
+        addon = _load_addon_module()
+        original = addon.native_bridge.packaged_renderer_library_path
+        addon.native_bridge.packaged_renderer_library_path = (
+            lambda: "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll"
+        )
+        try:
+            preferences = addon.CSI_AddonPreferences()
+            preferences.layout = FakeLayout()
+            preferences.auto_reload = True
+            preferences.native_library_path = ""
+
+            preferences.draw(types.SimpleNamespace())
+        finally:
+            addon.native_bridge.packaged_renderer_library_path = original
+
+        labels = [label for label, _icon in preferences.layout.labels]
+        self.assertIn(
+            "Packaged native renderer found; override can stay empty.",
+            labels,
+        )
+        self.assertIn(("native_library_path", {}), preferences.layout.props)
+
     def test_panel_draws_error_diagnostic(self) -> None:
         addon = _load_addon_module()
         image = {

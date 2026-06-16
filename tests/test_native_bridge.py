@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import unittest
 import importlib.util
 import sys
@@ -105,6 +106,22 @@ class FakeRenderer:
 
 
 class NativeBridgeTests(unittest.TestCase):
+    def test_resolve_renderer_library_uses_packaged_renderer_when_override_is_empty(self) -> None:
+        original = native_bridge.packaged_renderer_library_path
+        old_env = os.environ.pop("RIZUM_CLIP_RENDERER_DLL", None)
+        native_bridge.packaged_renderer_library_path = (
+            lambda: "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll"
+        )
+        try:
+            self.assertEqual(
+                native_bridge.resolve_renderer_library(None),
+                "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll",
+            )
+        finally:
+            native_bridge.packaged_renderer_library_path = original
+            if old_env is not None:
+                os.environ["RIZUM_CLIP_RENDERER_DLL"] = old_env
+
     def test_import_clip_as_image_uploads_pixels_and_tracks_source(self) -> None:
         bpy = FakeBpy()
 
