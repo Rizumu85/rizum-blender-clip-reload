@@ -195,10 +195,11 @@ Remaining bridge work:
   status/error/support summary, searchable support report, and searchable layer
   index, especially true support-detail layer navigation and clearer
   supported-but-imperfect fidelity residuals.
-- `clip_cli --gpu-support-json` emits the metadata-only support check as pure
-  JSON, including canvas metadata, source/unsupported counts, raster/mask
-  resource statistics, and unsupported node details. This is diagnostic output
-  for automation and issue capture, not a renderer or fallback path.
+- `clip_cli --gpu-support-check` and `clip_cli --gpu-support-json` expose the
+  metadata-only support check for developer diagnosis and automation. The text
+  and JSON outputs include layer names for unsupported nodes and largest
+  raster/mask resource layer ids when available. These are diagnostic outputs
+  for automation and issue capture, not renderers or fallback paths.
 
 ## Completed Third Milestone Foundation
 

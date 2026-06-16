@@ -9,6 +9,7 @@ use clip_model::{LayerId, Rect, Rgba8};
 use clip_runtime::ClipSession;
 
 mod support_json;
+mod support_text;
 
 fn main() {
     let mut args = env::args_os();
@@ -277,41 +278,10 @@ fn main() {
                 process::exit(1);
             }
         };
-        println!(
-            "gpu support check sources={} unsupported={}",
-            result.source_count,
-            result.unsupported.len(),
+        print!(
+            "{}",
+            support_text::normal_support_check_text(&session, &result)
         );
-        println!(
-            "  resource stats rasters={} raster_bytes={} max_raster_layer={:?} max_raster={}x{} max_raster_bytes={} masks={} mask_bytes={} max_mask_layer={:?} max_mask={}x{} max_mask_bytes={}",
-            result.resource_stats.raster_count,
-            result.resource_stats.raster_bytes,
-            result
-                .resource_stats
-                .max_raster_layer_id
-                .map(|layer_id| layer_id.0),
-            result.resource_stats.max_raster_width,
-            result.resource_stats.max_raster_height,
-            result.resource_stats.max_raster_bytes,
-            result.resource_stats.mask_count,
-            result.resource_stats.mask_bytes,
-            result
-                .resource_stats
-                .max_mask_layer_id
-                .map(|layer_id| layer_id.0),
-            result.resource_stats.max_mask_width,
-            result.resource_stats.max_mask_height,
-            result.resource_stats.max_mask_bytes,
-        );
-        for unsupported in result.unsupported {
-            println!(
-                "  unsupported node={} layer={} kind={:?} reason={}",
-                unsupported.render_node_id.0,
-                unsupported.layer_id.0,
-                unsupported.kind,
-                unsupported.reason,
-            );
-        }
     }
 
     if options.gpu_normal_stack {
