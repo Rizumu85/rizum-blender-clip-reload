@@ -48,6 +48,9 @@ pub struct GpuMaskUpload<'a> {
     pub render_node_id: RenderNodeId,
     pub mask_mipmap_id: u32,
     pub size: CanvasSize,
+    pub upload_origin_x: u32,
+    pub upload_origin_y: u32,
+    pub upload_size: CanvasSize,
     pub pixels: &'a [u8],
 }
 
@@ -242,12 +245,19 @@ impl GpuRenderer {
             }
 
             let layout = MaskTextureLayout::new(upload.size)?;
-            if upload.pixels.len() != layout.unpadded_len {
+            let upload_layout = MaskTextureLayout::new(upload.upload_size)?;
+            if upload.pixels.len() != upload_layout.unpadded_len {
                 return Err(GpuRenderError::InputBufferSizeMismatch {
-                    expected: layout.unpadded_len,
+                    expected: upload_layout.unpadded_len,
                     actual: upload.pixels.len(),
                 });
             }
+            validate_upload_region(
+                upload.size,
+                upload.upload_origin_x,
+                upload.upload_origin_y,
+                upload.upload_size,
+            )?;
 
             let texture = self
                 .context
@@ -270,18 +280,22 @@ impl GpuRenderer {
                 wgpu::TexelCopyTextureInfo {
                     texture: &texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
+                    origin: wgpu::Origin3d {
+                        x: upload.upload_origin_x,
+                        y: upload.upload_origin_y,
+                        z: 0,
+                    },
                     aspect: wgpu::TextureAspect::All,
                 },
                 upload.pixels,
                 wgpu::TexelCopyBufferLayout {
                     offset: 0,
-                    bytes_per_row: Some(layout.unpadded_bytes_per_row),
-                    rows_per_image: Some(upload.size.height),
+                    bytes_per_row: Some(upload_layout.unpadded_bytes_per_row),
+                    rows_per_image: Some(upload.upload_size.height),
                 },
                 wgpu::Extent3d {
-                    width: upload.size.width,
-                    height: upload.size.height,
+                    width: upload.upload_size.width,
+                    height: upload.upload_size.height,
                     depth_or_array_layers: 1,
                 },
             );
@@ -291,7 +305,7 @@ impl GpuRenderer {
                     key,
                     render_node_id: upload.render_node_id,
                     size: upload.size,
-                    byte_len: upload.pixels.len(),
+                    byte_len: layout.unpadded_len,
                 },
                 texture,
             });
@@ -353,11 +367,35 @@ fn byte_len(bytes_per_row: u32, rows: u32) -> Result<usize, GpuRenderError> {
     .map_err(|_| GpuRenderError::TextureSizeOverflow)
 }
 
+fn validate_upload_region(
+    texture_size: CanvasSize,
+    origin_x: u32,
+    origin_y: u32,
+    upload_size: CanvasSize,
+) -> Result<(), GpuRenderError> {
+    let right = origin_x
+        .checked_add(upload_size.width)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    let bottom = origin_y
+        .checked_add(upload_size.height)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    if right > texture_size.width || bottom > texture_size.height {
+        return Err(GpuRenderError::UploadRegionOutOfBounds {
+            texture_size,
+            origin_x,
+            origin_y,
+            upload_size,
+        });
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use clip_model::CanvasSize;
 
-    use super::{MaskTextureLayout, RgbaTextureLayout};
+    use super::{MaskTextureLayout, RgbaTextureLayout, validate_upload_region};
+    use crate::GpuRenderError;
 
     #[test]
     fn upload_layout_tracks_unpadded_rgba_rows() {
@@ -373,5 +411,21 @@ mod tests {
 
         assert_eq!(layout.unpadded_bytes_per_row, 62);
         assert_eq!(layout.unpadded_len, 186);
+    }
+
+    #[test]
+    fn mask_upload_region_must_fit_texture() {
+        let err =
+            validate_upload_region(CanvasSize::new(8, 8), 6, 4, CanvasSize::new(3, 2)).unwrap_err();
+
+        assert_eq!(
+            err,
+            GpuRenderError::UploadRegionOutOfBounds {
+                texture_size: CanvasSize::new(8, 8),
+                origin_x: 6,
+                origin_y: 4,
+                upload_size: CanvasSize::new(3, 2),
+            }
+        );
     }
 }

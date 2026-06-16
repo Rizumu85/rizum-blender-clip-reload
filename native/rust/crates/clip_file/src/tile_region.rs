@@ -2,8 +2,8 @@ use clip_model::Rect;
 
 use crate::ClipFileError;
 use crate::tiles::{
-    GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES, RgbaTileImage,
-    TILE_SIZE,
+    AlphaTileImage, GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES,
+    RgbaTileImage, TILE_SIZE,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -175,6 +175,53 @@ impl TileRegionWriter {
     }
 }
 
+pub(crate) struct AlphaTileRegionWriter {
+    region: TileRegion,
+    cols: usize,
+    tile_count: usize,
+    pixels: Vec<u8>,
+}
+
+impl AlphaTileRegionWriter {
+    pub(crate) fn new(width: u32, height: u32, region: Rect) -> Result<Self, ClipFileError> {
+        let region = validate_tile_region(width, height, region)?;
+        let cols = tile_cols(width)?;
+        let tile_count = checked_tile_count(width, height)?;
+        let pixels = alpha_output_buffer(region.width, region.height)?;
+        Ok(Self {
+            region,
+            cols,
+            tile_count,
+            pixels,
+        })
+    }
+
+    pub(crate) fn write_alpha_block(
+        &mut self,
+        block: TileBlockRef<'_>,
+    ) -> Result<(), ClipFileError> {
+        validate_block(&block, self.tile_count, MASK_TILE_BYTES)?;
+        let tile_x = block.tile_index % self.cols;
+        let tile_y = block.tile_index / self.cols;
+        let Some(copy) = tile_copy_rect(self.region, tile_x, tile_y) else {
+            return Ok(());
+        };
+
+        for row in 0..copy.height {
+            let source_pixel = (copy.source_y + row) * TILE_SIZE + copy.source_x;
+            let source_start = source_pixel;
+            let dest_start = (copy.dest_y + row) * self.region.width + copy.dest_x;
+            self.pixels[dest_start..dest_start + copy.width]
+                .copy_from_slice(&block.bytes[source_start..source_start + copy.width]);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn finish(self) -> Result<AlphaTileImage, ClipFileError> {
+        alpha_region_image(self.region, self.pixels)
+    }
+}
+
 pub(crate) fn tile_block_selection_for_region(
     width: u32,
     height: u32,
@@ -321,8 +368,26 @@ fn rgba_output_buffer(width: usize, height: usize) -> Result<Vec<u8>, ClipFileEr
     ])
 }
 
+fn alpha_output_buffer(width: usize, height: usize) -> Result<Vec<u8>, ClipFileError> {
+    let pixel_count = width
+        .checked_mul(height)
+        .ok_or(ClipFileError::TileSizeOverflow)?;
+    Ok(vec![0u8; pixel_count])
+}
+
 fn region_image(region: TileRegion, pixels: Vec<u8>) -> Result<RgbaTileImage, ClipFileError> {
     Ok(RgbaTileImage {
+        width: u32::try_from(region.width).map_err(|_| ClipFileError::TileSizeOverflow)?,
+        height: u32::try_from(region.height).map_err(|_| ClipFileError::TileSizeOverflow)?,
+        pixels,
+    })
+}
+
+fn alpha_region_image(
+    region: TileRegion,
+    pixels: Vec<u8>,
+) -> Result<AlphaTileImage, ClipFileError> {
+    Ok(AlphaTileImage {
         width: u32::try_from(region.width).map_err(|_| ClipFileError::TileSizeOverflow)?,
         height: u32::try_from(region.height).map_err(|_| ClipFileError::TileSizeOverflow)?,
         pixels,
@@ -340,4 +405,43 @@ fn div_ceil_u32(value: u32, divisor: u32) -> Result<u32, ClipFileError> {
         .checked_add(divisor - 1)
         .map(|value| value / divisor)
         .ok_or(ClipFileError::TileSizeOverflow)
+}
+
+#[cfg(test)]
+mod tests {
+    use clip_model::Rect;
+
+    use super::{AlphaTileRegionWriter, TileBlockRef};
+    use crate::tiles::{MASK_TILE_BYTES, TILE_SIZE};
+
+    #[test]
+    fn alpha_region_writer_copies_only_requested_tile_rect() {
+        let mut left = vec![0u8; MASK_TILE_BYTES];
+        let mut right = vec![0u8; MASK_TILE_BYTES];
+        left[255] = 10;
+        left[TILE_SIZE + 255] = 11;
+        right[0] = 20;
+        right[1] = 21;
+        right[TILE_SIZE] = 22;
+        right[TILE_SIZE + 1] = 23;
+
+        let mut writer = AlphaTileRegionWriter::new(512, 256, Rect::new(255, 0, 3, 2)).unwrap();
+        writer
+            .write_alpha_block(TileBlockRef {
+                tile_index: 0,
+                bytes: &left,
+            })
+            .unwrap();
+        writer
+            .write_alpha_block(TileBlockRef {
+                tile_index: 1,
+                bytes: &right,
+            })
+            .unwrap();
+        let image = writer.finish().unwrap();
+
+        assert_eq!(image.width, 3);
+        assert_eq!(image.height, 2);
+        assert_eq!(image.pixels, vec![10, 20, 21, 11, 22, 23]);
+    }
 }

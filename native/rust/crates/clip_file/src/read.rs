@@ -9,12 +9,15 @@ use crate::metadata::{
     self, read_mask_layer_source_from_sqlite, read_raster_layer_source_from_sqlite,
 };
 use crate::placement::{place_alpha_on_canvas, place_rgba_on_canvas};
-use crate::tile_region::{TileBlockRef, TileRegionWriter, tile_block_selection_for_region};
+use crate::tile_region::{
+    AlphaTileRegionWriter, TileBlockRef, TileRegionWriter, tile_block_selection_for_region,
+};
 use crate::tiles::{
-    AlphaTileImage, GRAY_RGBA_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES, RgbaTileImage,
-    alpha_tile_blob_len, decode_alpha_tiles, decode_gray_rgba_tiles, decode_gray_rgba_tiles_region,
-    decode_mono_rgba_tiles, decode_mono_rgba_tiles_region, decode_rgba_tiles,
-    decode_rgba_tiles_region, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len, rgba_tile_blob_len,
+    AlphaTileImage, GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES,
+    RgbaTileImage, alpha_tile_blob_len, decode_alpha_tiles, decode_gray_rgba_tiles,
+    decode_gray_rgba_tiles_region, decode_mono_rgba_tiles, decode_mono_rgba_tiles_region,
+    decode_rgba_tiles, decode_rgba_tiles_region, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len,
+    rgba_tile_blob_len,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -160,16 +163,7 @@ pub fn read_resolved_layer_mask_alpha_from_container(
     canvas_size: CanvasSize,
     source: &metadata::MaskLayerSource,
 ) -> Result<AlphaTileImage, ClipFileError> {
-    let body = container
-        .external_data_body(&source.external_id)
-        .ok_or_else(|| ClipFileError::MissingExternalData(source.external_id.clone()))?;
-    let expected_len = alpha_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?;
-    let blob = decode_external_tile_blob(body, source.empty_fill, Some(expected_len))?;
-    let alpha = decode_alpha_tiles(
-        &blob.bytes,
-        source.pixel_size.width,
-        source.pixel_size.height,
-    )?;
+    let alpha = decode_mask_source_alpha(container, source)?;
     place_alpha_on_canvas(
         alpha,
         canvas_size,
@@ -177,6 +171,61 @@ pub fn read_resolved_layer_mask_alpha_from_container(
         source.offset_y,
         source.empty_fill,
     )
+}
+
+pub fn read_resolved_layer_mask_alpha_region_from_container(
+    container: &ClipContainer,
+    source: &metadata::MaskLayerSource,
+    source_region: Rect,
+) -> Result<AlphaTileImage, ClipFileError> {
+    decode_mask_source_alpha_region(container, source, source_region)
+}
+
+fn decode_mask_source_alpha(
+    container: &ClipContainer,
+    source: &metadata::MaskLayerSource,
+) -> Result<AlphaTileImage, ClipFileError> {
+    let body = container
+        .external_data_body(&source.external_id)
+        .ok_or_else(|| ClipFileError::MissingExternalData(source.external_id.clone()))?;
+    let expected_len = alpha_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?;
+    let blob = decode_external_tile_blob(body, source.empty_fill, Some(expected_len))?;
+    decode_alpha_tiles(
+        &blob.bytes,
+        source.pixel_size.width,
+        source.pixel_size.height,
+    )
+}
+
+fn decode_mask_source_alpha_region(
+    container: &ClipContainer,
+    source: &metadata::MaskLayerSource,
+    source_region: Rect,
+) -> Result<AlphaTileImage, ClipFileError> {
+    let body = container
+        .external_data_body(&source.external_id)
+        .ok_or_else(|| ClipFileError::MissingExternalData(source.external_id.clone()))?;
+    let expected_len = alpha_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?;
+    let tile_selection = tile_block_selection_for_region(
+        source.pixel_size.width,
+        source.pixel_size.height,
+        source_region,
+    )?;
+    let expected_tile_count = expected_len / MASK_TILE_BYTES;
+    let mut writer = AlphaTileRegionWriter::new(
+        source.pixel_size.width,
+        source.pixel_size.height,
+        source_region,
+    )?;
+    visit_external_tile_block_selection(
+        body,
+        source.empty_fill,
+        MASK_TILE_BYTES,
+        expected_tile_count,
+        tile_selection,
+        |tile_index, bytes| writer.write_alpha_block(TileBlockRef { tile_index, bytes }),
+    )?;
+    writer.finish()
 }
 
 fn decode_raster_source_rgba(

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::fs;
 use std::ops::Range;
@@ -52,6 +53,7 @@ pub struct ClipContainer {
     chunks: Vec<ChunkInfo>,
     sqlite_body: Range<usize>,
     external_data: Vec<ExternalDataChunk>,
+    external_data_by_id: HashMap<String, Range<usize>>,
 }
 
 impl ClipContainer {
@@ -68,6 +70,7 @@ impl ClipContainer {
         let mut chunks = Vec::new();
         let mut sqlite_body = None;
         let mut external_data = Vec::new();
+        let mut external_data_by_id = HashMap::new();
         let mut pos = 24usize;
 
         while pos < data.len() {
@@ -102,6 +105,9 @@ impl ClipContainer {
                 ChunkKind::Sqlite => sqlite_body = Some(body.clone()),
                 ChunkKind::ExternalData => {
                     let external_id = read_external_id(&data[body.clone()])?;
+                    external_data_by_id
+                        .entry(external_id.clone())
+                        .or_insert_with(|| body.clone());
                     external_data.push(ExternalDataChunk {
                         external_id,
                         body: body.clone(),
@@ -120,6 +126,7 @@ impl ClipContainer {
             chunks,
             sqlite_body,
             external_data,
+            external_data_by_id,
         })
     }
 
@@ -132,11 +139,8 @@ impl ClipContainer {
     }
 
     pub fn external_data_body(&self, external_id: &str) -> Option<&[u8]> {
-        let chunk = self
-            .external_data
-            .iter()
-            .find(|chunk| chunk.external_id == external_id)?;
-        Some(&self.data[chunk.body.clone()])
+        let body = self.external_data_by_id.get(external_id)?;
+        Some(&self.data[body.clone()])
     }
 
     pub fn sqlite_bytes(&self) -> &[u8] {

@@ -105,6 +105,9 @@ impl GpuNormalStackResourceProvider for InlineProvider {
             render_node_id: mask.render_node_id,
             mask_mipmap_id: key.mask_mipmap_id,
             size: mask.size,
+            upload_origin_x: 0,
+            upload_origin_y: 0,
+            upload_size: mask.size,
             pixels: &mask.pixels,
         }])
     }
