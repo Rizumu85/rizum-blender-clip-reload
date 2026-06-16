@@ -1,5 +1,6 @@
-use clip_model::LayerId;
 use clip_runtime::{ClipSession, NormalRasterStackSupportResult};
+
+use crate::layer_labels::optional_layer_label;
 
 pub(crate) fn normal_support_check_text(
     session: &ClipSession,
@@ -16,13 +17,13 @@ pub(crate) fn normal_support_check_text(
             "  resource stats rasters={} raster_bytes={} max_raster_layer={} max_raster={}x{} max_raster_bytes={} masks={} mask_bytes={} max_mask_layer={} max_mask={}x{} max_mask_bytes={}",
             stats.raster_count,
             stats.raster_bytes,
-            layer_label(session, stats.max_raster_layer_id),
+            optional_layer_label(session, stats.max_raster_layer_id),
             stats.max_raster_width,
             stats.max_raster_height,
             stats.max_raster_bytes,
             stats.mask_count,
             stats.mask_bytes,
-            layer_label(session, stats.max_mask_layer_id),
+            optional_layer_label(session, stats.max_mask_layer_id),
             stats.max_mask_width,
             stats.max_mask_height,
             stats.max_mask_bytes,
@@ -32,28 +33,13 @@ pub(crate) fn normal_support_check_text(
         format!(
             "  unsupported node={} layer={} kind={:?} reason={}",
             unsupported.render_node_id.0,
-            layer_label(session, Some(unsupported.layer_id)),
+            optional_layer_label(session, Some(unsupported.layer_id)),
             unsupported.kind,
             unsupported.reason,
         )
     }));
     lines.push(String::new());
     lines.join("\n")
-}
-
-fn layer_label(session: &ClipSession, layer_id: Option<LayerId>) -> String {
-    let Some(layer_id) = layer_id else {
-        return "-".to_string();
-    };
-    let name = session.layer_name(layer_id).unwrap_or("").trim();
-    if name.is_empty() {
-        return layer_id.0.to_string();
-    }
-    let name = name
-        .chars()
-        .map(|ch| if ch.is_control() { ' ' } else { ch })
-        .collect::<String>();
-    format!("{} [{}]", layer_id.0, name)
 }
 
 #[cfg(test)]

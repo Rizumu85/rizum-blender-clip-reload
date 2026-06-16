@@ -8,8 +8,11 @@ use std::process;
 use clip_model::{LayerId, Rect, Rgba8};
 use clip_runtime::ClipSession;
 
+mod layer_labels;
 mod support_json;
 mod support_text;
+
+use layer_labels::{layer_label, optional_raw_layer_label};
 
 fn main() {
     let mut args = env::args_os();
@@ -50,7 +53,7 @@ fn main() {
         "clip summary: {}x{} root_layer={} layers={} external_data={}",
         summary.canvas.width,
         summary.canvas.height,
-        summary.root_layer_id.0,
+        layer_label(&session, summary.root_layer_id),
         summary.layer_count,
         summary.external_data_count,
     );
@@ -59,7 +62,7 @@ fn main() {
         println!(
             "  id={} layer={} kind={:?} depth={} clip={} opacity={} composite={} render_mipmap={:?} mask_mipmap={:?} paper_color={:?}",
             node.id.0,
-            node.layer_id.0,
+            layer_label(&session, node.layer_id),
             node.kind,
             node.depth,
             node.clip,
@@ -156,7 +159,7 @@ fn main() {
         let stats = image_stats(&image.pixels);
         println!(
             "gpu roundtrip layer={} size={}x{} bytes={} nonzero_alpha={} sums={:?}",
-            layer_id.0,
+            layer_label(&session, layer_id),
             image.width,
             image.height,
             image.pixels.len(),
@@ -181,7 +184,7 @@ fn main() {
             println!(
                 "  node={} layer={} render_mipmap={} size={}x{} bytes={}",
                 resource.render_node_id.0,
-                resource.key.layer_id.0,
+                layer_label(&session, resource.key.layer_id),
                 resource.key.render_mipmap_id,
                 resource.size.width,
                 resource.size.height,
@@ -204,7 +207,7 @@ fn main() {
         let stats = image_stats(&result.image.pixels);
         println!(
             "gpu draw layer={} node={} render_mipmap={} size={}x{} bytes={} nonzero_alpha={} sums={:?} differing_bytes={}",
-            layer_id.0,
+            layer_label(&session, layer_id),
             result.resource_info.render_node_id.0,
             result.resource_info.key.render_mipmap_id,
             result.image.width,
@@ -242,7 +245,7 @@ fn main() {
             println!(
                 "  drawn node={} layer={} render_mipmap={} size={}x{} bytes={}",
                 resource.render_node_id.0,
-                resource.key.layer_id.0,
+                layer_label(&session, resource.key.layer_id),
                 resource.key.render_mipmap_id,
                 resource.size.width,
                 resource.size.height,
@@ -253,7 +256,7 @@ fn main() {
             println!(
                 "  unsupported node={} layer={} kind={:?} reason={}",
                 unsupported.render_node_id.0,
-                unsupported.layer_id.0,
+                layer_label(&session, unsupported.layer_id),
                 unsupported.kind,
                 unsupported.reason,
             );
@@ -311,7 +314,7 @@ fn main() {
             println!(
                 "  drawn node={} layer={} render_mipmap={} size={}x{} bytes={}",
                 resource.render_node_id.0,
-                resource.key.layer_id.0,
+                layer_label(&session, resource.key.layer_id),
                 resource.key.render_mipmap_id,
                 resource.size.width,
                 resource.size.height,
@@ -322,7 +325,7 @@ fn main() {
             println!(
                 "  mask node={} layer={} mask_mipmap={} size={}x{} bytes={}",
                 resource.render_node_id.0,
-                resource.key.layer_id.0,
+                layer_label(&session, resource.key.layer_id),
                 resource.key.mask_mipmap_id,
                 resource.size.width,
                 resource.size.height,
@@ -333,7 +336,7 @@ fn main() {
             println!(
                 "  unsupported node={} layer={} kind={:?} reason={}",
                 unsupported.render_node_id.0,
-                unsupported.layer_id.0,
+                layer_label(&session, unsupported.layer_id),
                 unsupported.kind,
                 unsupported.reason,
             );
@@ -381,7 +384,7 @@ fn main() {
                     "    input role={} node={} layer={} blend={} opacity={} rgba={} mask_alpha={}",
                     input.role,
                     format_optional_u32(input.render_node_id),
-                    format_optional_u32(input.layer_id),
+                    optional_raw_layer_label(&session, input.layer_id),
                     input.blend_mode.as_deref().unwrap_or("-"),
                     format_optional_f32(input.opacity),
                     format_optional_rgba(input.rgba),
@@ -393,7 +396,7 @@ fn main() {
             println!(
                 "  unsupported node={} layer={} kind={:?} reason={}",
                 unsupported.render_node_id.0,
-                unsupported.layer_id.0,
+                layer_label(&session, unsupported.layer_id),
                 unsupported.kind,
                 unsupported.reason,
             );
