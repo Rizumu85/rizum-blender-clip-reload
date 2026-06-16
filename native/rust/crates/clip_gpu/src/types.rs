@@ -90,6 +90,13 @@ pub enum GpuNormalStackSource {
         base: GpuNormalRasterSource,
         clipped: Vec<GpuNormalRasterSource>,
     },
+    ContainerClippingRun {
+        children: Vec<GpuNormalStackSource>,
+        opacity: f32,
+        mask_key: Option<GpuMaskResourceKey>,
+        blend_mode: GpuRasterBlendMode,
+        clipped: Vec<GpuNormalRasterSource>,
+    },
     Container {
         children: Vec<GpuNormalStackSource>,
         opacity: f32,

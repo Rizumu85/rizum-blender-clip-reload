@@ -114,7 +114,7 @@ class FakeRenderer:
 
 
 class NativeBridgeTests(unittest.TestCase):
-    def test_resolve_renderer_library_uses_packaged_renderer_when_override_is_empty(self) -> None:
+    def test_resolve_renderer_library_uses_packaged_renderer(self) -> None:
         original = native_bridge.packaged_renderer_library_path
         old_env = os.environ.pop("RIZUM_CLIP_RENDERER_DLL", None)
         native_bridge.packaged_renderer_library_path = (
@@ -122,13 +122,25 @@ class NativeBridgeTests(unittest.TestCase):
         )
         try:
             self.assertEqual(
-                native_bridge.resolve_renderer_library(None),
+                native_bridge.resolve_renderer_library(),
                 "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll",
             )
         finally:
             native_bridge.packaged_renderer_library_path = original
             if old_env is not None:
                 os.environ["RIZUM_CLIP_RENDERER_DLL"] = old_env
+
+    def test_render_clip_requires_packaged_worker(self) -> None:
+        original = native_bridge.packaged_renderer_worker_path
+        native_bridge.packaged_renderer_worker_path = lambda: None
+        try:
+            with self.assertRaisesRegex(
+                native_bridge.NativeBridgeError,
+                "packaged native renderer worker not found",
+            ):
+                native_bridge.render_clip_rgba8("sample.clip")
+        finally:
+            native_bridge.packaged_renderer_worker_path = original
 
     def test_worker_unsupported_detail_formats_issue_locator(self) -> None:
         self.assertEqual(
@@ -244,17 +256,17 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_SOURCE_COUNT_KEY], 2)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY], 1)
-        self.assertEqual(image[native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY], 4)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_LAYER_KEY], 10)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY], 1)
-        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY], 4)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY], 0)
-        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_LAYER_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_WIDTH_KEY], 0)
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY], 0)
-        self.assertEqual(image[native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY], 0)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY, image)
         self.assertIn("Full native support", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_DETAILS_KEY], "")
 
@@ -312,7 +324,7 @@ class NativeBridgeTests(unittest.TestCase):
             "layer 9 node 4 Filter\nlayer 10 node 5 Raster",
         )
 
-    def test_large_support_byte_counts_do_not_overflow_blender_idprops(self) -> None:
+    def test_large_support_byte_counts_are_not_written_to_blender_idprops(self) -> None:
         bpy = FakeBpy()
         result = FakeRenderer().render_rgba8("sample.clip")
         result = native_bridge.NativeRenderResult(
@@ -351,22 +363,10 @@ class NativeBridgeTests(unittest.TestCase):
 
         native_bridge.create_or_update_image(bpy, result, image=image)
 
-        self.assertEqual(
-            image[native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY],
-            "33476800000",
-        )
-        self.assertEqual(
-            image[native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY],
-            "3221225472",
-        )
-        self.assertEqual(
-            image[native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY],
-            "2415919104",
-        )
-        self.assertEqual(
-            image[native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY],
-            "2415919104",
-        )
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY, image)
 
     def test_update_records_unknown_support_when_summary_unavailable(self) -> None:
         bpy = FakeBpy()

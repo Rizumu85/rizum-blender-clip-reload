@@ -8,7 +8,10 @@ pub(crate) fn source_can_affect_output(source: &GpuNormalStackSource) -> bool {
     match source {
         GpuNormalStackSource::Raster(raster) => raster_can_affect_output(*raster),
         GpuNormalStackSource::ClippingRun { base, .. } => raster_can_affect_output(*base),
-        GpuNormalStackSource::Container {
+        GpuNormalStackSource::ContainerClippingRun {
+            children, opacity, ..
+        }
+        | GpuNormalStackSource::Container {
             children, opacity, ..
         }
         | GpuNormalStackSource::ThroughGroup {

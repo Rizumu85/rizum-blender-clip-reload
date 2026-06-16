@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 44),
+    "version": (0, 8, 45),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -53,16 +53,10 @@ _in_flight: set = set()                 # clip paths currently being decoded
 # Helpers
 # --------------------------------------------------------------------------- #
 
-def _native_library_path() -> str | None:
-    path = getattr(_addon_prefs(), "native_library_path", "")
-    return path.strip() or None
-
-
 def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
     return native_bridge.import_clip_as_image(
         clip_path,
         bpy_module=bpy,
-        library_path=_native_library_path(),
         pack=True,
     )
 
@@ -158,13 +152,11 @@ def _support_resource_lines(img) -> list[str]:
         native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
     )
     raster_count = _image_int_property(img, native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY)
-    raster_bytes = _image_int_property(img, native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY)
     mask_count = _image_int_property(img, native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY)
-    mask_bytes = _image_int_property(img, native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY)
     lines = [
         f"Sources: {source_count}; unsupported: {unsupported_count}",
-        f"Raster resources: {raster_count}, {_format_byte_count(raster_bytes)}",
-        f"Mask resources: {mask_count}, {_format_byte_count(mask_bytes)}",
+        f"Raster resources: {raster_count}",
+        f"Mask resources: {mask_count}",
     ]
     max_raster_layer = _image_int_property(
         img,
@@ -173,20 +165,15 @@ def _support_resource_lines(img) -> list[str]:
     if max_raster_layer:
         width = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY)
         height = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY)
-        bytes_ = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY)
         lines.append(
             "Largest raster: "
-            f"layer {max_raster_layer}, {width}x{height}, {_format_byte_count(bytes_)}"
+            f"layer {max_raster_layer}, {width}x{height}"
         )
     max_mask_layer = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_LAYER_KEY)
     if max_mask_layer:
         width = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_WIDTH_KEY)
         height = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY)
-        bytes_ = _image_int_property(img, native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY)
-        lines.append(
-            "Largest mask: "
-            f"layer {max_mask_layer}, {width}x{height}, {_format_byte_count(bytes_)}"
-        )
+        lines.append(f"Largest mask: layer {max_mask_layer}, {width}x{height}")
     return lines
 
 
@@ -317,8 +304,6 @@ def _show_text_in_editor(context, text) -> bool:
 def _schedule_async_decode(
     clip_path: str,
     image_name: str,
-    *,
-    native_library_path: str | None,
 ) -> bool:
     with _state_lock:
         if clip_path in _in_flight:
@@ -336,9 +321,6 @@ def _schedule_async_decode(
     threading.Thread(
         target=_async_decode,
         args=(clip_path, image_name),
-        kwargs={
-            "native_library_path": native_library_path,
-        },
         daemon=True,
     ).start()
     return True
@@ -401,7 +383,6 @@ class IMAGE_OT_reload_clip_studio(Operator):
         try:
             result = native_bridge.render_clip_rgba8(
                 clip_path,
-                library_path=_native_library_path(),
             )
             img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             native_bridge.create_or_update_image(
@@ -525,8 +506,6 @@ class IMAGE_OT_open_clip_support_diagnostics(Operator):
 def _async_decode(
     clip_path: str,
     image_name: str,
-    *,
-    native_library_path: str | None,
 ):
     """Worker-thread entry point for native render.
 
@@ -540,7 +519,6 @@ def _async_decode(
     try:
         native_result = native_bridge.render_clip_rgba8(
             clip_path,
-            library_path=native_library_path,
         )
         success = True
     except Exception as exc:
@@ -626,7 +604,6 @@ def _watcher_tick():
         scheduled = _schedule_async_decode(
             state.clip_path,
             img.name,
-            native_library_path=_native_library_path(),
         )
         if scheduled and prefs.debug:
             print(f"[clip_studio_importer] async-decoding {state.clip_path}")
@@ -653,10 +630,8 @@ def _load_post_refresh_native_images(_dummy):
     try:
         prefs = _addon_prefs()
         debug = bool(prefs.debug)
-        native_library_path = _native_library_path()
     except Exception:
         debug = False
-        native_library_path = None
 
     for img in bpy.data.images:
         if not img.get(CLIP_NATIVE_KEY):
@@ -687,7 +662,6 @@ def _load_post_refresh_native_images(_dummy):
         scheduled = _schedule_async_decode(
             state.clip_path,
             img.name,
-            native_library_path=native_library_path,
         )
         if scheduled and debug:
             print(f"[clip_studio_importer] load-post native refresh {state.clip_path}")
@@ -729,16 +703,6 @@ class CSI_AddonPreferences(AddonPreferences):
         description="Print extra info to the system console.",
         default=False,
     )
-    native_library_path: StringProperty(
-        name="Native renderer override",
-        description=(
-            "Optional override path to clip_capi.dll, libclip_capi.so, or "
-            "libclip_capi.dylib. Leave empty to use the renderer packaged "
-            "inside the add-on."
-        ),
-        default="",
-        subtype="FILE_PATH",
-    )
 
     def draw(self, context):
         layout = self.layout
@@ -747,28 +711,15 @@ class CSI_AddonPreferences(AddonPreferences):
         row.enabled = self.auto_reload
         row.prop(self, "poll_interval")
         layout.prop(self, "debug")
-        layout.prop(self, "native_library_path")
-        override_path = str(getattr(self, "native_library_path", "") or "").strip()
         packaged_worker_path = native_bridge.packaged_renderer_worker_path()
-        packaged_library_path = native_bridge.packaged_renderer_library_path()
-        if override_path:
+        if packaged_worker_path:
             layout.label(
-                text="Native renderer override is set; packaged renderer is ignored.",
-                icon="INFO",
-            )
-        elif packaged_worker_path:
-            layout.label(
-                text="Packaged native renderer found; override can stay empty.",
+                text="Packaged native renderer found.",
                 icon="CHECKMARK",
-            )
-        elif packaged_library_path:
-            layout.label(
-                text="Packaged native worker missing; rebuild the add-on package.",
-                icon="ERROR",
             )
         else:
             layout.label(
-                text="Packaged native renderer missing; set an override path.",
+                text="Packaged native renderer missing; rebuild the add-on package.",
                 icon="ERROR",
             )
         layout.label(

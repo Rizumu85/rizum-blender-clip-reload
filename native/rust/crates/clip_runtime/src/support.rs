@@ -149,6 +149,23 @@ impl ClipSession {
                         )?
                     };
                     if has_supported_children {
+                        if options.allow_clipping_runs && !node.clip {
+                            let (clipped_count, next_index) = self.collect_strict_clipped_support(
+                                subtree_end,
+                                node.depth,
+                                end,
+                                options,
+                                resource_stats,
+                                unsupported,
+                            )?;
+                            if next_index > subtree_end {
+                                source_count += 1;
+                                clip_base_state = ClipBaseState::Cleared;
+                                index = next_index;
+                                continue;
+                            }
+                            debug_assert_eq!(clipped_count, 0);
+                        }
                         source_count += 1;
                         clip_base_state = if node.composite == LAYER_COMPOSITE_THROUGH {
                             ClipBaseState::Cleared

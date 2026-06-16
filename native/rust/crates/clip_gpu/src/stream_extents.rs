@@ -66,7 +66,8 @@ where
             current_bounds,
             current_unknown,
         ),
-        GpuNormalStackSource::Container { children, .. } => merge_source_bounds(
+        GpuNormalStackSource::ContainerClippingRun { children, .. }
+        | GpuNormalStackSource::Container { children, .. } => merge_source_bounds(
             known_stack_bounds(provider, children, output_size),
             current_bounds,
             current_unknown,

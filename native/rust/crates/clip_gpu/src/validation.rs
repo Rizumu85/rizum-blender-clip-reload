@@ -41,6 +41,31 @@ pub(crate) fn validate_normal_stack_sources(
                     )?;
                 }
             }
+            GpuNormalStackSource::ContainerClippingRun {
+                children,
+                mask_key,
+                clipped,
+                ..
+            } => {
+                if let Some(mask_key) = *mask_key {
+                    validate_mask_source(mask_cache, output_size, mask_key, mask_key.layer_id)?;
+                }
+                drawn_resources.extend(validate_normal_stack_sources(
+                    cache,
+                    mask_cache,
+                    output_size,
+                    children,
+                )?);
+                for clipped_source in clipped {
+                    validate_normal_raster_source(
+                        cache,
+                        mask_cache,
+                        output_size,
+                        *clipped_source,
+                        &mut drawn_resources,
+                    )?;
+                }
+            }
             GpuNormalStackSource::Container {
                 children, mask_key, ..
             }

@@ -644,6 +644,46 @@ impl ClipSession {
                         unsupported,
                         resource_plan,
                     )? {
+                        if options.allow_clipping_runs && !node.clip {
+                            let (clipped, next_index) = self.collect_gpu_clipped_siblings(
+                                subtree_end,
+                                node.depth,
+                                end,
+                                options,
+                                unsupported,
+                                resource_plan,
+                            )?;
+                            if !clipped.is_empty() {
+                                if let clip_gpu::GpuNormalStackSource::Container {
+                                    children,
+                                    opacity,
+                                    mask_key,
+                                    blend_mode,
+                                } = container
+                                {
+                                    has_drawn_output = true;
+                                    sources.push(
+                                        clip_gpu::GpuNormalStackSource::ContainerClippingRun {
+                                            children,
+                                            opacity,
+                                            mask_key,
+                                            blend_mode,
+                                            clipped,
+                                        },
+                                    );
+                                    clip_base_state = ClipBaseState::Cleared;
+                                    index = next_index;
+                                    continue;
+                                }
+                            }
+                            if next_index > subtree_end {
+                                has_drawn_output = true;
+                                sources.push(container);
+                                clip_base_state = ClipBaseState::Cleared;
+                                index = next_index;
+                                continue;
+                            }
+                        }
                         if can_elide_initial_terminal_container(
                             options,
                             node,
@@ -3390,6 +3430,29 @@ mod tests {
     }
 
     #[test]
+    fn gpu_selector_accepts_container_base_clipping_runs_in_aya_fixture() {
+        let path = fixture_path_ending("Aya_Live2D.clip");
+        let session = ClipSession::open(&path).expect("open Aya fixture");
+
+        let support = session
+            .check_normal_raster_stack_support()
+            .expect("check Aya support");
+        assert!(support.unsupported.is_empty());
+
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .expect("select Aya render stack");
+
+        assert!(selection.unsupported.is_empty());
+        assert!(
+            selection
+                .sources
+                .iter()
+                .any(stack_contains_container_clipping_run)
+        );
+    }
+
+    #[test]
     fn gpu_selector_folds_off_canvas_zero_fill_mask_to_zero_opacity() {
         let mut session = synthetic_session(vec![
             container_node(0, 2, 0, 0),
@@ -3491,6 +3554,34 @@ mod tests {
             mask_sources: HashMap::new(),
             filter_sources: HashMap::new(),
             rendered_image: None,
+        }
+    }
+
+    fn fixture_path_ending(suffix: &str) -> PathBuf {
+        let img_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img");
+        std::fs::read_dir(&img_dir)
+            .expect("read fixture directory")
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .find(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.ends_with(suffix))
+            })
+            .unwrap_or_else(|| panic!("fixture ending with {suffix:?} not found"))
+    }
+
+    fn stack_contains_container_clipping_run(source: &clip_gpu::GpuNormalStackSource) -> bool {
+        match source {
+            clip_gpu::GpuNormalStackSource::ContainerClippingRun { .. } => true,
+            clip_gpu::GpuNormalStackSource::Container { children, .. }
+            | clip_gpu::GpuNormalStackSource::ThroughGroup { children, .. } => {
+                children.iter().any(stack_contains_container_clipping_run)
+            }
+            clip_gpu::GpuNormalStackSource::Raster(_)
+            | clip_gpu::GpuNormalStackSource::ClippingRun { .. }
+            | clip_gpu::GpuNormalStackSource::SolidColor { .. }
+            | clip_gpu::GpuNormalStackSource::LutFilter { .. } => false,
         }
     }
 

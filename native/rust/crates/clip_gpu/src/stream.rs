@@ -14,8 +14,8 @@ use crate::source_params::{
 use crate::stream_bounds::CanvasRect;
 use crate::stream_effects::source_can_affect_output;
 use crate::stream_groups::{
-    render_clipping_run_with_provider, render_container_with_provider,
-    render_through_group_with_provider,
+    render_clipping_run_with_provider, render_container_clipping_run_with_provider,
+    render_container_with_provider, render_through_group_with_provider,
 };
 use crate::stream_resources::{
     known_clipped_sibling_activity, known_raster_source_bounds, mask_view_with_provider,
@@ -296,6 +296,61 @@ where
                     target_origin,
                 ),
                 "rizum_clip_provider_clipping_resolve_pass",
+                local_pass_bounds(pass_bounds, target_origin),
+            );
+            state.retain_intermediate_cache(clipping_cache);
+            state.finish_pass()?;
+            *dirty_bounds = Some(pass_bounds);
+            Ok(true)
+        }
+        GpuNormalStackSource::ContainerClippingRun {
+            children,
+            opacity,
+            mask_key,
+            blend_mode,
+            clipped,
+        } => {
+            let clipping_cache = render_container_clipping_run_with_provider(
+                renderer,
+                provider,
+                state,
+                output_size,
+                children,
+                *opacity,
+                *mask_key,
+                clipped,
+                fallback_texture,
+                pipelines,
+            )?;
+            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, clipping_cache.bounds())
+            else {
+                return Ok(false);
+            };
+            encode_normal_source_pass_scissored(
+                state.device(),
+                state.encoder_mut(),
+                raster_source_pipeline(
+                    *blend_mode,
+                    &pipelines.alpha_pipeline,
+                    &pipelines.add_glow_pipeline,
+                    &pipelines.color_dodge_pipeline,
+                    &pipelines.color_burn_pipeline,
+                    &pipelines.glow_dodge_pipeline,
+                    &pipelines.standard_blend_pipeline,
+                ),
+                &pipelines.bind_group_layout,
+                clipping_cache.view(),
+                previous_view,
+                previous_view,
+                output_view,
+                generated_raster_source_uniform_bytes_with_blend_and_origins(
+                    1.0,
+                    false,
+                    *blend_mode,
+                    clipping_cache.texture_origin(),
+                    target_origin,
+                ),
+                "rizum_clip_provider_container_clipping_resolve_pass",
                 local_pass_bounds(pass_bounds, target_origin),
             );
             state.retain_intermediate_cache(clipping_cache);

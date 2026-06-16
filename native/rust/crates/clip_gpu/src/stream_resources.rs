@@ -187,7 +187,8 @@ where
         GpuNormalStackSource::ClippingRun { base, .. } => {
             known_clipping_run_activity(provider, *base, output_size)
         }
-        GpuNormalStackSource::Container { children, .. }
+        GpuNormalStackSource::ContainerClippingRun { children, .. }
+        | GpuNormalStackSource::Container { children, .. }
         | GpuNormalStackSource::ThroughGroup { children, .. } => {
             known_stack_activity(provider, children, output_size)
         }

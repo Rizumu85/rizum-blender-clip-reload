@@ -145,16 +145,16 @@ Result:
   checks ABI version `1`, opens native sessions, reads image metadata, renders
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
-- The add-on exposes `Native renderer override` as an optional override
-  preference. Native imports render through the packaged out-of-process
-  `clip_cli` worker, create generated images without sidecar PNGs, pack them by
-  default, and store source path, source mtime, source size, source SHA-256,
-  canvas metadata, renderer ABI, renderer version, and reload status custom
-  properties. The installable add-on zip includes the local release `clip_cli`
-  worker plus `clip_capi` library under `clip_studio_importer/native/`; the
-  override can stay empty when the packaged worker is found. The DLL override is
-  retained for explicit development/testing only because in-process wgpu
-  rendering can crash Blender's UI redraw path on Blender 5.0.1/NVIDIA.
+- Native imports render through the packaged out-of-process `clip_cli` worker,
+  create generated images without sidecar PNGs, pack them by default, and store
+  source path, source mtime, source size, source SHA-256, canvas metadata,
+  renderer ABI, renderer version, and reload status custom properties. The
+  installable add-on zip includes the local release `clip_cli` worker plus
+  `clip_capi` library under `clip_studio_importer/native/`; preferences report
+  whether that packaged worker is present instead of exposing a user renderer
+  override. The direct `clip_capi` path remains internal development/test
+  plumbing because in-process wgpu rendering can crash Blender's UI redraw path
+  on Blender 5.0.1/NVIDIA.
 - `Reload from .clip` and the non-blocking watcher update images through the C
   ABI/generated-image path only.
 - Blender `load_post` now scans packed native images, checks the stored source

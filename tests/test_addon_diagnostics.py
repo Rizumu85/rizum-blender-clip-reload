@@ -126,31 +126,28 @@ class FakeLayout:
 
 
 class AddonDiagnosticsTests(unittest.TestCase):
-    def test_preferences_draw_explains_empty_native_renderer_override(self) -> None:
+    def test_preferences_draw_reports_packaged_native_renderer(self) -> None:
         addon = _load_addon_module()
         original_worker = addon.native_bridge.packaged_renderer_worker_path
-        original_library = addon.native_bridge.packaged_renderer_library_path
         addon.native_bridge.packaged_renderer_worker_path = (
             lambda: "C:/Blender/addons/clip_studio_importer/native/clip_cli.exe"
         )
-        addon.native_bridge.packaged_renderer_library_path = lambda: None
         try:
             preferences = addon.CSI_AddonPreferences()
             preferences.layout = FakeLayout()
             preferences.auto_reload = True
-            preferences.native_library_path = ""
 
             preferences.draw(types.SimpleNamespace())
         finally:
             addon.native_bridge.packaged_renderer_worker_path = original_worker
-            addon.native_bridge.packaged_renderer_library_path = original_library
 
         labels = [label for label, _icon in preferences.layout.labels]
         self.assertIn(
-            "Packaged native renderer found; override can stay empty.",
+            "Packaged native renderer found.",
             labels,
         )
-        self.assertIn(("native_library_path", {}), preferences.layout.props)
+        prop_names = [name for name, _kwargs in preferences.layout.props]
+        self.assertNotIn("native_library_path", prop_names)
 
     def test_panel_draws_error_diagnostic(self) -> None:
         addon = _load_addon_module()
@@ -171,17 +168,13 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.CLIP_SUPPORT_SOURCE_COUNT_KEY: 6,
             addon.native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY: 2,
             addon.native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY: 3,
-            addon.native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY: 2048,
             addon.native_bridge.CLIP_SUPPORT_MAX_RASTER_LAYER_KEY: 9,
             addon.native_bridge.CLIP_SUPPORT_MAX_RASTER_WIDTH_KEY: 32,
             addon.native_bridge.CLIP_SUPPORT_MAX_RASTER_HEIGHT_KEY: 16,
-            addon.native_bridge.CLIP_SUPPORT_MAX_RASTER_BYTES_KEY: 2048,
             addon.native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY: 1,
-            addon.native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY: 512,
             addon.native_bridge.CLIP_SUPPORT_MAX_MASK_LAYER_KEY: 10,
             addon.native_bridge.CLIP_SUPPORT_MAX_MASK_WIDTH_KEY: 32,
             addon.native_bridge.CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY: 16,
-            addon.native_bridge.CLIP_SUPPORT_MAX_MASK_BYTES_KEY: 512,
             addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
                 "- layer 9 node 4 Filter\n"
                 "- layer 10 node 5 Raster\n"
@@ -203,10 +196,10 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Renderer version: 0.1.0-test", labels)
         self.assertIn("2 unsupported node(s).", labels)
         self.assertIn("Sources: 6; unsupported: 2", labels)
-        self.assertIn("Raster resources: 3, 2.0 KiB", labels)
-        self.assertIn("Mask resources: 1, 512 B", labels)
-        self.assertIn("Largest raster: layer 9, 32x16, 2.0 KiB", labels)
-        self.assertIn("Largest mask: layer 10, 32x16, 512 B", labels)
+        self.assertIn("Raster resources: 3", labels)
+        self.assertIn("Mask resources: 1", labels)
+        self.assertIn("Largest raster: layer 9, 32x16", labels)
+        self.assertIn("Largest mask: layer 10, 32x16", labels)
         self.assertIn(
             "Locations: layer 9/node 4 Filter, layer 10/node 5 Raster, "
             "layer 11/node 6 Filter, +3 more",
@@ -327,9 +320,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.CLIP_SUPPORT_SOURCE_COUNT_KEY: 6,
             addon.native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY: 2,
             addon.native_bridge.CLIP_SUPPORT_RASTER_COUNT_KEY: 3,
-            addon.native_bridge.CLIP_SUPPORT_RASTER_BYTES_KEY: 2048,
             addon.native_bridge.CLIP_SUPPORT_MASK_COUNT_KEY: 1,
-            addon.native_bridge.CLIP_SUPPORT_MASK_BYTES_KEY: 512,
             addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: "- layer 9 node 4 Filter",
         }
         context = types.SimpleNamespace(
@@ -351,7 +342,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Renderer ABI: 1", clipboard)
         self.assertIn("Renderer version: 0.1.0-test", clipboard)
         self.assertIn("Native support: Unsupported nodes", clipboard)
-        self.assertIn("Raster resources: 3, 2.0 KiB", clipboard)
+        self.assertIn("Raster resources: 3", clipboard)
         self.assertIn("Unsupported locations:", clipboard)
         self.assertIn("- layer 9 node 4 Filter", clipboard)
         self.assertIn("Render error: native renderer failed loudly", clipboard)
