@@ -406,7 +406,13 @@ def create_or_update_image(
     if hasattr(image, "colorspace_settings"):
         image.colorspace_settings.name = "sRGB"
 
-    image.pixels.foreach_set(_rgba8_to_float_sequence(result.pixels_rgba8))
+    image.pixels.foreach_set(
+        _rgba8_to_blender_float_sequence(
+            result.pixels_rgba8,
+            result.width,
+            result.height,
+        )
+    )
     image.update()
     _write_source_properties(image, result)
     if pack and hasattr(image, "pack"):
@@ -830,13 +836,19 @@ def _parse_int(value: Any) -> int | None:
         return None
 
 
-def _rgba8_to_float_sequence(pixels: bytes) -> Any:
+def _rgba8_to_blender_float_sequence(pixels: bytes, width: int, height: int) -> Any:
+    row_len = int(width) * 4
     try:
         import numpy as np
 
-        return np.frombuffer(pixels, dtype=np.uint8).astype(np.float32) / np.float32(255.0)
+        rows = np.frombuffer(pixels, dtype=np.uint8).reshape((int(height), row_len))
+        return rows[::-1].copy().astype(np.float32).ravel() / np.float32(255.0)
     except Exception:
-        return array("f", (value / 255.0 for value in pixels))
+        values = array("f")
+        for y in range(int(height) - 1, -1, -1):
+            start = y * row_len
+            values.extend(value / 255.0 for value in pixels[start : start + row_len])
+        return values
 
 
 def _status_name(status: int) -> str:

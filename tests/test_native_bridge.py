@@ -136,6 +136,72 @@ class NativeBridgeTests(unittest.TestCase):
             "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
         )
 
+    def test_create_or_update_image_flips_rows_for_blender_pixel_storage(self) -> None:
+        bpy = FakeBpy()
+        result = native_bridge.NativeRenderResult(
+            clip_path="sample.clip",
+            width=2,
+            height=2,
+            root_layer_id=2,
+            layer_count=3,
+            external_data_count=4,
+            renderer_abi=native_bridge.EXPECTED_ABI_VERSION,
+            renderer_version="0.1.0-test",
+            source_mtime=None,
+            source_size=None,
+            source_sha256="",
+            pixels_rgba8=bytes(
+                [
+                    255,
+                    0,
+                    0,
+                    255,
+                    0,
+                    255,
+                    0,
+                    255,
+                    0,
+                    0,
+                    255,
+                    255,
+                    255,
+                    255,
+                    255,
+                    255,
+                ]
+            ),
+            support_summary=None,
+        )
+
+        image = native_bridge.create_or_update_image(
+            bpy,
+            result,
+            image_name="sample",
+            pack=False,
+        )
+
+        self.assertEqual(
+            image.pixels.values,
+            [
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+            ],
+        )
+
     def test_import_clip_as_image_uploads_pixels_and_tracks_source(self) -> None:
         bpy = FakeBpy()
 
