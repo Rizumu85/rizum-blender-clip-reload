@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 33),
+    "version": (0, 8, 34),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -235,6 +235,35 @@ def _support_diagnostic_text(img) -> str:
     return "\n".join(lines)
 
 
+def _support_report_text_name(img) -> str:
+    image_name = getattr(img, "name", "") or os.path.basename(img.get(CLIP_SOURCE_KEY, ""))
+    image_name = str(image_name).strip() or "Clip Studio Image"
+    return f"Clip Studio Support - {image_name}"
+
+
+def _write_support_report_text(img):
+    text_name = _support_report_text_name(img)
+    texts = bpy.data.texts
+    text = texts.get(text_name)
+    if text is None:
+        text = texts.new(text_name)
+    text.clear()
+    text.write(_support_diagnostic_text(img) + "\n")
+    return text
+
+
+def _show_text_in_editor(context, text) -> bool:
+    screen = getattr(context, "screen", None)
+    for area in getattr(screen, "areas", ()):
+        if getattr(area, "type", None) != "TEXT_EDITOR":
+            continue
+        for space in getattr(area, "spaces", ()):
+            if getattr(space, "type", None) == "TEXT_EDITOR":
+                space.text = text
+                return True
+    return False
+
+
 def _schedule_async_decode(
     clip_path: str,
     image_name: str,
@@ -385,6 +414,28 @@ class IMAGE_OT_copy_clip_support_diagnostics(Operator):
             context.space_data.image
         )
         self.report({"INFO"}, "Copied Clip Studio diagnostics")
+        return {"FINISHED"}
+
+
+class IMAGE_OT_open_clip_support_diagnostics(Operator):
+    """Open the selected .clip image's native diagnostics as a Blender text block."""
+    bl_idname = "image.open_clip_support_diagnostics"
+    bl_label = "Open Support Report"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        space = getattr(context, "space_data", None)
+        img = getattr(space, "image", None) if space else None
+        return img is not None and CLIP_SOURCE_KEY in img.keys()
+
+    def execute(self, context):
+        text = _write_support_report_text(context.space_data.image)
+        shown = _show_text_in_editor(context, text)
+        if shown:
+            self.report({"INFO"}, f"Opened {text.name}")
+        else:
+            self.report({"INFO"}, f"Wrote {text.name}")
         return {"FINISHED"}
 
 
@@ -704,6 +755,11 @@ class IMAGE_PT_clip_studio(Panel):
                 text="Copy support diagnostics",
                 icon="COPYDOWN",
             )
+            layout.operator(
+                IMAGE_OT_open_clip_support_diagnostics.bl_idname,
+                text="Open support report",
+                icon="TEXT",
+            )
         if status == native_bridge.RELOAD_STATUS_MISSING:
             layout.label(text="Packed pixels are still visible.", icon="INFO")
         elif status == native_bridge.RELOAD_STATUS_ERROR:
@@ -756,6 +812,7 @@ _classes = (
     IMAGE_OT_reload_clip_studio,
     IMAGE_OT_toggle_clip_support_details,
     IMAGE_OT_copy_clip_support_diagnostics,
+    IMAGE_OT_open_clip_support_diagnostics,
     IMAGE_PT_clip_studio,
 )
 

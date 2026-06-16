@@ -175,8 +175,8 @@ Result:
   count, unsupported count, raster/mask resource counts, largest raster/mask
   resource metadata, summary report, and `clip_support_details` on the Blender
   image; the Image Editor panel previews the first few detail lines, can expand
-  to show the full stored list, and can copy a complete support report to the
-  clipboard.
+  to show the full stored list, can copy a complete support report to the
+  clipboard, and can open the report as a searchable Blender Text datablock.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -186,8 +186,9 @@ Result:
 Remaining bridge work:
 
 - Improve user-facing diagnostics beyond the current image-level
-  status/error/support summary, especially support-detail navigation and
-  clearer supported-but-imperfect fidelity residuals.
+  status/error/support summary and searchable support report, especially
+  support-detail layer navigation and clearer supported-but-imperfect fidelity
+  residuals.
 - `clip_cli --gpu-support-json` emits the metadata-only support check as pure
   JSON, including canvas metadata, source/unsupported counts, raster/mask
   resource statistics, and unsupported node details. This is diagnostic output

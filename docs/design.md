@@ -18,7 +18,8 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 7. The Image Editor N-panel shows native render status, elapsed and last render
    timing, native support summary, support resource statistics, missing-source
    state, and the latest native render error for the selected `.clip` image.
-   The support report can be copied to the clipboard for issue reports.
+   The support report can be copied to the clipboard for issue reports or opened
+   as a searchable Blender Text datablock.
 
 ## Later Native Workflow
 
@@ -72,9 +73,10 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Unsupported layer features are summarized at image level with counts,
   resource statistics, and unsupported layer/node details. The panel previews
   the first few entries, can expand to show the full support-detail list stored
-  on the image, and can copy the full support report to the clipboard.
+  on the image, can copy the full support report to the clipboard, and can open
+  the report in Blender's Text Editor for searching.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.
-  The remaining native-path UX work is richer navigation around the current
-  expanded support-detail list, such as locating layers in a dedicated browser.
+  The remaining native-path UX work is richer layer navigation beyond the
+  searchable support report, such as locating layers in a dedicated browser.

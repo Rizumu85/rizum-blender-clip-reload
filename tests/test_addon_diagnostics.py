@@ -40,6 +40,23 @@ def _load_addon_module():
     class ImportHelper:
         pass
 
+    class FakeText:
+        def __init__(self, name: str) -> None:
+            self.name = name
+            self.body = ""
+
+        def clear(self) -> None:
+            self.body = ""
+
+        def write(self, text: str) -> None:
+            self.body += text
+
+    class FakeTexts(dict):
+        def new(self, name: str):
+            text = FakeText(name)
+            self[name] = text
+            return text
+
     bpy_app_handlers.persistent = persistent
     bpy_app_handlers.load_post = []
     bpy_app.handlers = bpy_app_handlers
@@ -52,7 +69,7 @@ def _load_addon_module():
     bpy_types.TOPBAR_MT_file_import = types.SimpleNamespace()
     bpy.types = bpy_types
     bpy.utils = types.SimpleNamespace()
-    bpy.data = types.SimpleNamespace(images=[])
+    bpy.data = types.SimpleNamespace(images=[], texts=FakeTexts())
     bpy.context = types.SimpleNamespace(
         preferences=types.SimpleNamespace(
             addons={
@@ -181,6 +198,13 @@ class AddonDiagnosticsTests(unittest.TestCase):
             ),
             panel.layout.operators,
         )
+        self.assertIn(
+            (
+                addon.IMAGE_OT_open_clip_support_diagnostics.bl_idname,
+                {"text": "Open support report", "icon": "TEXT"},
+            ),
+            panel.layout.operators,
+        )
         self.assertNotIn(addon.CLIP_SUPPORT_DETAILS_EXPANDED_KEY, image)
 
     def test_panel_draws_refresh_elapsed_time(self) -> None:
@@ -278,6 +302,48 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Raster resources: 3, 2.0 KiB", clipboard)
         self.assertIn("- layer 9 node 4 Filter", clipboard)
         self.assertIn("Render error: native renderer failed loudly", clipboard)
+
+    def test_open_support_diagnostics_operator_writes_text_block(self) -> None:
+        addon = _load_addon_module()
+
+        class FakeImage(dict):
+            name = "sample image"
+
+        image = FakeImage(
+            {
+                addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+                addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_ERROR,
+                addon.native_bridge.CLIP_RELOAD_ERROR_KEY: "native renderer failed loudly",
+                addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_UNSUPPORTED,
+                addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "1 unsupported node(s).",
+                addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: "- layer 9 node 4 Filter",
+            }
+        )
+        text_space = types.SimpleNamespace(type="TEXT_EDITOR", text=None)
+        context = types.SimpleNamespace(
+            space_data=types.SimpleNamespace(image=image),
+            screen=types.SimpleNamespace(
+                areas=[
+                    types.SimpleNamespace(
+                        type="TEXT_EDITOR",
+                        spaces=[text_space],
+                    )
+                ]
+            ),
+        )
+        operator = addon.IMAGE_OT_open_clip_support_diagnostics()
+
+        self.assertEqual(operator.execute(context), {"FINISHED"})
+
+        text = addon.bpy.data.texts["Clip Studio Support - sample image"]
+        self.assertIs(text_space.text, text)
+        self.assertIn("Clip Studio native render diagnostics", text.body)
+        self.assertIn("Source: C:/art/sample.clip", text.body)
+        self.assertIn("1 unsupported node(s).", text.body)
+        self.assertIn("- layer 9 node 4 Filter", text.body)
+        self.assertIn("Render error: native renderer failed loudly", text.body)
+        self.assertEqual(operator.reported[0], {"INFO"})
+        self.assertIn("Opened Clip Studio Support - sample image", operator.reported[1])
 
     def test_status_label_shortens_unknown_values(self) -> None:
         addon = _load_addon_module()
