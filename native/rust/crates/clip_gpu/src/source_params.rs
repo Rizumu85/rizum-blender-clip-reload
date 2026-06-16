@@ -4,6 +4,13 @@ use crate::blend::blend_kind;
 use crate::{GpuLutFilterMode, GpuNormalRasterSource, GpuRasterBlendMode};
 
 pub(crate) fn raster_source_uniform_bytes(source: GpuNormalRasterSource) -> [u8; 48] {
+    raster_source_uniform_bytes_with_target_origin(source, (0, 0))
+}
+
+pub(crate) fn raster_source_uniform_bytes_with_target_origin(
+    source: GpuNormalRasterSource,
+    target_origin: (i32, i32),
+) -> [u8; 48] {
     normal_source_uniform_bytes(
         [0.0, 0.0, 0.0, 0.0],
         source.opacity,
@@ -12,6 +19,8 @@ pub(crate) fn raster_source_uniform_bytes(source: GpuNormalRasterSource) -> [u8;
         blend_kind(source.blend_mode),
         source.offset_x,
         source.offset_y,
+        target_origin.0,
+        target_origin.1,
     )
 }
 
@@ -24,6 +33,8 @@ pub(crate) fn generated_raster_source_uniform_bytes(opacity: f32, has_mask: bool
         0,
         0,
         0,
+        0,
+        0,
     )
 }
 
@@ -32,12 +43,28 @@ pub(crate) fn generated_raster_source_uniform_bytes_with_blend(
     has_mask: bool,
     blend_mode: GpuRasterBlendMode,
 ) -> [u8; 48] {
+    generated_raster_source_uniform_bytes_with_blend_and_origin(
+        opacity,
+        has_mask,
+        blend_mode,
+        (0, 0),
+    )
+}
+
+pub(crate) fn generated_raster_source_uniform_bytes_with_blend_and_origin(
+    opacity: f32,
+    has_mask: bool,
+    blend_mode: GpuRasterBlendMode,
+    source_origin: (i32, i32),
+) -> [u8; 48] {
     normal_source_uniform_bytes(
         [0.0, 0.0, 0.0, 0.0],
         opacity,
         0,
         u32::from(has_mask),
         blend_kind(blend_mode),
+        source_origin.0,
+        source_origin.1,
         0,
         0,
     )
@@ -69,6 +96,8 @@ pub(crate) fn solid_source_uniform_bytes(color: Rgba8, opacity: f32) -> [u8; 48]
         0,
         0,
         0,
+        0,
+        0,
     )
 }
 
@@ -87,6 +116,8 @@ fn normal_source_uniform_bytes(
     blend_kind: u32,
     offset_x: i32,
     offset_y: i32,
+    target_offset_x: i32,
+    target_offset_y: i32,
 ) -> [u8; 48] {
     let mut bytes = [0u8; 48];
     for (index, value) in color.iter().enumerate() {
@@ -98,5 +129,39 @@ fn normal_source_uniform_bytes(
     bytes[28..32].copy_from_slice(&blend_kind.to_ne_bytes());
     bytes[32..36].copy_from_slice(&offset_x.to_ne_bytes());
     bytes[36..40].copy_from_slice(&offset_y.to_ne_bytes());
+    bytes[40..44].copy_from_slice(&target_offset_x.to_ne_bytes());
+    bytes[44..48].copy_from_slice(&target_offset_y.to_ne_bytes());
     bytes
+}
+
+#[cfg(test)]
+mod tests {
+    use clip_model::LayerId;
+
+    use crate::{GpuNormalRasterSource, GpuRasterBlendMode, GpuRasterResourceKey};
+
+    use super::raster_source_uniform_bytes_with_target_origin;
+
+    #[test]
+    fn target_origin_uses_tail_padding_bytes() {
+        let bytes = raster_source_uniform_bytes_with_target_origin(
+            GpuNormalRasterSource {
+                key: GpuRasterResourceKey {
+                    layer_id: LayerId(1),
+                    render_mipmap_id: 2,
+                },
+                opacity: 1.0,
+                mask_key: None,
+                offset_x: 3,
+                offset_y: 4,
+                blend_mode: GpuRasterBlendMode::Normal,
+            },
+            (5, 6),
+        );
+
+        assert_eq!(&bytes[32..36], &3i32.to_ne_bytes());
+        assert_eq!(&bytes[36..40], &4i32.to_ne_bytes());
+        assert_eq!(&bytes[40..44], &5i32.to_ne_bytes());
+        assert_eq!(&bytes[44..48], &6i32.to_ne_bytes());
+    }
 }

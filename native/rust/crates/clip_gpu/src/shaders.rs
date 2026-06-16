@@ -41,6 +41,7 @@ struct SourceParams {
     has_mask: u32,
     blend_kind: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -123,7 +124,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -146,7 +147,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let dst = textureLoad(dest_texture, texel, 0);
     src.a = clamp(src.a * source_params.opacity, 0.0, 1.0);
     if (source_params.has_mask == 1u) {
-        src.a = src.a * textureLoad(mask_texture, texel, 0).r;
+        src.a = src.a * textureLoad(mask_texture, texel + source_params.target_origin, 0).r;
     }
     let out_alpha = src.a + dst.a * (1.0 - src.a);
     var out_rgb = dst.rgb;
@@ -174,6 +175,7 @@ struct SourceParams {
     has_mask: u32,
     blend_kind: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -397,7 +399,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -420,7 +422,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let dst = textureLoad(dest_texture, texel, 0);
     src.a = clamp(src.a * source_params.opacity, 0.0, 1.0);
     if (source_params.has_mask == 1u) {
-        src.a = src.a * textureLoad(mask_texture, texel, 0).r;
+        src.a = src.a * textureLoad(mask_texture, texel + source_params.target_origin, 0).r;
     }
     var strength = src.a;
     if (dst.a <= 0.0) {
@@ -449,6 +451,7 @@ struct SourceParams {
     has_mask: u32,
     _pad0: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -477,7 +480,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let after = textureLoad(after_texture, texel, 0);
     var strength = clamp(source_params.opacity, 0.0, 1.0);
     if (source_params.has_mask == 1u) {
-        strength = strength * textureLoad(mask_texture, texel, 0).r;
+        strength = strength * textureLoad(mask_texture, texel + source_params.target_origin, 0).r;
     }
 
     let before_pm = before.rgb * before.a;
@@ -509,6 +512,7 @@ struct SourceParams {
     has_mask: u32,
     _pad0: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -565,7 +569,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -588,7 +592,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let dst = textureLoad(dest_texture, texel, 0);
     var src_a = to_u8(src.a);
     if (source_params.has_mask == 1u) {
-        src_a = div255(src_a * to_u8(textureLoad(mask_texture, texel, 0).r));
+        src_a = div255(src_a * to_u8(textureLoad(mask_texture, texel + source_params.target_origin, 0).r));
     }
     let opacity_u8 = i32(clamp(floor(source_params.opacity * 256.0 + 0.5), 0.0, 256.0));
     src_a = (src_a * opacity_u8) / 256;
@@ -627,6 +631,7 @@ struct SourceParams {
     has_mask: u32,
     _pad0: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -675,7 +680,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -699,7 +704,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     var src_a = to_u8(src.a);
     if (source_params.has_mask == 1u) {
-        src_a = (src_a * to_u8(textureLoad(mask_texture, texel, 0).r)) / 255;
+        src_a = (src_a * to_u8(textureLoad(mask_texture, texel + source_params.target_origin, 0).r)) / 255;
     }
     let opacity_u8 = i32(clamp(floor(source_params.opacity * 256.0 + 0.5), 0.0, 256.0));
     src_a = (src_a * opacity_u8) / 256;
@@ -747,6 +752,7 @@ struct SourceParams {
     has_mask: u32,
     _pad0: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -795,7 +801,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -819,7 +825,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     var src_a = to_u8(src.a);
     if (source_params.has_mask == 1u) {
-        src_a = (src_a * to_u8(textureLoad(mask_texture, texel, 0).r)) / 255;
+        src_a = (src_a * to_u8(textureLoad(mask_texture, texel + source_params.target_origin, 0).r)) / 255;
     }
     let opacity_u8 = i32(clamp(floor(source_params.opacity * 256.0 + 0.5), 0.0, 256.0));
     src_a = (src_a * opacity_u8) / 256;
@@ -867,6 +873,7 @@ struct SourceParams {
     has_mask: u32,
     _pad0: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -911,7 +918,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -935,7 +942,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     var src_a = to_u8(src.a);
     if (source_params.has_mask == 1u) {
-        src_a = (src_a * to_u8(textureLoad(mask_texture, texel, 0).r)) / 255;
+        src_a = (src_a * to_u8(textureLoad(mask_texture, texel + source_params.target_origin, 0).r)) / 255;
     }
     let opacity_u8 = i32(clamp(floor(source_params.opacity * 256.0 + 0.5), 0.0, 256.0));
     src_a = (src_a * opacity_u8) / 256;
@@ -991,6 +998,7 @@ struct SourceParams {
     has_mask: u32,
     blend_kind: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -1092,7 +1100,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -1116,7 +1124,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     var src_a = to_u8(src.a);
     if (source_params.has_mask == 1u) {
-        src_a = (src_a * to_u8(textureLoad(mask_texture, texel, 0).r)) / 255;
+        src_a = (src_a * to_u8(textureLoad(mask_texture, texel + source_params.target_origin, 0).r)) / 255;
     }
     let opacity_u8 = i32(clamp(floor(source_params.opacity * 256.0 + 0.5), 0.0, 256.0));
     src_a = (src_a * opacity_u8) / 256;
@@ -1159,6 +1167,7 @@ struct SourceParams {
     has_mask: u32,
     blend_kind: u32,
     source_origin: vec2<i32>,
+    target_origin: vec2<i32>,
 };
 
 @group(0) @binding(3)
@@ -1383,7 +1392,7 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
     if (source_params.source_kind == 1u) {
         return source_params.color;
     }
-    let source_texel = texel - source_params.source_origin;
+    let source_texel = texel + source_params.target_origin - source_params.source_origin;
     let source_size = textureDimensions(source_texture);
     if (
         source_texel.x < 0 ||
@@ -1407,7 +1416,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     src.a = clamp(src.a * source_params.opacity, 0.0, 1.0);
     if (source_params.has_mask == 1u) {
-        src.a = src.a * textureLoad(mask_texture, texel, 0).r;
+        src.a = src.a * textureLoad(mask_texture, texel + source_params.target_origin, 0).r;
     }
     if (src.a <= 0.0) {
         return dst;

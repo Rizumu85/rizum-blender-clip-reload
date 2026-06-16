@@ -2,7 +2,9 @@ use clip_model::CanvasSize;
 
 use crate::blend::clipped_source_pipeline;
 use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
-use crate::source_params::{generated_raster_source_uniform_bytes, raster_source_uniform_bytes};
+use crate::source_params::{
+    generated_raster_source_uniform_bytes, raster_source_uniform_bytes_with_target_origin,
+};
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::CanvasRect;
 use crate::stream_resources::{
@@ -40,6 +42,10 @@ where
     let Some(pass_bounds) = pass_bounds_for_change(None, source_bounds) else {
         return Ok(RenderedStreamingCache::empty());
     };
+    let cache_size = CanvasSize::new(pass_bounds.width, pass_bounds.height);
+    let cache_origin = canvas_rect_origin(pass_bounds);
+    let local_cache_bounds =
+        CanvasRect::full(cache_size).expect("non-empty clipping bounds must create local bounds");
 
     let clipping_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
@@ -47,7 +53,7 @@ where
         state.device(),
         "rizum_clip_provider_clipping_cache_a",
         "rizum_clip_provider_clipping_cache_b",
-        output_size,
+        cache_size,
         clipping_usage,
     );
     let mut previous_index = 0usize;
@@ -78,9 +84,9 @@ where
             clipping_pair.view(previous_index),
             mask_view.as_ref(),
             clipping_pair.view(next_index),
-            raster_source_uniform_bytes(effective_base),
+            raster_source_uniform_bytes_with_target_origin(effective_base, cache_origin),
             "rizum_clip_provider_clipping_base_pass",
-            pass_bounds,
+            local_cache_bounds,
         );
         state.retain_raster_cache(raster_cache);
         state.retain_optional_mask_cache(mask_cache);
@@ -102,7 +108,8 @@ where
         let (raster_cache, source_view, effective_clipped_source, uploaded_source_bounds) =
             raster_view_with_provider(renderer, provider, state, output_size, *clipped_source)?;
         let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-        let Some(pass_bounds) = preserving_pass_bounds_for_change(dirty_bounds, source_bounds)
+        let Some(global_pass_bounds) =
+            preserving_pass_bounds_for_change(dirty_bounds, source_bounds)
         else {
             continue;
         };
@@ -127,22 +134,30 @@ where
             clipping_pair.view(previous_index),
             mask_view.as_ref(),
             clipping_pair.view(next_index),
-            raster_source_uniform_bytes(effective_clipped_source),
+            raster_source_uniform_bytes_with_target_origin(effective_clipped_source, cache_origin),
             "rizum_clip_provider_clipping_clipped_pass",
-            pass_bounds,
+            local_cache_bounds,
         );
         state.retain_raster_cache(raster_cache);
         state.retain_optional_mask_cache(mask_cache);
         state.finish_pass()?;
-        dirty_bounds = Some(pass_bounds);
+        dirty_bounds = Some(global_pass_bounds);
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
-    Ok(RenderedStreamingCache::new(
+    Ok(RenderedStreamingCache::new_with_origin(
         clipping_pair,
         previous_index,
         dirty_bounds,
+        cache_origin,
     ))
+}
+
+fn canvas_rect_origin(bounds: CanvasRect) -> (i32, i32) {
+    (
+        i32::try_from(bounds.x).expect("canvas x origin must fit shader i32"),
+        i32::try_from(bounds.y).expect("canvas y origin must fit shader i32"),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -12,6 +12,8 @@ mod stream_bounds;
 mod stream_groups;
 mod stream_resources;
 mod stream_state;
+#[cfg(test)]
+mod stream_tests;
 pub mod types;
 mod validation;
 

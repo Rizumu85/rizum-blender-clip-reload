@@ -55,6 +55,7 @@ pub(crate) struct RenderedStreamingCache {
     pair: Option<StreamingTexturePair>,
     output_index: usize,
     bounds: Option<CanvasRect>,
+    texture_origin: (i32, i32),
 }
 
 impl RenderedStreamingCache {
@@ -63,10 +64,20 @@ impl RenderedStreamingCache {
         output_index: usize,
         bounds: Option<CanvasRect>,
     ) -> Self {
+        Self::new_with_origin(pair, output_index, bounds, (0, 0))
+    }
+
+    pub(crate) fn new_with_origin(
+        pair: StreamingTexturePair,
+        output_index: usize,
+        bounds: Option<CanvasRect>,
+        texture_origin: (i32, i32),
+    ) -> Self {
         Self {
             pair: Some(pair),
             output_index,
             bounds,
+            texture_origin,
         }
     }
 
@@ -75,6 +86,7 @@ impl RenderedStreamingCache {
             pair: None,
             output_index: 0,
             bounds: None,
+            texture_origin: (0, 0),
         }
     }
 
@@ -87,6 +99,10 @@ impl RenderedStreamingCache {
 
     pub(crate) fn bounds(&self) -> Option<CanvasRect> {
         self.bounds
+    }
+
+    pub(crate) fn texture_origin(&self) -> (i32, i32) {
+        self.texture_origin
     }
 
     fn byte_len(&self) -> usize {

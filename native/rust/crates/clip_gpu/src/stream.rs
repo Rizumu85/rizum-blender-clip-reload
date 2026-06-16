@@ -6,7 +6,8 @@ use crate::pass::{
     encode_normal_source_pass, encode_normal_source_pass_scissored,
 };
 use crate::source_params::{
-    generated_raster_source_uniform_bytes_with_blend, lut_filter_uniform_bytes,
+    generated_raster_source_uniform_bytes_with_blend,
+    generated_raster_source_uniform_bytes_with_blend_and_origin, lut_filter_uniform_bytes,
     raster_source_uniform_bytes, solid_source_uniform_bytes,
 };
 use crate::stream_bounds::CanvasRect;
@@ -257,7 +258,12 @@ where
                 previous_view,
                 previous_view,
                 output_view,
-                generated_raster_source_uniform_bytes_with_blend(1.0, false, base.blend_mode),
+                generated_raster_source_uniform_bytes_with_blend_and_origin(
+                    1.0,
+                    false,
+                    base.blend_mode,
+                    clipping_cache.texture_origin(),
+                ),
                 "rizum_clip_provider_clipping_resolve_pass",
                 pass_bounds,
             );
