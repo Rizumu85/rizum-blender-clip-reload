@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 27),
+    "version": (0, 8, 28),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -64,6 +64,33 @@ def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
 
 def _addon_prefs():
     return bpy.context.preferences.addons[ADDON_PKG].preferences
+
+
+def _reload_status_label(status: str) -> str:
+    return {
+        native_bridge.RELOAD_STATUS_OK: "Ready",
+        native_bridge.RELOAD_STATUS_STALE: "Source changed",
+        native_bridge.RELOAD_STATUS_MISSING: "Source missing",
+        native_bridge.RELOAD_STATUS_REFRESHING: "Rendering",
+        native_bridge.RELOAD_STATUS_ERROR: "Render failed",
+    }.get(status, "Unknown")
+
+
+def _reload_status_icon(status: str) -> str:
+    return {
+        native_bridge.RELOAD_STATUS_OK: "CHECKMARK",
+        native_bridge.RELOAD_STATUS_STALE: "FILE_REFRESH",
+        native_bridge.RELOAD_STATUS_MISSING: "ERROR",
+        native_bridge.RELOAD_STATUS_REFRESHING: "SORTTIME",
+        native_bridge.RELOAD_STATUS_ERROR: "ERROR",
+    }.get(status, "INFO")
+
+
+def _short_diagnostic(message: str, limit: int = 120) -> str:
+    text = " ".join(str(message).split())
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "…"
 
 
 def _schedule_async_decode(
@@ -145,6 +172,10 @@ class IMAGE_OT_reload_clip_studio(Operator):
         img = context.space_data.image
         clip_path = img.get(CLIP_SOURCE_KEY)
         if not clip_path or not os.path.exists(clip_path):
+            native_bridge.write_reload_status(
+                img,
+                native_bridge.RELOAD_STATUS_MISSING,
+            )
             self.report({"ERROR"}, f"Source .clip not found: {clip_path!r}")
             return {"CANCELLED"}
         try:
@@ -159,6 +190,7 @@ class IMAGE_OT_reload_clip_studio(Operator):
                 pack=True,
             )
         except Exception as exc:
+            native_bridge.write_reload_error(img, str(exc))
             self.report({"ERROR"}, f"Reload failed: {exc}")
             return {"CANCELLED"}
         self.report({"INFO"}, f"Reloaded {os.path.basename(clip_path)}")
@@ -208,12 +240,7 @@ def _async_decode(
         def _on_error():
             img = bpy.data.images.get(image_name)
             if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
-                native_bridge.write_reload_status(
-                    img,
-                    native_bridge.RELOAD_STATUS_ERROR,
-                )
-                if error_message:
-                    img[native_bridge.CLIP_RELOAD_ERROR_KEY] = error_message
+                native_bridge.write_reload_error(img, error_message)
             return None
 
         bpy.app.timers.register(_on_error, first_interval=0.0)
@@ -418,9 +445,22 @@ class IMAGE_PT_clip_studio(Panel):
         img = context.space_data.image
         layout = self.layout
         clip_path = img.get(CLIP_SOURCE_KEY, "")
+        status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
         layout.label(text=f"Source: {os.path.basename(clip_path)}")
         layout.label(text="Mode: Native renderer")
-        layout.label(text=f"Status: {img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, 'unknown')}")
+        layout.label(
+            text=f"Status: {_reload_status_label(status)}",
+            icon=_reload_status_icon(status),
+        )
+        if status == native_bridge.RELOAD_STATUS_MISSING:
+            layout.label(text="Packed pixels are still visible.", icon="INFO")
+        elif status == native_bridge.RELOAD_STATUS_ERROR:
+            message = img.get(native_bridge.CLIP_RELOAD_ERROR_KEY, "")
+            if message:
+                layout.label(
+                    text=f"Error: {_short_diagnostic(message)}",
+                    icon="ERROR",
+                )
         layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, icon="FILE_REFRESH")
         prefs = _addon_prefs()
         layout.prop(prefs, "auto_reload", text="Auto-reload on .clip change")

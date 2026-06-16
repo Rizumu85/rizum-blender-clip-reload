@@ -164,6 +164,10 @@ Result:
   The duplicate `clip_studio_importer/clip_loader.py` package copy has been
   removed; the project-root `clip_loader.py` remains reference verification
   tooling outside the add-on runtime.
+- Native reload diagnostics are image-level metadata. Background and manual
+  render failures store `clip_reload_status=error` plus `clip_reload_error`,
+  successful renders clear old errors, missing sources store `missing_source`,
+  and the Image Editor panel displays readable status/error messages.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -173,7 +177,7 @@ Result:
 Remaining bridge work:
 
 - Improve user-facing diagnostics for native render failures and unsupported
-  layer semantics.
+  layer semantics beyond the current image-level status/error display.
 
 ## Completed Third Milestone Foundation
 

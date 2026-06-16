@@ -274,6 +274,13 @@ def inspect_native_image_source(
 
 def write_reload_status(image: Any, status: str) -> None:
     image[CLIP_RELOAD_STATUS_KEY] = status
+    if status != RELOAD_STATUS_ERROR:
+        _clear_reload_error(image)
+
+
+def write_reload_error(image: Any, message: str) -> None:
+    image[CLIP_RELOAD_STATUS_KEY] = RELOAD_STATUS_ERROR
+    image[CLIP_RELOAD_ERROR_KEY] = message
 
 
 def resolve_renderer_library(
@@ -346,6 +353,19 @@ def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_LAYER_COUNT_KEY] = result.layer_count
     image[CLIP_EXTERNAL_COUNT_KEY] = result.external_data_count
     write_reload_status(image, RELOAD_STATUS_OK)
+
+
+def _clear_reload_error(image: Any) -> None:
+    try:
+        keys = image.keys()
+    except AttributeError:
+        keys = ()
+    if CLIP_RELOAD_ERROR_KEY not in keys:
+        return
+    try:
+        del image[CLIP_RELOAD_ERROR_KEY]
+    except Exception:
+        image[CLIP_RELOAD_ERROR_KEY] = ""
 
 
 def _parse_mtime(value: Any) -> float | None:

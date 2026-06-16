@@ -109,6 +109,44 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_CANVAS_HEIGHT_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
 
+    def test_successful_update_clears_previous_reload_error(self) -> None:
+        bpy = FakeBpy()
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_RELOAD_STATUS_KEY] = native_bridge.RELOAD_STATUS_ERROR
+        image[native_bridge.CLIP_RELOAD_ERROR_KEY] = "old failure"
+
+        native_bridge.create_or_update_image(
+            bpy,
+            FakeRenderer().render_rgba8("sample.clip"),
+            image=image,
+        )
+
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
+        self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
+
+    def test_write_reload_error_records_message(self) -> None:
+        image = FakeImage("sample", 1, 1)
+
+        native_bridge.write_reload_error(image, "render failed")
+
+        self.assertEqual(
+            image[native_bridge.CLIP_RELOAD_STATUS_KEY],
+            native_bridge.RELOAD_STATUS_ERROR,
+        )
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_ERROR_KEY], "render failed")
+
+    def test_write_reload_status_clears_previous_error(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        native_bridge.write_reload_error(image, "render failed")
+
+        native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_MISSING)
+
+        self.assertEqual(
+            image[native_bridge.CLIP_RELOAD_STATUS_KEY],
+            native_bridge.RELOAD_STATUS_MISSING,
+        )
+        self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
+
     def test_update_existing_image_rejects_size_mismatch(self) -> None:
         bpy = FakeBpy()
         result = FakeRenderer().render_rgba8("sample.clip")
