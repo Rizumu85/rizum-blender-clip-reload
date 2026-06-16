@@ -3011,6 +3011,13 @@ impl<'a> RuntimeGpuResourceProvider<'a> {
 impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_> {
     type Error = RuntimeError;
 
+    fn raster_resource_size(&self, source: clip_gpu::GpuNormalRasterSource) -> Option<CanvasSize> {
+        self.plan
+            .rasters
+            .get(&source.key)
+            .map(|meta| meta.source.pixel_size)
+    }
+
     fn raster_resource(
         &mut self,
         renderer: &clip_gpu::GpuRenderer,

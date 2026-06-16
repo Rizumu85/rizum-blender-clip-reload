@@ -3,11 +3,12 @@ use clip_model::CanvasSize;
 use crate::blend::clipped_source_pipeline;
 use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
 use crate::source_params::{generated_raster_source_uniform_bytes, raster_source_uniform_bytes};
-use crate::stream::{
-    GpuNormalStackResourceProvider, encode_source_with_provider, mask_view_with_provider,
-    pass_bounds_for_change, raster_view_with_provider,
-};
+use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::CanvasRect;
+use crate::stream_resources::{
+    known_raster_source_bounds, mask_view_with_provider, pass_bounds_for_change,
+    raster_view_with_provider,
+};
 use crate::stream_state::{RenderedStreamingCache, StreamingEncoder, StreamingTexturePair};
 use crate::{GpuMaskResourceKey, GpuNormalRasterSource, GpuRenderer};
 
@@ -47,8 +48,17 @@ where
     let mut dirty_bounds = None;
 
     {
-        let (raster_cache, source_view, source_bounds) =
+        let known_source_bounds = known_raster_source_bounds(provider, base, output_size);
+        if matches!(known_source_bounds, Some(None)) {
+            return Ok(RenderedStreamingCache::new(
+                clipping_pair,
+                previous_index,
+                dirty_bounds,
+            ));
+        }
+        let (raster_cache, source_view, uploaded_source_bounds) =
             raster_view_with_provider(renderer, provider, state, output_size, base)?;
+        let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
         let Some(pass_bounds) = pass_bounds_for_change(dirty_bounds, source_bounds) else {
             return Ok(RenderedStreamingCache::new(
                 clipping_pair,
@@ -85,8 +95,14 @@ where
     }
 
     for clipped_source in clipped {
-        let (raster_cache, source_view, source_bounds) =
+        let known_source_bounds =
+            known_raster_source_bounds(provider, *clipped_source, output_size);
+        if matches!(known_source_bounds, Some(None)) {
+            continue;
+        }
+        let (raster_cache, source_view, uploaded_source_bounds) =
             raster_view_with_provider(renderer, provider, state, output_size, *clipped_source)?;
+        let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
         let Some(pass_bounds) = pass_bounds_for_change(dirty_bounds, source_bounds) else {
             continue;
         };

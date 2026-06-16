@@ -9,16 +9,20 @@ use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend, lut_filter_uniform_bytes,
     raster_source_uniform_bytes, solid_source_uniform_bytes,
 };
-use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_bounds::CanvasRect;
 use crate::stream_groups::{
     render_clipping_run_with_provider, render_container_with_provider,
     render_through_group_with_provider,
 };
+use crate::stream_resources::{
+    known_raster_source_bounds, mask_view_with_provider, pass_bounds_for_change,
+    raster_view_with_provider,
+};
 use crate::stream_state::{StreamingEncoder, StreamingTexturePair};
 use crate::{
-    GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey,
-    GpuNormalRasterSource, GpuNormalStackSource, GpuRasterResourceCache, GpuRasterStackOutput,
-    GpuRenderError, GpuRenderer,
+    GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
+    GpuNormalStackSource, GpuRasterResourceCache, GpuRasterStackOutput, GpuRenderError,
+    GpuRenderer,
 };
 
 pub trait GpuNormalStackResourceProvider {
@@ -29,6 +33,11 @@ pub trait GpuNormalStackResourceProvider {
         renderer: &GpuRenderer,
         source: GpuNormalRasterSource,
     ) -> Result<GpuRasterResourceCache, Self::Error>;
+
+    fn raster_resource_size(&self, source: GpuNormalRasterSource) -> Option<CanvasSize> {
+        let _ = source;
+        None
+    }
 
     fn mask_resource(
         &mut self,
@@ -170,8 +179,13 @@ where
 {
     match source {
         GpuNormalStackSource::Raster(raster) => {
-            let (raster_cache, source_view, source_bounds) =
+            let known_source_bounds = known_raster_source_bounds(provider, *raster, output_size);
+            if matches!(known_source_bounds, Some(None)) {
+                return Ok(false);
+            }
+            let (raster_cache, source_view, uploaded_source_bounds) =
                 raster_view_with_provider(renderer, provider, state, output_size, *raster)?;
+            let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
             let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, source_bounds) else {
                 return Ok(false);
             };
@@ -395,101 +409,8 @@ where
     }
 }
 
-pub(crate) fn raster_view_with_provider<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
-    output_size: CanvasSize,
-    source: GpuNormalRasterSource,
-) -> Result<
-    (
-        GpuRasterResourceCache,
-        wgpu::TextureView,
-        Option<CanvasRect>,
-    ),
-    P::Error,
->
-where
-    P: GpuNormalStackResourceProvider,
-{
-    let cache = provider.raster_resource(renderer, source)?;
-    let resource = cache
-        .resource(source.key)
-        .ok_or(GpuRenderError::MissingRasterResource {
-            layer_id: source.key.layer_id,
-            render_mipmap_id: source.key.render_mipmap_id,
-        })
-        .map_err(P::Error::from)?;
-    let info = resource.info();
-    state.push_drawn_resource(info);
-    let bounds = CanvasRect::from_source(source.offset_x, source.offset_y, info.size, output_size);
-    let view = resource
-        .texture()
-        .create_view(&wgpu::TextureViewDescriptor::default());
-    Ok((cache, view, bounds))
-}
-
-pub(crate) fn pass_bounds_for_change(
-    dirty_bounds: Option<CanvasRect>,
-    change_bounds: Option<CanvasRect>,
-) -> Option<CanvasRect> {
-    change_bounds.map(|change_bounds| {
-        union_optional(dirty_bounds, Some(change_bounds)).expect("change bounds must be present")
-    })
-}
-
-pub(crate) fn mask_view_with_provider<'a, P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    output_size: CanvasSize,
-    mask_key: Option<GpuMaskResourceKey>,
-    owner_layer_id: clip_model::LayerId,
-    fallback_view: &'a wgpu::TextureView,
-) -> Result<(Option<GpuMaskResourceCache>, MaskTextureView<'a>), P::Error>
-where
-    P: GpuNormalStackResourceProvider,
-{
-    let Some(mask_key) = mask_key else {
-        return Ok((None, MaskTextureView::Borrowed(fallback_view)));
-    };
-    let cache = provider.mask_resource(renderer, mask_key)?;
-    let resource = cache
-        .resource(mask_key)
-        .ok_or(GpuRenderError::MissingMaskResource {
-            layer_id: mask_key.layer_id,
-            mask_mipmap_id: mask_key.mask_mipmap_id,
-        })
-        .map_err(P::Error::from)?;
-    let info: GpuMaskResourceInfo = resource.info();
-    if info.size != output_size {
-        return Err(P::Error::from(GpuRenderError::MaskResourceSizeMismatch {
-            layer_id: owner_layer_id,
-            expected: output_size,
-            actual: info.size,
-        }));
-    }
-    let view = resource
-        .texture()
-        .create_view(&wgpu::TextureViewDescriptor::default());
-    Ok((Some(cache), MaskTextureView::Owned(view)))
-}
-
 fn renderer_context_queue(renderer: &GpuRenderer) -> &wgpu::Queue {
     &renderer.context.queue
-}
-
-pub(crate) enum MaskTextureView<'a> {
-    Borrowed(&'a wgpu::TextureView),
-    Owned(wgpu::TextureView),
-}
-
-impl MaskTextureView<'_> {
-    pub(crate) fn as_ref(&self) -> &wgpu::TextureView {
-        match self {
-            Self::Borrowed(view) => view,
-            Self::Owned(view) => view,
-        }
-    }
 }
 
 fn lut_filter_label(filter_mode: GpuLutFilterMode) -> &'static str {
