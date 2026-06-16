@@ -9,6 +9,7 @@ use crate::source_params::{
 };
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_effects::raster_can_affect_output;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_resources::{
     known_clipping_run_activity, known_raster_source_bounds, known_stack_activity,
@@ -103,6 +104,9 @@ where
     }
 
     for clipped_source in clipped {
+        if !raster_can_affect_output(*clipped_source) {
+            continue;
+        }
         let known_source_bounds =
             known_raster_source_bounds(provider, *clipped_source, output_size);
         if matches!(known_source_bounds, Some(None)) {

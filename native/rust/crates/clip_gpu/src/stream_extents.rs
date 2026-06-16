@@ -3,6 +3,7 @@ use clip_model::CanvasSize;
 use crate::GpuNormalStackSource;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_effects::source_can_affect_output;
 use crate::stream_resources::known_raster_source_bounds;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -50,6 +51,10 @@ fn known_source_change_bounds<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    if !source_can_affect_output(source) {
+        return KnownStackBounds::Empty;
+    }
+
     match source {
         GpuNormalStackSource::Raster(raster) => merge_source_bounds(
             known_raster_bounds(provider, *raster, output_size),
@@ -312,6 +317,57 @@ mod tests {
                 width: 10,
                 height: 10,
             })
+        );
+    }
+
+    #[test]
+    fn zero_opacity_raster_has_empty_stack_bounds() {
+        let key = raster_key(1);
+        let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
+        let sources = vec![GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            opacity: 0.0,
+            ..raster_source(key, 1, 1)
+        })];
+
+        assert_eq!(
+            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+            KnownStackBounds::Empty
+        );
+    }
+
+    #[test]
+    fn zero_opacity_container_has_empty_stack_bounds() {
+        let key = raster_key(1);
+        let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
+        let sources = vec![GpuNormalStackSource::Container {
+            children: vec![GpuNormalStackSource::Raster(raster_source(key, 1, 1))],
+            opacity: 0.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        }];
+
+        assert_eq!(
+            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+            KnownStackBounds::Empty
+        );
+    }
+
+    #[test]
+    fn transparent_solid_has_empty_stack_bounds() {
+        let provider = SizeProvider::new(&[]);
+        let sources = vec![GpuNormalStackSource::SolidColor {
+            color: Rgba8 {
+                r: 1,
+                g: 2,
+                b: 3,
+                a: 0,
+            },
+            opacity: 1.0,
+        }];
+
+        assert_eq!(
+            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+            KnownStackBounds::Empty
         );
     }
 

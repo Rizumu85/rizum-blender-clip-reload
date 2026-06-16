@@ -12,6 +12,7 @@ use crate::source_params::{
     raster_source_uniform_bytes_with_target_origin_and_mask, solid_source_uniform_bytes,
 };
 use crate::stream_bounds::CanvasRect;
+use crate::stream_effects::source_can_affect_output;
 use crate::stream_groups::{
     render_clipping_run_with_provider, render_container_with_provider,
     render_through_group_with_provider,
@@ -183,6 +184,10 @@ pub(crate) fn encode_source_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    if !source_can_affect_output(source) {
+        return Ok(false);
+    }
+
     match source {
         GpuNormalStackSource::Raster(raster) => {
             let known_source_bounds = known_raster_source_bounds(provider, *raster, output_size);

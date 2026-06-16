@@ -2,6 +2,7 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_effects::source_can_affect_output;
 use crate::stream_state::StreamingEncoder;
 use crate::{
     GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskSamplingInfo,
@@ -139,6 +140,10 @@ fn known_source_activity<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    if !source_can_affect_output(source) {
+        return KnownSourceActivity::Empty;
+    }
+
     match source {
         GpuNormalStackSource::Raster(raster) => {
             known_raster_activity(provider, *raster, output_size)
