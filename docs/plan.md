@@ -44,8 +44,8 @@ Current focus:
   properties, and update through the add-on's reload/watch path without writing
   sidecar PNGs.
 - Keep native render state visible in Blender: image metadata and the Image
-  Editor panel should report ready, refreshing, stale, missing-source, and
-  render-error states.
+  Editor panel should report ready, refreshing, stale, missing-source,
+  render-error states, and elapsed/last render timing.
 - Surface native support summaries in Blender from the metadata-only C ABI
   support check, including resource statistics, expandable unsupported
   layer/node details, and copyable diagnostic text; keep richer support
@@ -66,10 +66,11 @@ Current policy:
   manual reload, the background watcher, and Blender `load_post` freshness scans
   without writing sidecar PNGs. Render failures are stored as image metadata and
   shown in the Image Editor panel, while successful renders clear old error
-  metadata. The C ABI exposes metadata-only native support summaries, and the
-  add-on stores/displays source count, unsupported count, raster/mask resource
-  statistics, expandable unsupported layer/node detail lines, and copyable
-  support diagnostics. `tools/build_blender_addon.py`
+  metadata. The add-on records elapsed/last render timing for manual and
+  background renders. The C ABI exposes metadata-only native support summaries,
+  and the add-on stores/displays source count, unsupported count, raster/mask
+  resource statistics, expandable unsupported layer/node detail lines, and
+  copyable support diagnostics. `tools/build_blender_addon.py`
   builds the installable zip with `__init__.py`, `native_bridge.py`, and the
   locally built release `clip_capi` library under `clip_studio_importer/native/`;
   it no longer packages the Python compositor/loader. The native library

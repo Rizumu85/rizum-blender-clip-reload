@@ -165,9 +165,10 @@ Result:
   removed; the project-root `clip_loader.py` remains reference verification
   tooling outside the add-on runtime.
 - Native reload diagnostics are image-level metadata. Background and manual
-  render failures store `clip_reload_status=error` plus `clip_reload_error`,
-  successful renders clear old errors, missing sources store `missing_source`,
-  and the Image Editor panel displays readable status/error messages.
+  renders track elapsed/last render duration metadata. Render failures store
+  `clip_reload_status=error` plus `clip_reload_error`, successful renders clear
+  old errors, missing sources store `missing_source`, and the Image Editor panel
+  displays readable status/error/timing messages.
 - `clip_renderer_session_support_info` exposes the runtime metadata-only support
   selector through the C ABI. The C report includes a summary line plus the
   unsupported layer/node list. The Python bridge stores support status, source

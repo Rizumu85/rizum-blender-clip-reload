@@ -223,6 +223,7 @@ class NativeBridgeTests(unittest.TestCase):
         image = FakeImage("sample", 1, 1)
         image[native_bridge.CLIP_RELOAD_STATUS_KEY] = native_bridge.RELOAD_STATUS_ERROR
         image[native_bridge.CLIP_RELOAD_ERROR_KEY] = "old failure"
+        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
 
         native_bridge.create_or_update_image(
             bpy,
@@ -232,9 +233,11 @@ class NativeBridgeTests(unittest.TestCase):
 
         self.assertEqual(image[native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
         self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
 
     def test_write_reload_error_records_message(self) -> None:
         image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
 
         native_bridge.write_reload_error(image, "render failed")
 
@@ -243,10 +246,12 @@ class NativeBridgeTests(unittest.TestCase):
             native_bridge.RELOAD_STATUS_ERROR,
         )
         self.assertEqual(image[native_bridge.CLIP_RELOAD_ERROR_KEY], "render failed")
+        self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
 
     def test_write_reload_status_clears_previous_error(self) -> None:
         image = FakeImage("sample", 1, 1)
         native_bridge.write_reload_error(image, "render failed")
+        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
 
         native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_MISSING)
 
@@ -255,6 +260,19 @@ class NativeBridgeTests(unittest.TestCase):
             native_bridge.RELOAD_STATUS_MISSING,
         )
         self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
+        self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
+
+    def test_write_reload_status_keeps_started_time_while_refreshing(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
+
+        native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_REFRESHING)
+
+        self.assertEqual(
+            image[native_bridge.CLIP_RELOAD_STATUS_KEY],
+            native_bridge.RELOAD_STATUS_REFRESHING,
+        )
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY], "10.0")
 
     def test_update_existing_image_rejects_size_mismatch(self) -> None:
         bpy = FakeBpy()

@@ -21,6 +21,8 @@ CLIP_LAYER_COUNT_KEY = "clip_layer_count"
 CLIP_EXTERNAL_COUNT_KEY = "clip_external_data_count"
 CLIP_RELOAD_STATUS_KEY = "clip_reload_status"
 CLIP_RELOAD_ERROR_KEY = "clip_reload_error"
+CLIP_RELOAD_STARTED_AT_KEY = "clip_reload_started_at"
+CLIP_RELOAD_LAST_SECONDS_KEY = "clip_reload_last_seconds"
 CLIP_SUPPORT_STATUS_KEY = "clip_support_status"
 CLIP_SUPPORT_REPORT_KEY = "clip_support_report"
 CLIP_SUPPORT_DETAILS_KEY = "clip_support_details"
@@ -399,6 +401,8 @@ def inspect_native_image_source(
 
 def write_reload_status(image: Any, status: str) -> None:
     image[CLIP_RELOAD_STATUS_KEY] = status
+    if status != RELOAD_STATUS_REFRESHING:
+        _delete_image_key(image, CLIP_RELOAD_STARTED_AT_KEY)
     if status != RELOAD_STATUS_ERROR:
         _clear_reload_error(image)
 
@@ -406,6 +410,7 @@ def write_reload_status(image: Any, status: str) -> None:
 def write_reload_error(image: Any, message: str) -> None:
     image[CLIP_RELOAD_STATUS_KEY] = RELOAD_STATUS_ERROR
     image[CLIP_RELOAD_ERROR_KEY] = message
+    _delete_image_key(image, CLIP_RELOAD_STARTED_AT_KEY)
 
 
 def resolve_renderer_library(
@@ -511,16 +516,20 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
 
 
 def _clear_reload_error(image: Any) -> None:
+    _delete_image_key(image, CLIP_RELOAD_ERROR_KEY)
+
+
+def _delete_image_key(image: Any, key: str) -> None:
     try:
         keys = image.keys()
     except AttributeError:
         keys = ()
-    if CLIP_RELOAD_ERROR_KEY not in keys:
+    if key not in keys:
         return
     try:
-        del image[CLIP_RELOAD_ERROR_KEY]
+        del image[key]
     except Exception:
-        image[CLIP_RELOAD_ERROR_KEY] = ""
+        image[key] = ""
 
 
 def _parse_mtime(value: Any) -> float | None:

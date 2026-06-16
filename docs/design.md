@@ -15,10 +15,10 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
 6. The `Native renderer library` preference is only needed as an override for
    the packaged library.
-7. The Image Editor N-panel shows native render status, native support summary,
-   support resource statistics, missing-source state, and the latest native
-   render error for the selected `.clip` image. The support report can be
-   copied to the clipboard for issue reports.
+7. The Image Editor N-panel shows native render status, elapsed and last render
+   timing, native support summary, support resource statistics, missing-source
+   state, and the latest native render error for the selected `.clip` image.
+   The support report can be copied to the clipboard for issue reports.
 
 ## Later Native Workflow
 
@@ -67,7 +67,8 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 ## Current UX Gaps
 
-- Background render progress is only shown as a small `Rendering in background` label when the image panel is visible.
+- Background render progress is elapsed-time only; there is no per-layer or
+  percentage progress indicator yet.
 - Unsupported layer features are summarized at image level with counts,
   resource statistics, and unsupported layer/node details. The panel previews
   the first few entries, can expand to show the full support-detail list stored

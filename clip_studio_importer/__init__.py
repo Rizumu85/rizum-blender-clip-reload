@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 32),
+    "version": (0, 8, 33),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -22,6 +22,7 @@ bl_info = {
 
 import os
 import threading
+import time
 
 import bpy
 from bpy.app.handlers import persistent
@@ -118,6 +119,21 @@ def _image_int_property(img, key: str, default: int = 0) -> int:
         return default
 
 
+def _image_float_property(img, key: str, default: float = 0.0) -> float:
+    try:
+        return float(img.get(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _format_seconds(value: float) -> str:
+    if value < 0:
+        value = 0.0
+    if value < 10.0:
+        return f"{value:.1f}s"
+    return f"{value:.0f}s"
+
+
 def _format_byte_count(value: int) -> str:
     if value <= 0:
         return "0 B"
@@ -182,6 +198,13 @@ def _support_diagnostic_text(img) -> str:
         f"Status: {_reload_status_label(status)}",
         "Mode: Native renderer",
     ]
+    if status == native_bridge.RELOAD_STATUS_REFRESHING:
+        started_at = _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY)
+        if started_at:
+            lines.append(f"Render elapsed: {_format_seconds(time.time() - started_at)}")
+    last_seconds = _image_float_property(img, native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY)
+    if last_seconds:
+        lines.append(f"Last render duration: {_format_seconds(last_seconds)}")
     if width and height:
         lines.append(f"Canvas: {width}x{height}")
     renderer_abi = _image_int_property(img, native_bridge.CLIP_RENDERER_ABI_KEY)
@@ -225,6 +248,7 @@ def _schedule_async_decode(
 
     img = bpy.data.images.get(image_name)
     if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+        img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
         native_bridge.write_reload_status(
             img,
             native_bridge.RELOAD_STATUS_REFRESHING,
@@ -297,11 +321,18 @@ class IMAGE_OT_reload_clip_studio(Operator):
             )
             self.report({"ERROR"}, f"Source .clip not found: {clip_path!r}")
             return {"CANCELLED"}
+        started_at = time.time()
+        img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = started_at
+        native_bridge.write_reload_status(
+            img,
+            native_bridge.RELOAD_STATUS_REFRESHING,
+        )
         try:
             result = native_bridge.render_clip_rgba8(
                 clip_path,
                 library_path=_native_library_path(),
             )
+            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             native_bridge.create_or_update_image(
                 bpy,
                 result,
@@ -309,6 +340,7 @@ class IMAGE_OT_reload_clip_studio(Operator):
                 pack=True,
             )
         except Exception as exc:
+            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             native_bridge.write_reload_error(img, str(exc))
             self.report({"ERROR"}, f"Reload failed: {exc}")
             return {"CANCELLED"}
@@ -379,6 +411,7 @@ def _async_decode(
     Blender image mutation is scheduled back onto the main thread immediately,
     without waiting for the next watcher tick.
     """
+    started_at = time.time()
     success = False
     native_result = None
     error_message = ""
@@ -399,6 +432,7 @@ def _async_decode(
         def _on_error():
             img = bpy.data.images.get(image_name)
             if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+                img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
                 native_bridge.write_reload_error(img, error_message)
             return None
 
@@ -412,6 +446,7 @@ def _async_decode(
     def _on_main():
         img = bpy.data.images.get(image_name)
         if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             if native_result is not None:
                 native_bridge.create_or_update_image(
                     bpy,
@@ -452,6 +487,8 @@ def _watcher_tick():
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:
+            if not _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY):
+                img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
             native_bridge.write_reload_status(
                 img,
                 native_bridge.RELOAD_STATUS_REFRESHING,
@@ -506,6 +543,8 @@ def _load_post_refresh_native_images(_dummy):
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:
+            if not _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY):
+                img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
             native_bridge.write_reload_status(
                 img,
                 native_bridge.RELOAD_STATUS_REFRESHING,
@@ -675,13 +714,32 @@ class IMAGE_PT_clip_studio(Panel):
                     icon="ERROR",
                 )
         layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, icon="FILE_REFRESH")
+        if status == native_bridge.RELOAD_STATUS_REFRESHING:
+            started_at = _image_float_property(
+                img,
+                native_bridge.CLIP_RELOAD_STARTED_AT_KEY,
+            )
+            if started_at:
+                layout.label(
+                    text=f"Elapsed: {_format_seconds(time.time() - started_at)}",
+                    icon="SORTTIME",
+                )
+        last_seconds = _image_float_property(
+            img,
+            native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY,
+        )
+        if last_seconds:
+            layout.label(
+                text=f"Last render: {_format_seconds(last_seconds)}",
+                icon="TIME",
+            )
         prefs = _addon_prefs()
         layout.prop(prefs, "auto_reload", text="Auto-reload on .clip change")
         # If a render is currently running for this image's clip, show a hint.
         with _state_lock:
             running = clip_path in _in_flight
         if running:
-            layout.label(text="Rendering in background…", icon="SORTTIME")
+            layout.label(text="Rendering in background", icon="SORTTIME")
 
 
 def _menu_func_import(self, context):
