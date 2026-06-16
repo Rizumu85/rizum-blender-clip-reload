@@ -72,6 +72,7 @@ where
         let (mask_cache, mask_view) = mask_view_with_provider(
             renderer,
             provider,
+            state,
             output_size,
             base.mask_key,
             base.key.layer_id,
@@ -118,6 +119,7 @@ where
         let (mask_cache, mask_view) = mask_view_with_provider(
             renderer,
             provider,
+            state,
             output_size,
             clipped_source.mask_key,
             clipped_source.key.layer_id,
@@ -338,6 +340,7 @@ where
     let (mask_cache, mask_view) = mask_view_with_provider(
         renderer,
         provider,
+        state,
         output_size,
         mask_key,
         mask_key

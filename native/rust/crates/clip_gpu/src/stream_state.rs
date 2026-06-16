@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use clip_model::CanvasSize;
 
 use crate::pass::{WHITE_TRANSPARENT, create_rgba8_texture};
 use crate::stream_bounds::CanvasRect;
-use crate::{GpuMaskResourceCache, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError};
+use crate::{
+    GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterResourceCache, GpuRasterResourceInfo,
+    GpuRasterResourceKey, GpuRenderError,
+};
 
 // Submit-only intermediate flushes can batch more passes; retained GPU bytes remain the hard cap.
 const MAX_STREAMING_PASSES_PER_SUBMISSION: usize = 48;
@@ -117,6 +121,8 @@ pub(crate) struct StreamingEncoder<'a, E> {
     has_pending_commands: bool,
     retained_raster_caches: Vec<GpuRasterResourceCache>,
     retained_mask_caches: Vec<GpuMaskResourceCache>,
+    retained_raster_cache_by_key: HashMap<GpuRasterResourceKey, GpuRasterResourceCache>,
+    retained_mask_cache_by_key: HashMap<GpuMaskResourceKey, GpuMaskResourceCache>,
     retained_lut_textures: Vec<wgpu::Texture>,
     retained_intermediate_caches: Vec<RenderedStreamingCache>,
     retained_texture_pairs: Vec<StreamingTexturePair>,
@@ -146,6 +152,8 @@ where
             has_pending_commands: false,
             retained_raster_caches: Vec::new(),
             retained_mask_caches: Vec::new(),
+            retained_raster_cache_by_key: HashMap::new(),
+            retained_mask_cache_by_key: HashMap::new(),
             retained_lut_textures: Vec::new(),
             retained_intermediate_caches: Vec::new(),
             retained_texture_pairs: Vec::new(),
@@ -206,11 +214,28 @@ where
         self.drawn_resources.push(info);
     }
 
+    pub(crate) fn retained_raster_cache(
+        &self,
+        key: GpuRasterResourceKey,
+    ) -> Option<GpuRasterResourceCache> {
+        self.retained_raster_cache_by_key.get(&key).cloned()
+    }
+
     pub(crate) fn retain_raster_cache(&mut self, cache: GpuRasterResourceCache) {
-        let bytes = cache
-            .resource_infos()
-            .map(|info| info.byte_len)
-            .fold(0usize, usize::saturating_add);
+        let mut bytes = 0usize;
+        let mut has_new_resource = false;
+        for info in cache.resource_infos() {
+            if self.retained_raster_cache_by_key.contains_key(&info.key) {
+                continue;
+            }
+            bytes = bytes.saturating_add(info.byte_len);
+            has_new_resource = true;
+            self.retained_raster_cache_by_key
+                .insert(info.key, cache.clone());
+        }
+        if !has_new_resource {
+            return;
+        }
         self.add_retained_bytes(bytes);
         self.retained_raster_caches.push(cache);
     }
@@ -221,11 +246,28 @@ where
         }
     }
 
+    pub(crate) fn retained_mask_cache(
+        &self,
+        key: GpuMaskResourceKey,
+    ) -> Option<GpuMaskResourceCache> {
+        self.retained_mask_cache_by_key.get(&key).cloned()
+    }
+
     pub(crate) fn retain_mask_cache(&mut self, cache: GpuMaskResourceCache) {
-        let bytes = cache
-            .resource_infos()
-            .map(|info| info.byte_len)
-            .fold(0usize, usize::saturating_add);
+        let mut bytes = 0usize;
+        let mut has_new_resource = false;
+        for info in cache.resource_infos() {
+            if self.retained_mask_cache_by_key.contains_key(&info.key) {
+                continue;
+            }
+            bytes = bytes.saturating_add(info.byte_len);
+            has_new_resource = true;
+            self.retained_mask_cache_by_key
+                .insert(info.key, cache.clone());
+        }
+        if !has_new_resource {
+            return;
+        }
         self.add_retained_bytes(bytes);
         self.retained_mask_caches.push(cache);
     }
@@ -289,6 +331,8 @@ where
     fn clear_retained_resources(&mut self) {
         self.retained_raster_caches.clear();
         self.retained_mask_caches.clear();
+        self.retained_raster_cache_by_key.clear();
+        self.retained_mask_cache_by_key.clear();
         self.retained_lut_textures.clear();
         self.retained_intermediate_caches.clear();
         self.retained_texture_pairs.clear();

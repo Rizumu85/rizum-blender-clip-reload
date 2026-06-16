@@ -13,6 +13,8 @@ use crate::{
 struct InlineProvider {
     rasters: HashMap<GpuRasterResourceKey, InlineRaster>,
     masks: HashMap<GpuMaskResourceKey, InlineMask>,
+    raster_requests: HashMap<GpuRasterResourceKey, usize>,
+    mask_requests: HashMap<GpuMaskResourceKey, usize>,
 }
 
 struct InlineRaster {
@@ -33,12 +35,22 @@ impl InlineProvider {
         Self {
             rasters: rasters.into_iter().collect(),
             masks: HashMap::new(),
+            raster_requests: HashMap::new(),
+            mask_requests: HashMap::new(),
         }
     }
 
     fn with_masks(mut self, masks: Vec<(GpuMaskResourceKey, InlineMask)>) -> Self {
         self.masks = masks.into_iter().collect();
         self
+    }
+
+    fn raster_request_count(&self, key: GpuRasterResourceKey) -> usize {
+        self.raster_requests.get(&key).copied().unwrap_or(0)
+    }
+
+    fn mask_request_count(&self, key: GpuMaskResourceKey) -> usize {
+        self.mask_requests.get(&key).copied().unwrap_or(0)
     }
 }
 
@@ -50,6 +62,7 @@ impl GpuNormalStackResourceProvider for InlineProvider {
         renderer: &GpuRenderer,
         source: GpuNormalRasterSource,
     ) -> Result<GpuRasterResourceCache, Self::Error> {
+        *self.raster_requests.entry(source.key).or_default() += 1;
         let raster =
             self.rasters
                 .get(&source.key)
@@ -79,6 +92,7 @@ impl GpuNormalStackResourceProvider for InlineProvider {
         renderer: &GpuRenderer,
         key: GpuMaskResourceKey,
     ) -> Result<GpuMaskResourceCache, Self::Error> {
+        *self.mask_requests.entry(key).or_default() += 1;
         let mask = self
             .masks
             .get(&key)
@@ -123,7 +137,7 @@ fn streamed_clipping_cache_resolves_from_cropped_origin() {
     ]);
     let sources = [GpuNormalStackSource::ClippingRun {
         base: raster_source(base_key),
-        clipped: vec![raster_source(clipped_key)],
+        clipped: vec![raster_source(clipped_key), raster_source(clipped_key)],
     }];
 
     let output = renderer
@@ -138,6 +152,7 @@ fn streamed_clipping_cache_resolves_from_cropped_origin() {
         }
     }
     assert_eq!(output.pixels, expected);
+    assert_eq!(provider.raster_request_count(clipped_key), 1);
 }
 
 #[test]
@@ -384,7 +399,7 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
     )]);
     let sources = [GpuNormalStackSource::Container {
         children: vec![
-            GpuNormalStackSource::Raster(raster_source(key)),
+            GpuNormalStackSource::Raster(raster_source_with_mask(key, mask_key)),
             GpuNormalStackSource::LutFilter {
                 lut_rgba: inverted_tone_curve_lut(),
                 opacity: 1.0,
@@ -402,19 +417,24 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
         .expect("draw streamed masked LUT filter inside cropped container");
 
     let mut expected = [255, 255, 255, 0].repeat(16);
-    for y in 1..=2 {
-        for x in 1..=2 {
-            let offset = ((y * 4 + x) * 4) as usize;
-            expected[offset..offset + 4].copy_from_slice(&[255, 0, 0, 255]);
-        }
-    }
     expected[((2 * 4 + 2) * 4) as usize..((2 * 4 + 2) * 4 + 4) as usize]
         .copy_from_slice(&[0, 255, 255, 255]);
     assert_eq!(output.pixels, expected);
+    assert_eq!(provider.mask_request_count(mask_key), 1);
 }
 
 fn raster_source(key: GpuRasterResourceKey) -> GpuNormalRasterSource {
     raster_source_at(key, 1, 1)
+}
+
+fn raster_source_with_mask(
+    key: GpuRasterResourceKey,
+    mask_key: GpuMaskResourceKey,
+) -> GpuNormalRasterSource {
+    GpuNormalRasterSource {
+        mask_key: Some(mask_key),
+        ..raster_source(key)
+    }
 }
 
 fn raster_source_at(

@@ -26,7 +26,10 @@ pub(crate) fn raster_view_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    let cache = provider.raster_resource(renderer, source)?;
+    let cache = state
+        .retained_raster_cache(source.key)
+        .map(Ok)
+        .unwrap_or_else(|| provider.raster_resource(renderer, source))?;
     let resource = cache
         .resource(source.key)
         .ok_or(GpuRenderError::MissingRasterResource {
@@ -174,6 +177,7 @@ where
 pub(crate) fn mask_view_with_provider<'a, P>(
     renderer: &GpuRenderer,
     provider: &mut P,
+    state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
     mask_key: Option<GpuMaskResourceKey>,
     owner_layer_id: clip_model::LayerId,
@@ -185,7 +189,10 @@ where
     let Some(mask_key) = mask_key else {
         return Ok((None, MaskTextureView::Borrowed(fallback_view)));
     };
-    let cache = provider.mask_resource(renderer, mask_key)?;
+    let cache = state
+        .retained_mask_cache(mask_key)
+        .map(Ok)
+        .unwrap_or_else(|| provider.mask_resource(renderer, mask_key))?;
     let resource = cache
         .resource(mask_key)
         .ok_or(GpuRenderError::MissingMaskResource {

@@ -51,7 +51,7 @@ pub struct GpuMaskUpload<'a> {
     pub pixels: &'a [u8],
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GpuRasterResource {
     info: GpuRasterResourceInfo,
     texture: wgpu::Texture,
@@ -67,7 +67,7 @@ impl GpuRasterResource {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GpuMaskResource {
     info: GpuMaskResourceInfo,
     texture: wgpu::Texture,
@@ -83,12 +83,12 @@ impl GpuMaskResource {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GpuRasterResourceCache {
     resources: Vec<GpuRasterResource>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct GpuMaskResourceCache {
     resources: Vec<GpuMaskResource>,
 }

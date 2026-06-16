@@ -197,6 +197,7 @@ where
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
                 provider,
+                state,
                 output_size,
                 raster.mask_key,
                 raster.key.layer_id,
@@ -297,6 +298,7 @@ where
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
                 provider,
+                state,
                 output_size,
                 *mask_key,
                 mask_key
@@ -395,6 +397,7 @@ where
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
                 provider,
+                state,
                 output_size,
                 *mask_key,
                 mask_key
