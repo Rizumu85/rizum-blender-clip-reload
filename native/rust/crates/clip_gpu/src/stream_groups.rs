@@ -3,10 +3,11 @@ use clip_model::CanvasSize;
 use crate::blend::clipped_source_pipeline;
 use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
 use crate::source_params::{
-    generated_raster_source_uniform_bytes, raster_source_uniform_bytes_with_target_origin,
+    generated_raster_source_uniform_bytes_with_blend_and_origins,
+    raster_source_uniform_bytes_with_target_origin,
 };
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
-use crate::stream_bounds::CanvasRect;
+use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_resources::{
     known_clipping_run_activity, known_raster_source_bounds, known_stack_activity,
@@ -14,7 +15,7 @@ use crate::stream_resources::{
     raster_view_with_provider,
 };
 use crate::stream_state::{RenderedStreamingCache, StreamingEncoder, StreamingTexturePair};
-use crate::{GpuMaskResourceKey, GpuNormalRasterSource, GpuRenderer};
+use crate::{GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterBlendMode, GpuRenderer};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn render_clipping_run_with_provider<P>(
@@ -241,9 +242,10 @@ pub(crate) fn render_through_group_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if known_stack_activity(provider, children, output_size).is_empty() {
+    let through_bounds = through_cache_bounds(provider, children, output_size);
+    let Some((cache_size, cache_origin, cache_global_bounds)) = through_bounds else {
         return Ok(false);
-    }
+    };
 
     let through_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
@@ -251,7 +253,7 @@ where
         state.device(),
         "rizum_clip_provider_through_after_a",
         "rizum_clip_provider_through_after_b",
-        output_size,
+        cache_size,
         through_usage,
     );
     let mut previous_index = 0usize;
@@ -262,11 +264,43 @@ where
         through_pair.view(next_index),
         "rizum_clip_provider_through_initial_clear",
     );
-    let mut after_dirty_bounds = *parent_dirty_bounds;
+    let mut after_dirty_bounds = if cache_global_bounds.is_some() {
+        cache_global_bounds
+    } else {
+        *parent_dirty_bounds
+    };
     let mut has_child_output = false;
 
+    if let Some(global_cache_bounds) = cache_global_bounds {
+        let local_cache_bounds = CanvasRect::full(cache_size)
+            .expect("non-empty through bounds must create local bounds");
+        encode_normal_source_pass_scissored(
+            state.device(),
+            state.encoder_mut(),
+            &pipelines.alpha_pipeline,
+            &pipelines.bind_group_layout,
+            &before_view,
+            through_pair.view(previous_index),
+            through_pair.view(previous_index),
+            through_pair.view(next_index),
+            generated_raster_source_uniform_bytes_with_blend_and_origins(
+                1.0,
+                false,
+                GpuRasterBlendMode::Normal,
+                (0, 0),
+                cache_origin,
+            ),
+            "rizum_clip_provider_through_seed_pass",
+            local_cache_bounds,
+        );
+        state.finish_pass()?;
+        after_dirty_bounds = Some(global_cache_bounds);
+        std::mem::swap(&mut previous_index, &mut next_index);
+    }
+
     for (child_index, child) in children.iter().enumerate() {
-        let (previous_texture, previous_view) = if child_index == 0 {
+        let (previous_texture, previous_view) = if cache_global_bounds.is_none() && child_index == 0
+        {
             (before_texture, &before_view)
         } else {
             (
@@ -279,7 +313,7 @@ where
             provider,
             state,
             output_size,
-            (0, 0),
+            cache_origin,
             child,
             previous_texture,
             fallback_texture,
@@ -295,14 +329,11 @@ where
     }
 
     if !has_child_output {
+        state.retain_texture_pair(through_pair);
         return Ok(false);
     }
 
-    let after_view = if children.is_empty() {
-        &before_view
-    } else {
-        through_pair.view(previous_index)
-    };
+    let after_view = through_pair.view(previous_index);
     let (mask_cache, mask_view) = mask_view_with_provider(
         renderer,
         provider,
@@ -313,7 +344,7 @@ where
             .unwrap_or(clip_model::LayerId(0)),
         &before_view,
     )?;
-    let Some(pass_bounds) = after_dirty_bounds else {
+    let Some(pass_bounds) = through_resolve_bounds(*parent_dirty_bounds, after_dirty_bounds) else {
         return Ok(false);
     };
     encode_normal_source_pass_scissored(
@@ -325,7 +356,13 @@ where
         &before_view,
         mask_view.as_ref(),
         output_view,
-        generated_raster_source_uniform_bytes(opacity, mask_key.is_some()),
+        generated_raster_source_uniform_bytes_with_blend_and_origins(
+            opacity,
+            mask_key.is_some(),
+            GpuRasterBlendMode::Normal,
+            cache_origin,
+            (0, 0),
+        ),
         "rizum_clip_provider_through_resolve_pass",
         pass_bounds,
     );
@@ -334,4 +371,38 @@ where
     state.finish_pass()?;
     *parent_dirty_bounds = Some(pass_bounds);
     Ok(true)
+}
+
+fn through_cache_bounds<P>(
+    provider: &P,
+    children: &[crate::GpuNormalStackSource],
+    output_size: CanvasSize,
+) -> Option<(CanvasSize, (i32, i32), Option<CanvasRect>)>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    match known_stack_bounds(provider, children, output_size) {
+        KnownStackBounds::Empty => None,
+        KnownStackBounds::Bounded(bounds) if Some(bounds) != CanvasRect::full(output_size) => {
+            Some((
+                CanvasSize::new(bounds.width, bounds.height),
+                bounds.origin_i32(),
+                Some(bounds),
+            ))
+        }
+        KnownStackBounds::Bounded(_) | KnownStackBounds::Unknown => {
+            if known_stack_activity(provider, children, output_size).is_empty() {
+                None
+            } else {
+                Some((output_size, (0, 0), None))
+            }
+        }
+    }
+}
+
+fn through_resolve_bounds(
+    parent_dirty_bounds: Option<CanvasRect>,
+    after_dirty_bounds: Option<CanvasRect>,
+) -> Option<CanvasRect> {
+    union_optional(parent_dirty_bounds, after_dirty_bounds)
 }

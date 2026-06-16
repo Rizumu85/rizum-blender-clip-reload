@@ -187,6 +187,56 @@ fn streamed_nested_container_resolves_into_cropped_parent_origin() {
     assert_eq!(output.pixels, expected);
 }
 
+#[test]
+fn streamed_through_cache_preserves_parent_dirty_outside_cropped_bounds() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let red_key = raster_key(5);
+    let green_key = raster_key(6);
+    let mut provider = InlineProvider::new(vec![
+        (
+            red_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(5),
+                size: CanvasSize::new(5, 4),
+                offset: (0, 0),
+                pixels: [255, 0, 0, 255].repeat(20),
+            },
+        ),
+        (
+            green_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(6),
+                size: CanvasSize::new(2, 2),
+                offset: (2, 1),
+                pixels: [0, 255, 0, 255].repeat(4),
+            },
+        ),
+    ]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source_at(red_key, 0, 0)),
+        GpuNormalStackSource::ThroughGroup {
+            children: vec![GpuNormalStackSource::Raster(raster_source_at(
+                green_key, 2, 1,
+            ))],
+            opacity: 1.0,
+            mask_key: None,
+        },
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(5, 4), &sources, &mut provider)
+        .expect("draw streamed cropped through group");
+
+    let mut expected = [255, 0, 0, 255].repeat(20);
+    for y in 1..=2 {
+        for x in 2..=3 {
+            let offset = ((y * 5 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 255, 0, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+}
+
 fn raster_source(key: GpuRasterResourceKey) -> GpuNormalRasterSource {
     raster_source_at(key, 1, 1)
 }
