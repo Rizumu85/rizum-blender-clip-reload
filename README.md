@@ -15,6 +15,7 @@ Implemented:
 - Blender import, manual reload, non-blocking auto-reload, and packed-image freshness checks after opening a `.blend`.
 - Native renderer bridge for Blender generated images through packaged `clip_capi`.
 - Image-panel diagnostics for native render status, missing sources, render errors, native support summaries, support resource statistics, expandable unsupported-layer details, and copyable support reports.
+- Native CLI support diagnostics in both readable text and machine-readable JSON.
 
 Known fidelity gaps:
 - Remaining native GPU differences are low-level formula/quantization cases on complex blend/filter samples.

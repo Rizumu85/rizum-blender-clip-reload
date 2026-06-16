@@ -11,3 +11,4 @@ clip_file = { path = "../clip_file" }
 clip_model = { path = "../clip_model" }
 clip_runtime = { path = "../clip_runtime" }
 png = "0.17"
+serde_json = "1"

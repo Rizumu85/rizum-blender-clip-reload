@@ -187,6 +187,10 @@ Remaining bridge work:
 - Improve user-facing diagnostics beyond the current image-level
   status/error/support summary, especially support-detail navigation and
   clearer supported-but-imperfect fidelity residuals.
+- `clip_cli --gpu-support-json` emits the metadata-only support check as pure
+  JSON, including canvas metadata, source/unsupported counts, raster/mask
+  resource statistics, and unsupported node details. This is diagnostic output
+  for automation and issue capture, not a renderer or fallback path.
 
 ## Completed Third Milestone Foundation
 

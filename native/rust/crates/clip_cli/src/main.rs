@@ -8,12 +8,14 @@ use std::process;
 use clip_model::{LayerId, Rect, Rgba8};
 use clip_runtime::ClipSession;
 
+mod support_json;
+
 fn main() {
     let mut args = env::args_os();
     let _program = args.next();
     let Some(path) = args.next() else {
         eprintln!(
-            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>]"
+            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>]"
         );
         process::exit(2);
     };
@@ -26,6 +28,21 @@ fn main() {
             process::exit(1);
         }
     };
+
+    if options.gpu_support_json {
+        let result = match session.check_normal_raster_stack_support() {
+            Ok(result) => result,
+            Err(err) => {
+                eprintln!("failed to check GPU support from {:?}: {err}", path);
+                process::exit(1);
+            }
+        };
+        println!(
+            "{}",
+            support_json::normal_support_report_json(session.summary(), &result)
+        );
+        return;
+    }
 
     let summary = session.summary();
     println!(
@@ -422,6 +439,7 @@ struct CliOptions {
     gpu_draw_layer_id: Option<LayerId>,
     gpu_simple_stack: bool,
     gpu_support_check: bool,
+    gpu_support_json: bool,
     gpu_normal_stack: bool,
     gpu_trace_pixel: Option<(u32, u32)>,
     dump_layer_window: Option<(LayerId, u32, u32, u32)>,
@@ -464,6 +482,8 @@ fn parse_options(args: Vec<OsString>) -> CliOptions {
             options.gpu_simple_stack = true;
         } else if arg == "--gpu-support-check" {
             options.gpu_support_check = true;
+        } else if arg == "--gpu-support-json" {
+            options.gpu_support_json = true;
         } else if arg == "--gpu-normal-stack" {
             options.gpu_normal_stack = true;
         } else if arg == "--gpu-trace-pixel" {
