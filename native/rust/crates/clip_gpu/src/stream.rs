@@ -1,9 +1,9 @@
 use clip_model::CanvasSize;
 
 use crate::blend::raster_source_pipeline;
+use crate::lut_filter::{create_lut_filter_texture, encode_lut_filter_pass_scissored};
 use crate::pass::{
-    NormalStackPipelines, create_lut_filter_texture, encode_lut_filter_pass,
-    encode_normal_source_pass, encode_normal_source_pass_scissored,
+    NormalStackPipelines, encode_normal_source_pass, encode_normal_source_pass_scissored,
 };
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_and_origins, lut_filter_uniform_bytes,
@@ -387,8 +387,14 @@ where
             mask_key,
             filter_mode,
         } => {
-            let Some(full_bounds) = CanvasRect::full(output_size) else {
-                return Ok(false);
+            let pass_bounds = match *dirty_bounds {
+                Some(bounds) => bounds,
+                None => {
+                    let Some(full_bounds) = CanvasRect::full(output_size) else {
+                        return Ok(false);
+                    };
+                    full_bounds
+                }
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,
@@ -407,7 +413,7 @@ where
             )
             .map_err(P::Error::from)?;
             let lut_view = lut_texture.create_view(&wgpu::TextureViewDescriptor::default());
-            encode_lut_filter_pass(
+            encode_lut_filter_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
                 &pipelines.lut_filter_pipeline,
@@ -418,11 +424,12 @@ where
                 output_view,
                 lut_filter_uniform_bytes(*opacity, mask_key.is_some(), *filter_mode),
                 lut_filter_label(*filter_mode),
+                local_pass_bounds(pass_bounds, target_origin),
             );
             state.retain_optional_mask_cache(mask_cache);
             state.retain_lut_texture(lut_texture);
             state.finish_pass()?;
-            *dirty_bounds = Some(full_bounds);
+            *dirty_bounds = Some(pass_bounds);
             Ok(true)
         }
     }

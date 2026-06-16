@@ -4,9 +4,10 @@ use clip_graph::RenderNodeId;
 use clip_model::{CanvasSize, LayerId};
 
 use crate::{
-    GpuDeviceConfig, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
-    GpuNormalStackResourceProvider, GpuNormalStackSource, GpuRasterBlendMode,
-    GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload, GpuRenderError, GpuRenderer,
+    GpuDeviceConfig, GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey,
+    GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuNormalStackSource,
+    GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload,
+    GpuRenderError, GpuRenderer,
 };
 
 struct InlineProvider {
@@ -237,6 +238,43 @@ fn streamed_through_cache_preserves_parent_dirty_outside_cropped_bounds() {
     assert_eq!(output.pixels, expected);
 }
 
+#[test]
+fn streamed_lut_filter_scissors_to_existing_dirty_bounds() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(7);
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(7),
+            size: CanvasSize::new(2, 2),
+            offset: (1, 1),
+            pixels: [255, 0, 0, 255].repeat(4),
+        },
+    )]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source(key)),
+        GpuNormalStackSource::LutFilter {
+            lut_rgba: inverted_tone_curve_lut(),
+            opacity: 1.0,
+            mask_key: None,
+            filter_mode: GpuLutFilterMode::ToneCurveRgb,
+        },
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw streamed scissored LUT filter");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 4 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 255, 255, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+}
+
 fn raster_source(key: GpuRasterResourceKey) -> GpuNormalRasterSource {
     raster_source_at(key, 1, 1)
 }
@@ -261,4 +299,13 @@ fn raster_key(id: u32) -> GpuRasterResourceKey {
         layer_id: LayerId(id),
         render_mipmap_id: id,
     }
+}
+
+fn inverted_tone_curve_lut() -> Vec<u8> {
+    let mut lut = Vec::with_capacity(256 * 4);
+    for value in 0..=255u8 {
+        let inverted = 255 - value;
+        lut.extend_from_slice(&[inverted, inverted, inverted, 255]);
+    }
+    lut
 }

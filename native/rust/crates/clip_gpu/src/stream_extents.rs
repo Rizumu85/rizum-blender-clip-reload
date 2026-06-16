@@ -23,9 +23,10 @@ where
     let mut bounds = None;
     let mut saw_unknown = false;
     for source in sources {
-        match known_source_bounds(provider, source, output_size) {
+        match known_source_change_bounds(provider, source, output_size, bounds, saw_unknown) {
             KnownStackBounds::Bounded(source_bounds) => {
-                bounds = union_optional(bounds, Some(source_bounds));
+                bounds = Some(source_bounds);
+                saw_unknown = false;
             }
             KnownStackBounds::Unknown => saw_unknown = true,
             KnownStackBounds::Empty => {}
@@ -39,22 +40,32 @@ where
     }
 }
 
-fn known_source_bounds<P>(
+fn known_source_change_bounds<P>(
     provider: &P,
     source: &GpuNormalStackSource,
     output_size: CanvasSize,
+    current_bounds: Option<CanvasRect>,
+    current_unknown: bool,
 ) -> KnownStackBounds
 where
     P: GpuNormalStackResourceProvider,
 {
     match source {
-        GpuNormalStackSource::Raster(raster) => known_raster_bounds(provider, *raster, output_size),
-        GpuNormalStackSource::ClippingRun { base, .. } => {
-            known_raster_bounds(provider, *base, output_size)
-        }
-        GpuNormalStackSource::Container { children, .. } => {
-            known_stack_bounds(provider, children, output_size)
-        }
+        GpuNormalStackSource::Raster(raster) => merge_source_bounds(
+            known_raster_bounds(provider, *raster, output_size),
+            current_bounds,
+            current_unknown,
+        ),
+        GpuNormalStackSource::ClippingRun { base, .. } => merge_source_bounds(
+            known_raster_bounds(provider, *base, output_size),
+            current_bounds,
+            current_unknown,
+        ),
+        GpuNormalStackSource::Container { children, .. } => merge_source_bounds(
+            known_stack_bounds(provider, children, output_size),
+            current_bounds,
+            current_unknown,
+        ),
         GpuNormalStackSource::ThroughGroup { children, .. } => {
             if known_stack_bounds(provider, children, output_size) == KnownStackBounds::Empty {
                 KnownStackBounds::Empty
@@ -62,11 +73,39 @@ where
                 KnownStackBounds::Unknown
             }
         }
-        GpuNormalStackSource::SolidColor { .. } | GpuNormalStackSource::LutFilter { .. } => {
-            CanvasRect::full(output_size)
-                .map(KnownStackBounds::Bounded)
-                .unwrap_or(KnownStackBounds::Empty)
+        GpuNormalStackSource::SolidColor { .. }
+        | GpuNormalStackSource::LutFilter {
+            mask_key: Some(_), ..
+        } => CanvasRect::full(output_size)
+            .map(KnownStackBounds::Bounded)
+            .unwrap_or(KnownStackBounds::Empty),
+        GpuNormalStackSource::LutFilter { mask_key: None, .. } => {
+            if current_unknown {
+                KnownStackBounds::Unknown
+            } else {
+                match current_bounds {
+                    Some(bounds) => KnownStackBounds::Bounded(bounds),
+                    None => CanvasRect::full(output_size)
+                        .map(KnownStackBounds::Bounded)
+                        .unwrap_or(KnownStackBounds::Empty),
+                }
+            }
         }
+    }
+}
+
+fn merge_source_bounds(
+    source_bounds: KnownStackBounds,
+    current_bounds: Option<CanvasRect>,
+    current_unknown: bool,
+) -> KnownStackBounds {
+    match source_bounds {
+        KnownStackBounds::Bounded(_) if current_unknown => KnownStackBounds::Unknown,
+        KnownStackBounds::Bounded(bounds) => KnownStackBounds::Bounded(
+            union_optional(current_bounds, Some(bounds)).expect("source bounds must be present"),
+        ),
+        KnownStackBounds::Empty => KnownStackBounds::Empty,
+        KnownStackBounds::Unknown => KnownStackBounds::Unknown,
     }
 }
 
@@ -195,6 +234,59 @@ mod tests {
                 y: 0,
                 width: 4,
                 height: 5,
+            })
+        );
+    }
+
+    #[test]
+    fn unmasked_lut_filter_keeps_prior_bounded_stack_bounds() {
+        let key = raster_key(1);
+        let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
+        let sources = vec![
+            GpuNormalStackSource::Raster(raster_source(key, 1, 1)),
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: Vec::new(),
+                opacity: 1.0,
+                mask_key: None,
+                filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
+            },
+        ];
+
+        assert_eq!(
+            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+            KnownStackBounds::Bounded(CanvasRect {
+                x: 1,
+                y: 1,
+                width: 2,
+                height: 2,
+            })
+        );
+    }
+
+    #[test]
+    fn masked_lut_filter_keeps_full_canvas_bounds() {
+        let key = raster_key(1);
+        let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
+        let sources = vec![
+            GpuNormalStackSource::Raster(raster_source(key, 1, 1)),
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: Vec::new(),
+                opacity: 1.0,
+                mask_key: Some(GpuMaskResourceKey {
+                    layer_id: LayerId(9),
+                    mask_mipmap_id: 10,
+                }),
+                filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
+            },
+        ];
+
+        assert_eq!(
+            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+            KnownStackBounds::Bounded(CanvasRect {
+                x: 0,
+                y: 0,
+                width: 10,
+                height: 10,
             })
         );
     }

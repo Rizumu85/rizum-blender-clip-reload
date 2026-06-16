@@ -2,6 +2,7 @@
 
 mod blend;
 pub mod device;
+mod lut_filter;
 pub mod pass;
 pub mod renderer;
 pub mod resource;
