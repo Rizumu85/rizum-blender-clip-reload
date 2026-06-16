@@ -22,6 +22,21 @@ fn selected_tile_decode_skips_unwanted_compressed_blocks() {
     assert_eq!(blocks.blocks[1].bytes, vec![9, 9, 9, 9]);
 }
 
+#[test]
+fn selected_tile_decode_stops_after_last_wanted_block() {
+    let body = external_body(&[
+        compressed_data_block(&[1, 2, 3, 4]),
+        corrupt_compressed_data_block(4),
+    ]);
+
+    let blocks = decode_external_tile_blocks(&body, 9, 4, 2, &[0]).unwrap();
+
+    assert_eq!(blocks.external_id, "external");
+    assert_eq!(blocks.blocks.len(), 1);
+    assert_eq!(blocks.blocks[0].tile_index, 0);
+    assert_eq!(blocks.blocks[0].bytes, vec![1, 2, 3, 4]);
+}
+
 fn external_body(blocks: &[Vec<u8>]) -> Vec<u8> {
     let mut body = Vec::new();
     let external_id = b"external";

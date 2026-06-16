@@ -58,6 +58,8 @@ python verify_one_clip.py img/Test_ToneCurve.clip
 
 ## Native Loading Notes
 
+- Current selected-tile decode state: CHNKExta selected-tile reads stop once the last requested tile block has been found, so unrelated trailing blocks are not scanned or inflated. Low-level external block readers live in `clip_file/src/external/reader.rs`.
+
 The sidecar PNG workflow is only the current Python path. The chosen native direction is a Rust renderer core with `wgpu` GPU compositing behind explicit host bridges. If native loading is accepted, remove the Python compositor/loader and sidecar PNG implementation instead of keeping compatibility or fallback paths. Do not maintain a duplicate native CPU compositor; use the existing Python loader and CSP PNG exports only as slow external references during development.
 - Native rewrite architecture is documented in `docs/native-code-architecture.md`. The initial Rust workspace lives under `native/rust/` with separate crates for `clip_model`, `clip_file`, `clip_graph`, `clip_gpu`, `clip_runtime`, `clip_capi`, and `clip_cli`; root files are wiring only and must not accumulate renderer behavior.
 - First OIIO milestone source lives under `native/oiio/`. It is a minimal C++20 `ImageInput` plugin that registers `.clip`, validates the `CSFCHUNK` magic, and returns a deterministic 64x64 RGBA placeholder image. This is only format plumbing; it does not parse layers or call Rust yet.

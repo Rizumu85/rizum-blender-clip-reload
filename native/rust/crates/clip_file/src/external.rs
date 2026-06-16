@@ -2,7 +2,10 @@ use std::io::Read;
 
 use flate2::read::ZlibDecoder;
 
+mod reader;
+
 use crate::ClipFileError;
+use reader::{read_be_u32, read_be_u64, read_le_u32, read_utf16_be, skip};
 
 const BLOCK_NAME_MARKER: u32 = 0x0042_006c;
 
@@ -89,6 +92,7 @@ pub fn decode_external_tile_blocks(
 
     let mut next_wanted = 0usize;
     let mut blocks = Vec::with_capacity(wanted.len());
+    let mut found_all_wanted = wanted.is_empty();
     let visited = visit_external_data_blocks(body, |block| {
         if block.index >= expected_tile_count {
             return Ok(false);
@@ -113,10 +117,11 @@ pub fn decode_external_tile_blocks(
             tile_index: block.index,
             bytes,
         });
-        Ok(next_wanted < wanted.len())
+        found_all_wanted = next_wanted == wanted.len();
+        Ok(!found_all_wanted)
     })?;
 
-    if visited.data_block_count < expected_tile_count {
+    if !found_all_wanted && visited.data_block_count < expected_tile_count {
         return Err(ClipFileError::UnexpectedTileCount {
             expected: expected_tile_count,
             actual: visited.data_block_count,
@@ -424,75 +429,6 @@ fn append_empty_bytes(
         *output_len = output.len();
     }
     Ok(())
-}
-
-fn read_utf16_be(bytes: &[u8]) -> Result<String, ClipFileError> {
-    if !bytes.len().is_multiple_of(2) {
-        return Err(ClipFileError::InvalidExternalDataBlock(
-            "odd-length utf16 block name",
-        ));
-    }
-    let units: Vec<u16> = bytes
-        .chunks_exact(2)
-        .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
-        .collect();
-    String::from_utf16(&units).map_err(|_| ClipFileError::InvalidExternalDataBlock("bad utf16"))
-}
-
-fn skip(bytes: &[u8], pos: &mut usize, len: usize) -> Result<(), ClipFileError> {
-    let end = pos
-        .checked_add(len)
-        .ok_or(ClipFileError::InvalidExternalDataBlock("offset overflow"))?;
-    if end > bytes.len() {
-        return Err(ClipFileError::InvalidExternalDataBlock("truncated field"));
-    }
-    *pos = end;
-    Ok(())
-}
-
-fn read_be_u64(bytes: &[u8], pos: &mut usize) -> Result<u64, ClipFileError> {
-    let end = pos
-        .checked_add(8)
-        .ok_or(ClipFileError::InvalidExternalDataBlock("offset overflow"))?;
-    let value = u64::from_be_bytes(
-        bytes
-            .get(*pos..end)
-            .ok_or(ClipFileError::InvalidExternalDataBlock("truncated u64"))?
-            .try_into()
-            .unwrap(),
-    );
-    *pos = end;
-    Ok(value)
-}
-
-fn read_be_u32(bytes: &[u8], pos: &mut usize) -> Result<u32, ClipFileError> {
-    let end = pos
-        .checked_add(4)
-        .ok_or(ClipFileError::InvalidExternalDataBlock("offset overflow"))?;
-    let value = u32::from_be_bytes(
-        bytes
-            .get(*pos..end)
-            .ok_or(ClipFileError::InvalidExternalDataBlock("truncated u32"))?
-            .try_into()
-            .unwrap(),
-    );
-    *pos = end;
-    Ok(value)
-}
-
-fn read_le_u32(bytes: &[u8], pos: &mut usize) -> Result<u32, ClipFileError> {
-    let end = pos
-        .checked_add(4)
-        .ok_or(ClipFileError::InvalidExternalDataBlock("offset overflow"))?;
-    let value = u32::from_le_bytes(
-        bytes
-            .get(*pos..end)
-            .ok_or(ClipFileError::InvalidExternalDataBlock("truncated u32"))?
-            .try_into()
-            .unwrap(),
-    );
-    *pos = end;
-    Ok(value)
 }
 
 #[cfg(test)]
