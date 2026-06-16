@@ -110,8 +110,14 @@ Current policy:
   Blender worker setup now avoids
   duplicate support selection/full-canvas region copying and lazily creates only
   the normal-stack pipelines used by the current file; this is a useful fixed
-  cost reduction, not a replacement for tile-silo rendering. See
-  `docs/native-performance-investigation.md`.
+  cost reduction, not a replacement for tile-silo rendering. Follow-up research
+  against wgpu, Bevy, and Blender public API docs adds two concrete next tracks:
+  batch many compressed atlas tile uploads through explicit staging buffers
+  instead of thousands of short-lived `Queue::write_texture` calls, and add
+  Blender-side phase timing before changing upload or pack policy. The likely
+  Blender product lever is optional/deferred packing of generated images; this
+  changes persistence timing, not pixel semantics, and should be exposed
+  deliberately if implemented. See `docs/native-performance-investigation.md`.
 - Native raster extraction now applies render offscreen placement through `LayerRenderOffscrOffsetX/Y`, matching the existing mask placement model and the known `Ref_Terra404_Live2D` negative-X render sources. This removes a structural decode gap before further large-reference GPU work.
 - Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.
 - Native support diagnostics use a metadata-only strict selector. `clip_cli --gpu-support-check` validates graph, raster source, mask source, and LUT-filter support without tile decode, GPU initialization, or rendering, and labels resource/unsupported layer ids with layer names when available. `clip_cli --gpu-support-json` emits the same support/resource/unsupported-node data as pure JSON for automation and issue capture, also carrying layer names when available. Other CLI plan, resource, stack, unsupported, and trace diagnostics should use the same layer-label helper so layer ids are easy to map back to Blender support reports. These commands must remain diagnostics only, not fallback renderers.

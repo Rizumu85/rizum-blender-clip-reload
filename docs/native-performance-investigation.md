@@ -304,6 +304,94 @@ lever. The same runs still draw hundreds of raster resources (`343` for
 RealArt, `715` for Terra). The next large step remains a Silicate-style
 tile-silo renderer that makes masks and clipping relationships tile-local.
 
+## External wgpu and Blender API Follow-Up
+
+Reference material checked on 2026-06-16:
+
+- wgpu `Queue` docs:
+  <https://docs.rs/wgpu/latest/wgpu/struct.Queue.html>
+- wgpu `PipelineCache` docs:
+  <https://docs.rs/wgpu/latest/wgpu/struct.PipelineCache.html>
+- Learn Wgpu texture upload and instancing tutorials:
+  <https://sotrh.github.io/learn-wgpu/beginner/tutorial5-textures/>
+  and <https://sotrh.github.io/learn-wgpu/beginner/tutorial7-instancing/>
+- Bevy texture atlas and render rework references:
+  <https://docs.rs/bevy/latest/bevy/prelude/struct.TextureAtlas.html>
+  and <https://github.com/bevyengine/bevy/discussions/2265>
+- Blender Python API/Image and Blender foreach_set source-example references:
+  <https://docs.blender.org/api/current/bpy.types.Image.html>
+  and
+  <https://github.com/blender/blender/blob/main/doc/python_api/examples/bpy.types.bpy_prop_collection.foreach_set.py>
+
+wgpu conclusions:
+
+- `Queue::write_texture` is good for simple texture uploads and avoids the old
+  explicit intermediate-buffer shape in the single-texture tutorial case, but
+  the current wgpu docs say it has the same native-platform performance
+  consideration as `write_buffer`: staging memory is a short-lived allocation
+  released after the next submit. Our direct compressed raster tile path can
+  call `write_texture` once per non-empty source tile chunk, so RealArt/Terra
+  scale into thousands of short-lived upload calls. The next upload-side
+  experiment should therefore batch many atlas chunks into one or a few
+  explicitly managed staging buffers and issue `copy_buffer_to_texture` copies
+  in the existing encoder. This is evidence-backed for this workload; it is not
+  a generic rejection of `write_texture`.
+- The separate instancing/atlas references point in the same direction as
+  Silicate: group per-source data into buffers/atlases and draw many logical
+  items with one pass/draw instead of repeatedly updating uniforms or issuing
+  small passes. The current raster-run tile-silo pass already follows this for
+  ordinary unmasked raster runs. The next large native milestone should extend
+  the event model to masks and clipping relationships, not spend time on more
+  local pass tuning.
+- wgpu pipeline caches can reduce pipeline creation cost between program
+  executions, but the current docs and feature support make this a secondary
+  worker-startup probe, not the main Windows/Blender speed lever. The renderer
+  already lazily creates only pipelines used by the current file; if startup
+  timing later proves pipeline compilation dominates, persistable
+  `PipelineCache` can be benchmarked per backend.
+- Native-only binding arrays/non-uniform indexing exist in wgpu/Bevy feature
+  documentation, but they are not the first portability-preserving route here.
+  A single atlas plus storage-buffer event lists fits WebGPU's common subset
+  better and matches the existing tile-silo direction.
+
+Blender conclusions:
+
+- The accepted add-on path currently has a hard Blender-side floor after native
+  rendering: read the worker RGBA8 bytes, convert/flip them into a float
+  sequence for `Image.pixels.foreach_set`, call `image.update()`, then pack the
+  generated image. Blender's public Python Image API exposes pixels through
+  this float property path; the source example for `foreach_set` also requires
+  a one-dimensional sequence of basic values. There is no documented public
+  Python API that bulk-installs raw RGBA8 bytes directly into an Image datablock
+  or hands an external wgpu texture to a persistent Blender Image.
+- The first Blender-side task should be phase timing, not speculative tuning:
+  record native worker time, RGBA temp read time, uint8-to-float/row-flip time,
+  `foreach_set`, `image.update()`, and `image.pack()`. User-observed 6-7s
+  imports with 2-3s native worker times are consistent with this post-render
+  bridge being a large share of the remaining delay, but the exact phase split
+  should be measured in the add-on UI before changing persistence semantics.
+- The main product-level speed lever is packing policy. Packing every rendered
+  image preserves the current "latest pixels survive in the .blend" behavior,
+  but it also makes import/reload wait for a large image to be serialized into
+  Blender. A faithful faster mode would keep the generated image visible and
+  source-tracked immediately, then pack on save or on explicit user command.
+  This is not a renderer fallback and does not change pixel semantics, but it
+  changes persistence timing and therefore should be surfaced as a Blender UI
+  preference if implemented.
+- Smaller Blender bridge optimizations are still worth measuring after phase
+  timing: avoid extra NumPy temporaries by writing directly into one
+  bottom-row-first `float32` output array, optionally have the worker emit
+  bottom-up RGBA8 to remove the row-flip copy, and use memory mapping or a
+  persistent temp buffer to reduce duplicate 100MB+ byte copies. These are
+  likely incremental; they should not distract from pack policy and native
+  mask/clipping tile-silo work unless timings prove otherwise.
+- Loading a temporary PNG/TGA/BMP through Blender's C image loader might avoid
+  Python float conversion, but it risks recreating a sidecar-like workflow and
+  adds encode/decode costs. Keep it as a measured experiment only if phase
+  timing proves `foreach_set` dominates and the implementation can remain
+  temporary/internal, with no persistent sidecar artifact and no fallback
+  compositor.
+
 ## Non-Goals
 
 - Do not add a CPU compositor fallback.
