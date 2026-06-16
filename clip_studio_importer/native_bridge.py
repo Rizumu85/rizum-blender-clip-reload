@@ -20,6 +20,13 @@ CLIP_ROOT_LAYER_KEY = "clip_root_layer_id"
 CLIP_LAYER_COUNT_KEY = "clip_layer_count"
 CLIP_EXTERNAL_COUNT_KEY = "clip_external_data_count"
 CLIP_RELOAD_STATUS_KEY = "clip_reload_status"
+CLIP_RELOAD_ERROR_KEY = "clip_reload_error"
+
+RELOAD_STATUS_OK = "ok"
+RELOAD_STATUS_STALE = "stale_source"
+RELOAD_STATUS_MISSING = "missing_source"
+RELOAD_STATUS_REFRESHING = "refreshing"
+RELOAD_STATUS_ERROR = "error"
 
 
 class NativeBridgeError(RuntimeError):
@@ -37,6 +44,15 @@ class NativeRenderResult:
     renderer_abi: int
     source_mtime: float | None
     pixels_rgba8: bytes
+
+
+@dataclass(frozen=True)
+class NativeImageSourceState:
+    clip_path: str
+    stored_mtime: float | None
+    current_mtime: float | None
+    should_reload: bool
+    status: str
 
 
 class _ClipRendererImageInfo(ctypes.Structure):
@@ -209,6 +225,57 @@ def create_or_update_image(
     return image
 
 
+def inspect_native_image_source(
+    image: Any,
+    *,
+    exists: Any = os.path.exists,
+    getmtime: Any = os.path.getmtime,
+) -> NativeImageSourceState:
+    clip_path = str(image.get(CLIP_SOURCE_KEY, "") or "")
+    stored_mtime = _parse_mtime(image.get(CLIP_MTIME_KEY, ""))
+    if not clip_path:
+        return NativeImageSourceState(
+            clip_path="",
+            stored_mtime=stored_mtime,
+            current_mtime=None,
+            should_reload=False,
+            status=RELOAD_STATUS_MISSING,
+        )
+
+    if not exists(clip_path):
+        return NativeImageSourceState(
+            clip_path=clip_path,
+            stored_mtime=stored_mtime,
+            current_mtime=None,
+            should_reload=False,
+            status=RELOAD_STATUS_MISSING,
+        )
+
+    try:
+        current_mtime = float(getmtime(clip_path))
+    except OSError:
+        return NativeImageSourceState(
+            clip_path=clip_path,
+            stored_mtime=stored_mtime,
+            current_mtime=None,
+            should_reload=False,
+            status=RELOAD_STATUS_MISSING,
+        )
+
+    should_reload = stored_mtime is None or current_mtime > stored_mtime + 1e-6
+    return NativeImageSourceState(
+        clip_path=clip_path,
+        stored_mtime=stored_mtime,
+        current_mtime=current_mtime,
+        should_reload=should_reload,
+        status=RELOAD_STATUS_STALE if should_reload else RELOAD_STATUS_OK,
+    )
+
+
+def write_reload_status(image: Any, status: str) -> None:
+    image[CLIP_RELOAD_STATUS_KEY] = status
+
+
 def resolve_renderer_library(
     library_path: str | os.PathLike[str] | None = None,
 ) -> str:
@@ -278,7 +345,16 @@ def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_ROOT_LAYER_KEY] = result.root_layer_id
     image[CLIP_LAYER_COUNT_KEY] = result.layer_count
     image[CLIP_EXTERNAL_COUNT_KEY] = result.external_data_count
-    image[CLIP_RELOAD_STATUS_KEY] = "ok"
+    write_reload_status(image, RELOAD_STATUS_OK)
+
+
+def _parse_mtime(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _rgba8_to_float_sequence(pixels: bytes) -> Any:

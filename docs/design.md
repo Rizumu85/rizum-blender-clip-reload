@@ -8,9 +8,13 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 
 1. Install the Blender add-on from `clip_studio_importer.zip`.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
-3. The add-on decodes the `.clip`, writes a sidecar PNG cache at `<file>.clip.png`, and loads that PNG as a normal Blender image.
+3. By default, the add-on decodes the `.clip`, writes a sidecar PNG cache at
+   `<file>.clip.png`, and loads that PNG as a normal Blender image.
 4. When the source `.clip` is saved again, auto-reload watches the file timestamp and refreshes the Blender image after the background decode finishes.
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
+6. If `Use native renderer` is enabled and a `clip_capi` library is configured,
+   import/reload uses the native generated-image bridge instead of writing a
+   sidecar PNG.
 
 ## Later Native Workflow
 
@@ -43,6 +47,8 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   - `Auto-reload on .clip change`
   - `Poll interval (seconds)`
   - `Debug log`
+  - `Use native renderer`
+  - `Native renderer library`
 
 ## Interaction Principles
 
@@ -60,8 +66,11 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 - Background decode progress is only shown as a small `Decoding in background` label when the image panel is visible.
 - Unknown or unsupported layer features are currently console warnings, not surfaced in Blender's UI.
-- Import/reload always writes a sidecar PNG next to the `.clip`; there is no cache-location preference.
+- Sidecar import/reload writes a PNG next to the `.clip`; there is no cache-location preference.
+- Native renderer mode is still explicit opt-in and currently requires the user
+  or package layout to provide a discoverable `clip_capi` library.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize unsupported layer kinds or skipped semantics in the UI.
-- Native `.clip` loading is not implemented. The OIIO route needs a native raster decoder plugin spike after Python fidelity work stabilizes; if accepted, it replaces the sidecar workflow rather than coexisting with it.
-- The native bridge still needs add-on-level source tracking, packed-pixel
-  persistence, and reload UI for missing or changed `.clip` sources.
+- Native generated-image loading exists, including packed-pixel persistence,
+  manual reload, background watcher refresh, and `load_post` freshness checks.
+  It is not yet the accepted/default path, and the Python compositor/sidecar
+  workflow has not been removed.

@@ -151,15 +151,18 @@ Result:
 - `Reload from .clip` and the non-blocking watcher update native images through
   the C ABI/generated-image path, while sidecar images continue to use the
   existing PNG reload path.
+- Blender `load_post` now scans packed native images, checks the stored source
+  mtime against the current `.clip`, queues a native refresh when the source is
+  newer or the stored mtime is missing, and records `missing_source` while
+  keeping packed pixels visible if the source is gone.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
-  pixel upload, source metadata, packing, and size-mismatch rejection. A direct
-  Python smoke against `native/rust/target/release/clip_capi.dll` and
-  `img/Test_Clipping.clip` returned `512x512`, ABI `1`, and first pixel
-  `[0,0,224,255]`.
+  pixel upload, source metadata, packing, size-mismatch rejection, and native
+  source freshness states. A direct Python smoke against
+  `native/rust/target/release/clip_capi.dll` and `img/Test_Clipping.clip`
+  returned `512x512`, ABI `1`, and first pixel `[0,0,224,255]`.
 
 Remaining bridge work:
 
-- Add load-time source freshness scanning for packed native images.
 - Decide how native renderer binaries are packaged/discovered for installed
   add-ons.
 - Promote native renderer mode from explicit opt-in to the accepted/default

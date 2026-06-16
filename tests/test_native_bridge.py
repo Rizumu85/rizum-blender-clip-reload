@@ -117,6 +117,67 @@ class NativeBridgeTests(unittest.TestCase):
         with self.assertRaises(native_bridge.NativeBridgeError):
             native_bridge.create_or_update_image(bpy, result, image=image)
 
+    def test_inspect_native_image_source_marks_fresh_source_ok(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: True,
+            getmtime=lambda path: 10.0,
+        )
+
+        self.assertEqual(state.clip_path, "sample.clip")
+        self.assertEqual(state.stored_mtime, 10.0)
+        self.assertEqual(state.current_mtime, 10.0)
+        self.assertFalse(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_OK)
+
+    def test_inspect_native_image_source_marks_newer_source_stale(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: True,
+            getmtime=lambda path: 11.0,
+        )
+
+        self.assertTrue(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
+
+    def test_inspect_native_image_source_keeps_missing_source_pixels(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "missing.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: False,
+            getmtime=lambda path: 11.0,
+        )
+
+        self.assertFalse(state.should_reload)
+        self.assertIsNone(state.current_mtime)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_MISSING)
+
+    def test_inspect_native_image_source_refreshes_unknown_mtime(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: True,
+            getmtime=lambda path: 12.0,
+        )
+
+        self.assertIsNone(state.stored_mtime)
+        self.assertEqual(state.current_mtime, 12.0)
+        self.assertTrue(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
+
 
 if __name__ == "__main__":
     unittest.main()

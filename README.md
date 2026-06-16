@@ -6,14 +6,14 @@ The default path decodes `.clip` in Python, writes a sidecar PNG cache next to t
 
 ## Status
 
-Package version: `0.8.23`.
+Package version: `0.8.24`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
 - Paper/background layers, masks, opacity, `LayerVisibility` bit flags, clipping layers, folders, and offscreen group compositing.
 - Observed CSP blend modes, plus current adjustment/filter-layer support used by the supplied samples.
 - Blender import, manual reload, and non-blocking auto-reload.
-- Optional native renderer bridge for Blender generated images through `clip_capi`.
+- Optional native renderer bridge for Blender generated images through `clip_capi`, including packed-image freshness checks after opening a `.blend`.
 
 Known fidelity gaps:
 - Remaining native GPU differences are low-level formula/quantization cases on complex blend/filter samples.
@@ -33,7 +33,7 @@ Known fidelity gaps:
 3. In the default mode, Blender loads the decoded sidecar PNG at `<source>.clip.png`.
 4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Reload from .clip` in the Image Editor N-panel.
 
-To test the native path, enable `Use native renderer` in the add-on preferences and set `Native renderer library` to the built `clip_capi` library, for example `native/rust/target/release/clip_capi.dll` on Windows. In this mode the add-on creates or updates a generated Blender image, stores `.clip` source metadata on it, and repacks the rendered pixels after import/reload.
+To test the native path, enable `Use native renderer` in the add-on preferences and set `Native renderer library` to the built `clip_capi` library, for example `native/rust/target/release/clip_capi.dll` on Windows. In this mode the add-on creates or updates a generated Blender image, stores `.clip` source metadata on it, repacks the rendered pixels after import/reload, and checks packed native images again when a `.blend` is opened.
 
 ## Project Layout
 

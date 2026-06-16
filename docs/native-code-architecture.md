@@ -637,10 +637,11 @@ Persistence rules:
   `clip_native_renderer`, `clip_renderer_abi`, and `clip_reload_status`. This is
   Blender add-on state, not a native runtime API; a final accepted native path
   may migrate property names while deleting the sidecar workflow.
-- On Blender `load_post`, the add-on scans images with `rizum_clip_source`. If
-  the source exists and is newer/different, it asks the native runtime to render
-  and updates the image pixels. If the source is missing, it keeps the packed
-  pixels and reports the missing source.
+- On Blender `load_post`, the current add-on scans native images with
+  `clip_native_renderer` plus `clip_source`. If the source exists and is
+  newer/different, it asks the native runtime to render and updates the image
+  pixels. If the source is missing, it keeps the packed pixels visible and
+  records `clip_reload_status = "missing_source"`.
 - Repacking after successful reload is the default so the `.blend` remains
   self-contained. A future user option may disable packing to reduce `.blend`
   size, but the default path is packed.

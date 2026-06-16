@@ -16,7 +16,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 23),
+    "version": (0, 8, 24),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -27,6 +27,7 @@ import os
 import threading
 
 import bpy
+from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, FloatProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
@@ -106,6 +107,44 @@ def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
 
 def _addon_prefs():
     return bpy.context.preferences.addons[ADDON_PKG].preferences
+
+
+def _schedule_async_decode(
+    clip_path: str,
+    image_name: str,
+    *,
+    use_native: bool,
+    native_library_path: str | None,
+    pre_stamp_mtime: float | None = None,
+) -> bool:
+    with _state_lock:
+        if clip_path in _in_flight:
+            return False
+        _in_flight.add(clip_path)
+
+    if pre_stamp_mtime is not None:
+        img = bpy.data.images.get(image_name)
+        if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+            img[CLIP_MTIME_KEY] = str(pre_stamp_mtime)
+
+    if use_native:
+        img = bpy.data.images.get(image_name)
+        if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+            native_bridge.write_reload_status(
+                img,
+                native_bridge.RELOAD_STATUS_REFRESHING,
+            )
+
+    threading.Thread(
+        target=_async_decode,
+        args=(clip_path, image_name),
+        kwargs={
+            "use_native": use_native,
+            "native_library_path": native_library_path,
+        },
+        daemon=True,
+    ).start()
+    return True
 
 
 # --------------------------------------------------------------------------- #
@@ -210,6 +249,7 @@ def _async_decode(
     """
     success = False
     native_result = None
+    error_message = ""
     try:
         if use_native:
             native_result = native_bridge.render_clip_rgba8(
@@ -220,12 +260,26 @@ def _async_decode(
             _decode_clip_to_sidecar_png(clip_path)
         success = True
     except Exception as exc:
+        error_message = str(exc)
         print(f"[clip_studio_importer] async decode failed for {clip_path}: {exc}")
 
     with _state_lock:
         _in_flight.discard(clip_path)
 
     if not success:
+        if use_native:
+            def _on_error():
+                img = bpy.data.images.get(image_name)
+                if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+                    native_bridge.write_reload_status(
+                        img,
+                        native_bridge.RELOAD_STATUS_ERROR,
+                    )
+                    if error_message:
+                        img[native_bridge.CLIP_RELOAD_ERROR_KEY] = error_message
+                return None
+
+            bpy.app.timers.register(_on_error, first_interval=0.0)
         return
 
     # Hop back to the main thread. bpy.app.timers.register is safe from worker
@@ -274,7 +328,36 @@ def _watcher_tick():
     # Detect .clip mtime changes, spawn worker threads as needed.
     for img in bpy.data.images:
         clip_path = img.get(CLIP_SOURCE_KEY)
-        if not clip_path or not os.path.exists(clip_path):
+        if not clip_path:
+            continue
+
+        if img.get(CLIP_NATIVE_KEY):
+            state = native_bridge.inspect_native_image_source(img)
+            with _state_lock:
+                running = bool(state.clip_path and state.clip_path in _in_flight)
+            if running:
+                native_bridge.write_reload_status(
+                    img,
+                    native_bridge.RELOAD_STATUS_REFRESHING,
+                )
+                continue
+            native_bridge.write_reload_status(img, state.status)
+            if state.status == native_bridge.RELOAD_STATUS_MISSING:
+                continue
+            if not state.should_reload or state.current_mtime is None:
+                continue
+
+            scheduled = _schedule_async_decode(
+                state.clip_path,
+                img.name,
+                use_native=True,
+                native_library_path=_native_library_path(),
+            )
+            if scheduled and prefs.debug:
+                print(f"[clip_studio_importer] async-decoding {state.clip_path}")
+            continue
+
+        if not os.path.exists(clip_path):
             continue
         try:
             mtime = os.path.getmtime(clip_path)
@@ -293,28 +376,15 @@ def _watcher_tick():
             continue
 
         if mtime > prev + 1e-6:
-            # Skip if a decode for this clip is already running.
-            with _state_lock:
-                if clip_path in _in_flight:
-                    continue
-                _in_flight.add(clip_path)
-
-            # Stamp BEFORE spawning the worker so we don't re-trigger on the
-            # same change while the decode is in flight.
-            img[CLIP_MTIME_KEY] = str(mtime)
-
-            if prefs.debug:
+            scheduled = _schedule_async_decode(
+                clip_path,
+                img.name,
+                use_native=False,
+                native_library_path=_native_library_path(),
+                pre_stamp_mtime=mtime,
+            )
+            if scheduled and prefs.debug:
                 print(f"[clip_studio_importer] async-decoding {clip_path}")
-
-            threading.Thread(
-                target=_async_decode,
-                args=(clip_path, img.name),
-                kwargs={
-                    "use_native": bool(img.get(CLIP_NATIVE_KEY)),
-                    "native_library_path": _native_library_path(),
-                },
-                daemon=True,
-            ).start()
 
     return interval
 
@@ -330,6 +400,61 @@ def _unregister_watcher():
     # Drop any pending state — worker threads are daemon, will die with Blender.
     with _state_lock:
         _in_flight.clear()
+
+
+@persistent
+def _load_post_refresh_native_images(_dummy):
+    """Refresh packed native images after a .blend is opened."""
+    try:
+        prefs = _addon_prefs()
+        debug = bool(prefs.debug)
+        native_library_path = _native_library_path()
+    except Exception:
+        debug = False
+        native_library_path = None
+
+    for img in bpy.data.images:
+        if not img.get(CLIP_NATIVE_KEY):
+            continue
+
+        state = native_bridge.inspect_native_image_source(img)
+        with _state_lock:
+            running = bool(state.clip_path and state.clip_path in _in_flight)
+        if running:
+            native_bridge.write_reload_status(
+                img,
+                native_bridge.RELOAD_STATUS_REFRESHING,
+            )
+            continue
+        native_bridge.write_reload_status(img, state.status)
+        if state.status == native_bridge.RELOAD_STATUS_MISSING:
+            if debug:
+                print(
+                    "[clip_studio_importer] native source missing; "
+                    f"keeping packed pixels for {img.name}"
+                )
+            continue
+        if not state.should_reload:
+            continue
+
+        scheduled = _schedule_async_decode(
+            state.clip_path,
+            img.name,
+            use_native=True,
+            native_library_path=native_library_path,
+        )
+        if scheduled and debug:
+            print(f"[clip_studio_importer] load-post native refresh {state.clip_path}")
+
+
+def _register_load_post_handler():
+    if _load_post_refresh_native_images not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_load_post_refresh_native_images)
+
+
+def _unregister_load_post_handler():
+    if _load_post_refresh_native_images in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_load_post_refresh_native_images)
 
 
 # --------------------------------------------------------------------------- #
@@ -440,10 +565,12 @@ def register():
     for cls in _classes:
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_import.append(_menu_func_import)
+    _register_load_post_handler()
     _register_watcher()
 
 
 def unregister():
+    _unregister_load_post_handler()
     _unregister_watcher()
     bpy.types.TOPBAR_MT_file_import.remove(_menu_func_import)
     for cls in reversed(_classes):
