@@ -4,7 +4,8 @@ use clip_model::LayerId;
 
 use super::{
     FILTER_TYPE_BRIGHTNESS_CONTRAST, FILTER_TYPE_GRADIENT_MAP, FILTER_TYPE_INVERT,
-    FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION, PlannedLutFilterMode, lut_filter_rgba,
+    FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION, FILTER_TYPE_THRESHOLD,
+    PlannedLutFilterMode, lut_filter_rgba,
 };
 
 #[test]
@@ -88,10 +89,24 @@ fn invert_and_posterization_luts_match_python_formula_anchors() {
 }
 
 #[test]
+fn threshold_lut_matches_python_formula_anchors() {
+    let payload = 128i32.to_be_bytes();
+    let (name, mode, lut) =
+        lut_filter_rgba(FILTER_TYPE_THRESHOLD, &payload).expect("build threshold LUT");
+
+    assert_eq!(name, "Threshold");
+    assert!(matches!(mode, PlannedLutFilterMode::ThresholdLum));
+    for (input, expected) in [(0usize, 0u8), (127, 0), (128, 255), (255, 255)] {
+        assert_eq!(&lut[input * 4..input * 4 + 3], [expected; 3].as_slice());
+    }
+}
+
+#[test]
 fn malformed_lut_filter_payloads_fail_closed() {
     assert!(lut_filter_rgba(FILTER_TYPE_BRIGHTNESS_CONTRAST, &[0; 7]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_LEVEL_CORRECTION, &[0; 0x3f]).is_none());
     assert!(lut_filter_rgba(FILTER_TYPE_POSTERIZATION, &[0; 3]).is_none());
+    assert!(lut_filter_rgba(FILTER_TYPE_THRESHOLD, &[0; 3]).is_none());
     assert!(lut_filter_rgba(99, &[]).is_none());
 }
 

@@ -419,9 +419,9 @@ pass.
 
 - Read `FilterLayerInfo` records for filter layers without teaching `clip_gpu`
   about SQLite or `.clip` storage.
-- Support the LUT-style filter types whose Python-side formulas reduce to a
-  faithful 1D LUT or luminosity LUT: Brightness/Contrast, Level Correction,
-  Tone Curve, Invert/Reverse Gradient, Posterization, and Gradient Map.
+- Support the filter types whose Python-side formulas reduce to a faithful
+  1D LUT or luminosity LUT: Brightness/Contrast, Level Correction, Tone Curve,
+  Invert/Reverse Gradient, Posterization, Threshold, and Gradient Map.
 - Keep unsupported filter types explicit until each has a dedicated native
   parameter model and shader.
 
@@ -430,13 +430,14 @@ for filter type and payload extraction. `clip_runtime/src/filter_lut.rs` owns
 filter-payload parsing and byte-domain 256-entry LUT construction for
 `FilterLayerInfo` type `1` Brightness/Contrast, type `2` Level Correction,
 type `3` Tone Curve, type `6` Invert/Reverse Gradient, type `7`
-Posterization, and type `9` Gradient Map. Runtime accepts those filters when
-their composite/mask/opacity semantics are in the strict supported subset,
-uploads any layer mask through the existing mask cache, and passes a LUT mode
-to `clip_gpu`: RGB channel indexing for channel-wise filters and luminosity
-indexing for Gradient Map. `clip_gpu` applies the LUT in one dedicated wgpu
-filter pass against the accumulated straight RGBA image while preserving alpha.
-HSL (`4`), Color Balance (`5`), and Threshold (`8`) remain unsupported because
+Posterization, type `8` Threshold, and type `9` Gradient Map. Runtime accepts
+those filters when their composite/mask/opacity semantics are in the strict
+supported subset, uploads any layer mask through the existing mask cache, and
+passes a LUT mode to `clip_gpu`: RGB channel indexing for channel-wise filters,
+Python-matching threshold luminosity indexing for Threshold, and byte-domain
+luminosity indexing for Gradient Map. `clip_gpu` applies the LUT in one
+dedicated wgpu filter pass against the accumulated straight RGBA image while
+preserving alpha. HSL (`4`) and Color Balance (`5`) remain unsupported because
 they need dedicated native models/shaders rather than the existing channel LUT
 pass. `Test_ToneCurve.clip --gpu-normal-stack` and
 `Test_Gradiation.clip --gpu-normal-stack` report `unsupported=0` with one

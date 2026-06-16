@@ -185,6 +185,7 @@ fn lut_filter_mode_kind(filter_mode: GpuLutFilterMode) -> u32 {
     match filter_mode {
         GpuLutFilterMode::ToneCurveRgb => 0,
         GpuLutFilterMode::GradientMapLum => 1,
+        GpuLutFilterMode::ThresholdLum => 2,
     }
 }
 

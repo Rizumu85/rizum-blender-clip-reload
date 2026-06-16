@@ -2,7 +2,9 @@ use clip_graph::RenderNodeId;
 use clip_model::CanvasSize;
 
 use super::common::*;
-use crate::{GpuDeviceConfig, GpuNormalStackSource, GpuRasterBlendMode, GpuRenderer};
+use crate::{
+    GpuDeviceConfig, GpuLutFilterMode, GpuNormalStackSource, GpuRasterBlendMode, GpuRenderer,
+};
 
 #[test]
 fn streamed_clipping_cache_resolves_from_cropped_origin() {
@@ -317,6 +319,38 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
         .copy_from_slice(&[0, 255, 255, 255]);
     assert_eq!(output.pixels, expected);
     assert_eq!(provider.mask_request_count(mask_key), 1);
+}
+
+#[test]
+fn streamed_threshold_lut_filter_uses_threshold_luminance_weights() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(19);
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(19),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![0, 255, 0, 255],
+        },
+    )]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source(key)),
+        GpuNormalStackSource::LutFilter {
+            lut_rgba: threshold_lut(150),
+            opacity: 1.0,
+            mask_key: None,
+            filter_mode: GpuLutFilterMode::ThresholdLum,
+        },
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw streamed threshold LUT filter");
+
+    let mut expected = [255, 255, 255, 0].repeat(9);
+    expected[((4 * 4) as usize)..((4 * 4 + 4) as usize)].copy_from_slice(&[0, 0, 0, 255]);
+    assert_eq!(output.pixels, expected);
 }
 
 #[test]

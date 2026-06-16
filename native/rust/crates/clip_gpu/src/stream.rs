@@ -476,6 +476,7 @@ fn lut_filter_label(filter_mode: GpuLutFilterMode) -> &'static str {
     match filter_mode {
         GpuLutFilterMode::ToneCurveRgb => "rizum_clip_provider_tone_curve_pass",
         GpuLutFilterMode::GradientMapLum => "rizum_clip_provider_gradient_map_pass",
+        GpuLutFilterMode::ThresholdLum => "rizum_clip_provider_threshold_pass",
     }
 }
 

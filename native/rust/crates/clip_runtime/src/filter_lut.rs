@@ -2,6 +2,7 @@
 pub(crate) enum PlannedLutFilterMode {
     ToneCurveRgb,
     GradientMapLum,
+    ThresholdLum,
 }
 
 const TONE_CURVE_COMPACT_STRIDE: usize = 0x82;
@@ -10,6 +11,7 @@ const FILTER_TYPE_LEVEL_CORRECTION: u32 = 2;
 const FILTER_TYPE_TONE_CURVE: u32 = 3;
 const FILTER_TYPE_INVERT: u32 = 6;
 const FILTER_TYPE_POSTERIZATION: u32 = 7;
+const FILTER_TYPE_THRESHOLD: u32 = 8;
 const FILTER_TYPE_GRADIENT_MAP: u32 = 9;
 const GRADIENT_STOP_DENOMINATOR: f32 = 32768.0 * 256.0 / 255.0;
 
@@ -42,6 +44,11 @@ pub(crate) fn lut_filter_rgba(
             "Posterization",
             PlannedLutFilterMode::ToneCurveRgb,
             posterization_lut_rgba(payload)?,
+        )),
+        FILTER_TYPE_THRESHOLD => Some((
+            "Threshold",
+            PlannedLutFilterMode::ThresholdLum,
+            threshold_lut_rgba(payload)?,
         )),
         FILTER_TYPE_GRADIENT_MAP => Some((
             "GradientMap",
@@ -118,6 +125,19 @@ fn posterization_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
         *value = ((bin as f32 * 255.0 / (levels - 1) as f32) + 0.5)
             .floor()
             .clamp(0.0, 255.0) as u8;
+    }
+    Some(uniform_rgb_lut_rgba(&lut))
+}
+
+fn threshold_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
+    let threshold = read_be_i32(payload, 0)?;
+    let mut lut = [0u8; 256];
+    for (luminosity, value) in lut.iter_mut().enumerate() {
+        *value = if luminosity as i32 >= threshold {
+            255
+        } else {
+            0
+        };
     }
     Some(uniform_rgb_lut_rgba(&lut))
 }

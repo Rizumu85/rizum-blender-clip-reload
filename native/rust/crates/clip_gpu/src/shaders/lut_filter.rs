@@ -55,6 +55,11 @@ fn gradient_lum_u8(value: vec3<f32>) -> i32 {
     return i32(clamp(floor(lum), 0.0, 255.0));
 }
 
+fn threshold_lum_u8(value: vec3<f32>) -> i32 {
+    let lum = value.r * 255.0 * 0.299 + value.g * 255.0 * 0.587 + value.b * 255.0 * 0.114;
+    return i32(clamp(floor(lum), 0.0, 255.0));
+}
+
 fn load_mask(global_texel: vec2<i32>) -> f32 {
     let mask_texel = global_texel - vec2<i32>(
         filter_params.mask_origin_x,
@@ -82,6 +87,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     );
     if (filter_params.mode == 1u) {
         mapped = textureLoad(lut_texture, vec2<i32>(gradient_lum_u8(before.rgb), 0), 0).rgb;
+    } else if (filter_params.mode == 2u) {
+        mapped = textureLoad(lut_texture, vec2<i32>(threshold_lum_u8(before.rgb), 0), 0).rgb;
     }
     var strength = clamp(filter_params.opacity, 0.0, 1.0);
     if (filter_params.has_mask == 1u) {

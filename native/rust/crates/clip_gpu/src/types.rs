@@ -72,6 +72,7 @@ pub enum GpuRasterBlendMode {
 pub enum GpuLutFilterMode {
     ToneCurveRgb,
     GradientMapLum,
+    ThresholdLum,
 }
 
 #[derive(Clone, Debug)]

@@ -187,6 +187,15 @@ pub(super) fn inverted_tone_curve_lut() -> Vec<u8> {
     lut
 }
 
+pub(super) fn threshold_lut(threshold: i32) -> Vec<u8> {
+    let mut lut = Vec::with_capacity(256 * 4);
+    for value in 0..=255i32 {
+        let output = if value >= threshold { 255 } else { 0 };
+        lut.extend_from_slice(&[output, output, output, 255]);
+    }
+    lut
+}
+
 pub(super) fn lut_mode() -> GpuLutFilterMode {
     GpuLutFilterMode::ToneCurveRgb
 }
