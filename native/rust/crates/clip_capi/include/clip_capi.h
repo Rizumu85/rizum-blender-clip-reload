@@ -55,6 +55,11 @@ ClipRendererStatus clip_renderer_session_open(
     const char* path,
     ClipRendererSession** out_session);
 
+ClipRendererStatus clip_renderer_session_open_memory(
+    const uint8_t* bytes,
+    size_t len,
+    ClipRendererSession** out_session);
+
 void clip_renderer_session_close(ClipRendererSession* session);
 
 ClipRendererStatus clip_renderer_session_info(

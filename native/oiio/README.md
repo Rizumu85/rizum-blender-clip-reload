@@ -115,7 +115,9 @@ change rather than an external OIIO plugin alone.
 
 Completed: the adapter now calls the Rust C ABI.
 
-- `clip_renderer_session_open` owns `.clip` parsing.
+- `clip_renderer_session_open` owns filesystem `.clip` parsing.
+- `clip_renderer_session_open_memory` owns byte-buffer `.clip` parsing for
+  future `IOProxy` / ImBuf source bridge callers.
 - `clip_renderer_session_info` provides real canvas dimensions for `ImageSpec`.
 - `clip_renderer_session_read_rgba8` provides deterministic placeholder pixels
   until the GPU renderer exists.
@@ -131,6 +133,7 @@ Verified on this machine with Blender 5.0.1 and its bundled OpenImageIO 3.0.9.1:
 - The Blender image-datablock bridge spike consumes the Rust-backed OIIO bytes
   and creates a generated 512x512 image without writing a sidecar PNG.
 
-Current limitation: `IOProxy` support is disabled because the Rust ABI opens
-filesystem paths. A future Blender ImBuf/source bridge should add a dedicated
-open-from-memory ABI instead of routing memory input through a path-only API.
+Current limitation: `IOProxy` support is still not wired in the C++ adapter.
+The Rust/C ABI foundation now exists through `clip_renderer_session_open_memory`;
+the remaining adapter work is to read the proxy bytes and open the session
+through that function instead of routing memory input through a filesystem path.

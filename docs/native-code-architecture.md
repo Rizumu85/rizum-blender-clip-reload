@@ -553,6 +553,8 @@ The orchestration module.
 Owns:
 
 - Opening a `.clip` session.
+- Opening a `.clip` session from an owned byte buffer for host bridge paths
+  that do not provide a filesystem path.
 - Holding parsed file state, render graph, GPU renderer, and caches together.
 - Public Rust interface for reading full images or regions.
 - Error conversion into stable runtime errors.
@@ -585,6 +587,7 @@ Owns:
 - Public C header at `native/rust/crates/clip_capi/include/clip_capi.h`.
 - `extern "C"` functions.
 - Opaque handles.
+- Filesystem-path and byte-buffer session open entry points.
 - Error code and error string conversion.
 - ABI versioning.
 

@@ -59,6 +59,18 @@ impl ClipSession {
     pub fn open(path: impl AsRef<Path>) -> Result<Self, RuntimeError> {
         let path = path.as_ref().to_path_buf();
         let container = clip_file::container::ClipContainer::open(&path)?;
+        Self::from_container(path, container)
+    }
+
+    pub fn from_bytes(data: Vec<u8>) -> Result<Self, RuntimeError> {
+        let container = clip_file::container::ClipContainer::from_bytes(data)?;
+        Self::from_container(PathBuf::new(), container)
+    }
+
+    fn from_container(
+        path: PathBuf,
+        container: clip_file::container::ClipContainer,
+    ) -> Result<Self, RuntimeError> {
         let summary = clip_file::metadata::read_summary_from_sqlite(
             container.sqlite_bytes(),
             container.external_data().len(),
@@ -2563,6 +2575,29 @@ mod tests {
                 (LayerId(11), RenderNodeKind::Raster, 1),
             ],
         );
+    }
+
+    #[test]
+    fn opens_session_from_memory_bytes() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
+        let bytes = std::fs::read(&path).expect("read Test_Clipping.clip bytes");
+        let from_path = ClipSession::open(&path).expect("open Test_Clipping.clip from path");
+        let from_memory = ClipSession::from_bytes(bytes).expect("open Test_Clipping.clip bytes");
+
+        assert_eq!(from_memory.summary(), from_path.summary());
+        let memory_nodes: Vec<_> = from_memory
+            .render_plan()
+            .nodes
+            .iter()
+            .map(|node| (node.id, node.layer_id, node.kind, node.depth))
+            .collect();
+        let path_nodes: Vec<_> = from_path
+            .render_plan()
+            .nodes
+            .iter()
+            .map(|node| (node.id, node.layer_id, node.kind, node.depth))
+            .collect();
+        assert_eq!(memory_nodes, path_nodes);
     }
 
     #[test]

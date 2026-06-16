@@ -104,6 +104,34 @@ pub extern "C" fn clip_renderer_session_open(
 }
 
 #[unsafe(no_mangle)]
+pub extern "C" fn clip_renderer_session_open_memory(
+    bytes: *const u8,
+    len: usize,
+    out_session: *mut *mut ClipRendererSession,
+) -> ClipRendererStatus {
+    clear_last_error();
+    if bytes.is_null() || out_session.is_null() {
+        set_last_error("bytes and out_session must be non-null");
+        return ClipRendererStatus::NullArgument;
+    }
+
+    let data = unsafe { slice::from_raw_parts(bytes, len) }.to_vec();
+    match ClipSession::from_bytes(data) {
+        Ok(inner) => {
+            let session = Box::new(ClipRendererSession { inner });
+            unsafe {
+                *out_session = Box::into_raw(session);
+            }
+            ClipRendererStatus::Ok
+        }
+        Err(err) => {
+            set_last_runtime_error(&err);
+            ClipRendererStatus::OpenFailed
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "C" fn clip_renderer_session_close(session: *mut ClipRendererSession) {
     if session.is_null() {
         return;
@@ -364,6 +392,83 @@ mod tests {
         assert!(report.contains("Full native support"));
 
         clip_renderer_session_close(session);
+    }
+
+    #[test]
+    fn c_api_opens_session_from_memory_bytes() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../../img/Test_Clipping.clip");
+        let bytes = std::fs::read(path).expect("read Test_Clipping.clip bytes");
+        let mut session = ptr::null_mut();
+
+        assert_eq!(
+            clip_renderer_session_open_memory(bytes.as_ptr(), bytes.len(), &mut session),
+            ClipRendererStatus::Ok,
+        );
+        assert!(!session.is_null());
+
+        let mut info = ClipRendererImageInfo {
+            width: 0,
+            height: 0,
+            root_layer_id: 0,
+            layer_count: 0,
+            external_data_count: 0,
+        };
+        assert_eq!(
+            clip_renderer_session_info(session, &mut info),
+            ClipRendererStatus::Ok,
+        );
+        assert_eq!(info.width, 512);
+        assert_eq!(info.height, 512);
+        assert_eq!(info.root_layer_id, 2);
+        assert_eq!(info.layer_count, 4);
+        assert_eq!(info.external_data_count, 7);
+
+        let mut support = ClipRendererSupportInfo {
+            source_count: 0,
+            unsupported_count: 0,
+            raster_count: 0,
+            raster_bytes: 0,
+            max_raster_layer_id: 0,
+            max_raster_width: 0,
+            max_raster_height: 0,
+            max_raster_bytes: 0,
+            mask_count: 0,
+            mask_bytes: 0,
+            max_mask_layer_id: 0,
+            max_mask_width: 0,
+            max_mask_height: 0,
+            max_mask_bytes: 0,
+        };
+        assert_eq!(
+            clip_renderer_session_support_info(
+                session,
+                &mut support,
+                ptr::null_mut(),
+                0,
+                ptr::null_mut(),
+            ),
+            ClipRendererStatus::Ok,
+        );
+        assert_eq!(support.unsupported_count, 0);
+
+        clip_renderer_session_close(session);
+    }
+
+    #[test]
+    fn c_api_rejects_null_memory_session_arguments() {
+        let bytes = [0u8; 8];
+        let mut session = ptr::null_mut();
+
+        assert_eq!(
+            clip_renderer_session_open_memory(ptr::null(), bytes.len(), &mut session),
+            ClipRendererStatus::NullArgument,
+        );
+        assert_eq!(
+            clip_renderer_session_open_memory(bytes.as_ptr(), bytes.len(), ptr::null_mut()),
+            ClipRendererStatus::NullArgument,
+        );
+        assert!(session.is_null());
     }
 
     #[test]
