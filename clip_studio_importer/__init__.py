@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 36),
+    "version": (0, 8, 37),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -240,6 +240,9 @@ def _support_diagnostic_text(img) -> str:
     renderer_abi = _image_int_property(img, native_bridge.CLIP_RENDERER_ABI_KEY)
     if renderer_abi:
         lines.append(f"Renderer ABI: {renderer_abi}")
+    renderer_version = img.get(native_bridge.CLIP_RENDERER_VERSION_KEY, "")
+    if renderer_version:
+        lines.append(f"Renderer version: {renderer_version}")
     root_layer = _image_int_property(img, native_bridge.CLIP_ROOT_LAYER_KEY)
     layer_count = _image_int_property(img, native_bridge.CLIP_LAYER_COUNT_KEY)
     external_count = _image_int_property(img, native_bridge.CLIP_EXTERNAL_COUNT_KEY)
@@ -769,6 +772,12 @@ class IMAGE_PT_clip_studio(Panel):
                 text=f"Native support: {_support_status_label(support_status)}",
                 icon=_support_status_icon(support_status),
             )
+            renderer_version = img.get(native_bridge.CLIP_RENDERER_VERSION_KEY, "")
+            if renderer_version:
+                layout.label(
+                    text=f"Renderer version: {_short_diagnostic(renderer_version)}",
+                    icon="INFO",
+                )
             support_report = img.get(native_bridge.CLIP_SUPPORT_REPORT_KEY, "")
             if support_report:
                 layout.label(

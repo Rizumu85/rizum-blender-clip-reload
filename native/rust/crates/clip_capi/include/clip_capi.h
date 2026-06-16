@@ -49,6 +49,8 @@ typedef struct ClipRendererSupportInfo {
 
 uint32_t clip_renderer_abi_version(void);
 
+const char* clip_renderer_version(void);
+
 const char* clip_renderer_last_error(void);
 
 ClipRendererStatus clip_renderer_session_open(

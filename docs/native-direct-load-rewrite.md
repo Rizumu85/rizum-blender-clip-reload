@@ -147,10 +147,11 @@ Result:
   converts those bytes to Blender float pixels for `foreach_set`.
 - The add-on exposes `Native renderer library` as an override preference. Native
   imports create generated images without sidecar PNGs, pack them by default,
-  and store source path, source mtime, canvas metadata, renderer ABI, and reload
-  status custom properties. The installable add-on zip includes the local
-  release `clip_capi` library under `clip_studio_importer/native/`; the library
-  path preference is an override, not the normal packaged path.
+  and store source path, source mtime, canvas metadata, renderer ABI, renderer
+  version, and reload status custom properties. The installable add-on zip
+  includes the local release `clip_capi` library under
+  `clip_studio_importer/native/`; the library path preference is an override,
+  not the normal packaged path.
 - `Reload from .clip` and the non-blocking watcher update images through the C
   ABI/generated-image path only.
 - Blender `load_post` now scans packed native images, checks the stored source
@@ -168,7 +169,8 @@ Result:
   renders track elapsed/last render duration metadata. Render failures store
   `clip_reload_status=error` plus `clip_reload_error`, successful renders clear
   old errors, missing sources store `missing_source`, and the Image Editor panel
-  displays readable status/error/timing messages.
+  displays readable status/error/timing messages plus the renderer version that
+  produced the stored pixels.
 - `clip_renderer_session_support_info` exposes the runtime metadata-only support
   selector through the C ABI. The C report includes a summary line plus the
   unsupported layer/node list. The Python bridge stores support status, source

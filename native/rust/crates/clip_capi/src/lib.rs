@@ -7,6 +7,7 @@ use clip_model::Rect;
 use clip_runtime::{ClipSession, RuntimeError};
 
 pub const CLIP_RENDERER_ABI_VERSION: u32 = 1;
+const CLIP_RENDERER_VERSION: &[u8] = concat!(env!("CARGO_PKG_VERSION"), "\0").as_bytes();
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
@@ -60,6 +61,11 @@ pub struct ClipRendererSession {
 #[unsafe(no_mangle)]
 pub extern "C" fn clip_renderer_abi_version() -> u32 {
     CLIP_RENDERER_ABI_VERSION
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn clip_renderer_version() -> *const c_char {
+    CLIP_RENDERER_VERSION.as_ptr().cast()
 }
 
 #[unsafe(no_mangle)]
@@ -318,6 +324,14 @@ fn set_last_error(message: impl AsRef<str>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c_api_exposes_renderer_version_string() {
+        let version = unsafe { CStr::from_ptr(clip_renderer_version()) }
+            .to_str()
+            .unwrap();
+        assert_eq!(version, env!("CARGO_PKG_VERSION"));
+    }
 
     #[test]
     fn c_api_opens_summary_and_reads_native_pixel() {

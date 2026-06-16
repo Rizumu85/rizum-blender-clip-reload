@@ -129,6 +129,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.CLIP_CANVAS_WIDTH_KEY: 640,
             addon.native_bridge.CLIP_CANVAS_HEIGHT_KEY: 480,
             addon.native_bridge.CLIP_RENDERER_ABI_KEY: 1,
+            addon.native_bridge.CLIP_RENDERER_VERSION_KEY: "0.1.0-test",
             addon.native_bridge.CLIP_ROOT_LAYER_KEY: 2,
             addon.native_bridge.CLIP_LAYER_COUNT_KEY: 12,
             addon.native_bridge.CLIP_EXTERNAL_COUNT_KEY: 9,
@@ -169,6 +170,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         labels = [label for label, _icon in panel.layout.labels]
         self.assertIn("Status: Render failed", labels)
         self.assertIn("Native support: Unsupported nodes", labels)
+        self.assertIn("Renderer version: 0.1.0-test", labels)
         self.assertIn("2 unsupported node(s).", labels)
         self.assertIn("Sources: 6; unsupported: 2", labels)
         self.assertIn("Raster resources: 3, 2.0 KiB", labels)
@@ -286,6 +288,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY: 2.4,
             addon.native_bridge.CLIP_CANVAS_WIDTH_KEY: 640,
             addon.native_bridge.CLIP_CANVAS_HEIGHT_KEY: 480,
+            addon.native_bridge.CLIP_RENDERER_ABI_KEY: 1,
+            addon.native_bridge.CLIP_RENDERER_VERSION_KEY: "0.1.0-test",
             addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_UNSUPPORTED,
             addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "2 unsupported node(s).",
             addon.native_bridge.CLIP_SUPPORT_SOURCE_COUNT_KEY: 6,
@@ -310,6 +314,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Status: Render failed", clipboard)
         self.assertIn("Last render duration: 2.4s", clipboard)
         self.assertIn("Canvas: 640x480", clipboard)
+        self.assertIn("Renderer ABI: 1", clipboard)
+        self.assertIn("Renderer version: 0.1.0-test", clipboard)
         self.assertIn("Native support: Unsupported nodes", clipboard)
         self.assertIn("Raster resources: 3, 2.0 KiB", clipboard)
         self.assertIn("Unsupported locations:", clipboard)
@@ -352,6 +358,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
                 addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
                 addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_ERROR,
                 addon.native_bridge.CLIP_RELOAD_ERROR_KEY: "native renderer failed loudly",
+                addon.native_bridge.CLIP_RENDERER_VERSION_KEY: "0.1.0-test",
                 addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_UNSUPPORTED,
                 addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "1 unsupported node(s).",
                 addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: "- layer 9 node 4 Filter",
@@ -377,6 +384,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIs(text_space.text, text)
         self.assertIn("Clip Studio native render diagnostics", text.body)
         self.assertIn("Source: C:/art/sample.clip", text.body)
+        self.assertIn("Renderer version: 0.1.0-test", text.body)
         self.assertIn("1 unsupported node(s).", text.body)
         self.assertIn("- layer 9 node 4 Filter", text.body)
         self.assertIn("Render error: native renderer failed loudly", text.body)

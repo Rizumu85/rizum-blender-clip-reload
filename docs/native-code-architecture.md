@@ -656,9 +656,10 @@ Persistence rules:
   - `rizum_clip_reload_status`
 - The current add-on bridge reuses the existing `clip_source` / `clip_mtime`
   keys for panel/watch integration and adds native-specific keys such as
-  `clip_native_renderer`, `clip_renderer_abi`, and `clip_reload_status`. This is
-  Blender add-on state, not a native runtime API; a final accepted native path
-  may migrate property names while deleting the sidecar workflow.
+  `clip_native_renderer`, `clip_renderer_abi`, `clip_renderer_version`, and
+  `clip_reload_status`. This is Blender add-on state, not a native runtime API;
+  a final accepted native path may migrate property names while deleting the
+  sidecar workflow.
 - `tools/build_blender_addon.py` is the current package builder. It writes
   `clip_studio_importer.zip` and includes the local release native renderer
   library at `clip_studio_importer/native/clip_capi.dll` on Windows, matching the

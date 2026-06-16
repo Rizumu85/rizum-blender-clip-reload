@@ -78,6 +78,7 @@ class FakeRenderer:
             layer_count=3,
             external_data_count=4,
             renderer_abi=native_bridge.EXPECTED_ABI_VERSION,
+            renderer_version="0.1.0-test",
             source_mtime=123.5,
             pixels_rgba8=bytes([0, 128, 255, 255]),
             support_summary=native_bridge.NativeSupportSummary(
@@ -123,6 +124,7 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_MTIME_KEY], "123.5")
         self.assertTrue(image[native_bridge.CLIP_NATIVE_KEY])
         self.assertEqual(image[native_bridge.CLIP_RENDERER_ABI_KEY], 1)
+        self.assertEqual(image[native_bridge.CLIP_RENDERER_VERSION_KEY], "0.1.0-test")
         self.assertEqual(image[native_bridge.CLIP_CANVAS_WIDTH_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_CANVAS_HEIGHT_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
@@ -158,6 +160,7 @@ class NativeBridgeTests(unittest.TestCase):
             layer_count=result.layer_count,
             external_data_count=result.external_data_count,
             renderer_abi=result.renderer_abi,
+            renderer_version=result.renderer_version,
             source_mtime=result.source_mtime,
             pixels_rgba8=result.pixels_rgba8,
             support_summary=native_bridge.NativeSupportSummary(
@@ -209,6 +212,7 @@ class NativeBridgeTests(unittest.TestCase):
             layer_count=result.layer_count,
             external_data_count=result.external_data_count,
             renderer_abi=result.renderer_abi,
+            renderer_version=result.renderer_version,
             source_mtime=result.source_mtime,
             pixels_rgba8=result.pixels_rgba8,
         )

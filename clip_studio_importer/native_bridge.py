@@ -15,6 +15,7 @@ CLIP_SOURCE_KEY = "clip_source"
 CLIP_MTIME_KEY = "clip_mtime"
 CLIP_NATIVE_KEY = "clip_native_renderer"
 CLIP_RENDERER_ABI_KEY = "clip_renderer_abi"
+CLIP_RENDERER_VERSION_KEY = "clip_renderer_version"
 CLIP_CANVAS_WIDTH_KEY = "clip_canvas_width"
 CLIP_CANVAS_HEIGHT_KEY = "clip_canvas_height"
 CLIP_ROOT_LAYER_KEY = "clip_root_layer_id"
@@ -71,6 +72,7 @@ class NativeRenderResult:
     layer_count: int
     external_data_count: int
     renderer_abi: int
+    renderer_version: str
     source_mtime: float | None
     pixels_rgba8: bytes
     support_summary: "NativeSupportSummary | None" = None
@@ -145,6 +147,7 @@ class NativeRendererLibrary:
                 f"native renderer ABI {abi} does not match expected {EXPECTED_ABI_VERSION}"
             )
         self.abi_version = abi
+        self.renderer_version = self._read_renderer_version()
 
     def render_rgba8(self, clip_path: str | os.PathLike[str]) -> NativeRenderResult:
         source = str(Path(clip_path).resolve())
@@ -189,6 +192,7 @@ class NativeRendererLibrary:
                 layer_count=int(info.layer_count),
                 external_data_count=int(info.external_data_count),
                 renderer_abi=self.abi_version,
+                renderer_version=self.renderer_version,
                 source_mtime=source_mtime,
                 pixels_rgba8=bytes(pixels),
                 support_summary=support_summary,
@@ -199,6 +203,9 @@ class NativeRendererLibrary:
     def _configure_signatures(self) -> None:
         self._dll.clip_renderer_abi_version.argtypes = []
         self._dll.clip_renderer_abi_version.restype = ctypes.c_uint32
+
+        self._dll.clip_renderer_version.argtypes = []
+        self._dll.clip_renderer_version.restype = ctypes.c_char_p
 
         self._dll.clip_renderer_last_error.argtypes = []
         self._dll.clip_renderer_last_error.restype = ctypes.c_char_p
@@ -303,6 +310,12 @@ class NativeRendererLibrary:
         if not message:
             return ""
         return message.decode("utf-8", errors="replace")
+
+    def _read_renderer_version(self) -> str:
+        version = self._dll.clip_renderer_version()
+        if not version:
+            return ""
+        return version.decode("utf-8", errors="replace")
 
 
 def render_clip_rgba8(
@@ -506,6 +519,7 @@ def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_MTIME_KEY] = "" if result.source_mtime is None else str(result.source_mtime)
     image[CLIP_NATIVE_KEY] = True
     image[CLIP_RENDERER_ABI_KEY] = result.renderer_abi
+    image[CLIP_RENDERER_VERSION_KEY] = result.renderer_version
     image[CLIP_CANVAS_WIDTH_KEY] = result.width
     image[CLIP_CANVAS_HEIGHT_KEY] = result.height
     image[CLIP_ROOT_LAYER_KEY] = result.root_layer_id

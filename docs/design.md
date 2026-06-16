@@ -16,8 +16,9 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 6. The `Native renderer library` preference is only needed as an override for
    the packaged library.
 7. The Image Editor N-panel shows native render status, elapsed and last render
-   timing, native support summary, support resource statistics, missing-source
-   state, and the latest native render error for the selected `.clip` image.
+   timing, renderer version, native support summary, support resource
+   statistics, missing-source state, and the latest native render error for the
+   selected `.clip` image.
    The panel shows compact unsupported layer/node/kind locators, can copy either
    those locations or the full support report to the clipboard, and can open the
    full report as a searchable Blender Text datablock.
