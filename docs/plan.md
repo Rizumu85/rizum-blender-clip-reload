@@ -63,12 +63,14 @@ Current policy:
 - External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch. The C ABI has a byte-buffer session entry point (`clip_renderer_session_open_memory`), and the C++ OIIO adapter now supports `IOProxy` memory opens by reading `oiio:ioproxy` bytes into Rust memory sessions without temp files. This is host-integration plumbing for OIIO/ImBuf callers, not a replacement for the accepted generated-image Blender add-on path.
 - Current native milestone: the stock Blender image-datablock bridge is the
   add-on runtime path. The add-on calls `clip_capi`, creates generated/packed
-  Blender images, records source metadata, and updates those images through
-  manual reload, the background watcher, and Blender `load_post` freshness scans
-  without writing sidecar PNGs. Render failures are stored as image metadata and
-  shown in the Image Editor panel, while successful renders clear old error
-  metadata. The add-on records elapsed/last render timing for manual and
-  background renders. The C ABI exposes metadata-only native support summaries,
+  Blender images, records source metadata (mtime, size, SHA-256), and updates
+  those images through manual reload, the background watcher, and Blender
+  `load_post` freshness scans without writing sidecar PNGs. The watcher uses
+  lightweight mtime/size checks, while `load_post` can also compare SHA-256.
+  Render failures are stored as image metadata and shown in the Image Editor
+  panel, while successful renders clear old error metadata. The add-on records
+  elapsed/last render timing for manual and background renders. The C ABI
+  exposes metadata-only native support summaries,
   and the add-on stores/displays source count, unsupported count, raster/mask
   resource statistics, expandable unsupported layer/node detail lines, compact
   unsupported layer/node/kind locators, and copyable/searchable support

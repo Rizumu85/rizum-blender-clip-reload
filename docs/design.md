@@ -11,7 +11,9 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 3. By default, the add-on calls the packaged `clip_capi` native renderer,
    uploads the returned RGBA pixels into a generated Blender image, and packs
    the rendered pixels into the `.blend`.
-4. When the source `.clip` is saved again, auto-reload watches the file timestamp and refreshes the Blender image after the background render finishes.
+4. When the source `.clip` is saved again, auto-reload watches lightweight file
+   freshness metadata and refreshes the Blender image after the background
+   render finishes.
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
 6. The `Native renderer library` preference is only needed as an override for
    the packaged library.
@@ -19,7 +21,8 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    timing, renderer version, native support summary, support resource
    statistics, missing-source state, and the latest native render error for the
    selected `.clip` image.
-   The panel shows compact unsupported layer/node/kind locators, can copy either
+   The copied/searchable diagnostics also include source size and SHA-256. The
+   panel shows compact unsupported layer/node/kind locators, can copy either
    those locations or the full support report to the clipboard, and can open the
    full report as a searchable Blender Text datablock.
 

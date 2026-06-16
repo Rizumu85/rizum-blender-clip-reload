@@ -283,6 +283,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         addon = _load_addon_module()
         image = {
             addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+            addon.CLIP_SIZE_KEY: "2048",
+            addon.CLIP_SHA256_KEY: "abcd1234",
             addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_ERROR,
             addon.native_bridge.CLIP_RELOAD_ERROR_KEY: "native renderer failed loudly",
             addon.native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY: 2.4,
@@ -311,6 +313,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         clipboard = context.window_manager.clipboard
         self.assertIn("Clip Studio native render diagnostics", clipboard)
         self.assertIn("Source: C:/art/sample.clip", clipboard)
+        self.assertIn("Source size: 2.0 KiB", clipboard)
+        self.assertIn("Source SHA-256: abcd1234", clipboard)
         self.assertIn("Status: Render failed", clipboard)
         self.assertIn("Last render duration: 2.4s", clipboard)
         self.assertIn("Canvas: 640x480", clipboard)
@@ -356,6 +360,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         image = FakeImage(
             {
                 addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+                addon.CLIP_SIZE_KEY: "2048",
+                addon.CLIP_SHA256_KEY: "abcd1234",
                 addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_ERROR,
                 addon.native_bridge.CLIP_RELOAD_ERROR_KEY: "native renderer failed loudly",
                 addon.native_bridge.CLIP_RENDERER_VERSION_KEY: "0.1.0-test",
@@ -384,6 +390,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIs(text_space.text, text)
         self.assertIn("Clip Studio native render diagnostics", text.body)
         self.assertIn("Source: C:/art/sample.clip", text.body)
+        self.assertIn("Source size: 2.0 KiB", text.body)
+        self.assertIn("Source SHA-256: abcd1234", text.body)
         self.assertIn("Renderer version: 0.1.0-test", text.body)
         self.assertIn("1 unsupported node(s).", text.body)
         self.assertIn("- layer 9 node 4 Filter", text.body)

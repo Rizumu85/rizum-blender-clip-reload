@@ -35,8 +35,8 @@ For the stock Blender bridge, the accepted persistence model is:
   file immediately shows the last known result even before the `.clip` source is
   found or re-rendered.
 - Store source tracking properties on the image, including the original `.clip`
-  path, source mtime/hash or version, canvas dimensions, renderer version, and
-  reload status.
+  path, source mtime, source size, source SHA-256, canvas dimensions, renderer
+  version, and reload status.
 - On `load_post`, scan images with these properties. If the source `.clip`
   exists and is newer/different, call the native renderer and replace the image
   pixels, then repack the updated rendered pixels.
@@ -147,17 +147,18 @@ Result:
   converts those bytes to Blender float pixels for `foreach_set`.
 - The add-on exposes `Native renderer library` as an override preference. Native
   imports create generated images without sidecar PNGs, pack them by default,
-  and store source path, source mtime, canvas metadata, renderer ABI, renderer
-  version, and reload status custom properties. The installable add-on zip
-  includes the local release `clip_capi` library under
+  and store source path, source mtime, source size, source SHA-256, canvas
+  metadata, renderer ABI, renderer version, and reload status custom
+  properties. The installable add-on zip includes the local release
+  `clip_capi` library under
   `clip_studio_importer/native/`; the library path preference is an override,
   not the normal packaged path.
 - `Reload from .clip` and the non-blocking watcher update images through the C
   ABI/generated-image path only.
 - Blender `load_post` now scans packed native images, checks the stored source
-  mtime against the current `.clip`, queues a native refresh when the source is
-  newer or the stored mtime is missing, and records `missing_source` while
-  keeping packed pixels visible if the source is gone.
+  mtime/size/hash against the current `.clip`, queues a native refresh when the
+  source changed or stored freshness metadata is missing, and records
+  `missing_source` while keeping packed pixels visible if the source is gone.
 - `clip_studio_importer/__init__.py` no longer imports `clip_loader`, no longer
   exposes a `Use native renderer` off switch, and no longer writes or reloads
   sidecar PNGs. `tools/build_blender_addon.py` packages only `__init__.py`,

@@ -80,6 +80,8 @@ class FakeRenderer:
             renderer_abi=native_bridge.EXPECTED_ABI_VERSION,
             renderer_version="0.1.0-test",
             source_mtime=123.5,
+            source_size=4,
+            source_sha256="abcd1234",
             pixels_rgba8=bytes([0, 128, 255, 255]),
             support_summary=native_bridge.NativeSupportSummary(
                 source_count=2,
@@ -122,6 +124,8 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertTrue(image.packed)
         self.assertEqual(image[native_bridge.CLIP_SOURCE_KEY], "sample.clip")
         self.assertEqual(image[native_bridge.CLIP_MTIME_KEY], "123.5")
+        self.assertEqual(image[native_bridge.CLIP_SIZE_KEY], "4")
+        self.assertEqual(image[native_bridge.CLIP_SHA256_KEY], "abcd1234")
         self.assertTrue(image[native_bridge.CLIP_NATIVE_KEY])
         self.assertEqual(image[native_bridge.CLIP_RENDERER_ABI_KEY], 1)
         self.assertEqual(image[native_bridge.CLIP_RENDERER_VERSION_KEY], "0.1.0-test")
@@ -162,6 +166,8 @@ class NativeBridgeTests(unittest.TestCase):
             renderer_abi=result.renderer_abi,
             renderer_version=result.renderer_version,
             source_mtime=result.source_mtime,
+            source_size=result.source_size,
+            source_sha256=result.source_sha256,
             pixels_rgba8=result.pixels_rgba8,
             support_summary=native_bridge.NativeSupportSummary(
                 source_count=3,
@@ -214,6 +220,8 @@ class NativeBridgeTests(unittest.TestCase):
             renderer_abi=result.renderer_abi,
             renderer_version=result.renderer_version,
             source_mtime=result.source_mtime,
+            source_size=result.source_size,
+            source_sha256=result.source_sha256,
             pixels_rgba8=result.pixels_rgba8,
         )
 
@@ -309,16 +317,20 @@ class NativeBridgeTests(unittest.TestCase):
         image = FakeImage("sample", 1, 1)
         image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
         image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+        image[native_bridge.CLIP_SIZE_KEY] = "42"
 
         state = native_bridge.inspect_native_image_source(
             image,
             exists=lambda path: True,
             getmtime=lambda path: 10.0,
+            getsize=lambda path: 42,
         )
 
         self.assertEqual(state.clip_path, "sample.clip")
         self.assertEqual(state.stored_mtime, 10.0)
         self.assertEqual(state.current_mtime, 10.0)
+        self.assertEqual(state.stored_size, 42)
+        self.assertEqual(state.current_size, 42)
         self.assertFalse(state.should_reload)
         self.assertEqual(state.status, native_bridge.RELOAD_STATUS_OK)
 
@@ -331,8 +343,65 @@ class NativeBridgeTests(unittest.TestCase):
             image,
             exists=lambda path: True,
             getmtime=lambda path: 11.0,
+            getsize=lambda path: 42,
         )
 
+        self.assertTrue(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
+
+    def test_inspect_native_image_source_marks_size_change_stale(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+        image[native_bridge.CLIP_SIZE_KEY] = "42"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: True,
+            getmtime=lambda path: 10.0,
+            getsize=lambda path: 43,
+        )
+
+        self.assertTrue(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
+
+    def test_inspect_native_image_source_hash_check_catches_same_stat_change(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+        image[native_bridge.CLIP_SIZE_KEY] = "42"
+        image[native_bridge.CLIP_SHA256_KEY] = "old"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: True,
+            getmtime=lambda path: 10.0,
+            getsize=lambda path: 42,
+            getsha256=lambda path: "new",
+            check_hash=True,
+        )
+
+        self.assertEqual(state.stored_sha256, "old")
+        self.assertEqual(state.current_sha256, "new")
+        self.assertTrue(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
+
+    def test_inspect_native_image_source_hash_check_refreshes_missing_hash(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+        image[native_bridge.CLIP_SIZE_KEY] = "42"
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            exists=lambda path: True,
+            getmtime=lambda path: 10.0,
+            getsize=lambda path: 42,
+            getsha256=lambda path: "current",
+            check_hash=True,
+        )
+
+        self.assertEqual(state.current_sha256, "current")
         self.assertTrue(state.should_reload)
         self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
 
@@ -345,6 +414,7 @@ class NativeBridgeTests(unittest.TestCase):
             image,
             exists=lambda path: False,
             getmtime=lambda path: 11.0,
+            getsize=lambda path: 42,
         )
 
         self.assertFalse(state.should_reload)
@@ -359,6 +429,7 @@ class NativeBridgeTests(unittest.TestCase):
             image,
             exists=lambda path: True,
             getmtime=lambda path: 12.0,
+            getsize=lambda path: 42,
         )
 
         self.assertIsNone(state.stored_mtime)

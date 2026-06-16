@@ -3,6 +3,7 @@ from __future__ import annotations
 from array import array
 import ctypes
 from dataclasses import dataclass
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -13,6 +14,8 @@ EXPECTED_ABI_VERSION = 1
 
 CLIP_SOURCE_KEY = "clip_source"
 CLIP_MTIME_KEY = "clip_mtime"
+CLIP_SIZE_KEY = "clip_size"
+CLIP_SHA256_KEY = "clip_sha256"
 CLIP_NATIVE_KEY = "clip_native_renderer"
 CLIP_RENDERER_ABI_KEY = "clip_renderer_abi"
 CLIP_RENDERER_VERSION_KEY = "clip_renderer_version"
@@ -74,6 +77,8 @@ class NativeRenderResult:
     renderer_abi: int
     renderer_version: str
     source_mtime: float | None
+    source_size: int | None
+    source_sha256: str
     pixels_rgba8: bytes
     support_summary: "NativeSupportSummary | None" = None
 
@@ -103,6 +108,10 @@ class NativeImageSourceState:
     clip_path: str
     stored_mtime: float | None
     current_mtime: float | None
+    stored_size: int | None
+    current_size: int | None
+    stored_sha256: str
+    current_sha256: str | None
     should_reload: bool
     status: str
 
@@ -183,6 +192,14 @@ class NativeRendererLibrary:
                 source_mtime = os.path.getmtime(source)
             except OSError:
                 source_mtime = None
+            try:
+                source_size = os.path.getsize(source)
+            except OSError:
+                source_size = None
+            try:
+                source_sha256 = source_file_sha256(source)
+            except OSError:
+                source_sha256 = ""
 
             return NativeRenderResult(
                 clip_path=source,
@@ -194,6 +211,8 @@ class NativeRendererLibrary:
                 renderer_abi=self.abi_version,
                 renderer_version=self.renderer_version,
                 source_mtime=source_mtime,
+                source_size=source_size,
+                source_sha256=source_sha256,
                 pixels_rgba8=bytes(pixels),
                 support_summary=support_summary,
             )
@@ -376,14 +395,23 @@ def inspect_native_image_source(
     *,
     exists: Any = os.path.exists,
     getmtime: Any = os.path.getmtime,
+    getsize: Any = os.path.getsize,
+    getsha256: Any | None = None,
+    check_hash: bool = False,
 ) -> NativeImageSourceState:
     clip_path = str(image.get(CLIP_SOURCE_KEY, "") or "")
     stored_mtime = _parse_mtime(image.get(CLIP_MTIME_KEY, ""))
+    stored_size = _parse_int(image.get(CLIP_SIZE_KEY, ""))
+    stored_sha256 = str(image.get(CLIP_SHA256_KEY, "") or "")
     if not clip_path:
         return NativeImageSourceState(
             clip_path="",
             stored_mtime=stored_mtime,
             current_mtime=None,
+            stored_size=stored_size,
+            current_size=None,
+            stored_sha256=stored_sha256,
+            current_sha256=None,
             should_reload=False,
             status=RELOAD_STATUS_MISSING,
         )
@@ -393,26 +421,61 @@ def inspect_native_image_source(
             clip_path=clip_path,
             stored_mtime=stored_mtime,
             current_mtime=None,
+            stored_size=stored_size,
+            current_size=None,
+            stored_sha256=stored_sha256,
+            current_sha256=None,
             should_reload=False,
             status=RELOAD_STATUS_MISSING,
         )
 
     try:
         current_mtime = float(getmtime(clip_path))
+        current_size = int(getsize(clip_path))
     except OSError:
         return NativeImageSourceState(
             clip_path=clip_path,
             stored_mtime=stored_mtime,
             current_mtime=None,
+            stored_size=stored_size,
+            current_size=None,
+            stored_sha256=stored_sha256,
+            current_sha256=None,
             should_reload=False,
             status=RELOAD_STATUS_MISSING,
         )
 
-    should_reload = stored_mtime is None or current_mtime > stored_mtime + 1e-6
+    current_sha256: str | None = None
+    hash_changed = False
+    if check_hash:
+        digest_fn = getsha256 or source_file_sha256
+        try:
+            current_sha256 = str(digest_fn(clip_path))
+        except OSError:
+            return NativeImageSourceState(
+                clip_path=clip_path,
+                stored_mtime=stored_mtime,
+                current_mtime=None,
+                stored_size=stored_size,
+                current_size=None,
+                stored_sha256=stored_sha256,
+                current_sha256=None,
+                should_reload=False,
+                status=RELOAD_STATUS_MISSING,
+            )
+        hash_changed = not stored_sha256 or current_sha256 != stored_sha256
+
+    mtime_changed = stored_mtime is None or abs(current_mtime - stored_mtime) > 1e-6
+    size_changed = stored_size is not None and current_size != stored_size
+    should_reload = mtime_changed or size_changed or hash_changed
     return NativeImageSourceState(
         clip_path=clip_path,
         stored_mtime=stored_mtime,
         current_mtime=current_mtime,
+        stored_size=stored_size,
+        current_size=current_size,
+        stored_sha256=stored_sha256,
+        current_sha256=current_sha256,
         should_reload=should_reload,
         status=RELOAD_STATUS_STALE if should_reload else RELOAD_STATUS_OK,
     )
@@ -483,6 +546,14 @@ def resolve_renderer_library(
     )
 
 
+def source_file_sha256(path: str | os.PathLike[str]) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _ensure_image(
     bpy_module: Any,
     result: NativeRenderResult,
@@ -517,6 +588,8 @@ def _ensure_image(
 def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_SOURCE_KEY] = result.clip_path
     image[CLIP_MTIME_KEY] = "" if result.source_mtime is None else str(result.source_mtime)
+    image[CLIP_SIZE_KEY] = "" if result.source_size is None else str(result.source_size)
+    image[CLIP_SHA256_KEY] = result.source_sha256
     image[CLIP_NATIVE_KEY] = True
     image[CLIP_RENDERER_ABI_KEY] = result.renderer_abi
     image[CLIP_RENDERER_VERSION_KEY] = result.renderer_version
@@ -584,6 +657,15 @@ def _parse_mtime(value: Any) -> float | None:
         return None
     try:
         return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_int(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
     except (TypeError, ValueError):
         return None
 

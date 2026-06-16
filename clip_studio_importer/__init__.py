@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 37),
+    "version": (0, 8, 38),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -35,6 +35,8 @@ from . import native_bridge
 
 CLIP_SOURCE_KEY = "clip_source"   # custom prop on Image: path to source .clip
 CLIP_MTIME_KEY = "clip_mtime"     # custom prop on Image: last-seen mtime (str)
+CLIP_SIZE_KEY = native_bridge.CLIP_SIZE_KEY
+CLIP_SHA256_KEY = native_bridge.CLIP_SHA256_KEY
 CLIP_NATIVE_KEY = native_bridge.CLIP_NATIVE_KEY
 CLIP_SUPPORT_DETAILS_EXPANDED_KEY = "clip_support_details_expanded"
 SUPPORT_DETAIL_PREVIEW_LINES = 4
@@ -228,6 +230,12 @@ def _support_diagnostic_text(img) -> str:
         f"Status: {_reload_status_label(status)}",
         "Mode: Native renderer",
     ]
+    source_size = _image_int_property(img, CLIP_SIZE_KEY)
+    if source_size:
+        lines.append(f"Source size: {_format_byte_count(source_size)}")
+    source_sha256 = str(img.get(CLIP_SHA256_KEY, "") or "")
+    if source_sha256:
+        lines.append(f"Source SHA-256: {source_sha256}")
     if status == native_bridge.RELOAD_STATUS_REFRESHING:
         started_at = _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY)
         if started_at:
@@ -509,7 +517,8 @@ class IMAGE_OT_open_clip_support_diagnostics(Operator):
 #
 # Threading model:
 #   - `_watcher_tick` runs on the MAIN thread (it's a bpy.app.timers callback).
-#     It only detects .clip mtime changes and spawns worker threads.
+#     It only detects lightweight .clip freshness changes and spawns worker
+#     threads.
 #   - Worker threads run `_async_decode` through the native C ABI renderer.
 #     On success they register `_on_main` with a timer to
 #     apply Blender image updates on the main thread with sub-frame latency.
@@ -581,8 +590,9 @@ def _async_decode(
 
 
 def _watcher_tick():
-    """Polled by bpy.app.timers on the main thread. Only detects mtime changes;
-    actual reload is dispatched directly from the worker thread on completion.
+    """Polled by bpy.app.timers on the main thread. Only detects lightweight
+    mtime/size changes; actual reload is dispatched directly from the worker
+    thread on completion.
     """
     try:
         prefs = _addon_prefs()
@@ -593,7 +603,7 @@ def _watcher_tick():
     if not prefs.auto_reload:
         return interval
 
-    # Detect .clip mtime changes, spawn worker threads as needed.
+    # Detect .clip freshness changes, spawn worker threads as needed.
     for img in bpy.data.images:
         clip_path = img.get(CLIP_SOURCE_KEY)
         if not clip_path:
@@ -655,7 +665,7 @@ def _load_post_refresh_native_images(_dummy):
         if not img.get(CLIP_NATIVE_KEY):
             continue
 
-        state = native_bridge.inspect_native_image_source(img)
+        state = native_bridge.inspect_native_image_source(img, check_hash=True)
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:
@@ -712,7 +722,7 @@ class CSI_AddonPreferences(AddonPreferences):
     )
     poll_interval: FloatProperty(
         name="Poll interval (seconds)",
-        description="How often to check .clip mtimes.",
+        description="How often to check .clip mtimes and file sizes.",
         default=0.5,
         min=0.25,
         max=10.0,
