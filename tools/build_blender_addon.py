@@ -7,7 +7,6 @@ import zipfile
 
 PACKAGE_FILES = (
     "__init__.py",
-    "clip_loader.py",
     "native_bridge.py",
 )
 

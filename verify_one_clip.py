@@ -155,8 +155,8 @@ def main() -> int:
 
     root = Path(__file__).resolve().parent
     clip_path = Path(args.clip)
-    mod_path = root / "clip_studio_importer" / "clip_loader.py"
-    spec = importlib.util.spec_from_file_location("pkg_clip_loader", mod_path)
+    mod_path = root / "clip_loader.py"
+    spec = importlib.util.spec_from_file_location("clip_loader_reference", mod_path)
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     assert spec.loader is not None

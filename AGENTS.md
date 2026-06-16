@@ -9,7 +9,7 @@ Project-level instructions for Codex.
 
 ## Current Scope
 
-- This repo owns the Blender-facing importer, sidecar PNG workflow, and verification harness.
+- This repo owns the Blender-facing importer, native renderer bridge, and verification harness.
 - Keep `.clip` fidelity focused on flattened raster layers, folders, masks, clipping, blend modes, adjustment/filter layers, and Blender add-on behavior.
 - Do not pursue vector, bubble/frame, or text renderer compatibility in this repo.
 - Treat historical vector/native notes as archived evidence only unless Rizum explicitly reopens that scope.
@@ -25,7 +25,7 @@ Project-level instructions for Codex.
 
 - Read the relevant docs before changing code.
 - Keep changes surgical and traceable to the requested task.
-- Prefer existing patterns in `clip_loader.py` and `clip_studio_importer/clip_loader.py`.
+- Prefer existing patterns in `clip_loader.py` for reference-verifier work and `clip_studio_importer/native_bridge.py` for add-on native bridge work.
 - Do not replace importer behavior from one reverse-engineering clue unless a targeted sample improves and guard samples stay stable.
 - Treat metric-only probes as diagnostic until sample or runtime evidence supports them.
 - Avoid degradation handling, fallbacks, hacks, heuristics, local stabilizations, or post-processing bandages that are not faithful general algorithms.

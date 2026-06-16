@@ -123,7 +123,8 @@ Second milestone result:
 
 ## Completed Blender Add-on Bridge Milestone
 
-Move the stock Blender datablock bridge from spike into the installable add-on.
+Move the stock Blender datablock bridge from spike into the installable add-on
+and remove the add-on Python sidecar runtime path.
 
 Scope:
 
@@ -135,8 +136,8 @@ Scope:
   rendered pixels into the `.blend`.
 - Store `.clip` source/render metadata on native images so manual reload and the
   background watcher can update the same datablock.
-- Keep the existing Python sidecar path only as a temporary explicit option
-  until the accepted native path replaces it fully.
+- Remove the installable add-on's Python compositor/sidecar path once the native
+  bridge owns import, reload, source tracking, and packaging.
 
 Result:
 
@@ -144,20 +145,25 @@ Result:
   checks ABI version `1`, opens native sessions, reads image metadata, renders
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
-- The add-on enables `Use native renderer` by default and exposes `Native
-  renderer library` as an override preference. Native imports create generated
-  images without sidecar PNGs, pack them by default, and store source path,
-  source mtime, canvas metadata, renderer ABI, and reload status custom
-  properties. The installable add-on zip includes the local release `clip_capi`
-  library under `clip_studio_importer/native/`; the library path preference is
-  an override, not the normal packaged path.
-- `Reload from .clip` and the non-blocking watcher update native images through
-  the C ABI/generated-image path, while sidecar images continue to use the
-  existing PNG reload path.
+- The add-on exposes `Native renderer library` as an override preference. Native
+  imports create generated images without sidecar PNGs, pack them by default,
+  and store source path, source mtime, canvas metadata, renderer ABI, and reload
+  status custom properties. The installable add-on zip includes the local
+  release `clip_capi` library under `clip_studio_importer/native/`; the library
+  path preference is an override, not the normal packaged path.
+- `Reload from .clip` and the non-blocking watcher update images through the C
+  ABI/generated-image path only.
 - Blender `load_post` now scans packed native images, checks the stored source
   mtime against the current `.clip`, queues a native refresh when the source is
   newer or the stored mtime is missing, and records `missing_source` while
   keeping packed pixels visible if the source is gone.
+- `clip_studio_importer/__init__.py` no longer imports `clip_loader`, no longer
+  exposes a `Use native renderer` off switch, and no longer writes or reloads
+  sidecar PNGs. `tools/build_blender_addon.py` packages only `__init__.py`,
+  `native_bridge.py`, and native libraries under `clip_studio_importer/native/`.
+  The duplicate `clip_studio_importer/clip_loader.py` package copy has been
+  removed; the project-root `clip_loader.py` remains reference verification
+  tooling outside the add-on runtime.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -166,8 +172,8 @@ Result:
 
 Remaining bridge work:
 
-- Delete the Python compositor/loader and sidecar PNG workflow once the native
-  path owns the whole Blender import/reload workflow.
+- Improve user-facing diagnostics for native render failures and unsupported
+  layer semantics.
 
 ## Completed Third Milestone Foundation
 

@@ -4,9 +4,10 @@ Last reconciled: 2026-06-16
 
 ## Read First
 
-This repository is the Blender-facing `.clip` importer, sidecar PNG workflow, and verification harness.
+This repository is the Blender-facing `.clip` importer, native renderer bridge, and verification harness.
 
-- Runtime code: `clip_loader.py` and `clip_studio_importer/clip_loader.py`
+- Add-on runtime code: `clip_studio_importer/__init__.py` and `clip_studio_importer/native_bridge.py`
+- Reference verifier code: project-root `clip_loader.py`
 - Blender package: `clip_studio_importer.zip`
 - Current plan: `docs/plan.md`
 - UX notes: `docs/design.md`
@@ -16,7 +17,7 @@ Use this file as the first stop for a new agent. Open `docs/analysis.md` only wh
 
 ## Current Scope
 
-- In scope: flattened raster layers, folders, masks, clipping, blend modes, adjustment/filter layers, Blender import/reload behavior, and sidecar PNG cache generation.
+- In scope: flattened raster layers, folders, masks, clipping, blend modes, adjustment/filter layers, Blender import/reload behavior, and native generated-image loading.
 - Out of scope: vector strokes/fills, bubble/frame renderers, text renderers, 3D layers, animation timelines, and write-back.
 - Historical vector/native-material work is archived evidence only. Do not resume it unless Rizum explicitly reopens the scope.
 
@@ -60,8 +61,8 @@ python verify_one_clip.py img/Test_ToneCurve.clip
 
 - Current selected-tile decode state: CHNKExta selected-tile reads stop once the last requested tile block has been found, so unrelated trailing blocks are not scanned or inflated. Visible-region reads express the intersecting tile rectangle as a compact selection and stream matching blocks through a reusable scratch buffer into `TileRegionWriter`, avoiding per-region tile-index vectors, owned block lists, and block-ref vectors on the render path. Low-level external block readers live in `clip_file/src/external/reader.rs`.
 
-The sidecar PNG workflow is only the current Python path. The chosen native direction is a Rust renderer core with `wgpu` GPU compositing behind explicit host bridges. If native loading is accepted, remove the Python compositor/loader and sidecar PNG implementation instead of keeping compatibility or fallback paths. Do not maintain a duplicate native CPU compositor; use the existing Python loader and CSP PNG exports only as slow external references during development.
-- Current native integration milestone: promote the Blender image-datablock bridge from spike to accepted add-on path before more performance-only work. `clip_studio_importer/native_bridge.py` calls the Rust C ABI (`clip_capi`) with `ctypes`, reads native RGBA8 output, creates or updates generated Blender images, packs the latest render into the `.blend`, and stores source/render metadata. `Use native renderer` is now enabled by default; native imports, manual reload, background watcher updates, and Blender `load_post` freshness scans go through the generated-image path without writing sidecar PNGs. If the `.clip` source is missing after reopening a `.blend`, the add-on keeps the packed pixels visible and records `missing_source`. `tools/build_blender_addon.py` builds `clip_studio_importer.zip` and includes the local release `clip_capi` library under `clip_studio_importer/native/` for automatic discovery; the `Native renderer library` preference is only an override. The sidecar path remains only as a temporary explicit Python option until the Python compositor/loader plus sidecar workflow can be removed end to end.
+The accepted Blender add-on path is a Rust renderer core with `wgpu` GPU compositing behind an explicit C ABI bridge. Do not reintroduce the Python compositor/loader or sidecar PNG workflow into the installable add-on. Do not maintain a duplicate native CPU compositor; use the project-root Python loader and CSP PNG exports only as slow external references during development.
+- Current native integration milestone: the Blender image-datablock bridge is the accepted add-on runtime path. `clip_studio_importer/native_bridge.py` calls the Rust C ABI (`clip_capi`) with `ctypes`, reads native RGBA8 output, creates or updates generated Blender images, packs the latest render into the `.blend`, and stores source/render metadata. Native imports, manual reload, background watcher updates, and Blender `load_post` freshness scans go through the generated-image path without writing sidecar PNGs. If the `.clip` source is missing after reopening a `.blend`, the add-on keeps the packed pixels visible and records `missing_source`. `tools/build_blender_addon.py` builds `clip_studio_importer.zip` with `__init__.py`, `native_bridge.py`, and the local release `clip_capi` library under `clip_studio_importer/native/` for automatic discovery; the `Native renderer library` preference is only an override. The installable package no longer includes `clip_studio_importer/clip_loader.py` or a `Use native renderer` off switch.
 - Native rewrite architecture is documented in `docs/native-code-architecture.md`. The initial Rust workspace lives under `native/rust/` with separate crates for `clip_model`, `clip_file`, `clip_graph`, `clip_gpu`, `clip_runtime`, `clip_capi`, and `clip_cli`; root files are wiring only and must not accumulate renderer behavior.
 - First OIIO milestone source lives under `native/oiio/`. It is a minimal C++20 `ImageInput` plugin that registers `.clip`, validates the `CSFCHUNK` magic, and returns a deterministic 64x64 RGBA placeholder image. This is only format plumbing; it does not parse layers or call Rust yet.
 - First OIIO milestone result: the plugin builds against Blender 5.0.1's bundled OpenImageIO 3.0.9.1 and opens through Blender's Python `OpenImageIO` module (`64x64`, RGBA, first pixel `[0,0,224,255]`). Blender's ordinary `bpy.data.images.load()` and `bpy.ops.image.open()` still do not load `.clip`; they create an empty image and log `IMB_load_image_from_memory: unknown file-format`.

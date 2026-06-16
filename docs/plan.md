@@ -17,9 +17,10 @@ Goal: improve flattened `.clip` output for raster artwork without reopening vect
 
 Current focus:
 
-- Keep both loader entrypoints aligned: `clip_loader.py` and `clip_studio_importer/clip_loader.py`.
+- Keep the project-root `clip_loader.py` available as slow reference tooling for
+  verification scripts while native fidelity gaps close.
 - Keep the main compositor on straight `uint8` RGBA buffers so transparent cache RGB, Add/Add Glow byte alpha, and future native byte-domain blend work are expressible.
-- Continue raster layer semantics: folders, masks, clipping, THROUGH groups, blend modes, adjustment/filter layers, visibility bit flags, and sidecar PNG output.
+- Continue raster layer semantics: folders, masks, clipping, THROUGH groups, blend modes, adjustment/filter layers, and visibility bit flags.
 - Keep `LayerVisibility` as a bit flag: values `0` and `2` are hidden; values `1` and `3` are visible.
 - Use targeted sample improvements with guard samples before accepting compositor changes.
 - Treat vector, bubble/frame, and text layers as unsupported/skipped content in this repo.
@@ -33,16 +34,15 @@ Open raster targets:
 
 ## Direction 2: Blender Add-on Workflow
 
-Goal: keep the Blender importer usable until the native direct-load rewrite replaces the Python sidecar workflow.
+Goal: keep the Blender importer usable on the native renderer path while the remaining native rewrite work closes.
 
 Current focus:
 
-- Preserve the sidecar PNG cache path only for the current Python implementation.
 - Keep manual reload and non-blocking auto-reload behavior stable.
-- Keep the default native renderer bridge usable while the accepted native path
-  is completed: native imports create generated/packed Blender images, store
-  source-tracking properties, and update through the add-on's reload/watch path
-  without writing sidecar PNGs.
+- Keep the native renderer bridge as the add-on's only import/reload path:
+  native imports create generated/packed Blender images, store source-tracking
+  properties, and update through the add-on's reload/watch path without writing
+  sidecar PNGs.
 - Rebuild `clip_studio_importer.zip` whenever package code changes.
 
 ## Direction 3: Native Image Loading Rewrite
@@ -53,18 +53,16 @@ Current policy:
 
 - Rust plus `wgpu` is the chosen renderer direction, with a thin C++ OpenImageIO plugin boundary and a stock Blender image-datablock bridge.
 - External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch.
-- Current native milestone: promote the stock Blender image-datablock bridge from
-  spike to usable add-on feature before doing more performance-only work. The
-  add-on now defaults to a native renderer mode that calls `clip_capi`, creates
-  generated/packed Blender images, records source metadata, and updates those
-  images through manual reload, the background watcher, and Blender `load_post`
-  freshness scans without writing sidecar PNGs. Remaining functional work is
-  deleting the Python compositor/loader and sidecar workflow once the native path
-  owns the whole user workflow. The installable add-on zip is built by
-  `tools/build_blender_addon.py` and includes the locally built release
-  `clip_capi` library under `clip_studio_importer/native/` for automatic
-  discovery; the preference path is an override, and disabling native renderer
-  is only a temporary explicit Python-sidecar option.
+- Current native milestone: the stock Blender image-datablock bridge is the
+  add-on runtime path. The add-on calls `clip_capi`, creates generated/packed
+  Blender images, records source metadata, and updates those images through
+  manual reload, the background watcher, and Blender `load_post` freshness scans
+  without writing sidecar PNGs. `tools/build_blender_addon.py` builds the
+  installable zip with `__init__.py`, `native_bridge.py`, and the locally built
+  release `clip_capi` library under `clip_studio_importer/native/`; it no longer
+  packages the Python compositor/loader. The native library preference is an
+  override only. The project-root `clip_loader.py` remains slow reference
+  tooling for verification while native fidelity gaps close.
 - Strict GPU coverage status: ordinary raster blend modes `LayerComposite=1..26` plus `36` are enabled, isolated containers can resolve with supported non-NORMAL blend modes, clipping runs support non-NORMAL raster bases plus clipped raster siblings, THROUGH groups clear the clip base for following clipped layers, and adjustment/filter layers now route through a dedicated GPU pass: Brightness/Contrast (`FilterLayerInfo` type `1`), Level Correction (`2`), Tone Curve (`3`), HSL (`4`, native HSV-adjust shader mode), Color Balance (`5`), Invert/Reverse Gradient (`6`), Posterization (`7`), Threshold (`8`), and Gradient Map (`9`). Unknown future filter types remain explicit unsupported filter work until faithful native models exist. `IllustrationBlendModes.clip`, `IllustrationBlendModes2.clip`, `Test_AddGlowMultiply.clip`, `Test_ToneCurve.clip`, `Test_Gradiation.clip`, and `Test_RealArt.clip --gpu-support-check` are fully routed but still have residual formula/quantization or performance work; improve correctness only with source-backed native evidence and guard samples.
 - Large-stack performance is now a throughput and scheduling issue rather than an OOM blocker. Strict GPU raster uploads use source-sized offscreen textures with shader-side canvas offsets, and raster/mask resource uploads now use `Queue::write_texture` with source row strides instead of explicit staging-buffer copy submissions. CHNKExta tile-blob parsing is split into `clip_file::external`, compressed tile blocks inflate directly into the expected output buffer instead of allocating a temporary decoded `Vec<u8>` per zlib block, and region raster reads can request only the tile blocks intersecting the visible source `Rect` so non-visible raster tile blocks are skipped before zlib decode. Full-tile coverage still uses the contiguous blob path to avoid per-tile allocation overhead. Selected-region reads now use a compact tile-rectangle selection and stream matching external blocks through a reusable scratch buffer directly into `TileRegionWriter`, avoiding the former per-region tile-index vector, owned block list, and block-ref vector. Tile plane decoders now use row spans so alpha rows copy as slices while full-colour/grayscale/monochrome rows avoid per-pixel edge checks. The full-colour, grayscale, and monochrome tile decoders can now also swizzle a validated source `Rect` directly into the smaller RGBA output used for upload. The host-facing normal render path uses a recursive streaming GPU source provider: the main selector builds a metadata-only GPU source tree/resource plan, then raster/mask tile payloads are decoded and uploaded at point of use inside containers, clipping runs, THROUGH groups, and filters. Clear-only passes for the main accumulation texture plus container/clipping caches are encoded with the first real pass instead of forcing their own queue submit/poll, and streaming ping-pong texture initialization clears both paired attachments in one render pass. Streaming state and provider resource binding helpers are split out of `stream.rs`; each batch retains its raster, mask, LUT, and intermediate cache resources until submission, then submits after either forty-eight encoded passes or about 256 MiB of retained GPU resources instead of flushing every source pass. Active-batch retained-resource lookup reuses duplicate raster/mask GPU caches until the next flush, avoiding repeated provider decode/upload for duplicate keys without pinning one-off large-stack resources for the whole render. Intermediate streaming flushes do not poll/wait; final readback polling waits for the ordered queue. Unmasked streaming passes reuse existing texture views for shader bindings that are not sampled, THROUGH groups reuse the caller's parent texture view instead of creating a duplicate before view, and the main accumulator, clipping cache, container cache, and THROUGH after-cache retain their paired texture views for each ping-pong cache lifetime instead of recreating views per source/child pass. Streaming source/cache passes maintain dirty canvas bounds and use scissored `LoadOp::Load` rendering for raster, clipping, container, and THROUGH passes; this reduces fragment work on sparse stacks while preserving ping-pong correctness by repainting the previous dirty region plus the current source/cache bounds. The runtime provider now answers raster source pixel sizes from render-plan metadata before decode/upload, so fully off-canvas raster sources can be skipped before tile decode/upload while fallback providers still derive bounds after upload. It also computes the canvas-visible source region before decode, asks `clip_file` to decode only that region, and returns the effective source offset to the streaming renderer, reducing CPU swizzle/copy output and GPU upload footprint without changing shader-space placement. Runtime masks now decode only the canvas-visible source region, upload true cropped R8 textures, and carry mask origin/fill metadata into normal, container, THROUGH, and filter shader sampling; non-zero `InitColor` is preserved by sampling fill outside cropped mask bounds instead of allocating a full-canvas mask. `ClipContainer` indexes external ids for constant-time CHNKExta body lookup, `clip_file` uses the `flate2` `zlib-rs` backend for tile inflation, and runtime provider/resource-plan code has been split from `clip_runtime/src/lib.rs` into `clip_runtime/src/gpu_provider.rs`. Known-empty container, clipping, and THROUGH subtrees now short-circuit before allocating full-canvas intermediate ping-pong caches. `ClipSession` holds the opened `.clip` container and batches render-plan raster/mask/filter source metadata, so support checks and the render provider reuse resolved sources instead of reopening the file or rerunning source queries per layer. `Test_RealArt.clip` now full-renders and compares against `Test_RealArt.png` without wgpu OOM (`raw_max=5`, `premul_max=2`) in roughly 48s on this machine after submission batching, submit-only intermediate flushes, dirty-bounds scissoring, metadata-bound raster skipping, selected-tile visible-source decode/upload, true cropped mask textures, known-empty cache short-circuiting, paired clear-pass initialization, view reuse, bounded masked filter passes, and active-batch duplicate resource reuse. The next native performance step is reducing non-empty full-canvas intermediate cache size/lifetime, remaining visible-tile inflate/upload and GPU pass overhead, and leading/unknown intermediate full-canvas cases without introducing CPU compositor fallback, post-processing, or a global all-layer texture cache.
 - Selected-tile external decoding should stop once the last requested tile block has been found, so unrelated trailing CHNKExta blocks are not scanned or inflated.
@@ -75,7 +73,7 @@ Current policy:
 - Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.
 - Native support diagnostics use a metadata-only strict selector. `clip_cli --gpu-support-check` validates graph, raster source, mask source, and LUT-filter support without tile decode, GPU initialization, or rendering; it must remain diagnostics only, not a fallback renderer.
 - `clip_cli --gpu-trace-pixel <x> <y>` is available for native GPU prefix tracing and now includes per-source before/after/input pixels. Current open traces point to a Subtract alpha/rounding boundary feeding Color Dodge/Color Burn in `IllustrationBlendModes.clip`, plus a Pin Light/Hue/Saturation residual in `IllustrationBlendModes2.clip`; rejected broad fixes should remain in evidence, not shader code.
-- If the OIIO/native direct-load path is accepted, remove the Python compositor/loader and sidecar PNG implementation instead of keeping compatibility or fallback paths.
+- Do not reintroduce the Python compositor/loader or sidecar PNG implementation into the installable add-on.
 - This direction is about flattened raster loading only; it does not restore vector, bubble/frame, or text renderer compatibility.
 
 ## Direction 4: Documentation Hygiene
