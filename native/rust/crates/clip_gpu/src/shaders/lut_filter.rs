@@ -17,6 +17,10 @@ struct FilterParams {
     target_origin_y: i32,
     _pad2: u32,
     _pad3: u32,
+    mask_origin_x: i32,
+    mask_origin_y: i32,
+    mask_fill: f32,
+    _pad4: u32,
 };
 
 @group(0) @binding(3)
@@ -51,6 +55,22 @@ fn gradient_lum_u8(value: vec3<f32>) -> i32 {
     return i32(clamp(floor(lum), 0.0, 255.0));
 }
 
+fn load_mask(global_texel: vec2<i32>) -> f32 {
+    let mask_texel = global_texel - vec2<i32>(
+        filter_params.mask_origin_x,
+        filter_params.mask_origin_y,
+    );
+    let mask_size = textureDimensions(mask_texture);
+    if (
+        mask_texel.x < 0 ||
+        mask_texel.y < 0 ||
+        mask_texel.x >= i32(mask_size.x) ||
+        mask_texel.y >= i32(mask_size.y)
+    ) {
+        return filter_params.mask_fill;
+    }
+    return textureLoad(mask_texture, mask_texel, 0).r;
+}
 @fragment
 fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let texel = vec2<i32>(position.xy);
@@ -69,7 +89,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             filter_params.target_origin_x,
             filter_params.target_origin_y,
         );
-        strength = strength * textureLoad(mask_texture, mask_texel, 0).r;
+        strength = strength * load_mask(mask_texel);
     }
     let rgb = before.rgb * (1.0 - strength) + mapped * strength;
     return quantize_u8(vec4<f32>(rgb, before.a));

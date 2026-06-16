@@ -16,6 +16,9 @@ struct SourceParams {
     _pad0: u32,
     source_origin: vec2<i32>,
     target_origin: vec2<i32>,
+    mask_origin: vec2<i32>,
+    mask_fill: f32,
+    _pad1: u32,
 };
 
 @group(0) @binding(3)
@@ -37,6 +40,20 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOut {
     return out;
 }
 
+fn load_mask(global_texel: vec2<i32>) -> f32 {
+    let mask_texel = global_texel - source_params.mask_origin;
+    let mask_size = textureDimensions(mask_texture);
+    if (
+        mask_texel.x < 0 ||
+        mask_texel.y < 0 ||
+        mask_texel.x >= i32(mask_size.x) ||
+        mask_texel.y >= i32(mask_size.y)
+    ) {
+        return source_params.mask_fill;
+    }
+    return textureLoad(mask_texture, mask_texel, 0).r;
+}
+
 @fragment
 fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let texel = vec2<i32>(position.xy);
@@ -54,7 +71,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     }
     var strength = clamp(source_params.opacity, 0.0, 1.0);
     if (source_params.has_mask == 1u) {
-        strength = strength * textureLoad(mask_texture, texel + source_params.target_origin, 0).r;
+        strength = strength * load_mask(texel + source_params.target_origin);
     }
 
     let before_pm = before.rgb * before.a;

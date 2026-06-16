@@ -1545,7 +1545,7 @@ pub(crate) fn encode_normal_source_pass(
     dest_view: &wgpu::TextureView,
     mask_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 48],
+    uniform_bytes: [u8; 64],
     label: &'static str,
 ) {
     encode_normal_source_pass_with_load(
@@ -1574,7 +1574,7 @@ pub(crate) fn encode_normal_source_pass_scissored(
     dest_view: &wgpu::TextureView,
     mask_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 48],
+    uniform_bytes: [u8; 64],
     label: &'static str,
     scissor: CanvasRect,
 ) {
@@ -1604,7 +1604,7 @@ fn encode_normal_source_pass_with_load(
     dest_view: &wgpu::TextureView,
     mask_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 48],
+    uniform_bytes: [u8; 64],
     label: &'static str,
     load: wgpu::LoadOp<wgpu::Color>,
     scissor: Option<CanvasRect>,

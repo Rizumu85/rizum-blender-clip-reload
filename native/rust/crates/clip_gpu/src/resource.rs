@@ -30,7 +30,37 @@ pub struct GpuMaskResourceInfo {
     pub key: GpuMaskResourceKey,
     pub render_node_id: RenderNodeId,
     pub size: CanvasSize,
+    pub origin_x: i32,
+    pub origin_y: i32,
+    pub fill_value: u8,
     pub byte_len: usize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct GpuMaskSamplingInfo {
+    pub origin_x: i32,
+    pub origin_y: i32,
+    pub fill_value: u8,
+}
+
+impl Default for GpuMaskSamplingInfo {
+    fn default() -> Self {
+        Self {
+            origin_x: 0,
+            origin_y: 0,
+            fill_value: 0,
+        }
+    }
+}
+
+impl GpuMaskResourceInfo {
+    pub fn sampling_info(self) -> GpuMaskSamplingInfo {
+        GpuMaskSamplingInfo {
+            origin_x: self.origin_x,
+            origin_y: self.origin_y,
+            fill_value: self.fill_value,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -48,6 +78,9 @@ pub struct GpuMaskUpload<'a> {
     pub render_node_id: RenderNodeId,
     pub mask_mipmap_id: u32,
     pub size: CanvasSize,
+    pub origin_x: i32,
+    pub origin_y: i32,
+    pub fill_value: u8,
     pub upload_origin_x: u32,
     pub upload_origin_y: u32,
     pub upload_size: CanvasSize,
@@ -305,6 +338,9 @@ impl GpuRenderer {
                     key,
                     render_node_id: upload.render_node_id,
                     size: upload.size,
+                    origin_x: upload.origin_x,
+                    origin_y: upload.origin_y,
+                    fill_value: upload.fill_value,
                     byte_len: layout.unpadded_len,
                 },
                 texture,

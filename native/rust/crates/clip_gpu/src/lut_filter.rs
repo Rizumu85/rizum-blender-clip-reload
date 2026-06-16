@@ -59,7 +59,7 @@ pub(crate) fn encode_lut_filter_pass(
     mask_view: &wgpu::TextureView,
     lut_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 32],
+    uniform_bytes: [u8; 48],
     label: &'static str,
 ) {
     encode_lut_filter_pass_with_load(
@@ -88,7 +88,7 @@ pub(crate) fn encode_lut_filter_pass_scissored(
     mask_view: &wgpu::TextureView,
     lut_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 32],
+    uniform_bytes: [u8; 48],
     label: &'static str,
     scissor: CanvasRect,
 ) {
@@ -118,7 +118,7 @@ fn encode_lut_filter_pass_with_load(
     mask_view: &wgpu::TextureView,
     lut_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 32],
+    uniform_bytes: [u8; 48],
     label: &'static str,
     load: wgpu::LoadOp<wgpu::Color>,
     scissor: Option<CanvasRect>,

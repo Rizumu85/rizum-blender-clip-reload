@@ -143,7 +143,10 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             layer_id: meta.layer_id,
             render_node_id: meta.render_node_id,
             mask_mipmap_id: meta.mask_mipmap_id,
-            size: self.canvas,
+            size: CanvasSize::new(mask_payload.image.width, mask_payload.image.height),
+            origin_x: mask_payload.origin_x,
+            origin_y: mask_payload.origin_y,
+            fill_value: mask_payload.fill_value,
             upload_origin_x: mask_payload.upload_origin_x,
             upload_origin_y: mask_payload.upload_origin_y,
             upload_size: CanvasSize::new(mask_payload.image.width, mask_payload.image.height),
@@ -190,6 +193,9 @@ pub(crate) fn plan_gpu_mask_resource(
 
 struct MaskUploadPayload {
     image: clip_file::tiles::AlphaTileImage,
+    origin_x: i32,
+    origin_y: i32,
+    fill_value: u8,
     upload_origin_x: u32,
     upload_origin_y: u32,
 }
@@ -199,16 +205,6 @@ fn read_mask_payload_for_upload(
     canvas: CanvasSize,
     source: &clip_file::metadata::MaskLayerSource,
 ) -> Result<MaskUploadPayload, RuntimeError> {
-    if source.empty_fill != 0 {
-        let image =
-            clip_file::read_resolved_layer_mask_alpha_from_container(container, canvas, source)?;
-        return Ok(MaskUploadPayload {
-            image,
-            upload_origin_x: 0,
-            upload_origin_y: 0,
-        });
-    }
-
     let Some(visible) = source_crop::visible_raster_source_decode_region(
         source.pixel_size,
         source.offset_x,
@@ -220,8 +216,11 @@ fn read_mask_payload_for_upload(
             image: clip_file::tiles::AlphaTileImage {
                 width: 1,
                 height: 1,
-                pixels: vec![0],
+                pixels: vec![source.empty_fill],
             },
+            origin_x: 0,
+            origin_y: 0,
+            fill_value: source.empty_fill,
             upload_origin_x: 0,
             upload_origin_y: 0,
         });
@@ -234,9 +233,10 @@ fn read_mask_payload_for_upload(
     )?;
     Ok(MaskUploadPayload {
         image,
-        upload_origin_x: u32::try_from(visible.offset_x)
-            .map_err(|_| clip_file::ClipFileError::TileSizeOverflow)?,
-        upload_origin_y: u32::try_from(visible.offset_y)
-            .map_err(|_| clip_file::ClipFileError::TileSizeOverflow)?,
+        origin_x: visible.offset_x,
+        origin_y: visible.offset_y,
+        fill_value: source.empty_fill,
+        upload_origin_x: 0,
+        upload_origin_y: 0,
     })
 }

@@ -22,8 +22,9 @@ mod validation;
 pub use device::{GpuContext, GpuDeviceConfig, GpuDeviceError};
 pub use renderer::{GpuRenderError, GpuRenderer};
 pub use resource::{
-    GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskUpload,
-    GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey, GpuRasterUpload,
+    GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskSamplingInfo,
+    GpuMaskUpload, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey,
+    GpuRasterUpload,
 };
 pub use stream::GpuNormalStackResourceProvider;
 pub use types::{

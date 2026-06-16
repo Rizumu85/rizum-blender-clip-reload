@@ -4,7 +4,8 @@ use crate::blend::clipped_source_pipeline;
 use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_and_origins,
-    raster_source_uniform_bytes_with_target_origin,
+    generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
+    raster_source_uniform_bytes_with_target_origin_and_mask,
 };
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::{CanvasRect, union_optional};
@@ -85,9 +86,13 @@ where
             &pipelines.bind_group_layout,
             &source_view,
             clipping_pair.view(previous_index),
-            mask_view.as_ref(),
+            mask_view.view(),
             clipping_pair.view(next_index),
-            raster_source_uniform_bytes_with_target_origin(effective_base, cache_origin),
+            raster_source_uniform_bytes_with_target_origin_and_mask(
+                effective_base,
+                cache_origin,
+                mask_view.sampling(),
+            ),
             "rizum_clip_provider_clipping_base_pass",
             local_cache_bounds,
         );
@@ -136,9 +141,13 @@ where
             &pipelines.bind_group_layout,
             &source_view,
             clipping_pair.view(previous_index),
-            mask_view.as_ref(),
+            mask_view.view(),
             clipping_pair.view(next_index),
-            raster_source_uniform_bytes_with_target_origin(effective_clipped_source, cache_origin),
+            raster_source_uniform_bytes_with_target_origin_and_mask(
+                effective_clipped_source,
+                cache_origin,
+                mask_view.sampling(),
+            ),
             "rizum_clip_provider_clipping_clipped_pass",
             local_cache_bounds,
         );
@@ -358,14 +367,15 @@ where
         &pipelines.bind_group_layout,
         after_view,
         before_view,
-        mask_view.as_ref(),
+        mask_view.view(),
         output_view,
-        generated_raster_source_uniform_bytes_with_blend_and_origins(
+        generated_raster_source_uniform_bytes_with_blend_origins_and_mask(
             opacity,
             mask_key.is_some(),
             GpuRasterBlendMode::Normal,
             cache_origin,
             target_origin,
+            mask_view.sampling(),
         ),
         "rizum_clip_provider_through_resolve_pass",
         pass_bounds

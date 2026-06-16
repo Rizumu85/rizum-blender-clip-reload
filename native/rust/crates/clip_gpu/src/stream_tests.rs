@@ -27,6 +27,8 @@ struct InlineRaster {
 struct InlineMask {
     render_node_id: RenderNodeId,
     size: CanvasSize,
+    origin: (i32, i32),
+    fill_value: u8,
     pixels: Vec<u8>,
 }
 
@@ -105,6 +107,9 @@ impl GpuNormalStackResourceProvider for InlineProvider {
             render_node_id: mask.render_node_id,
             mask_mipmap_id: key.mask_mipmap_id,
             size: mask.size,
+            origin_x: mask.origin.0,
+            origin_y: mask.origin.1,
+            fill_value: mask.fill_value,
             upload_origin_x: 0,
             upload_origin_y: 0,
             upload_size: mask.size,
@@ -381,8 +386,8 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = raster_key(9);
     let mask_key = mask_key(9);
-    let mut mask_pixels = vec![0u8; 4 * 4];
-    mask_pixels[2 * 4 + 2] = 255;
+    let mut mask_pixels = vec![0u8; 2 * 2];
+    mask_pixels[1 * 2 + 1] = 255;
     let mut provider = InlineProvider::new(vec![(
         key,
         InlineRaster {
@@ -396,7 +401,9 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
         mask_key,
         InlineMask {
             render_node_id: RenderNodeId(90),
-            size: CanvasSize::new(4, 4),
+            size: CanvasSize::new(2, 2),
+            origin: (1, 1),
+            fill_value: 0,
             pixels: mask_pixels,
         },
     )]);
@@ -426,6 +433,44 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
     assert_eq!(provider.mask_request_count(mask_key), 1);
 }
 
+#[test]
+fn streamed_cropped_mask_uses_fill_value_outside_texture() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(10);
+    let mask_key = mask_key(10);
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(10),
+            size: CanvasSize::new(3, 3),
+            offset: (0, 0),
+            pixels: [255, 0, 0, 255].repeat(9),
+        },
+    )])
+    .with_masks(vec![(
+        mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(100),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 255,
+            pixels: vec![0],
+        },
+    )]);
+    let sources = [GpuNormalStackSource::Raster(raster_source_at_with_mask(
+        key, mask_key, 0, 0,
+    ))];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw raster with cropped fill mask");
+
+    let mut expected = [255, 0, 0, 255].repeat(9);
+    expected[((1 * 3 + 1) * 4) as usize..((1 * 3 + 1) * 4 + 4) as usize]
+        .copy_from_slice(&[255, 255, 255, 0]);
+    assert_eq!(output.pixels, expected);
+}
+
 fn raster_source(key: GpuRasterResourceKey) -> GpuNormalRasterSource {
     raster_source_at(key, 1, 1)
 }
@@ -434,9 +479,18 @@ fn raster_source_with_mask(
     key: GpuRasterResourceKey,
     mask_key: GpuMaskResourceKey,
 ) -> GpuNormalRasterSource {
+    raster_source_at_with_mask(key, mask_key, 1, 1)
+}
+
+fn raster_source_at_with_mask(
+    key: GpuRasterResourceKey,
+    mask_key: GpuMaskResourceKey,
+    offset_x: i32,
+    offset_y: i32,
+) -> GpuNormalRasterSource {
     GpuNormalRasterSource {
         mask_key: Some(mask_key),
-        ..raster_source(key)
+        ..raster_source_at(key, offset_x, offset_y)
     }
 }
 

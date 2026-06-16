@@ -4,8 +4,9 @@ use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_state::StreamingEncoder;
 use crate::{
-    GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuNormalRasterSource,
-    GpuNormalStackSource, GpuRasterResourceCache, GpuRenderError, GpuRenderer,
+    GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskSamplingInfo,
+    GpuNormalRasterSource, GpuNormalStackSource, GpuRasterResourceCache, GpuRenderError,
+    GpuRenderer,
 };
 
 pub(crate) fn raster_view_with_provider<P>(
@@ -180,14 +181,15 @@ pub(crate) fn mask_view_with_provider<'a, P>(
     state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
     mask_key: Option<GpuMaskResourceKey>,
-    owner_layer_id: clip_model::LayerId,
+    _owner_layer_id: clip_model::LayerId,
     fallback_view: &'a wgpu::TextureView,
-) -> Result<(Option<GpuMaskResourceCache>, MaskTextureView<'a>), P::Error>
+) -> Result<(Option<GpuMaskResourceCache>, MaskTextureBinding<'a>), P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
+    let _ = output_size;
     let Some(mask_key) = mask_key else {
-        return Ok((None, MaskTextureView::Borrowed(fallback_view)));
+        return Ok((None, MaskTextureBinding::fallback(fallback_view)));
     };
     let cache = state
         .retained_mask_cache(mask_key)
@@ -201,20 +203,41 @@ where
         })
         .map_err(P::Error::from)?;
     let info: GpuMaskResourceInfo = resource.info();
-    if info.size != output_size {
-        return Err(P::Error::from(GpuRenderError::MaskResourceSizeMismatch {
-            layer_id: owner_layer_id,
-            expected: output_size,
-            actual: info.size,
-        }));
-    }
     let view = resource
         .texture()
         .create_view(&wgpu::TextureViewDescriptor::default());
-    Ok((Some(cache), MaskTextureView::Owned(view)))
+    Ok((
+        Some(cache),
+        MaskTextureBinding {
+            view: MaskTextureView::Owned(view),
+            sampling: info.sampling_info(),
+        },
+    ))
 }
 
-pub(crate) enum MaskTextureView<'a> {
+pub(crate) struct MaskTextureBinding<'a> {
+    view: MaskTextureView<'a>,
+    sampling: GpuMaskSamplingInfo,
+}
+
+impl<'a> MaskTextureBinding<'a> {
+    fn fallback(view: &'a wgpu::TextureView) -> Self {
+        Self {
+            view: MaskTextureView::Borrowed(view),
+            sampling: GpuMaskSamplingInfo::default(),
+        }
+    }
+
+    pub(crate) fn view(&self) -> &wgpu::TextureView {
+        self.view.as_ref()
+    }
+
+    pub(crate) fn sampling(&self) -> GpuMaskSamplingInfo {
+        self.sampling
+    }
+}
+
+enum MaskTextureView<'a> {
     Borrowed(&'a wgpu::TextureView),
     Owned(wgpu::TextureView),
 }

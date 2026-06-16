@@ -7,8 +7,9 @@ use crate::pass::{
 };
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_and_origins,
-    lut_filter_uniform_bytes_with_target_origin, raster_source_uniform_bytes_with_target_origin,
-    solid_source_uniform_bytes,
+    generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
+    lut_filter_uniform_bytes_with_target_origin_and_mask,
+    raster_source_uniform_bytes_with_target_origin_and_mask, solid_source_uniform_bytes,
 };
 use crate::stream_bounds::CanvasRect;
 use crate::stream_groups::{
@@ -218,9 +219,13 @@ where
                 &pipelines.bind_group_layout,
                 &source_view,
                 previous_view,
-                mask_view.as_ref(),
+                mask_view.view(),
                 output_view,
-                raster_source_uniform_bytes_with_target_origin(effective_raster, target_origin),
+                raster_source_uniform_bytes_with_target_origin_and_mask(
+                    effective_raster,
+                    target_origin,
+                    mask_view.sampling(),
+                ),
                 "rizum_clip_provider_normal_raster_pass",
                 local_pass_bounds(pass_bounds, target_origin),
             );
@@ -321,14 +326,15 @@ where
                 &pipelines.bind_group_layout,
                 container_cache.view(),
                 previous_view,
-                mask_view.as_ref(),
+                mask_view.view(),
                 output_view,
-                generated_raster_source_uniform_bytes_with_blend_and_origins(
+                generated_raster_source_uniform_bytes_with_blend_origins_and_mask(
                     *opacity,
                     mask_key.is_some(),
                     *blend_mode,
                     container_cache.texture_origin(),
                     target_origin,
+                    mask_view.sampling(),
                 ),
                 "rizum_clip_provider_container_resolve_pass",
                 local_pass_bounds(pass_bounds, target_origin),
@@ -418,14 +424,15 @@ where
                 &pipelines.lut_filter_pipeline,
                 &pipelines.bind_group_layout,
                 previous_view,
-                mask_view.as_ref(),
+                mask_view.view(),
                 &lut_view,
                 output_view,
-                lut_filter_uniform_bytes_with_target_origin(
+                lut_filter_uniform_bytes_with_target_origin_and_mask(
                     *opacity,
                     mask_key.is_some(),
                     *filter_mode,
                     target_origin,
+                    mask_view.sampling(),
                 ),
                 lut_filter_label(*filter_mode),
                 local_pass_bounds(pass_bounds, target_origin),
