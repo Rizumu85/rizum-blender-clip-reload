@@ -6,8 +6,8 @@ use crate::source_params::{generated_raster_source_uniform_bytes, raster_source_
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::CanvasRect;
 use crate::stream_resources::{
-    known_raster_source_bounds, mask_view_with_provider, pass_bounds_for_change,
-    raster_view_with_provider,
+    known_clipping_run_activity, known_raster_source_bounds, known_stack_activity,
+    mask_view_with_provider, pass_bounds_for_change, raster_view_with_provider,
 };
 use crate::stream_state::{RenderedStreamingCache, StreamingEncoder, StreamingTexturePair};
 use crate::{GpuMaskResourceKey, GpuNormalRasterSource, GpuRenderer};
@@ -25,6 +25,21 @@ pub(crate) fn render_clipping_run_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    if known_clipping_run_activity(provider, base, output_size).is_empty() {
+        return Ok(RenderedStreamingCache::empty());
+    }
+
+    let known_source_bounds = known_raster_source_bounds(provider, base, output_size);
+    if matches!(known_source_bounds, Some(None)) {
+        return Ok(RenderedStreamingCache::empty());
+    }
+    let (raster_cache, source_view, uploaded_source_bounds) =
+        raster_view_with_provider(renderer, provider, state, output_size, base)?;
+    let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
+    let Some(pass_bounds) = pass_bounds_for_change(None, source_bounds) else {
+        return Ok(RenderedStreamingCache::empty());
+    };
+
     let clipping_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
     let clipping_pair = StreamingTexturePair::new(
@@ -36,6 +51,7 @@ where
     );
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
+    let mut dirty_bounds = Some(pass_bounds);
 
     state.clear_rgba8_texture(
         clipping_pair.view(previous_index),
@@ -45,27 +61,8 @@ where
         clipping_pair.view(next_index),
         "rizum_clip_provider_clipping_spare_clear",
     );
-    let mut dirty_bounds = None;
 
     {
-        let known_source_bounds = known_raster_source_bounds(provider, base, output_size);
-        if matches!(known_source_bounds, Some(None)) {
-            return Ok(RenderedStreamingCache::new(
-                clipping_pair,
-                previous_index,
-                dirty_bounds,
-            ));
-        }
-        let (raster_cache, source_view, uploaded_source_bounds) =
-            raster_view_with_provider(renderer, provider, state, output_size, base)?;
-        let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-        let Some(pass_bounds) = pass_bounds_for_change(dirty_bounds, source_bounds) else {
-            return Ok(RenderedStreamingCache::new(
-                clipping_pair,
-                previous_index,
-                dirty_bounds,
-            ));
-        };
         let (mask_cache, mask_view) = mask_view_with_provider(
             renderer,
             provider,
@@ -90,7 +87,6 @@ where
         state.retain_raster_cache(raster_cache);
         state.retain_optional_mask_cache(mask_cache);
         state.finish_pass()?;
-        dirty_bounds = Some(pass_bounds);
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
@@ -158,6 +154,10 @@ pub(crate) fn render_container_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    if known_stack_activity(provider, children, output_size).is_empty() {
+        return Ok(RenderedStreamingCache::empty());
+    }
+
     let container_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
     let container_pair = StreamingTexturePair::new(
@@ -224,6 +224,10 @@ pub(crate) fn render_through_group_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    if known_stack_activity(provider, children, output_size).is_empty() {
+        return Ok(false);
+    }
+
     let through_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
     let through_pair = StreamingTexturePair::new(

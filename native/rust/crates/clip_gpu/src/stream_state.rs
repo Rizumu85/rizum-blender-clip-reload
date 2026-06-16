@@ -52,7 +52,7 @@ impl StreamingTexturePair {
 }
 
 pub(crate) struct RenderedStreamingCache {
-    pair: StreamingTexturePair,
+    pair: Option<StreamingTexturePair>,
     output_index: usize,
     bounds: Option<CanvasRect>,
 }
@@ -64,14 +64,25 @@ impl RenderedStreamingCache {
         bounds: Option<CanvasRect>,
     ) -> Self {
         Self {
-            pair,
+            pair: Some(pair),
             output_index,
             bounds,
         }
     }
 
+    pub(crate) fn empty() -> Self {
+        Self {
+            pair: None,
+            output_index: 0,
+            bounds: None,
+        }
+    }
+
     pub(crate) fn view(&self) -> &wgpu::TextureView {
-        self.pair.view(self.output_index)
+        self.pair
+            .as_ref()
+            .expect("empty streaming cache has no texture view")
+            .view(self.output_index)
     }
 
     pub(crate) fn bounds(&self) -> Option<CanvasRect> {
@@ -79,7 +90,10 @@ impl RenderedStreamingCache {
     }
 
     fn byte_len(&self) -> usize {
-        self.pair.byte_len()
+        self.pair
+            .as_ref()
+            .map(StreamingTexturePair::byte_len)
+            .unwrap_or(0)
     }
 }
 

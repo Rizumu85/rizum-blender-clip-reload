@@ -5,7 +5,7 @@ use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_state::StreamingEncoder;
 use crate::{
     GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuNormalRasterSource,
-    GpuRasterResourceCache, GpuRenderError, GpuRenderer,
+    GpuNormalStackSource, GpuRasterResourceCache, GpuRenderError, GpuRenderer,
 };
 
 pub(crate) fn raster_view_with_provider<P>(
@@ -64,6 +64,93 @@ where
         .map(|size| CanvasRect::from_source(source.offset_x, source.offset_y, size, output_size))
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum KnownSourceActivity {
+    Empty,
+    Writes,
+    Unknown,
+}
+
+impl KnownSourceActivity {
+    pub(crate) fn is_empty(self) -> bool {
+        self == Self::Empty
+    }
+}
+
+pub(crate) fn known_stack_activity<P>(
+    provider: &P,
+    sources: &[GpuNormalStackSource],
+    output_size: CanvasSize,
+) -> KnownSourceActivity
+where
+    P: GpuNormalStackResourceProvider,
+{
+    let mut activity = KnownSourceActivity::Empty;
+    for source in sources {
+        match known_source_activity(provider, source, output_size) {
+            KnownSourceActivity::Writes => return KnownSourceActivity::Writes,
+            KnownSourceActivity::Unknown => activity = KnownSourceActivity::Unknown,
+            KnownSourceActivity::Empty => {}
+        }
+    }
+    activity
+}
+
+pub(crate) fn known_clipping_run_activity<P>(
+    provider: &P,
+    base: GpuNormalRasterSource,
+    output_size: CanvasSize,
+) -> KnownSourceActivity
+where
+    P: GpuNormalStackResourceProvider,
+{
+    known_raster_activity(provider, base, output_size)
+}
+
+fn known_source_activity<P>(
+    provider: &P,
+    source: &GpuNormalStackSource,
+    output_size: CanvasSize,
+) -> KnownSourceActivity
+where
+    P: GpuNormalStackResourceProvider,
+{
+    match source {
+        GpuNormalStackSource::Raster(raster) => {
+            known_raster_activity(provider, *raster, output_size)
+        }
+        GpuNormalStackSource::ClippingRun { base, .. } => {
+            known_clipping_run_activity(provider, *base, output_size)
+        }
+        GpuNormalStackSource::Container { children, .. }
+        | GpuNormalStackSource::ThroughGroup { children, .. } => {
+            known_stack_activity(provider, children, output_size)
+        }
+        GpuNormalStackSource::SolidColor { .. } | GpuNormalStackSource::LutFilter { .. } => {
+            if CanvasRect::full(output_size).is_some() {
+                KnownSourceActivity::Writes
+            } else {
+                KnownSourceActivity::Empty
+            }
+        }
+    }
+}
+
+fn known_raster_activity<P>(
+    provider: &P,
+    source: GpuNormalRasterSource,
+    output_size: CanvasSize,
+) -> KnownSourceActivity
+where
+    P: GpuNormalStackResourceProvider,
+{
+    match known_raster_source_bounds(provider, source, output_size) {
+        Some(Some(_)) => KnownSourceActivity::Writes,
+        Some(None) => KnownSourceActivity::Empty,
+        None => KnownSourceActivity::Unknown,
+    }
+}
+
 pub(crate) fn mask_view_with_provider<'a, P>(
     renderer: &GpuRenderer,
     provider: &mut P,
@@ -110,6 +197,144 @@ impl MaskTextureView<'_> {
         match self {
             Self::Borrowed(view) => view,
             Self::Owned(view) => view,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use clip_model::{CanvasSize, LayerId, Rgba8};
+
+    use super::{KnownSourceActivity, known_clipping_run_activity, known_stack_activity};
+    use crate::{
+        GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
+        GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError,
+        GpuRenderer,
+    };
+
+    struct SizeProvider {
+        sizes: HashMap<GpuRasterResourceKey, CanvasSize>,
+    }
+
+    impl SizeProvider {
+        fn new(sizes: &[(GpuRasterResourceKey, CanvasSize)]) -> Self {
+            Self {
+                sizes: sizes.iter().copied().collect(),
+            }
+        }
+    }
+
+    impl crate::stream::GpuNormalStackResourceProvider for SizeProvider {
+        type Error = GpuRenderError;
+
+        fn raster_resource(
+            &mut self,
+            _renderer: &GpuRenderer,
+            _source: GpuNormalRasterSource,
+        ) -> Result<GpuRasterResourceCache, Self::Error> {
+            unreachable!("activity checks must not request raster resources")
+        }
+
+        fn raster_resource_size(&self, source: GpuNormalRasterSource) -> Option<CanvasSize> {
+            self.sizes.get(&source.key).copied()
+        }
+
+        fn mask_resource(
+            &mut self,
+            _renderer: &GpuRenderer,
+            _key: GpuMaskResourceKey,
+        ) -> Result<GpuMaskResourceCache, Self::Error> {
+            unreachable!("activity checks must not request mask resources")
+        }
+    }
+
+    #[test]
+    fn off_canvas_container_stack_is_known_empty() {
+        let key = raster_key(1);
+        let provider = SizeProvider::new(&[(key, CanvasSize::new(8, 8))]);
+        let sources = vec![GpuNormalStackSource::Container {
+            children: vec![GpuNormalStackSource::Raster(raster_source(key, 40, 40))],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        }];
+
+        assert_eq!(
+            known_stack_activity(&provider, &sources, CanvasSize::new(32, 32)),
+            KnownSourceActivity::Empty
+        );
+    }
+
+    #[test]
+    fn unknown_raster_size_keeps_stack_activity_unknown() {
+        let provider = SizeProvider::new(&[]);
+        let sources = vec![GpuNormalStackSource::Raster(raster_source(
+            raster_key(1),
+            40,
+            40,
+        ))];
+
+        assert_eq!(
+            known_stack_activity(&provider, &sources, CanvasSize::new(32, 32)),
+            KnownSourceActivity::Unknown
+        );
+    }
+
+    #[test]
+    fn visible_solid_marks_stack_as_writing() {
+        let provider = SizeProvider::new(&[]);
+        let sources = vec![GpuNormalStackSource::SolidColor {
+            color: Rgba8 {
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
+            },
+            opacity: 1.0,
+        }];
+
+        assert_eq!(
+            known_stack_activity(&provider, &sources, CanvasSize::new(32, 32)),
+            KnownSourceActivity::Writes
+        );
+    }
+
+    #[test]
+    fn off_canvas_clipping_base_is_known_empty() {
+        let key = raster_key(1);
+        let provider = SizeProvider::new(&[(key, CanvasSize::new(8, 8))]);
+
+        assert_eq!(
+            known_clipping_run_activity(
+                &provider,
+                raster_source(key, -16, -16),
+                CanvasSize::new(8, 8),
+            ),
+            KnownSourceActivity::Empty
+        );
+    }
+
+    fn raster_source(
+        key: GpuRasterResourceKey,
+        offset_x: i32,
+        offset_y: i32,
+    ) -> GpuNormalRasterSource {
+        GpuNormalRasterSource {
+            key,
+            opacity: 1.0,
+            mask_key: None,
+            offset_x,
+            offset_y,
+            blend_mode: GpuRasterBlendMode::Normal,
+        }
+    }
+
+    fn raster_key(id: u32) -> GpuRasterResourceKey {
+        GpuRasterResourceKey {
+            layer_id: LayerId(id),
+            render_mipmap_id: id,
         }
     }
 }
