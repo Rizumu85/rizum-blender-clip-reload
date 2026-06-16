@@ -27,10 +27,6 @@ impl TileBlockSelection {
         self.count
     }
 
-    pub(crate) fn covers_all_tiles(self, expected_tile_count: usize) -> bool {
-        self.count == expected_tile_count
-    }
-
     pub(crate) fn contains(self, tile_index: usize) -> bool {
         let tile_x = tile_index % self.cols;
         let tile_y = tile_index / self.cols;
@@ -183,11 +179,24 @@ pub(crate) struct AlphaTileRegionWriter {
 }
 
 impl AlphaTileRegionWriter {
+    #[cfg(test)]
     pub(crate) fn new(width: u32, height: u32, region: Rect) -> Result<Self, ClipFileError> {
+        Self::new_with_fill(width, height, region, 0)
+    }
+
+    pub(crate) fn new_with_fill(
+        width: u32,
+        height: u32,
+        region: Rect,
+        fill: u8,
+    ) -> Result<Self, ClipFileError> {
         let region = validate_tile_region(width, height, region)?;
         let cols = tile_cols(width)?;
         let tile_count = checked_tile_count(width, height)?;
-        let pixels = alpha_output_buffer(region.width, region.height)?;
+        let mut pixels = alpha_output_buffer(region.width, region.height)?;
+        if fill != 0 {
+            pixels.fill(fill);
+        }
         Ok(Self {
             region,
             cols,

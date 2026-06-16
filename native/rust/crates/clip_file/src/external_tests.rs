@@ -5,7 +5,8 @@ use std::io::Write;
 use clip_model::Rect;
 
 use super::{
-    decode_external_tile_blocks, inspect_external_tile_blocks, visit_external_tile_block_selection,
+    decode_external_tile_blocks, inspect_external_tile_blocks,
+    visit_external_non_empty_tile_block_selection, visit_external_tile_block_selection,
 };
 use crate::tile_region::tile_block_selection_for_region;
 
@@ -71,7 +72,7 @@ fn block_stats_do_not_inflate_compressed_blocks() {
         empty_data_block(4),
     ]);
 
-    let stats = inspect_external_tile_blocks(&body, 4, 3).unwrap();
+    let stats = inspect_external_tile_blocks(&body, 4, 3, 3).unwrap();
 
     assert_eq!(stats.external_id, "external");
     assert_eq!(stats.block_count, 3);
@@ -79,6 +80,35 @@ fn block_stats_do_not_inflate_compressed_blocks() {
     assert_eq!(stats.empty_block_count, 1);
     assert_eq!(stats.uncompressed_bytes, 12);
     assert!(stats.compressed_bytes > 0);
+    let bounds = stats
+        .compressed_tile_bounds
+        .expect("compressed blocks should have bounds");
+    assert_eq!(bounds.tile_x, 0);
+    assert_eq!(bounds.tile_y, 0);
+    assert_eq!(bounds.tile_width, 2);
+    assert_eq!(bounds.tile_height, 1);
+}
+
+#[test]
+fn non_empty_tile_visitor_skips_empty_blocks_without_inflating_them() {
+    let body = external_body(&[compressed_data_block(&[1, 2, 3, 4]), empty_data_block(4)]);
+    let selection = tile_block_selection_for_region(512, 256, Rect::new(0, 0, 512, 256)).unwrap();
+    let mut visited = Vec::new();
+
+    let external_id = visit_external_non_empty_tile_block_selection(
+        &body,
+        4,
+        2,
+        selection,
+        |tile_index, bytes| {
+            visited.push((tile_index, bytes.to_vec()));
+            Ok(())
+        },
+    )
+    .unwrap();
+
+    assert_eq!(external_id, "external");
+    assert_eq!(visited, vec![(0, vec![1, 2, 3, 4])]);
 }
 
 fn external_body(blocks: &[Vec<u8>]) -> Vec<u8> {

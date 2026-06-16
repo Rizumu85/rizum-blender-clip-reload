@@ -5,7 +5,7 @@ use clip_model::{CanvasSize, LayerId, Rgba8};
 use crate::stream_bounds::CanvasRect;
 use crate::stream_resources::{
     KnownSourceActivity, known_clipped_sibling_activity, known_clipping_run_activity,
-    known_stack_activity, preserving_pass_bounds_for_change,
+    known_raster_source_bounds, known_stack_activity, preserving_pass_bounds_for_change,
 };
 use crate::{
     GpuClippedStackSource, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
@@ -15,13 +15,20 @@ use crate::{
 
 struct SizeProvider {
     sizes: HashMap<GpuRasterResourceKey, CanvasSize>,
+    offsets: HashMap<GpuRasterResourceKey, (i32, i32)>,
 }
 
 impl SizeProvider {
     fn new(sizes: &[(GpuRasterResourceKey, CanvasSize)]) -> Self {
         Self {
             sizes: sizes.iter().copied().collect(),
+            offsets: HashMap::new(),
         }
+    }
+
+    fn with_offsets(mut self, offsets: &[(GpuRasterResourceKey, (i32, i32))]) -> Self {
+        self.offsets = offsets.iter().copied().collect();
+        self
     }
 }
 
@@ -40,6 +47,10 @@ impl crate::stream::GpuNormalStackResourceProvider for SizeProvider {
         self.sizes.get(&source.key).copied()
     }
 
+    fn raster_resource_offset(&self, source: GpuNormalRasterSource) -> Option<(i32, i32)> {
+        self.offsets.get(&source.key).copied()
+    }
+
     fn mask_resource(
         &mut self,
         _renderer: &GpuRenderer,
@@ -47,6 +58,23 @@ impl crate::stream::GpuNormalStackResourceProvider for SizeProvider {
     ) -> Result<GpuMaskResourceCache, Self::Error> {
         unreachable!("activity checks must not request mask resources")
     }
+}
+
+#[test]
+fn known_raster_bounds_use_provider_offset() {
+    let key = raster_key(1);
+    let provider =
+        SizeProvider::new(&[(key, CanvasSize::new(4, 5))]).with_offsets(&[(key, (6, 7))]);
+
+    assert_eq!(
+        known_raster_source_bounds(&provider, raster_source(key, 1, 1), CanvasSize::new(20, 20)),
+        Some(Some(CanvasRect {
+            x: 6,
+            y: 7,
+            width: 4,
+            height: 5,
+        }))
+    );
 }
 
 #[test]

@@ -5,6 +5,8 @@ use clip_model::{CanvasSize, LayerId};
 
 use crate::{RuntimeError, source_crop};
 
+mod sparse;
+
 #[derive(Clone, Debug)]
 struct PlannedRasterResourceMeta {
     render_node_id: RenderNodeId,
@@ -66,6 +68,8 @@ pub(crate) struct RuntimeGpuResourceProvider<'a> {
     container: &'a clip_file::container::ClipContainer,
     canvas: CanvasSize,
     plan: GpuResourcePlan,
+    raster_regions:
+        HashMap<clip_gpu::GpuRasterResourceKey, Option<source_crop::RasterSourceDecodeRegion>>,
     raster_offsets: HashMap<clip_gpu::GpuRasterResourceKey, (i32, i32)>,
     pub(crate) mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
     reported_masks: HashSet<clip_gpu::GpuMaskResourceKey>,
@@ -76,15 +80,17 @@ impl<'a> RuntimeGpuResourceProvider<'a> {
         container: &'a clip_file::container::ClipContainer,
         canvas: CanvasSize,
         plan: GpuResourcePlan,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, RuntimeError> {
+        let raster_regions = sparse::planned_sparse_raster_regions(container, canvas, &plan)?;
+        Ok(Self {
             container,
             canvas,
             plan,
+            raster_regions,
             raster_offsets: HashMap::new(),
             mask_resources: Vec::new(),
             reported_masks: HashSet::new(),
-        }
+        })
     }
 }
 
@@ -92,6 +98,11 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
     type Error = RuntimeError;
 
     fn raster_resource_size(&self, source: clip_gpu::GpuNormalRasterSource) -> Option<CanvasSize> {
+        if let Some(region) = self.sparse_region_for_source(source) {
+            return Some(region.map_or(CanvasSize::new(0, 0), |region| {
+                CanvasSize::new(region.source_rect.width, region.source_rect.height)
+            }));
+        }
         self.plan
             .rasters
             .get(&source.key)
@@ -102,6 +113,9 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         &self,
         source: clip_gpu::GpuNormalRasterSource,
     ) -> Option<(i32, i32)> {
+        if let Some(Some(region)) = self.sparse_region_for_source(source) {
+            return Some((region.offset_x, region.offset_y));
+        }
         self.raster_offsets.get(&source.key).copied()
     }
 
@@ -116,13 +130,9 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
                 render_mipmap_id: source.key.render_mipmap_id,
             })
         })?;
-        let visible = source_crop::visible_raster_source_decode_region(
-            meta.source.pixel_size,
-            meta.source.offset_x,
-            meta.source.offset_y,
-            self.canvas,
-        )?
-        .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
+        let visible = self
+            .decode_region_for_source(source, &meta.source)?
+            .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
         let image = clip_file::read_resolved_raster_layer_source_rgba_region_from_container(
             self.container,
             &meta.source,
@@ -172,6 +182,34 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             }
         }
         Ok(cache)
+    }
+}
+
+impl RuntimeGpuResourceProvider<'_> {
+    fn sparse_region_for_source(
+        &self,
+        source: clip_gpu::GpuNormalRasterSource,
+    ) -> Option<Option<source_crop::RasterSourceDecodeRegion>> {
+        self.raster_regions.get(&source.key).copied()
+    }
+
+    fn decode_region_for_source(
+        &self,
+        source: clip_gpu::GpuNormalRasterSource,
+        metadata: &clip_file::metadata::RasterLayerSource,
+    ) -> Result<Option<source_crop::RasterSourceDecodeRegion>, RuntimeError> {
+        if let Some(Some(region)) = self.sparse_region_for_source(source) {
+            return Ok(Some(region));
+        }
+        if matches!(self.sparse_region_for_source(source), Some(None)) {
+            return Ok(None);
+        }
+        Ok(source_crop::visible_raster_source_decode_region(
+            metadata.pixel_size,
+            metadata.offset_x,
+            metadata.offset_y,
+            self.canvas,
+        )?)
     }
 }
 
@@ -248,13 +286,7 @@ fn read_mask_payload_for_upload(
     canvas: CanvasSize,
     source: &clip_file::metadata::MaskLayerSource,
 ) -> Result<MaskUploadPayload, RuntimeError> {
-    let Some(visible) = source_crop::visible_raster_source_decode_region(
-        source.pixel_size,
-        source.offset_x,
-        source.offset_y,
-        canvas,
-    )?
-    else {
+    let Some(visible) = sparse::sparse_mask_source_decode_region(container, canvas, source)? else {
         return Ok(MaskUploadPayload {
             image: clip_file::tiles::AlphaTileImage {
                 width: 1,

@@ -83,6 +83,9 @@ fn load_source(texel: vec2<i32>) -> vec4<f32> {
         source_texel.x >= i32(source_size.x) ||
         source_texel.y >= i32(source_size.y)
     ) {
+        if (source_params.source_kind == 2u) {
+            return vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        }
         return vec4<f32>(1.0, 1.0, 1.0, 0.0);
     }
     return textureLoad(source_texture, source_texel, 0);

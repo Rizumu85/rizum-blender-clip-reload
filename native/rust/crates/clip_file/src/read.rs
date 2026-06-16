@@ -4,7 +4,7 @@ use clip_model::{CanvasSize, LayerId, Rect};
 
 use crate::ClipFileError;
 use crate::container::ClipContainer;
-use crate::external::{decode_external_tile_blob, visit_external_tile_block_selection};
+use crate::external::{decode_external_tile_blob, visit_external_non_empty_tile_block_selection};
 use crate::metadata::{
     self, read_mask_layer_source_from_sqlite, read_raster_layer_source_from_sqlite,
 };
@@ -15,8 +15,7 @@ use crate::tile_region::{
 use crate::tiles::{
     AlphaTileImage, GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES,
     RgbaTileImage, alpha_tile_blob_len, decode_alpha_tiles, decode_gray_rgba_tiles,
-    decode_gray_rgba_tiles_region, decode_mono_rgba_tiles, decode_mono_rgba_tiles_region,
-    decode_rgba_tiles, decode_rgba_tiles_region, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len,
+    decode_mono_rgba_tiles, decode_rgba_tiles, gray_rgba_tile_blob_len, mono_rgba_tile_blob_len,
     rgba_tile_blob_len,
 };
 
@@ -212,14 +211,14 @@ fn decode_mask_source_alpha_region(
         source_region,
     )?;
     let expected_tile_count = expected_len / MASK_TILE_BYTES;
-    let mut writer = AlphaTileRegionWriter::new(
+    let mut writer = AlphaTileRegionWriter::new_with_fill(
         source.pixel_size.width,
         source.pixel_size.height,
         source_region,
-    )?;
-    visit_external_tile_block_selection(
-        body,
         source.empty_fill,
+    )?;
+    visit_external_non_empty_tile_block_selection(
+        body,
         MASK_TILE_BYTES,
         expected_tile_count,
         tile_selection,
@@ -305,39 +304,13 @@ fn decode_raster_source_rgba_region(
         source_region,
     )?;
     let expected_tile_count = expected_len / per_tile_len;
-    if tile_selection.covers_all_tiles(expected_tile_count) {
-        let blob = decode_external_tile_blob(body, 0, Some(expected_len))?;
-        return match color_type {
-            0 => decode_rgba_tiles_region(
-                &blob.bytes,
-                source.pixel_size.width,
-                source.pixel_size.height,
-                source_region,
-            ),
-            1 => decode_gray_rgba_tiles_region(
-                &blob.bytes,
-                source.pixel_size.width,
-                source.pixel_size.height,
-                source_region,
-            ),
-            2 => decode_mono_rgba_tiles_region(
-                &blob.bytes,
-                source.pixel_size.width,
-                source.pixel_size.height,
-                source_region,
-            ),
-            _ => unreachable!("unsupported raster color type should have returned earlier"),
-        };
-    }
-
     let mut writer = TileRegionWriter::new(
         source.pixel_size.width,
         source.pixel_size.height,
         source_region,
     )?;
-    visit_external_tile_block_selection(
+    visit_external_non_empty_tile_block_selection(
         body,
-        0,
         per_tile_len,
         expected_tile_count,
         tile_selection,

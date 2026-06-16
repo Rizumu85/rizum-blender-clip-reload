@@ -246,7 +246,7 @@ impl ClipSession {
 
         let renderer = clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?;
         let mut provider =
-            RuntimeGpuResourceProvider::new(&self.container, self.summary.canvas, resource_plan);
+            RuntimeGpuResourceProvider::new(&self.container, self.summary.canvas, resource_plan)?;
         let output = renderer.draw_normal_stack_with_provider_to_rgba8(
             self.summary.canvas,
             &sources,

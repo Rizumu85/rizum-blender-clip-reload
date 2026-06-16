@@ -60,6 +60,14 @@ fn tile_silo_options() -> StrictRasterStackOptions {
     }
 }
 
+fn tile_cols(width: u32) -> Result<usize, RuntimeError> {
+    let cols = width
+        .checked_add(clip_file::tiles::TILE_SIZE as u32 - 1)
+        .map(|width| width / clip_file::tiles::TILE_SIZE as u32)
+        .ok_or(clip_file::ClipFileError::TileSizeOverflow)?;
+    Ok(usize::try_from(cols).map_err(|_| clip_file::ClipFileError::TileSizeOverflow)?)
+}
+
 struct TileSiloEstimateBuilder<'a> {
     session: &'a ClipSession,
     result: NativeTileSiloEstimateResult,
@@ -344,7 +352,12 @@ impl<'a> TileSiloEstimateBuilder<'a> {
                 .into());
             }
         };
-        let stats = self.inspect_source_blocks(&source.external_id, per_tile_len, expected_len)?;
+        let stats = self.inspect_source_blocks(
+            &source.external_id,
+            source.pixel_size.width,
+            per_tile_len,
+            expected_len,
+        )?;
         self.result.raster_compressed_tile_slot_count += stats.compressed_block_count as u64;
         self.result.raster_empty_tile_slot_count += stats.empty_block_count as u64;
         self.result.external_compressed_bytes += stats.compressed_bytes;
@@ -356,8 +369,12 @@ impl<'a> TileSiloEstimateBuilder<'a> {
         source: &clip_file::metadata::MaskLayerSource,
     ) -> Result<(), RuntimeError> {
         let expected_len = alpha_tile_blob_len(source.pixel_size.width, source.pixel_size.height)?;
-        let stats =
-            self.inspect_source_blocks(&source.external_id, MASK_TILE_BYTES, expected_len)?;
+        let stats = self.inspect_source_blocks(
+            &source.external_id,
+            source.pixel_size.width,
+            MASK_TILE_BYTES,
+            expected_len,
+        )?;
         self.result.mask_compressed_tile_slot_count += stats.compressed_block_count as u64;
         self.result.mask_empty_tile_slot_count += stats.empty_block_count as u64;
         self.result.external_compressed_bytes += stats.compressed_bytes;
@@ -367,6 +384,7 @@ impl<'a> TileSiloEstimateBuilder<'a> {
     fn inspect_source_blocks(
         &self,
         external_id: &str,
+        source_width: u32,
         per_tile_len: usize,
         expected_len: usize,
     ) -> Result<clip_file::external::ExternalTileBlockStats, RuntimeError> {
@@ -380,6 +398,7 @@ impl<'a> TileSiloEstimateBuilder<'a> {
             body,
             per_tile_len,
             expected_tile_count,
+            tile_cols(source_width)?,
         )?)
     }
 

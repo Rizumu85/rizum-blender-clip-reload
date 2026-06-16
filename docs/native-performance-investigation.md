@@ -102,12 +102,48 @@ Sample estimates with `tile_size=256`:
   tiles `924`, raster empty tiles `54651`, mask compressed tiles `2`, semantic
   barriers `47`, collapsible raster/clipping segments `42`.
 
-Conclusion: the first high-leverage implementation should build an external
-tile-block atlas that uploads compressed-present raster/mask tiles and treats
-empty tiles as fill/transparent records, then add tile-local work lists for
-collapsing raster/clipping stretches. The pass-collapse side still matters, but
-the block-level evidence says empty-tile skipping is the first order-of-magnitude
-piece to validate in code.
+Conclusion: the first high-leverage implementation should use compressed tile
+occupancy as the runtime source bounds before attempting a broader tile-silo
+renderer. The pass-collapse side still matters, but the block-level evidence
+says empty-tile skipping is the first order-of-magnitude piece to validate in
+code.
+
+## First Implementation Milestone
+
+The first sparse-tile milestone is implemented in the native render path:
+
+- `clip_file` region readers stream only non-empty CHNKExta tile blocks into
+  prefilled raster/mask region writers. Empty blocks are treated as transparent
+  or mask-fill records and are no longer inflated or copied.
+- `clip_runtime` precomputes each planned raster/mask source's compressed tile
+  bounds, decodes/uploads only that cropped region, and exposes the cropped
+  offset/size to streaming bounds. All-empty raster sources become known empty
+  before decode/upload.
+- Raster source shaders distinguish real raster textures from generated/cache
+  textures. Samples outside cropped raster uploads return transparent black,
+  preserving `.clip` raster empty-tile semantics, while generated/cache
+  textures keep transparent white.
+- Streaming cache allocation stays sparse-resource-bounded. A temporary
+  full-metadata bounds experiment preserved `Test_AddGlowMultiply` but made
+  `Ref_Terra404_Live2D` hit wgpu OOM; the accepted shape is cropped upload plus
+  cropped cache/pass bounds with the raster-source transparent-black sampling
+  rule.
+
+Verification after the milestone:
+
+- `Test_Clipping`, `Test_ClippingEdge`, and `Test_FolderNested`: exact.
+- `Test_Mask`: `raw_max=1`, `premul_max=1`.
+- `Test_AddGlowMultiply`: `raw_max=5`, `premul_max=3`.
+- `Test_ToneCurve`: `raw_max=17`, `premul_max=17`.
+- `Test_Gradiation`: `raw_max=10`, `premul_max=10`.
+- `Test_RealArt.clip --compare-png Test_RealArt.png` release: `raw_max=5`,
+  `premul_max=2`, 3.466s on this machine, down from the prior roughly 48s.
+- `Ref_Terra404_Live2D.clip --compare-png Ref_Terra404_Live2D.png` release:
+  no wgpu OOM, `premul_max=5`, 4.756s on this machine.
+
+Next quantity-level work is tile-local work lists and pass collapse for
+raster/clipping stretches. Filters, THROUGH groups, and isolated containers
+remain semantic barriers until faithful tile-local models exist.
 
 ## Non-Goals
 

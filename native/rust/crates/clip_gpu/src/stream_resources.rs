@@ -50,7 +50,8 @@ where
         offset_y,
         ..source
     };
-    let bounds = CanvasRect::from_source(offset_x, offset_y, info.size, output_size);
+    let bounds_size = provider.raster_resource_size(source).unwrap_or(info.size);
+    let bounds = CanvasRect::from_source(offset_x, offset_y, bounds_size, output_size);
     let view = resource
         .texture()
         .create_view(&wgpu::TextureViewDescriptor::default());
@@ -85,9 +86,12 @@ pub(crate) fn known_raster_source_bounds<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    provider
-        .raster_resource_size(source)
-        .map(|size| CanvasRect::from_source(source.offset_x, source.offset_y, size, output_size))
+    provider.raster_resource_size(source).map(|size| {
+        let (offset_x, offset_y) = provider
+            .raster_resource_offset(source)
+            .unwrap_or((source.offset_x, source.offset_y));
+        CanvasRect::from_source(offset_x, offset_y, size, output_size)
+    })
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

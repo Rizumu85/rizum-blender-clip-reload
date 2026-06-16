@@ -26,7 +26,7 @@ pub(crate) fn raster_source_uniform_bytes_with_target_origin_and_mask(
     normal_source_uniform_bytes(
         [0.0, 0.0, 0.0, 0.0],
         source.opacity,
-        0,
+        2,
         u32::from(source.mask_key.is_some()),
         blend_kind(source.blend_mode),
         source.offset_x,
