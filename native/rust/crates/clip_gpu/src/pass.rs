@@ -10,8 +10,8 @@ use crate::source_params::{
 };
 use crate::stream_bounds::CanvasRect;
 use crate::types::{
-    GpuNormalRasterSource, GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode,
-    GpuRasterDrawOutput, GpuRasterStackOutput,
+    GpuClippedStackSource, GpuNormalRasterSource, GpuNormalStackChunk, GpuNormalStackSource,
+    GpuRasterBlendMode, GpuRasterDrawOutput, GpuRasterStackOutput,
 };
 use crate::validation::validate_normal_stack_sources;
 use crate::{
@@ -469,6 +469,13 @@ impl GpuRenderer {
                         alpha_pipeline,
                         clipped_pipeline,
                         clipped_byte_pipeline,
+                        through_pipeline,
+                        add_glow_pipeline,
+                        color_dodge_pipeline,
+                        color_burn_pipeline,
+                        glow_dodge_pipeline,
+                        standard_blend_pipeline,
+                        lut_filter_pipeline,
                         encoder,
                     )?;
                     let mask_view = accum_textures[previous_index]
@@ -695,12 +702,19 @@ impl GpuRenderer {
         mask_cache: Option<&GpuMaskResourceCache>,
         output_size: CanvasSize,
         base: GpuNormalRasterSource,
-        clipped: &[GpuNormalRasterSource],
+        clipped: &[GpuClippedStackSource],
         fallback_texture: &wgpu::Texture,
         bind_group_layout: &wgpu::BindGroupLayout,
         alpha_pipeline: &wgpu::RenderPipeline,
         clipped_pipeline: &wgpu::RenderPipeline,
         clipped_byte_pipeline: &wgpu::RenderPipeline,
+        through_pipeline: &wgpu::RenderPipeline,
+        add_glow_pipeline: &wgpu::RenderPipeline,
+        color_dodge_pipeline: &wgpu::RenderPipeline,
+        color_burn_pipeline: &wgpu::RenderPipeline,
+        glow_dodge_pipeline: &wgpu::RenderPipeline,
+        standard_blend_pipeline: &wgpu::RenderPipeline,
+        lut_filter_pipeline: &wgpu::RenderPipeline,
         encoder: &mut wgpu::CommandEncoder,
     ) -> Result<wgpu::TextureView, GpuRenderError> {
         let clipping_usage =
@@ -755,29 +769,28 @@ impl GpuRenderer {
         }
 
         for clipped_source in clipped {
-            let source_view = raster_texture_view(cache, *clipped_source)?;
-            let previous_view = clipping_textures[previous_index]
-                .create_view(&wgpu::TextureViewDescriptor::default());
-            let output_view =
-                clipping_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
-            let mask_view = mask_texture_view(mask_cache, *clipped_source, fallback_texture)?;
-            encode_normal_source_pass(
-                &self.context.device,
-                encoder,
-                clipped_source_pipeline(
-                    clipped_source.blend_mode,
-                    clipped_pipeline,
-                    clipped_byte_pipeline,
-                ),
+            self.encode_clipped_stack_source(
+                cache,
+                mask_cache,
+                output_size,
+                clipped_source,
+                fallback_texture,
                 bind_group_layout,
-                &source_view,
-                &previous_view,
-                &mask_view,
-                &output_view,
-                raster_source_uniform_bytes(*clipped_source),
-                "rizum_clip_clipping_run_clipped_pass",
-            );
-            std::mem::swap(&mut previous_index, &mut next_index);
+                alpha_pipeline,
+                clipped_pipeline,
+                clipped_byte_pipeline,
+                through_pipeline,
+                add_glow_pipeline,
+                color_dodge_pipeline,
+                color_burn_pipeline,
+                glow_dodge_pipeline,
+                standard_blend_pipeline,
+                lut_filter_pipeline,
+                &clipping_textures,
+                &mut previous_index,
+                &mut next_index,
+                encoder,
+            )?;
         }
 
         Ok(clipping_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default()))
@@ -792,7 +805,7 @@ impl GpuRenderer {
         children: &[GpuNormalStackSource],
         opacity: f32,
         mask_key: Option<GpuMaskResourceKey>,
-        clipped: &[GpuNormalRasterSource],
+        clipped: &[GpuClippedStackSource],
         fallback_texture: &wgpu::Texture,
         bind_group_layout: &wgpu::BindGroupLayout,
         alpha_pipeline: &wgpu::RenderPipeline,
@@ -882,32 +895,133 @@ impl GpuRenderer {
         }
 
         for clipped_source in clipped {
-            let source_view = raster_texture_view(cache, *clipped_source)?;
-            let previous_view = clipping_textures[previous_index]
-                .create_view(&wgpu::TextureViewDescriptor::default());
-            let output_view =
-                clipping_textures[next_index].create_view(&wgpu::TextureViewDescriptor::default());
-            let mask_view = mask_texture_view(mask_cache, *clipped_source, fallback_texture)?;
-            encode_normal_source_pass(
-                &self.context.device,
-                encoder,
-                clipped_source_pipeline(
-                    clipped_source.blend_mode,
-                    clipped_pipeline,
-                    clipped_byte_pipeline,
-                ),
+            self.encode_clipped_stack_source(
+                cache,
+                mask_cache,
+                output_size,
+                clipped_source,
+                fallback_texture,
                 bind_group_layout,
-                &source_view,
-                &previous_view,
-                &mask_view,
-                &output_view,
-                raster_source_uniform_bytes(*clipped_source),
-                "rizum_clip_container_clipping_clipped_pass",
-            );
-            std::mem::swap(&mut previous_index, &mut next_index);
+                alpha_pipeline,
+                clipped_pipeline,
+                clipped_byte_pipeline,
+                through_pipeline,
+                add_glow_pipeline,
+                color_dodge_pipeline,
+                color_burn_pipeline,
+                glow_dodge_pipeline,
+                standard_blend_pipeline,
+                lut_filter_pipeline,
+                &clipping_textures,
+                &mut previous_index,
+                &mut next_index,
+                encoder,
+            )?;
         }
 
         Ok(clipping_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default()))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn encode_clipped_stack_source(
+        &self,
+        cache: &GpuRasterResourceCache,
+        mask_cache: Option<&GpuMaskResourceCache>,
+        output_size: CanvasSize,
+        clipped_source: &GpuClippedStackSource,
+        fallback_texture: &wgpu::Texture,
+        bind_group_layout: &wgpu::BindGroupLayout,
+        alpha_pipeline: &wgpu::RenderPipeline,
+        clipped_pipeline: &wgpu::RenderPipeline,
+        clipped_byte_pipeline: &wgpu::RenderPipeline,
+        through_pipeline: &wgpu::RenderPipeline,
+        add_glow_pipeline: &wgpu::RenderPipeline,
+        color_dodge_pipeline: &wgpu::RenderPipeline,
+        color_burn_pipeline: &wgpu::RenderPipeline,
+        glow_dodge_pipeline: &wgpu::RenderPipeline,
+        standard_blend_pipeline: &wgpu::RenderPipeline,
+        lut_filter_pipeline: &wgpu::RenderPipeline,
+        clipping_textures: &[wgpu::Texture; 2],
+        previous_index: &mut usize,
+        next_index: &mut usize,
+        encoder: &mut wgpu::CommandEncoder,
+    ) -> Result<(), GpuRenderError> {
+        match clipped_source {
+            GpuClippedStackSource::Raster(raster) => {
+                let source_view = raster_texture_view(cache, *raster)?;
+                let previous_view = clipping_textures[*previous_index]
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let output_view = clipping_textures[*next_index]
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let mask_view = mask_texture_view(mask_cache, *raster, fallback_texture)?;
+                encode_normal_source_pass(
+                    &self.context.device,
+                    encoder,
+                    clipped_source_pipeline(
+                        raster.blend_mode,
+                        clipped_pipeline,
+                        clipped_byte_pipeline,
+                    ),
+                    bind_group_layout,
+                    &source_view,
+                    &previous_view,
+                    &mask_view,
+                    &output_view,
+                    raster_source_uniform_bytes(*raster),
+                    "rizum_clip_clipping_run_clipped_raster_pass",
+                );
+            }
+            GpuClippedStackSource::Container {
+                children,
+                opacity,
+                mask_key,
+                blend_mode,
+                ..
+            } => {
+                let source_view = self.render_container_source(
+                    cache,
+                    mask_cache,
+                    output_size,
+                    children,
+                    fallback_texture,
+                    bind_group_layout,
+                    alpha_pipeline,
+                    clipped_pipeline,
+                    clipped_byte_pipeline,
+                    through_pipeline,
+                    add_glow_pipeline,
+                    color_dodge_pipeline,
+                    color_burn_pipeline,
+                    glow_dodge_pipeline,
+                    standard_blend_pipeline,
+                    lut_filter_pipeline,
+                    encoder,
+                )?;
+                let previous_view = clipping_textures[*previous_index]
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let output_view = clipping_textures[*next_index]
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let mask_view = source_mask_texture_view(mask_cache, *mask_key, fallback_texture)?;
+                encode_normal_source_pass(
+                    &self.context.device,
+                    encoder,
+                    clipped_source_pipeline(*blend_mode, clipped_pipeline, clipped_byte_pipeline),
+                    bind_group_layout,
+                    &source_view,
+                    &previous_view,
+                    &mask_view,
+                    &output_view,
+                    generated_raster_source_uniform_bytes_with_blend(
+                        *opacity,
+                        mask_key.is_some(),
+                        *blend_mode,
+                    ),
+                    "rizum_clip_clipping_run_clipped_container_pass",
+                );
+            }
+        }
+        std::mem::swap(previous_index, next_index);
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -998,6 +1112,13 @@ impl GpuRenderer {
                         alpha_pipeline,
                         clipped_pipeline,
                         clipped_byte_pipeline,
+                        through_pipeline,
+                        add_glow_pipeline,
+                        color_dodge_pipeline,
+                        color_burn_pipeline,
+                        glow_dodge_pipeline,
+                        standard_blend_pipeline,
+                        lut_filter_pipeline,
                         encoder,
                     )?;
                     let mask_view =
@@ -1303,6 +1424,13 @@ impl GpuRenderer {
                         alpha_pipeline,
                         clipped_pipeline,
                         clipped_byte_pipeline,
+                        through_pipeline,
+                        add_glow_pipeline,
+                        color_dodge_pipeline,
+                        color_burn_pipeline,
+                        glow_dodge_pipeline,
+                        standard_blend_pipeline,
+                        lut_filter_pipeline,
                         encoder,
                     )?;
                     let mask_view =
@@ -2022,8 +2150,9 @@ mod tests {
     use clip_model::{CanvasSize, LayerId, Rgba8};
 
     use crate::{
-        GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource, GpuRasterBlendMode,
-        GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload, GpuRenderer,
+        GpuClippedStackSource, GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource,
+        GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload,
+        GpuRenderer,
     };
 
     #[test]
@@ -2325,14 +2454,14 @@ mod tests {
                     offset_y: 0,
                     blend_mode: GpuRasterBlendMode::AddGlow,
                 },
-                clipped: vec![GpuNormalRasterSource {
+                clipped: vec![GpuClippedStackSource::Raster(GpuNormalRasterSource {
                     key: clipped_key,
                     opacity: 1.0,
                     mask_key: None,
                     offset_x: 0,
                     offset_y: 0,
                     blend_mode: GpuRasterBlendMode::Multiply,
-                }],
+                })],
             },
         ];
 
@@ -2403,7 +2532,7 @@ mod tests {
                     offset_y: 0,
                     blend_mode: GpuRasterBlendMode::AddGlow,
                 },
-                clipped: vec![clipped],
+                clipped: vec![GpuClippedStackSource::Raster(clipped)],
             },
         ];
         let container_base_sources = [
@@ -2420,7 +2549,7 @@ mod tests {
                 opacity: 1.0,
                 mask_key: None,
                 blend_mode: GpuRasterBlendMode::AddGlow,
-                clipped: vec![clipped],
+                clipped: vec![GpuClippedStackSource::Raster(clipped)],
             },
         ];
 
@@ -2488,14 +2617,14 @@ mod tests {
                     offset_y: 0,
                     blend_mode: GpuRasterBlendMode::Normal,
                 },
-                clipped: vec![GpuNormalRasterSource {
+                clipped: vec![GpuClippedStackSource::Raster(GpuNormalRasterSource {
                     key: clipped_key,
                     opacity: 1.0,
                     mask_key: None,
                     offset_x: 0,
                     offset_y: 0,
                     blend_mode,
-                }],
+                })],
             }];
 
             let output = renderer

@@ -15,44 +15,17 @@ use crate::stream_bounds::CanvasRect;
 use crate::stream_effects::source_can_affect_output;
 use crate::stream_groups::{
     render_clipping_run_with_provider, render_container_clipping_run_with_provider,
-    render_container_with_provider, render_through_group_with_provider,
+    render_container_with_provider,
 };
+pub use crate::stream_provider::GpuNormalStackResourceProvider;
 use crate::stream_resources::{
     known_clipped_sibling_activity, known_raster_source_bounds, mask_view_with_provider,
     pass_bounds_for_change, raster_view_with_provider,
 };
 use crate::stream_state::{StreamingEncoder, StreamingTexturePair};
-use crate::{
-    GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
-    GpuNormalStackSource, GpuRasterResourceCache, GpuRasterStackOutput, GpuRenderError,
-    GpuRenderer,
-};
-
-pub trait GpuNormalStackResourceProvider {
-    type Error: From<GpuRenderError>;
-
-    fn raster_resource(
-        &mut self,
-        renderer: &GpuRenderer,
-        source: GpuNormalRasterSource,
-    ) -> Result<GpuRasterResourceCache, Self::Error>;
-
-    fn raster_resource_size(&self, source: GpuNormalRasterSource) -> Option<CanvasSize> {
-        let _ = source;
-        None
-    }
-
-    fn raster_resource_offset(&self, source: GpuNormalRasterSource) -> Option<(i32, i32)> {
-        let _ = source;
-        None
-    }
-
-    fn mask_resource(
-        &mut self,
-        renderer: &GpuRenderer,
-        key: GpuMaskResourceKey,
-    ) -> Result<GpuMaskResourceCache, Self::Error>;
-}
+use crate::stream_through::render_through_group_with_provider;
+use crate::stream_utils::{local_pass_bounds, lut_filter_label, renderer_context_queue};
+use crate::{GpuNormalStackSource, GpuRasterStackOutput, GpuRenderError, GpuRenderer};
 
 impl GpuRenderer {
     pub fn draw_normal_stack_with_provider_to_rgba8<P>(
@@ -265,6 +238,7 @@ where
                 output_size,
                 *base,
                 clipped,
+                fallback_texture,
                 pipelines,
             )?;
             let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, clipping_cache.bounds())
@@ -521,23 +495,4 @@ where
             Ok(true)
         }
     }
-}
-
-fn renderer_context_queue(renderer: &GpuRenderer) -> &wgpu::Queue {
-    &renderer.context.queue
-}
-
-fn lut_filter_label(filter_mode: GpuLutFilterMode) -> &'static str {
-    match filter_mode {
-        GpuLutFilterMode::ToneCurveRgb => "rizum_clip_provider_tone_curve_pass",
-        GpuLutFilterMode::GradientMapLum => "rizum_clip_provider_gradient_map_pass",
-        GpuLutFilterMode::ThresholdLum => "rizum_clip_provider_threshold_pass",
-        GpuLutFilterMode::Hsl(_) => "rizum_clip_provider_hsl_filter_pass",
-    }
-}
-
-fn local_pass_bounds(pass_bounds: CanvasRect, target_origin: (i32, i32)) -> CanvasRect {
-    pass_bounds
-        .translate_to_local(target_origin)
-        .expect("global pass bounds must fit inside the streaming target")
 }

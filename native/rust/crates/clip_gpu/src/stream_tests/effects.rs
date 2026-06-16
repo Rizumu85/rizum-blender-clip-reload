@@ -3,8 +3,8 @@ use clip_model::{CanvasSize, Rgba8};
 
 use super::common::*;
 use crate::{
-    GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource, GpuRasterBlendMode,
-    GpuRasterResourceKey, GpuRenderer,
+    GpuClippedStackSource, GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource,
+    GpuRasterBlendMode, GpuRasterResourceKey, GpuRenderer,
 };
 
 #[test]
@@ -87,7 +87,9 @@ fn streamed_zero_opacity_clipped_sibling_skips_provider_request() {
     ]);
     let sources = [GpuNormalStackSource::ClippingRun {
         base: raster_source(base_key),
-        clipped: vec![raster_source_at_with_opacity(clipped_key, 1, 1, 0.0)],
+        clipped: vec![GpuClippedStackSource::Raster(
+            raster_source_at_with_opacity(clipped_key, 1, 1, 0.0),
+        )],
     }];
 
     let output = renderer
@@ -131,7 +133,7 @@ fn streamed_ineffective_clipping_run_matches_direct_base() {
         background,
         GpuNormalStackSource::ClippingRun {
             base,
-            clipped: vec![clipped],
+            clipped: vec![GpuClippedStackSource::Raster(clipped)],
         },
     ];
     let mut direct_provider = clipping_run_provider(base_key, clipped_key);

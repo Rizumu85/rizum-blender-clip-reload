@@ -1,4 +1,4 @@
-use clip_model::{CanvasSize, Rgba8};
+use clip_model::{CanvasSize, LayerId, Rgba8};
 
 use crate::{
     GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterResourceCache, GpuRasterResourceInfo,
@@ -34,6 +34,18 @@ pub struct GpuNormalRasterSource {
     pub offset_x: i32,
     pub offset_y: i32,
     pub blend_mode: GpuRasterBlendMode,
+}
+
+#[derive(Clone, Debug)]
+pub enum GpuClippedStackSource {
+    Raster(GpuNormalRasterSource),
+    Container {
+        layer_id: LayerId,
+        children: Vec<GpuNormalStackSource>,
+        opacity: f32,
+        mask_key: Option<GpuMaskResourceKey>,
+        blend_mode: GpuRasterBlendMode,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -88,14 +100,14 @@ pub enum GpuNormalStackSource {
     Raster(GpuNormalRasterSource),
     ClippingRun {
         base: GpuNormalRasterSource,
-        clipped: Vec<GpuNormalRasterSource>,
+        clipped: Vec<GpuClippedStackSource>,
     },
     ContainerClippingRun {
         children: Vec<GpuNormalStackSource>,
         opacity: f32,
         mask_key: Option<GpuMaskResourceKey>,
         blend_mode: GpuRasterBlendMode,
-        clipped: Vec<GpuNormalRasterSource>,
+        clipped: Vec<GpuClippedStackSource>,
     },
     Container {
         children: Vec<GpuNormalStackSource>,

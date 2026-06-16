@@ -1,23 +1,23 @@
 use clip_model::CanvasSize;
 
-use crate::blend::clipped_source_pipeline;
 use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
 use crate::source_params::{
-    generated_raster_source_uniform_bytes_with_blend_and_origins,
     generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
     raster_source_uniform_bytes_with_target_origin_and_mask,
 };
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
-use crate::stream_bounds::{CanvasRect, union_optional};
-use crate::stream_effects::raster_can_affect_output;
+use crate::stream_bounds::CanvasRect;
+use crate::stream_clipping::encode_clipped_stack_source_with_provider;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_resources::{
-    known_clipping_run_activity, known_raster_source_bounds, known_stack_activity,
-    mask_view_with_provider, pass_bounds_for_change, preserving_pass_bounds_for_change,
-    raster_view_with_provider,
+    known_clipping_run_activity, known_raster_source_bounds, mask_view_with_provider,
+    pass_bounds_for_change, raster_view_with_provider,
 };
 use crate::stream_state::{RenderedStreamingCache, StreamingEncoder, StreamingTexturePair};
-use crate::{GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterBlendMode, GpuRenderer};
+use crate::{
+    GpuClippedStackSource, GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterBlendMode,
+    GpuRenderer,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn render_clipping_run_with_provider<P>(
@@ -26,7 +26,8 @@ pub(crate) fn render_clipping_run_with_provider<P>(
     state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
     base: GpuNormalRasterSource,
-    clipped: &[GpuNormalRasterSource],
+    clipped: &[GpuClippedStackSource],
+    fallback_texture: &wgpu::Texture,
     pipelines: &NormalStackPipelines,
 ) -> Result<RenderedStreamingCache, P::Error>
 where
@@ -104,62 +105,21 @@ where
     }
 
     for clipped_source in clipped {
-        if !raster_can_affect_output(*clipped_source) {
-            continue;
-        }
-        let known_source_bounds =
-            known_raster_source_bounds(provider, *clipped_source, output_size);
-        if matches!(known_source_bounds, Some(None)) {
-            continue;
-        }
-        if let Some(source_bounds) = known_source_bounds {
-            if preserving_pass_bounds_for_change(dirty_bounds, source_bounds).is_none() {
-                continue;
-            }
-        }
-        let (raster_cache, source_view, effective_clipped_source, uploaded_source_bounds) =
-            raster_view_with_provider(renderer, provider, state, output_size, *clipped_source)?;
-        let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-        let Some(global_pass_bounds) =
-            preserving_pass_bounds_for_change(dirty_bounds, source_bounds)
-        else {
-            continue;
-        };
-        let (mask_cache, mask_view) = mask_view_with_provider(
+        encode_clipped_stack_source_with_provider(
             renderer,
             provider,
             state,
             output_size,
-            clipped_source.mask_key,
-            clipped_source.key.layer_id,
-            clipping_pair.view(previous_index),
-        )?;
-        encode_normal_source_pass_scissored(
-            state.device(),
-            state.encoder_mut(),
-            clipped_source_pipeline(
-                clipped_source.blend_mode,
-                &pipelines.clipped_pipeline,
-                &pipelines.clipped_byte_pipeline,
-            ),
-            &pipelines.bind_group_layout,
-            &source_view,
-            clipping_pair.view(previous_index),
-            mask_view.view(),
-            clipping_pair.view(next_index),
-            raster_source_uniform_bytes_with_target_origin_and_mask(
-                effective_clipped_source,
-                cache_origin,
-                mask_view.sampling(),
-            ),
-            "rizum_clip_provider_clipping_clipped_pass",
+            clipped_source,
+            fallback_texture,
+            pipelines,
+            &clipping_pair,
+            &mut previous_index,
+            &mut next_index,
+            &mut dirty_bounds,
+            cache_origin,
             local_cache_bounds,
-        );
-        state.retain_raster_cache(raster_cache);
-        state.retain_optional_mask_cache(mask_cache);
-        state.finish_pass()?;
-        dirty_bounds = Some(global_pass_bounds);
-        std::mem::swap(&mut previous_index, &mut next_index);
+        )?;
     }
 
     Ok(RenderedStreamingCache::new_with_origin(
@@ -179,7 +139,7 @@ pub(crate) fn render_container_clipping_run_with_provider<P>(
     children: &[crate::GpuNormalStackSource],
     opacity: f32,
     mask_key: Option<GpuMaskResourceKey>,
-    clipped: &[GpuNormalRasterSource],
+    clipped: &[GpuClippedStackSource],
     fallback_texture: &wgpu::Texture,
     pipelines: &NormalStackPipelines,
 ) -> Result<RenderedStreamingCache, P::Error>
@@ -265,62 +225,21 @@ where
     }
 
     for clipped_source in clipped {
-        if !raster_can_affect_output(*clipped_source) {
-            continue;
-        }
-        let known_source_bounds =
-            known_raster_source_bounds(provider, *clipped_source, output_size);
-        if matches!(known_source_bounds, Some(None)) {
-            continue;
-        }
-        if let Some(source_bounds) = known_source_bounds {
-            if preserving_pass_bounds_for_change(dirty_bounds, source_bounds).is_none() {
-                continue;
-            }
-        }
-        let (raster_cache, source_view, effective_clipped_source, uploaded_source_bounds) =
-            raster_view_with_provider(renderer, provider, state, output_size, *clipped_source)?;
-        let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-        let Some(global_pass_bounds) =
-            preserving_pass_bounds_for_change(dirty_bounds, source_bounds)
-        else {
-            continue;
-        };
-        let (mask_cache, mask_view) = mask_view_with_provider(
+        encode_clipped_stack_source_with_provider(
             renderer,
             provider,
             state,
             output_size,
-            clipped_source.mask_key,
-            clipped_source.key.layer_id,
-            clipping_pair.view(previous_index),
-        )?;
-        encode_normal_source_pass_scissored(
-            state.device(),
-            state.encoder_mut(),
-            clipped_source_pipeline(
-                clipped_source.blend_mode,
-                &pipelines.clipped_pipeline,
-                &pipelines.clipped_byte_pipeline,
-            ),
-            &pipelines.bind_group_layout,
-            &source_view,
-            clipping_pair.view(previous_index),
-            mask_view.view(),
-            clipping_pair.view(next_index),
-            raster_source_uniform_bytes_with_target_origin_and_mask(
-                effective_clipped_source,
-                cache_origin,
-                mask_view.sampling(),
-            ),
-            "rizum_clip_provider_container_clipping_clipped_pass",
+            clipped_source,
+            fallback_texture,
+            pipelines,
+            &clipping_pair,
+            &mut previous_index,
+            &mut next_index,
+            &mut dirty_bounds,
+            cache_origin,
             local_cache_bounds,
-        );
-        state.retain_raster_cache(raster_cache);
-        state.retain_optional_mask_cache(mask_cache);
-        state.finish_pass()?;
-        dirty_bounds = Some(global_pass_bounds);
-        std::mem::swap(&mut previous_index, &mut next_index);
+        )?;
     }
 
     Ok(RenderedStreamingCache::new_with_origin(
@@ -398,192 +317,4 @@ where
         dirty_bounds,
         cache_origin,
     ))
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn render_through_group_with_provider<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
-    output_size: CanvasSize,
-    target_origin: (i32, i32),
-    children: &[crate::GpuNormalStackSource],
-    opacity: f32,
-    mask_key: Option<GpuMaskResourceKey>,
-    before_texture: &wgpu::Texture,
-    before_view: &wgpu::TextureView,
-    fallback_texture: &wgpu::Texture,
-    output_view: &wgpu::TextureView,
-    pipelines: &NormalStackPipelines,
-    parent_dirty_bounds: &mut Option<CanvasRect>,
-) -> Result<bool, P::Error>
-where
-    P: GpuNormalStackResourceProvider,
-{
-    let through_bounds = through_cache_bounds(provider, children, output_size);
-    let Some((cache_size, cache_origin, cache_global_bounds)) = through_bounds else {
-        return Ok(false);
-    };
-
-    let through_usage =
-        wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-    let through_pair = StreamingTexturePair::new(
-        state.device(),
-        "rizum_clip_provider_through_after_a",
-        "rizum_clip_provider_through_after_b",
-        cache_size,
-        through_usage,
-    );
-    let mut previous_index = 0usize;
-    let mut next_index = 1usize;
-    state.clear_rgba8_texture_pair(
-        through_pair.view(previous_index),
-        through_pair.view(next_index),
-        "rizum_clip_provider_through_initial_clear",
-    );
-    let mut after_dirty_bounds = if cache_global_bounds.is_some() {
-        cache_global_bounds
-    } else {
-        *parent_dirty_bounds
-    };
-    let mut has_child_output = false;
-
-    if let Some(global_cache_bounds) = cache_global_bounds {
-        let local_cache_bounds = CanvasRect::full(cache_size)
-            .expect("non-empty through bounds must create local bounds");
-        encode_normal_source_pass_scissored(
-            state.device(),
-            state.encoder_mut(),
-            &pipelines.alpha_pipeline,
-            &pipelines.bind_group_layout,
-            before_view,
-            through_pair.view(previous_index),
-            through_pair.view(previous_index),
-            through_pair.view(next_index),
-            generated_raster_source_uniform_bytes_with_blend_and_origins(
-                1.0,
-                false,
-                GpuRasterBlendMode::Normal,
-                target_origin,
-                cache_origin,
-            ),
-            "rizum_clip_provider_through_seed_pass",
-            local_cache_bounds,
-        );
-        state.finish_pass()?;
-        after_dirty_bounds = Some(global_cache_bounds);
-        std::mem::swap(&mut previous_index, &mut next_index);
-    }
-
-    for (child_index, child) in children.iter().enumerate() {
-        let (previous_texture, previous_view) = if cache_global_bounds.is_none() && child_index == 0
-        {
-            (before_texture, before_view)
-        } else {
-            (
-                through_pair.texture(previous_index),
-                through_pair.view(previous_index),
-            )
-        };
-        let did_write = encode_source_with_provider(
-            renderer,
-            provider,
-            state,
-            output_size,
-            cache_origin,
-            child,
-            previous_texture,
-            fallback_texture,
-            previous_view,
-            through_pair.view(next_index),
-            pipelines,
-            &mut after_dirty_bounds,
-        )?;
-        if did_write {
-            has_child_output = true;
-            std::mem::swap(&mut previous_index, &mut next_index);
-        }
-    }
-
-    if !has_child_output {
-        state.retain_texture_pair(through_pair);
-        return Ok(false);
-    }
-
-    let after_view = through_pair.view(previous_index);
-    let (mask_cache, mask_view) = mask_view_with_provider(
-        renderer,
-        provider,
-        state,
-        output_size,
-        mask_key,
-        mask_key
-            .map(|key| key.layer_id)
-            .unwrap_or(clip_model::LayerId(0)),
-        before_view,
-    )?;
-    let Some(pass_bounds) = through_resolve_bounds(*parent_dirty_bounds, after_dirty_bounds) else {
-        return Ok(false);
-    };
-    encode_normal_source_pass_scissored(
-        state.device(),
-        state.encoder_mut(),
-        &pipelines.through_pipeline,
-        &pipelines.bind_group_layout,
-        after_view,
-        before_view,
-        mask_view.view(),
-        output_view,
-        generated_raster_source_uniform_bytes_with_blend_origins_and_mask(
-            opacity,
-            mask_key.is_some(),
-            GpuRasterBlendMode::Normal,
-            cache_origin,
-            target_origin,
-            mask_view.sampling(),
-        ),
-        "rizum_clip_provider_through_resolve_pass",
-        pass_bounds
-            .translate_to_local(target_origin)
-            .expect("through resolve bounds must fit inside the target"),
-    );
-    state.retain_optional_mask_cache(mask_cache);
-    state.retain_texture_pair(through_pair);
-    state.finish_pass()?;
-    *parent_dirty_bounds = Some(pass_bounds);
-    Ok(true)
-}
-
-fn through_cache_bounds<P>(
-    provider: &P,
-    children: &[crate::GpuNormalStackSource],
-    output_size: CanvasSize,
-) -> Option<(CanvasSize, (i32, i32), Option<CanvasRect>)>
-where
-    P: GpuNormalStackResourceProvider,
-{
-    match known_stack_bounds(provider, children, output_size) {
-        KnownStackBounds::Empty => None,
-        KnownStackBounds::Bounded(bounds) if Some(bounds) != CanvasRect::full(output_size) => {
-            Some((
-                CanvasSize::new(bounds.width, bounds.height),
-                bounds.origin_i32(),
-                Some(bounds),
-            ))
-        }
-        KnownStackBounds::Bounded(_) | KnownStackBounds::Unknown => {
-            if known_stack_activity(provider, children, output_size).is_empty() {
-                None
-            } else {
-                Some((output_size, (0, 0), None))
-            }
-        }
-    }
-}
-
-fn through_resolve_bounds(
-    parent_dirty_bounds: Option<CanvasRect>,
-    after_dirty_bounds: Option<CanvasRect>,
-) -> Option<CanvasRect> {
-    union_optional(parent_dirty_bounds, after_dirty_bounds)
 }

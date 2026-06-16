@@ -1359,7 +1359,7 @@ impl ClipSession {
         options: StrictRasterStackOptions,
         unsupported: &mut Vec<SimpleRasterStackUnsupported>,
         resource_plan: &mut GpuResourcePlan,
-    ) -> Result<(Vec<clip_gpu::GpuNormalRasterSource>, usize), RuntimeError> {
+    ) -> Result<(Vec<clip_gpu::GpuClippedStackSource>, usize), RuntimeError> {
         let mut clipped = Vec::new();
         while index < end {
             let node = &self.render_plan.nodes[index];
@@ -1376,17 +1376,20 @@ impl ClipSession {
                         unsupported,
                         resource_plan,
                     )? {
-                        clipped.push(raster);
+                        clipped.push(clip_gpu::GpuClippedStackSource::Raster(raster));
                     }
                     index += 1;
                 }
                 RenderNodeKind::Container => {
-                    self.push_unsupported_subtree(
+                    if let Some(container) = self.collect_gpu_clipped_container_source(
                         index,
                         subtree_end,
-                        SimpleRasterStackUnsupportedReason::ContainerSemantics,
+                        options,
                         unsupported,
-                    );
+                        resource_plan,
+                    )? {
+                        clipped.push(container);
+                    }
                     index = subtree_end;
                 }
                 RenderNodeKind::Paper => {
@@ -1419,6 +1422,98 @@ impl ClipSession {
             }
         }
         Ok((clipped, index))
+    }
+
+    fn collect_gpu_clipped_container_source(
+        &self,
+        index: usize,
+        subtree_end: usize,
+        options: StrictRasterStackOptions,
+        unsupported: &mut Vec<SimpleRasterStackUnsupported>,
+        resource_plan: &mut GpuResourcePlan,
+    ) -> Result<Option<clip_gpu::GpuClippedStackSource>, RuntimeError> {
+        let node = &self.render_plan.nodes[index];
+        if !options.allow_container_isolation {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::ContainerSemantics,
+                unsupported,
+            );
+            return Ok(None);
+        }
+        let blend_mode = if node.composite == LAYER_COMPOSITE_THROUGH {
+            if !options.allow_through_groups {
+                self.push_unsupported_subtree(
+                    index,
+                    subtree_end,
+                    SimpleRasterStackUnsupportedReason::ContainerSemantics,
+                    unsupported,
+                );
+                return Ok(None);
+            }
+            clip_gpu::GpuRasterBlendMode::Normal
+        } else {
+            let Some(blend_mode) = strict_raster_blend_mode(node, options, true) else {
+                self.push_unsupported_subtree(
+                    index,
+                    subtree_end,
+                    SimpleRasterStackUnsupportedReason::Composite(node.composite),
+                    unsupported,
+                );
+                return Ok(None);
+            };
+            gpu_raster_blend_mode(blend_mode)
+        };
+        if !options.allow_layer_opacity && node.opacity != LayerOpacity::MAX {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::Opacity(node.opacity.0),
+                unsupported,
+            );
+            return Ok(None);
+        }
+        let Some(opacity) = opacity_factor(node.opacity) else {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::OpacityOutOfRange(node.opacity.0),
+                unsupported,
+            );
+            return Ok(None);
+        };
+        if node.mask_mipmap_id.is_some() && !options.allow_masks {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::Mask,
+                unsupported,
+            );
+            return Ok(None);
+        }
+        let (mask_key, opacity) = apply_planned_gpu_mask(
+            plan_gpu_mask_resource(&self.mask_sources, node, self.summary.canvas, resource_plan)?,
+            opacity,
+        );
+        let children = self.collect_gpu_sources_in_range(
+            index + 1,
+            subtree_end,
+            node.depth + 1,
+            options,
+            unsupported,
+            resource_plan,
+        )?;
+        if children.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(clip_gpu::GpuClippedStackSource::Container {
+            layer_id: node.layer_id,
+            children,
+            opacity,
+            mask_key,
+            blend_mode,
+        }))
     }
 
     fn collect_strict_container_draw(
@@ -2467,7 +2562,12 @@ fn gpu_normal_stack_source(draw: &StrictRasterStackDraw) -> clip_gpu::GpuNormalS
         }
         StrictRasterStackDraw::ClippingRun(run) => clip_gpu::GpuNormalStackSource::ClippingRun {
             base: gpu_normal_raster_source(&run.base),
-            clipped: run.clipped.iter().map(gpu_normal_raster_source).collect(),
+            clipped: run
+                .clipped
+                .iter()
+                .map(gpu_normal_raster_source)
+                .map(clip_gpu::GpuClippedStackSource::Raster)
+                .collect(),
         },
         StrictRasterStackDraw::Container(container) => clip_gpu::GpuNormalStackSource::Container {
             children: container
@@ -3453,6 +3553,29 @@ mod tests {
     }
 
     #[test]
+    fn gpu_selector_accepts_container_clipped_siblings_in_kabi_fixture() {
+        let path = fixture_path_ending("Kabi_Live2D.clip");
+        let session = ClipSession::open(&path).expect("open Kabi fixture");
+
+        let support = session
+            .check_normal_raster_stack_support()
+            .expect("check Kabi support");
+        assert!(support.unsupported.is_empty());
+
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .expect("select Kabi render stack");
+
+        assert!(selection.unsupported.is_empty());
+        assert!(
+            selection
+                .sources
+                .iter()
+                .any(stack_contains_clipped_container)
+        );
+    }
+
+    #[test]
     fn gpu_selector_folds_off_canvas_zero_fill_mask_to_zero_opacity() {
         let mut session = synthetic_session(vec![
             container_node(0, 2, 0, 0),
@@ -3580,6 +3703,22 @@ mod tests {
             }
             clip_gpu::GpuNormalStackSource::Raster(_)
             | clip_gpu::GpuNormalStackSource::ClippingRun { .. }
+            | clip_gpu::GpuNormalStackSource::SolidColor { .. }
+            | clip_gpu::GpuNormalStackSource::LutFilter { .. } => false,
+        }
+    }
+
+    fn stack_contains_clipped_container(source: &clip_gpu::GpuNormalStackSource) -> bool {
+        match source {
+            clip_gpu::GpuNormalStackSource::ClippingRun { clipped, .. }
+            | clip_gpu::GpuNormalStackSource::ContainerClippingRun { clipped, .. } => clipped
+                .iter()
+                .any(|source| matches!(source, clip_gpu::GpuClippedStackSource::Container { .. })),
+            clip_gpu::GpuNormalStackSource::Container { children, .. }
+            | clip_gpu::GpuNormalStackSource::ThroughGroup { children, .. } => {
+                children.iter().any(stack_contains_clipped_container)
+            }
+            clip_gpu::GpuNormalStackSource::Raster(_)
             | clip_gpu::GpuNormalStackSource::SolidColor { .. }
             | clip_gpu::GpuNormalStackSource::LutFilter { .. } => false,
         }

@@ -2,12 +2,13 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
-use crate::stream_effects::{raster_can_affect_output, source_can_affect_output};
+use crate::stream_effects::{clipped_stack_source_can_affect_output, source_can_affect_output};
+use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_state::StreamingEncoder;
 use crate::{
-    GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskSamplingInfo,
-    GpuNormalRasterSource, GpuNormalStackSource, GpuRasterResourceCache, GpuRenderError,
-    GpuRenderer,
+    GpuClippedStackSource, GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey,
+    GpuMaskSamplingInfo, GpuNormalRasterSource, GpuNormalStackSource, GpuRasterResourceCache,
+    GpuRenderError, GpuRenderer,
 };
 
 pub(crate) fn raster_view_with_provider<P>(
@@ -135,7 +136,7 @@ where
 pub(crate) fn known_clipped_sibling_activity<P>(
     provider: &P,
     base: GpuNormalRasterSource,
-    clipped: &[GpuNormalRasterSource],
+    clipped: &[GpuClippedStackSource],
     output_size: CanvasSize,
 ) -> KnownSourceActivity
 where
@@ -148,10 +149,10 @@ where
     };
     let mut activity = KnownSourceActivity::Empty;
     for clipped_source in clipped {
-        if !raster_can_affect_output(*clipped_source) {
+        if !clipped_stack_source_can_affect_output(clipped_source) {
             continue;
         }
-        match known_raster_source_bounds(provider, *clipped_source, output_size) {
+        match known_clipped_stack_source_bounds(provider, clipped_source, output_size) {
             Some(Some(bounds)) => {
                 let Some(base_bounds) = base_bounds else {
                     activity = KnownSourceActivity::Unknown;
@@ -166,6 +167,28 @@ where
         }
     }
     activity
+}
+
+pub(crate) fn known_clipped_stack_source_bounds<P>(
+    provider: &P,
+    source: &GpuClippedStackSource,
+    output_size: CanvasSize,
+) -> Option<Option<CanvasRect>>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    match source {
+        GpuClippedStackSource::Raster(raster) => {
+            known_raster_source_bounds(provider, *raster, output_size)
+        }
+        GpuClippedStackSource::Container { children, .. } => {
+            match known_stack_bounds(provider, children, output_size) {
+                KnownStackBounds::Bounded(bounds) => Some(Some(bounds)),
+                KnownStackBounds::Empty => Some(None),
+                KnownStackBounds::Unknown => None,
+            }
+        }
+    }
 }
 
 fn known_source_activity<P>(

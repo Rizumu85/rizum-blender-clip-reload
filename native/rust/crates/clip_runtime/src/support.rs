@@ -151,6 +151,7 @@ impl ClipSession {
                     if has_supported_children {
                         if options.allow_clipping_runs && !node.clip {
                             let (clipped_count, next_index) = self.collect_strict_clipped_support(
+                                sqlite_bytes,
                                 subtree_end,
                                 node.depth,
                                 end,
@@ -206,6 +207,7 @@ impl ClipSession {
 
                     if options.allow_clipping_runs && !node.clip {
                         let (_clipped_count, next_index) = self.collect_strict_clipped_support(
+                            sqlite_bytes,
                             index + 1,
                             node.depth,
                             end,
@@ -566,6 +568,7 @@ impl ClipSession {
 
     fn collect_strict_clipped_support(
         &self,
+        sqlite_bytes: &[u8],
         mut index: usize,
         base_depth: u16,
         end: usize,
@@ -594,12 +597,16 @@ impl ClipSession {
                     index += 1;
                 }
                 RenderNodeKind::Container => {
-                    self.push_unsupported_subtree(
+                    if self.check_strict_clipped_container_support(
+                        sqlite_bytes,
                         index,
                         subtree_end,
-                        SimpleRasterStackUnsupportedReason::ContainerSemantics,
+                        options,
+                        resource_stats,
                         unsupported,
-                    );
+                    )? {
+                        clipped_count += 1;
+                    }
                     index = subtree_end;
                 }
                 RenderNodeKind::Paper => {
@@ -632,6 +639,88 @@ impl ClipSession {
             }
         }
         Ok((clipped_count, index))
+    }
+
+    fn check_strict_clipped_container_support(
+        &self,
+        sqlite_bytes: &[u8],
+        index: usize,
+        subtree_end: usize,
+        options: StrictRasterStackOptions,
+        resource_stats: &mut NormalRasterStackResourceStats,
+        unsupported: &mut Vec<SimpleRasterStackUnsupported>,
+    ) -> Result<bool, RuntimeError> {
+        let node = &self.render_plan.nodes[index];
+        if !options.allow_container_isolation {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::ContainerSemantics,
+                unsupported,
+            );
+            return Ok(false);
+        }
+        if node.composite == LAYER_COMPOSITE_THROUGH {
+            if !options.allow_through_groups {
+                self.push_unsupported_subtree(
+                    index,
+                    subtree_end,
+                    SimpleRasterStackUnsupportedReason::ContainerSemantics,
+                    unsupported,
+                );
+                return Ok(false);
+            }
+        } else if strict_raster_blend_mode(node, options, true).is_none() {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::Composite(node.composite),
+                unsupported,
+            );
+            return Ok(false);
+        }
+        if !options.allow_layer_opacity && node.opacity != clip_model::LayerOpacity::MAX {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::Opacity(node.opacity.0),
+                unsupported,
+            );
+            return Ok(false);
+        }
+        if opacity_factor(node.opacity).is_none() {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::OpacityOutOfRange(node.opacity.0),
+                unsupported,
+            );
+            return Ok(false);
+        }
+        if node.mask_mipmap_id.is_some() && !options.allow_masks {
+            self.push_unsupported_subtree(
+                index,
+                subtree_end,
+                SimpleRasterStackUnsupportedReason::Mask,
+                unsupported,
+            );
+            return Ok(false);
+        }
+        if node.mask_mipmap_id.is_some() {
+            let mask = self.check_mask_metadata(node.layer_id)?;
+            resource_stats.add_mask_source(mask);
+        }
+
+        let child_count = self.collect_strict_support_in_range(
+            sqlite_bytes,
+            index + 1,
+            subtree_end,
+            node.depth + 1,
+            options,
+            resource_stats,
+            unsupported,
+        )?;
+        Ok(child_count > 0)
     }
 
     fn check_mask_metadata(

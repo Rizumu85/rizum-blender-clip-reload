@@ -1,8 +1,8 @@
 use clip_model::{CanvasSize, LayerId};
 
 use crate::{
-    GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
-    GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError,
+    GpuClippedStackSource, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
+    GpuNormalStackSource, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError,
 };
 
 pub(crate) fn validate_normal_stack_sources(
@@ -32,11 +32,11 @@ pub(crate) fn validate_normal_stack_sources(
                     &mut drawn_resources,
                 )?;
                 for clipped_source in clipped {
-                    validate_normal_raster_source(
+                    validate_clipped_stack_source(
                         cache,
                         mask_cache,
                         output_size,
-                        *clipped_source,
+                        clipped_source,
                         &mut drawn_resources,
                     )?;
                 }
@@ -57,11 +57,11 @@ pub(crate) fn validate_normal_stack_sources(
                     children,
                 )?);
                 for clipped_source in clipped {
-                    validate_normal_raster_source(
+                    validate_clipped_stack_source(
                         cache,
                         mask_cache,
                         output_size,
-                        *clipped_source,
+                        clipped_source,
                         &mut drawn_resources,
                     )?;
                 }
@@ -149,4 +149,35 @@ fn validate_normal_raster_source(
     }
 
     Ok(())
+}
+
+fn validate_clipped_stack_source(
+    cache: &GpuRasterResourceCache,
+    mask_cache: Option<&GpuMaskResourceCache>,
+    output_size: CanvasSize,
+    source: &GpuClippedStackSource,
+    drawn_resources: &mut Vec<GpuRasterResourceInfo>,
+) -> Result<(), GpuRenderError> {
+    match source {
+        GpuClippedStackSource::Raster(raster) => {
+            validate_normal_raster_source(cache, mask_cache, output_size, *raster, drawn_resources)
+        }
+        GpuClippedStackSource::Container {
+            layer_id,
+            children,
+            mask_key,
+            ..
+        } => {
+            if let Some(mask_key) = *mask_key {
+                validate_mask_source(mask_cache, output_size, mask_key, *layer_id)?;
+            }
+            drawn_resources.extend(validate_normal_stack_sources(
+                cache,
+                mask_cache,
+                output_size,
+                children,
+            )?);
+            Ok(())
+        }
+    }
 }

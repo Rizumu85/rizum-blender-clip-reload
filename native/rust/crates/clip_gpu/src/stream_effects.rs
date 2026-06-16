@@ -1,4 +1,4 @@
-use crate::{GpuNormalRasterSource, GpuNormalStackSource};
+use crate::{GpuClippedStackSource, GpuNormalRasterSource, GpuNormalStackSource};
 
 pub(crate) fn stack_can_affect_output(sources: &[GpuNormalStackSource]) -> bool {
     sources.iter().any(source_can_affect_output)
@@ -26,6 +26,15 @@ pub(crate) fn source_can_affect_output(source: &GpuNormalStackSource) -> bool {
 
 pub(crate) fn raster_can_affect_output(source: GpuNormalRasterSource) -> bool {
     opacity_can_affect_output(source.opacity)
+}
+
+pub(crate) fn clipped_stack_source_can_affect_output(source: &GpuClippedStackSource) -> bool {
+    match source {
+        GpuClippedStackSource::Raster(raster) => raster_can_affect_output(*raster),
+        GpuClippedStackSource::Container {
+            children, opacity, ..
+        } => opacity_can_affect_output(*opacity) && stack_can_affect_output(children),
+    }
 }
 
 fn opacity_can_affect_output(opacity: f32) -> bool {

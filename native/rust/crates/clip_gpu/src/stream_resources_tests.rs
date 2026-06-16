@@ -8,8 +8,9 @@ use crate::stream_resources::{
     known_stack_activity, preserving_pass_bounds_for_change,
 };
 use crate::{
-    GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
-    GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError, GpuRenderer,
+    GpuClippedStackSource, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
+    GpuNormalStackSource, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey,
+    GpuRenderError, GpuRenderer,
 };
 
 struct SizeProvider {
@@ -127,7 +128,12 @@ fn zero_opacity_clipped_sibling_is_known_empty() {
         known_clipped_sibling_activity(
             &provider,
             raster_source(base_key, 0, 0),
-            &[raster_source_with_opacity(clipped_key, 0, 0, 0.0)],
+            &[GpuClippedStackSource::Raster(raster_source_with_opacity(
+                clipped_key,
+                0,
+                0,
+                0.0,
+            ))],
             CanvasSize::new(8, 8),
         ),
         KnownSourceActivity::Empty
@@ -147,7 +153,11 @@ fn non_overlapping_clipped_sibling_is_known_empty() {
         known_clipped_sibling_activity(
             &provider,
             raster_source(base_key, 0, 0),
-            &[raster_source(clipped_key, 8, 8)],
+            &[GpuClippedStackSource::Raster(raster_source(
+                clipped_key,
+                8,
+                8,
+            ))],
             CanvasSize::new(16, 16),
         ),
         KnownSourceActivity::Empty
@@ -167,7 +177,11 @@ fn intersecting_clipped_sibling_is_known_writing() {
         known_clipped_sibling_activity(
             &provider,
             raster_source(base_key, 0, 0),
-            &[raster_source(clipped_key, 2, 2)],
+            &[GpuClippedStackSource::Raster(raster_source(
+                clipped_key,
+                2,
+                2,
+            ))],
             CanvasSize::new(16, 16),
         ),
         KnownSourceActivity::Writes
@@ -184,7 +198,11 @@ fn unknown_clipped_sibling_size_stays_unknown() {
         known_clipped_sibling_activity(
             &provider,
             raster_source(base_key, 0, 0),
-            &[raster_source(clipped_key, 2, 2)],
+            &[GpuClippedStackSource::Raster(raster_source(
+                clipped_key,
+                2,
+                2,
+            ))],
             CanvasSize::new(16, 16),
         ),
         KnownSourceActivity::Unknown

@@ -10,15 +10,19 @@ mod shaders;
 mod source_params;
 pub mod stream;
 mod stream_bounds;
+mod stream_clipping;
 mod stream_effects;
 mod stream_extents;
 mod stream_groups;
+mod stream_provider;
 mod stream_resources;
 #[cfg(test)]
 mod stream_resources_tests;
 mod stream_state;
 #[cfg(test)]
 mod stream_tests;
+mod stream_through;
+mod stream_utils;
 pub mod types;
 mod validation;
 
@@ -31,6 +35,7 @@ pub use resource::{
 };
 pub use stream::GpuNormalStackResourceProvider;
 pub use types::{
-    GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource, GpuNormalStackChunk,
-    GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput, GpuRasterStackOutput,
+    GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,
+    GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput,
+    GpuRasterStackOutput,
 };

@@ -3,7 +3,8 @@ use clip_model::CanvasSize;
 
 use super::common::*;
 use crate::{
-    GpuDeviceConfig, GpuLutFilterMode, GpuNormalStackSource, GpuRasterBlendMode, GpuRenderer,
+    GpuClippedStackSource, GpuDeviceConfig, GpuLutFilterMode, GpuNormalStackSource,
+    GpuRasterBlendMode, GpuRenderer,
 };
 
 #[test]
@@ -33,7 +34,10 @@ fn streamed_clipping_cache_resolves_from_cropped_origin() {
     ]);
     let sources = [GpuNormalStackSource::ClippingRun {
         base: raster_source(base_key),
-        clipped: vec![raster_source(clipped_key), raster_source(clipped_key)],
+        clipped: vec![
+            GpuClippedStackSource::Raster(raster_source(clipped_key)),
+            GpuClippedStackSource::Raster(raster_source(clipped_key)),
+        ],
     }];
 
     let output = renderer
@@ -48,6 +52,58 @@ fn streamed_clipping_cache_resolves_from_cropped_origin() {
         }
     }
     assert_eq!(output.pixels, expected);
+    assert_eq!(provider.raster_request_count(clipped_key), 1);
+}
+
+#[test]
+fn streamed_clipping_run_accepts_clipped_container_source() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let base_key = raster_key(30);
+    let clipped_key = raster_key(31);
+    let mut provider = InlineProvider::new(vec![
+        (
+            base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(30),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [255, 0, 0, 255].repeat(4),
+            },
+        ),
+        (
+            clipped_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(31),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [0, 0, 255, 255].repeat(4),
+            },
+        ),
+    ]);
+    let sources = [GpuNormalStackSource::ClippingRun {
+        base: raster_source(base_key),
+        clipped: vec![GpuClippedStackSource::Container {
+            layer_id: base_key.layer_id,
+            children: vec![GpuNormalStackSource::Raster(raster_source(clipped_key))],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        }],
+    }];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw streamed clipping run with clipped container");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 4 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 0, 255, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+    assert_eq!(provider.raster_request_count(base_key), 1);
     assert_eq!(provider.raster_request_count(clipped_key), 1);
 }
 
