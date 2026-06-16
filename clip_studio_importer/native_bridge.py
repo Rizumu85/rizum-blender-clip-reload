@@ -5,6 +5,7 @@ import ctypes
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import re
 from typing import Any
 
 
@@ -26,6 +27,7 @@ CLIP_RELOAD_LAST_SECONDS_KEY = "clip_reload_last_seconds"
 CLIP_SUPPORT_STATUS_KEY = "clip_support_status"
 CLIP_SUPPORT_REPORT_KEY = "clip_support_report"
 CLIP_SUPPORT_DETAILS_KEY = "clip_support_details"
+CLIP_SUPPORT_LOCATIONS_KEY = "clip_support_locations"
 CLIP_SUPPORT_SOURCE_COUNT_KEY = "clip_support_source_count"
 CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY = "clip_support_unsupported_count"
 CLIP_SUPPORT_RASTER_COUNT_KEY = "clip_support_raster_count"
@@ -50,6 +52,10 @@ RELOAD_STATUS_ERROR = "error"
 SUPPORT_STATUS_FULL = "full"
 SUPPORT_STATUS_UNSUPPORTED = "unsupported"
 SUPPORT_STATUS_UNKNOWN = "unknown"
+
+_SUPPORT_DETAIL_LOCATION_RE = re.compile(
+    r"^- layer (?P<layer_id>\d+) node (?P<node_id>\d+) (?P<kind>[^:]+)"
+)
 
 
 class NativeBridgeError(RuntimeError):
@@ -413,6 +419,29 @@ def write_reload_error(image: Any, message: str) -> None:
     _delete_image_key(image, CLIP_RELOAD_STARTED_AT_KEY)
 
 
+def support_detail_locations(details: Any) -> tuple[str, ...]:
+    if isinstance(details, str):
+        detail_lines = details.splitlines()
+    else:
+        try:
+            detail_lines = list(details)
+        except TypeError:
+            detail_lines = ()
+    locations: list[str] = []
+    for line in detail_lines:
+        match = _SUPPORT_DETAIL_LOCATION_RE.match(str(line).strip())
+        if not match:
+            continue
+        locations.append(
+            "layer {layer_id} node {node_id} {kind}".format(
+                layer_id=match.group("layer_id"),
+                node_id=match.group("node_id"),
+                kind=match.group("kind").strip(),
+            )
+        )
+    return tuple(locations)
+
+
 def resolve_renderer_library(
     library_path: str | os.PathLike[str] | None = None,
 ) -> str:
@@ -491,6 +520,7 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
         image[CLIP_SUPPORT_STATUS_KEY] = SUPPORT_STATUS_UNKNOWN
         image[CLIP_SUPPORT_REPORT_KEY] = "Native support summary unavailable."
         image[CLIP_SUPPORT_DETAILS_KEY] = ""
+        image[CLIP_SUPPORT_LOCATIONS_KEY] = ""
         return
     image[CLIP_SUPPORT_STATUS_KEY] = (
         SUPPORT_STATUS_FULL
@@ -499,6 +529,9 @@ def _write_support_properties(image: Any, summary: NativeSupportSummary | None) 
     )
     image[CLIP_SUPPORT_REPORT_KEY] = summary.report
     image[CLIP_SUPPORT_DETAILS_KEY] = "\n".join(summary.details)
+    image[CLIP_SUPPORT_LOCATIONS_KEY] = "\n".join(
+        support_detail_locations(summary.details)
+    )
     image[CLIP_SUPPORT_SOURCE_COUNT_KEY] = summary.source_count
     image[CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY] = summary.unsupported_count
     image[CLIP_SUPPORT_RASTER_COUNT_KEY] = summary.raster_count

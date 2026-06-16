@@ -49,7 +49,8 @@ Current focus:
 - Surface native support summaries in Blender from the metadata-only C ABI
   support check, including resource statistics, expandable unsupported
   layer/node details, copyable diagnostic text, and searchable Text Editor
-  reports; keep richer layer-location navigation as follow-up UI work.
+  reports; show compact unsupported layer/node/kind locators and allow copying
+  just those locations for source-layer follow-up.
 - Rebuild `clip_studio_importer.zip` whenever package code changes.
 
 ## Direction 3: Native Image Loading Rewrite
@@ -69,8 +70,9 @@ Current policy:
   metadata. The add-on records elapsed/last render timing for manual and
   background renders. The C ABI exposes metadata-only native support summaries,
   and the add-on stores/displays source count, unsupported count, raster/mask
-  resource statistics, expandable unsupported layer/node detail lines, and
-  copyable/searchable support diagnostics. `tools/build_blender_addon.py`
+  resource statistics, expandable unsupported layer/node detail lines, compact
+  unsupported layer/node/kind locators, and copyable/searchable support
+  diagnostics. `tools/build_blender_addon.py`
   builds the installable zip with `__init__.py`, `native_bridge.py`, and the
   locally built release `clip_capi` library under `clip_studio_importer/native/`;
   it no longer packages the Python compositor/loader. The native library

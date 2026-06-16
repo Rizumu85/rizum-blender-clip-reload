@@ -193,6 +193,10 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_REPORT_KEY], "2 unsupported node(s).")
         self.assertIn("layer 9", image[native_bridge.CLIP_SUPPORT_DETAILS_KEY])
         self.assertIn("layer 10", image[native_bridge.CLIP_SUPPORT_DETAILS_KEY])
+        self.assertEqual(
+            image[native_bridge.CLIP_SUPPORT_LOCATIONS_KEY],
+            "layer 9 node 4 Filter\nlayer 10 node 5 Raster",
+        )
 
     def test_update_records_unknown_support_when_summary_unavailable(self) -> None:
         bpy = FakeBpy()
@@ -217,6 +221,21 @@ class NativeBridgeTests(unittest.TestCase):
         )
         self.assertIn("unavailable", image[native_bridge.CLIP_SUPPORT_REPORT_KEY])
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_DETAILS_KEY], "")
+        self.assertEqual(image[native_bridge.CLIP_SUPPORT_LOCATIONS_KEY], "")
+
+    def test_support_detail_locations_extracts_layer_node_kind(self) -> None:
+        locations = native_bridge.support_detail_locations(
+            (
+                "- layer 9 node 4 Filter: filter layer is not supported",
+                "- layer 10 node 5 Raster: raster colour type None is not supported",
+                "plain summary line",
+            )
+        )
+
+        self.assertEqual(
+            locations,
+            ("layer 9 node 4 Filter", "layer 10 node 5 Raster"),
+        )
 
     def test_successful_update_clears_previous_reload_error(self) -> None:
         bpy = FakeBpy()

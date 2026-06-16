@@ -175,6 +175,11 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Mask resources: 1, 512 B", labels)
         self.assertIn("Largest raster: layer 9, 32x16, 2.0 KiB", labels)
         self.assertIn("Largest mask: layer 10, 32x16, 512 B", labels)
+        self.assertIn(
+            "Locations: layer 9/node 4 Filter, layer 10/node 5 Raster, "
+            "layer 11/node 6 Filter, +3 more",
+            labels,
+        )
         self.assertIn("- layer 9 node 4 Filter", labels)
         self.assertIn("- layer 10 node 5 Raster", labels)
         self.assertIn("- layer 11 node 6 Filter", labels)
@@ -195,6 +200,13 @@ class AddonDiagnosticsTests(unittest.TestCase):
             (
                 addon.IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
                 {"text": "Copy support diagnostics", "icon": "COPYDOWN"},
+            ),
+            panel.layout.operators,
+        )
+        self.assertIn(
+            (
+                addon.IMAGE_OT_copy_clip_support_locations.bl_idname,
+                {"text": "Copy layer locations", "icon": "COPYDOWN"},
             ),
             panel.layout.operators,
         )
@@ -300,8 +312,34 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Canvas: 640x480", clipboard)
         self.assertIn("Native support: Unsupported nodes", clipboard)
         self.assertIn("Raster resources: 3, 2.0 KiB", clipboard)
+        self.assertIn("Unsupported locations:", clipboard)
         self.assertIn("- layer 9 node 4 Filter", clipboard)
         self.assertIn("Render error: native renderer failed loudly", clipboard)
+
+    def test_copy_support_locations_operator_writes_clipboard(self) -> None:
+        addon = _load_addon_module()
+        image = {
+            addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+            addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
+                "- layer 9 node 4 Filter: filter layer is not supported\n"
+                "- layer 10 node 5 Raster: raster colour type None is not supported"
+            ),
+        }
+        context = types.SimpleNamespace(
+            space_data=types.SimpleNamespace(image=image),
+            window_manager=types.SimpleNamespace(clipboard=""),
+        )
+        operator = addon.IMAGE_OT_copy_clip_support_locations()
+
+        self.assertEqual(operator.execute(context), {"FINISHED"})
+
+        clipboard = context.window_manager.clipboard
+        self.assertIn("Clip Studio unsupported layer locations", clipboard)
+        self.assertIn("Source: C:/art/sample.clip", clipboard)
+        self.assertIn("- layer 9 node 4 Filter", clipboard)
+        self.assertIn("- layer 10 node 5 Raster", clipboard)
+        self.assertNotIn("filter layer is not supported", clipboard)
+        self.assertEqual(operator.reported[0], {"INFO"})
 
     def test_open_support_diagnostics_operator_writes_text_block(self) -> None:
         addon = _load_addon_module()

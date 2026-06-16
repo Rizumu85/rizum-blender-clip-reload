@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 34),
+    "version": (0, 8, 35),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -186,6 +186,34 @@ def _support_resource_lines(img) -> list[str]:
     return lines
 
 
+def _support_location_lines(img) -> list[str]:
+    stored_locations = img.get(native_bridge.CLIP_SUPPORT_LOCATIONS_KEY, "")
+    locations = [line for line in str(stored_locations).splitlines() if line]
+    if locations:
+        return locations
+    support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
+    return list(native_bridge.support_detail_locations(support_details))
+
+
+def _short_support_location(location: str) -> str:
+    parts = str(location).split()
+    if len(parts) >= 5 and parts[0] == "layer" and parts[2] == "node":
+        kind = " ".join(parts[4:])
+        suffix = f" {kind}" if kind else ""
+        return f"layer {parts[1]}/node {parts[3]}{suffix}"
+    return str(location)
+
+
+def _support_location_summary(img, *, limit: int = 3) -> str:
+    locations = _support_location_lines(img)
+    if not locations:
+        return ""
+    visible = [_short_support_location(line) for line in locations[:limit]]
+    if len(locations) > limit:
+        visible.append(f"+{len(locations) - limit} more")
+    return "Locations: " + ", ".join(visible)
+
+
 def _support_diagnostic_text(img) -> str:
     clip_path = img.get(CLIP_SOURCE_KEY, "")
     status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
@@ -224,6 +252,10 @@ def _support_diagnostic_text(img) -> str:
     if report:
         lines.append(f"Support report: {report}")
     lines.extend(_support_resource_lines(img))
+    location_lines = _support_location_lines(img)
+    if location_lines:
+        lines.append("Unsupported locations:")
+        lines.extend(f"- {line}" for line in location_lines)
     support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
     detail_lines = [line for line in str(support_details).splitlines() if line]
     if detail_lines:
@@ -414,6 +446,34 @@ class IMAGE_OT_copy_clip_support_diagnostics(Operator):
             context.space_data.image
         )
         self.report({"INFO"}, "Copied Clip Studio diagnostics")
+        return {"FINISHED"}
+
+
+class IMAGE_OT_copy_clip_support_locations(Operator):
+    """Copy unsupported .clip layer/node locations to the clipboard."""
+    bl_idname = "image.copy_clip_support_locations"
+    bl_label = "Copy Layer Locations"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        space = getattr(context, "space_data", None)
+        img = getattr(space, "image", None) if space else None
+        return img is not None and CLIP_SOURCE_KEY in img.keys()
+
+    def execute(self, context):
+        img = context.space_data.image
+        locations = _support_location_lines(img)
+        if not locations:
+            self.report({"WARNING"}, "No unsupported layer locations")
+            return {"CANCELLED"}
+        lines = [
+            "Clip Studio unsupported layer locations",
+            f"Source: {img.get(CLIP_SOURCE_KEY, '')}",
+        ]
+        lines.extend(f"- {location}" for location in locations)
+        context.window_manager.clipboard = "\n".join(lines)
+        self.report({"INFO"}, "Copied Clip Studio layer locations")
         return {"FINISHED"}
 
 
@@ -718,6 +778,12 @@ class IMAGE_PT_clip_studio(Panel):
                     text=_short_diagnostic(line),
                     icon="BLANK1",
                 )
+            location_summary = _support_location_summary(img)
+            if location_summary:
+                layout.label(
+                    text=_short_diagnostic(location_summary),
+                    icon="VIEWZOOM",
+                )
             support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
             detail_lines = [line for line in str(support_details).splitlines() if line]
             expanded = bool(img.get(CLIP_SUPPORT_DETAILS_EXPANDED_KEY, False))
@@ -755,6 +821,12 @@ class IMAGE_PT_clip_studio(Panel):
                 text="Copy support diagnostics",
                 icon="COPYDOWN",
             )
+            if _support_location_lines(img):
+                layout.operator(
+                    IMAGE_OT_copy_clip_support_locations.bl_idname,
+                    text="Copy layer locations",
+                    icon="COPYDOWN",
+                )
             layout.operator(
                 IMAGE_OT_open_clip_support_diagnostics.bl_idname,
                 text="Open support report",
@@ -812,6 +884,7 @@ _classes = (
     IMAGE_OT_reload_clip_studio,
     IMAGE_OT_toggle_clip_support_details,
     IMAGE_OT_copy_clip_support_diagnostics,
+    IMAGE_OT_copy_clip_support_locations,
     IMAGE_OT_open_clip_support_diagnostics,
     IMAGE_PT_clip_studio,
 )
