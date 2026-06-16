@@ -593,6 +593,8 @@ Owns:
 - Filesystem-path and byte-buffer session open entry points.
 - Error code and error string conversion.
 - ABI versioning.
+- Support report text formatting in `support_report.rs`, separate from the
+  exported C ABI entry points.
 
 Does not own:
 
