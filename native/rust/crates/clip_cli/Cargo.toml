@@ -12,3 +12,6 @@ clip_model = { path = "../clip_model" }
 clip_runtime = { path = "../clip_runtime" }
 png = "0.17"
 serde_json = "1"
+
+[dev-dependencies]
+clip_graph = { path = "../clip_graph" }

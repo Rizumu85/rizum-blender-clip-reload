@@ -39,7 +39,7 @@ fn main() {
         };
         println!(
             "{}",
-            support_json::normal_support_report_json(session.summary(), &result)
+            support_json::normal_support_report_json(&session, &result)
         );
         return;
     }
