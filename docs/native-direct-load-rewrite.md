@@ -180,6 +180,9 @@ Result:
   image; the Image Editor panel previews the first few detail lines, can expand
   to show the full stored list, can copy a complete support report to the
   clipboard, and can open the report as a searchable Blender Text datablock.
+  Unsupported detail lines are also parsed into structured layer records with
+  layer id, optional layer name, node id, kind, and reason, so the panel can open
+  a dedicated searchable unsupported layer index text block.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -189,9 +192,9 @@ Result:
 Remaining bridge work:
 
 - Improve user-facing diagnostics beyond the current image-level
-  status/error/support summary and searchable support report, especially
-  support-detail layer navigation and clearer supported-but-imperfect fidelity
-  residuals.
+  status/error/support summary, searchable support report, and searchable layer
+  index, especially true support-detail layer navigation and clearer
+  supported-but-imperfect fidelity residuals.
 - `clip_cli --gpu-support-json` emits the metadata-only support check as pure
   JSON, including canvas metadata, source/unsupported counts, raster/mask
   resource statistics, and unsupported node details. This is diagnostic output

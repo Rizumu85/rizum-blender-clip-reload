@@ -249,6 +249,25 @@ class NativeBridgeTests(unittest.TestCase):
             ("layer 9 node 4 Filter", "layer 10 [Layer 2] node 5 Raster"),
         )
 
+    def test_support_detail_records_extract_names_and_reasons(self) -> None:
+        records = native_bridge.support_detail_records(
+            (
+                "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
+                "- layer 10 node 5 Raster: raster colour type None is not supported",
+                "plain summary line",
+            )
+        )
+
+        self.assertEqual(len(records), 2)
+        self.assertEqual(records[0].layer_id, 9)
+        self.assertEqual(records[0].layer_name, "Tone curve")
+        self.assertEqual(records[0].node_id, 4)
+        self.assertEqual(records[0].kind, "Filter")
+        self.assertEqual(records[0].reason, "filter layer is not supported")
+        self.assertEqual(records[0].location, "layer 9 [Tone curve] node 4 Filter")
+        self.assertEqual(records[1].layer_name, "")
+        self.assertEqual(records[1].reason, "raster colour type None is not supported")
+
     def test_successful_update_clears_previous_reload_error(self) -> None:
         bpy = FakeBpy()
         image = FakeImage("sample", 1, 1)

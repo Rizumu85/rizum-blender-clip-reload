@@ -214,6 +214,13 @@ class AddonDiagnosticsTests(unittest.TestCase):
         )
         self.assertIn(
             (
+                addon.IMAGE_OT_open_clip_support_layer_index.bl_idname,
+                {"text": "Open layer index", "icon": "TEXT"},
+            ),
+            panel.layout.operators,
+        )
+        self.assertIn(
+            (
                 addon.IMAGE_OT_open_clip_support_diagnostics.bl_idname,
                 {"text": "Open support report", "icon": "TEXT"},
             ),
@@ -418,6 +425,62 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Render error: native renderer failed loudly", text.body)
         self.assertEqual(operator.reported[0], {"INFO"})
         self.assertIn("Opened Clip Studio Support - sample image", operator.reported[1])
+
+    def test_open_support_layer_index_operator_writes_structured_text_block(self) -> None:
+        addon = _load_addon_module()
+
+        class FakeImage(dict):
+            name = "sample image"
+
+        image = FakeImage(
+            {
+                addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+                addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
+                    "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported\n"
+                    "- layer 10 node 5 Raster: raster colour type None is not supported"
+                ),
+            }
+        )
+        text_space = types.SimpleNamespace(type="TEXT_EDITOR", text=None)
+        context = types.SimpleNamespace(
+            space_data=types.SimpleNamespace(image=image),
+            screen=types.SimpleNamespace(
+                areas=[
+                    types.SimpleNamespace(
+                        type="TEXT_EDITOR",
+                        spaces=[text_space],
+                    )
+                ]
+            ),
+        )
+        operator = addon.IMAGE_OT_open_clip_support_layer_index()
+
+        self.assertEqual(operator.execute(context), {"FINISHED"})
+
+        text = addon.bpy.data.texts["Clip Studio Layer Index - sample image"]
+        self.assertIs(text_space.text, text)
+        self.assertIn("Clip Studio unsupported layer index", text.body)
+        self.assertIn("Source: C:/art/sample.clip", text.body)
+        self.assertIn("layer_id\tlayer_name\tnode_id\tkind\treason", text.body)
+        self.assertIn("9\tTone curve\t4\tFilter\tfilter layer is not supported", text.body)
+        self.assertIn(
+            "10\t\t5\tRaster\traster colour type None is not supported",
+            text.body,
+        )
+        self.assertEqual(operator.reported[0], {"INFO"})
+        self.assertIn(
+            "Opened Clip Studio Layer Index - sample image",
+            operator.reported[1],
+        )
+
+    def test_open_support_layer_index_operator_rejects_missing_locations(self) -> None:
+        addon = _load_addon_module()
+        image = {addon.CLIP_SOURCE_KEY: "C:/art/sample.clip"}
+        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+        operator = addon.IMAGE_OT_open_clip_support_layer_index()
+
+        self.assertEqual(operator.execute(context), {"CANCELLED"})
+        self.assertEqual(operator.reported[0], {"WARNING"})
 
     def test_status_label_shortens_unknown_values(self) -> None:
         addon = _load_addon_module()

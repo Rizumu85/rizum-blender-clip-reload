@@ -59,7 +59,7 @@ SUPPORT_STATUS_UNKNOWN = "unknown"
 
 _SUPPORT_DETAIL_LOCATION_RE = re.compile(
     r"^- layer (?P<layer_id>\d+)(?: \[(?P<name>[^\]]+)\])? "
-    r"node (?P<node_id>\d+) (?P<kind>[^:]+)"
+    r"node (?P<node_id>\d+) (?P<kind>[^:]+?)(?:: (?P<reason>.*))?$"
 )
 
 
@@ -102,6 +102,22 @@ class NativeSupportSummary:
     max_mask_bytes: int
     report: str
     details: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SupportDetailRecord:
+    layer_id: int
+    layer_name: str
+    node_id: int
+    kind: str
+    reason: str
+
+    @property
+    def location(self) -> str:
+        layer = f"layer {self.layer_id}"
+        if self.layer_name:
+            layer = f"{layer} [{self.layer_name}]"
+        return f"{layer} node {self.node_id} {self.kind}"
 
 
 @dataclass(frozen=True)
@@ -496,7 +512,7 @@ def write_reload_error(image: Any, message: str) -> None:
     _delete_image_key(image, CLIP_RELOAD_STARTED_AT_KEY)
 
 
-def support_detail_locations(details: Any) -> tuple[str, ...]:
+def support_detail_records(details: Any) -> tuple[SupportDetailRecord, ...]:
     if isinstance(details, str):
         detail_lines = details.splitlines()
     else:
@@ -504,24 +520,25 @@ def support_detail_locations(details: Any) -> tuple[str, ...]:
             detail_lines = list(details)
         except TypeError:
             detail_lines = ()
-    locations: list[str] = []
+    records: list[SupportDetailRecord] = []
     for line in detail_lines:
         match = _SUPPORT_DETAIL_LOCATION_RE.match(str(line).strip())
         if not match:
             continue
-        locations.append(
-            "layer {layer_id}{name} node {node_id} {kind}".format(
-                layer_id=match.group("layer_id"),
-                name=(
-                    f" [{match.group('name').strip()}]"
-                    if match.group("name")
-                    else ""
-                ),
-                node_id=match.group("node_id"),
-                kind=match.group("kind").strip(),
+        records.append(
+            SupportDetailRecord(
+                layer_id=int(match.group("layer_id")),
+                layer_name=(match.group("name") or "").strip(),
+                node_id=int(match.group("node_id")),
+                kind=(match.group("kind") or "").strip(),
+                reason=match.group("reason") or "",
             )
         )
-    return tuple(locations)
+    return tuple(records)
+
+
+def support_detail_locations(details: Any) -> tuple[str, ...]:
+    return tuple(record.location for record in support_detail_records(details))
 
 
 def resolve_renderer_library(

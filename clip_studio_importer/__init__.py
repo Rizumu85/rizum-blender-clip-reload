@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 39),
+    "version": (0, 8, 40),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -302,6 +302,55 @@ def _write_support_report_text(img):
     return text
 
 
+def _support_layer_index_text_name(img) -> str:
+    image_name = getattr(img, "name", "") or os.path.basename(
+        img.get(CLIP_SOURCE_KEY, "")
+    )
+    image_name = str(image_name).strip() or "Clip Studio Image"
+    return f"Clip Studio Layer Index - {image_name}"
+
+
+def _support_layer_index_text(img) -> str:
+    support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
+    records = native_bridge.support_detail_records(support_details)
+    locations = _support_location_lines(img)
+    lines = [
+        "Clip Studio unsupported layer index",
+        f"Source: {img.get(CLIP_SOURCE_KEY, '')}",
+    ]
+    if records:
+        lines.append("layer_id\tlayer_name\tnode_id\tkind\treason")
+        lines.extend(
+            "\t".join(
+                (
+                    str(record.layer_id),
+                    record.layer_name,
+                    str(record.node_id),
+                    record.kind,
+                    record.reason,
+                )
+            )
+            for record in records
+        )
+    elif locations:
+        lines.append("location")
+        lines.extend(locations)
+    else:
+        lines.append("No unsupported layer locations.")
+    return "\n".join(lines)
+
+
+def _write_support_layer_index_text(img):
+    text_name = _support_layer_index_text_name(img)
+    texts = bpy.data.texts
+    text = texts.get(text_name)
+    if text is None:
+        text = texts.new(text_name)
+    text.clear()
+    text.write(_support_layer_index_text(img) + "\n")
+    return text
+
+
 def _show_text_in_editor(context, text) -> bool:
     screen = getattr(context, "screen", None)
     for area in getattr(screen, "areas", ()):
@@ -509,6 +558,32 @@ class IMAGE_OT_open_clip_support_diagnostics(Operator):
 
     def execute(self, context):
         text = _write_support_report_text(context.space_data.image)
+        shown = _show_text_in_editor(context, text)
+        if shown:
+            self.report({"INFO"}, f"Opened {text.name}")
+        else:
+            self.report({"INFO"}, f"Wrote {text.name}")
+        return {"FINISHED"}
+
+
+class IMAGE_OT_open_clip_support_layer_index(Operator):
+    """Open unsupported .clip layer locations as a searchable layer index."""
+    bl_idname = "image.open_clip_support_layer_index"
+    bl_label = "Open Layer Index"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        space = getattr(context, "space_data", None)
+        img = getattr(space, "image", None) if space else None
+        return img is not None and CLIP_SOURCE_KEY in img.keys()
+
+    def execute(self, context):
+        img = context.space_data.image
+        if not _support_location_lines(img):
+            self.report({"WARNING"}, "No unsupported layer locations")
+            return {"CANCELLED"}
+        text = _write_support_layer_index_text(img)
         shown = _show_text_in_editor(context, text)
         if shown:
             self.report({"INFO"}, f"Opened {text.name}")
@@ -853,6 +928,11 @@ class IMAGE_PT_clip_studio(Panel):
                     text="Copy layer locations",
                     icon="COPYDOWN",
                 )
+                layout.operator(
+                    IMAGE_OT_open_clip_support_layer_index.bl_idname,
+                    text="Open layer index",
+                    icon="TEXT",
+                )
             layout.operator(
                 IMAGE_OT_open_clip_support_diagnostics.bl_idname,
                 text="Open support report",
@@ -912,6 +992,7 @@ _classes = (
     IMAGE_OT_copy_clip_support_diagnostics,
     IMAGE_OT_copy_clip_support_locations,
     IMAGE_OT_open_clip_support_diagnostics,
+    IMAGE_OT_open_clip_support_layer_index,
     IMAGE_PT_clip_studio,
 )
 

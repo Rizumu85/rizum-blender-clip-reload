@@ -24,7 +24,8 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    The copied/searchable diagnostics also include source size and SHA-256. The
    panel shows compact unsupported layer/node/kind/name locators, can copy
    either those locations or the full support report to the clipboard, and can
-   open the full report as a searchable Blender Text datablock.
+   open either the full report or a structured unsupported layer index as a
+   searchable Blender Text datablock.
 
 ## Later Native Workflow
 
@@ -78,13 +79,13 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Unsupported layer features are summarized at image level with counts,
   resource statistics, compact unsupported layer/node/kind locators with layer
   names when available, and unsupported layer/node details. The panel previews
-  the first few entries, can
-  expand to show the full support-detail list stored on the image, can copy only
-  the locator list or the full support report to the clipboard, and can open the
-  report in Blender's Text Editor for searching.
+  the first few entries, can expand to show the full support-detail list stored
+  on the image, can copy only the locator list or the full support report to the
+  clipboard, and can open the report or a structured unsupported layer index in
+  Blender's Text Editor for searching.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.
   The remaining native-path UX work is richer layer navigation beyond copied
-  locators and the searchable support report, such as locating layers in a
-  dedicated browser.
+  locators and searchable text indices, such as locating layers in a dedicated
+  browser.
