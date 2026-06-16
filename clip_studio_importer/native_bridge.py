@@ -4,9 +4,12 @@ from array import array
 import ctypes
 from dataclasses import dataclass
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
+import subprocess
+import tempfile
 from typing import Any
 
 
@@ -362,6 +365,10 @@ def render_clip_rgba8(
 ) -> NativeRenderResult:
     if renderer is not None:
         return renderer.render_rgba8(clip_path)
+    if library_path is None:
+        worker_path = packaged_renderer_worker_path()
+        if worker_path:
+            return NativeRendererWorker(worker_path).render_rgba8(clip_path)
     return NativeRendererLibrary(resolve_renderer_library(library_path)).render_rgba8(clip_path)
 
 
@@ -574,6 +581,129 @@ def packaged_renderer_library_path() -> str | None:
         if candidate.exists():
             return str(candidate)
     return None
+
+
+def packaged_renderer_worker_path() -> str | None:
+    module_dir = Path(__file__).resolve().parent
+    candidates = [
+        module_dir / "clip_cli.exe",
+        module_dir / "clip_cli",
+        module_dir / "native" / "clip_cli.exe",
+        module_dir / "native" / "clip_cli",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return None
+
+
+class NativeRendererWorker:
+    def __init__(self, executable_path: str | os.PathLike[str]):
+        self.executable_path = str(Path(executable_path).resolve())
+
+    def render_rgba8(self, clip_path: str | os.PathLike[str]) -> NativeRenderResult:
+        source = str(Path(clip_path).resolve())
+        with tempfile.TemporaryDirectory(prefix="rizum_clip_render_") as temp_dir:
+            temp = Path(temp_dir)
+            rgba_path = temp / "render.rgba"
+            json_path = temp / "render.json"
+            command = [
+                self.executable_path,
+                source,
+                "--blender-render-rgba",
+                str(rgba_path),
+                "--blender-render-json",
+                str(json_path),
+            ]
+            creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                creationflags=creationflags,
+            )
+            if completed.returncode != 0:
+                message = completed.stderr.strip() or completed.stdout.strip()
+                raise NativeBridgeError(
+                    f"native renderer worker failed with exit code {completed.returncode}: {message}"
+                )
+            try:
+                metadata = json.loads(json_path.read_text(encoding="utf-8"))
+                pixels = rgba_path.read_bytes()
+            except OSError as exc:
+                raise NativeBridgeError(f"native renderer worker output missing: {exc}") from exc
+            except json.JSONDecodeError as exc:
+                raise NativeBridgeError(f"native renderer worker returned invalid JSON: {exc}") from exc
+
+        width = int(metadata["width"])
+        height = int(metadata["height"])
+        if len(pixels) != width * height * 4:
+            raise NativeBridgeError("native renderer worker returned an invalid RGBA buffer length")
+
+        support = metadata.get("support", {})
+        resources = metadata.get("resources", {})
+        unsupported = support.get("unsupported", []) or []
+        details = tuple(_worker_unsupported_detail(item) for item in unsupported)
+        support_summary = NativeSupportSummary(
+            source_count=int(support.get("source_count", 0) or 0),
+            unsupported_count=int(support.get("unsupported_count", len(details)) or 0),
+            raster_count=int(resources.get("raster_count", 0) or 0),
+            raster_bytes=int(resources.get("raster_bytes", 0) or 0),
+            max_raster_layer_id=int(resources.get("max_raster_layer_id") or 0),
+            max_raster_width=int(resources.get("max_raster_width", 0) or 0),
+            max_raster_height=int(resources.get("max_raster_height", 0) or 0),
+            max_raster_bytes=int(resources.get("max_raster_bytes", 0) or 0),
+            mask_count=int(resources.get("mask_count", 0) or 0),
+            mask_bytes=int(resources.get("mask_bytes", 0) or 0),
+            max_mask_layer_id=int(resources.get("max_mask_layer_id") or 0),
+            max_mask_width=int(resources.get("max_mask_width", 0) or 0),
+            max_mask_height=int(resources.get("max_mask_height", 0) or 0),
+            max_mask_bytes=int(resources.get("max_mask_bytes", 0) or 0),
+            report=str(support.get("report", "") or ""),
+            details=details,
+        )
+        try:
+            source_mtime = os.path.getmtime(source)
+        except OSError:
+            source_mtime = None
+        try:
+            source_size = os.path.getsize(source)
+        except OSError:
+            source_size = None
+        try:
+            source_sha256 = source_file_sha256(source)
+        except OSError:
+            source_sha256 = ""
+        return NativeRenderResult(
+            clip_path=source,
+            width=width,
+            height=height,
+            root_layer_id=int(metadata["root_layer_id"]),
+            layer_count=int(metadata["layer_count"]),
+            external_data_count=int(metadata["external_data_count"]),
+            renderer_abi=EXPECTED_ABI_VERSION,
+            renderer_version=str(metadata.get("renderer_version", "") or ""),
+            source_mtime=source_mtime,
+            source_size=source_size,
+            source_sha256=source_sha256,
+            pixels_rgba8=pixels,
+            support_summary=support_summary,
+        )
+
+
+def _worker_unsupported_detail(item: Any) -> str:
+    layer_id = int(item.get("layer_id", 0) or 0)
+    layer_name = str(item.get("layer_name", "") or "").strip()
+    node_id = int(item.get("node_id", 0) or 0)
+    kind = str(item.get("kind", "") or "").strip()
+    reason = str(item.get("reason", "") or "").strip()
+    layer = f"layer {layer_id}"
+    if layer_name:
+        layer = f"{layer} [{layer_name}]"
+    detail = f"- {layer} node {node_id} {kind}".rstrip()
+    if reason:
+        detail = f"{detail}: {reason}"
+    return detail
 
 
 def source_file_sha256(path: str | os.PathLike[str]) -> str:

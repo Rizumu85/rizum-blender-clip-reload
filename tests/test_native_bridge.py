@@ -122,6 +122,20 @@ class NativeBridgeTests(unittest.TestCase):
             if old_env is not None:
                 os.environ["RIZUM_CLIP_RENDERER_DLL"] = old_env
 
+    def test_worker_unsupported_detail_formats_issue_locator(self) -> None:
+        self.assertEqual(
+            native_bridge._worker_unsupported_detail(
+                {
+                    "layer_id": 9,
+                    "layer_name": "Tone curve",
+                    "node_id": 4,
+                    "kind": "Filter",
+                    "reason": "filter layer is not supported",
+                }
+            ),
+            "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
+        )
+
     def test_import_clip_as_image_uploads_pixels_and_tracks_source(self) -> None:
         bpy = FakeBpy()
 

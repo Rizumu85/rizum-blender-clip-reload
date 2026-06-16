@@ -8,6 +8,7 @@ use std::process;
 use clip_model::{LayerId, Rect, Rgba8};
 use clip_runtime::ClipSession;
 
+mod blender_worker;
 mod layer_labels;
 mod support_json;
 mod support_text;
@@ -19,11 +20,15 @@ fn main() {
     let _program = args.next();
     let Some(path) = args.next() else {
         eprintln!(
-            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>]"
+            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json>] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>]"
         );
         process::exit(2);
     };
     let options = parse_options(args.collect());
+    if options.blender_render_rgba_path.is_some() != options.blender_render_json_path.is_some() {
+        eprintln!("--blender-render-rgba and --blender-render-json must be used together");
+        process::exit(2);
+    }
 
     let mut session = match ClipSession::open(&path) {
         Ok(session) => session,
@@ -32,6 +37,22 @@ fn main() {
             process::exit(1);
         }
     };
+
+    if let (Some(rgba_path), Some(json_path)) = (
+        &options.blender_render_rgba_path,
+        &options.blender_render_json_path,
+    ) {
+        if let Err(err) =
+            blender_worker::write_blender_render_files(&mut session, rgba_path, json_path)
+        {
+            eprintln!(
+                "failed to render Blender worker files from {:?}: {err}",
+                path
+            );
+            process::exit(1);
+        }
+        return;
+    }
 
     if options.gpu_support_json {
         let result = match session.check_normal_raster_stack_support() {
@@ -417,6 +438,8 @@ struct CliOptions {
     gpu_trace_pixel: Option<(u32, u32)>,
     dump_layer_window: Option<(LayerId, u32, u32, u32)>,
     compare_png_path: Option<PathBuf>,
+    blender_render_rgba_path: Option<PathBuf>,
+    blender_render_json_path: Option<PathBuf>,
 }
 
 fn parse_options(args: Vec<OsString>) -> CliOptions {
@@ -475,6 +498,18 @@ fn parse_options(args: Vec<OsString>) -> CliOptions {
                 process::exit(2);
             };
             options.compare_png_path = Some(PathBuf::from(path));
+        } else if arg == "--blender-render-rgba" {
+            let Some(path) = iter.next() else {
+                eprintln!("missing value after --blender-render-rgba");
+                process::exit(2);
+            };
+            options.blender_render_rgba_path = Some(PathBuf::from(path));
+        } else if arg == "--blender-render-json" {
+            let Some(path) = iter.next() else {
+                eprintln!("missing value after --blender-render-json");
+                process::exit(2);
+            };
+            options.blender_render_json_path = Some(PathBuf::from(path));
         } else if arg == "--plan-only" {
             options.plan_only = true;
         } else {

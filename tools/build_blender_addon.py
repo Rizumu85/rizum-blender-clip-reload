@@ -16,6 +16,11 @@ NATIVE_LIBRARY_NAMES = (
     "libclip_capi.dylib",
 )
 
+NATIVE_WORKER_NAMES = (
+    "clip_cli.exe",
+    "clip_cli",
+)
+
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
@@ -43,6 +48,11 @@ def native_library_candidates(root: Path) -> list[Path]:
     return [release_dir / name for name in NATIVE_LIBRARY_NAMES]
 
 
+def native_worker_candidates(root: Path) -> list[Path]:
+    release_dir = root / "native" / "rust" / "target" / "release"
+    return [release_dir / name for name in NATIVE_WORKER_NAMES]
+
+
 def build_zip(output: Path, *, include_native: bool) -> list[str]:
     root = repo_root()
     package_dir = root / "clip_studio_importer"
@@ -51,11 +61,21 @@ def build_zip(output: Path, *, include_native: bool) -> list[str]:
     native_libraries = [
         candidate for candidate in native_library_candidates(root) if candidate.exists()
     ]
+    native_workers = [
+        candidate for candidate in native_worker_candidates(root) if candidate.exists()
+    ]
     if include_native and not native_libraries:
         names = ", ".join(NATIVE_LIBRARY_NAMES)
         raise SystemExit(
             "No release native renderer library found. Run "
             "`cargo build --release -p clip_capi` under native/rust first, "
+            f"or pass --no-native. Expected one of: {names}"
+        )
+    if include_native and not native_workers:
+        names = ", ".join(NATIVE_WORKER_NAMES)
+        raise SystemExit(
+            "No release native renderer worker found. Run "
+            "`cargo build --release -p clip_cli` under native/rust first, "
             f"or pass --no-native. Expected one of: {names}"
         )
 
@@ -70,7 +90,7 @@ def build_zip(output: Path, *, include_native: bool) -> list[str]:
             written.append(arcname)
 
         if include_native:
-            for source in native_libraries:
+            for source in native_libraries + native_workers:
                 arcname = f"clip_studio_importer/native/{source.name}"
                 archive.write(source, arcname)
                 written.append(arcname)

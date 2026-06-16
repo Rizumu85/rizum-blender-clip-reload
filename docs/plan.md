@@ -40,18 +40,18 @@ Current focus:
 
 - Keep manual reload and non-blocking auto-reload behavior stable.
 - Keep the native renderer bridge as the add-on's only import/reload path:
-  native imports create generated/packed Blender images, store source-tracking
-  properties, and update through the add-on's reload/watch path without writing
-  sidecar PNGs.
+  native imports render through the packaged out-of-process native worker,
+  create generated/packed Blender images, store source-tracking properties, and
+  update through the add-on's reload/watch path without writing sidecar PNGs.
 - Keep native render state visible in Blender: image metadata and the Image
   Editor panel should report ready, refreshing, stale, missing-source,
   render-error states, and elapsed/last render timing.
 - Surface native support summaries in Blender from the metadata-only C ABI
   support check, including resource statistics, expandable unsupported
   layer/node details, copyable diagnostic text, and searchable Text Editor
-  reports; show compact unsupported layer/node/kind locators, allow copying
-  just those locations for source-layer follow-up, and keep a searchable
-  unsupported layer index available from the panel.
+  reports. Compact unsupported layer/node/kind locators may be copied for issue
+  reports, but the Blender add-on must not grow layer-navigation or CSP
+  layer-management UI.
 - Rebuild `clip_studio_importer.zip` whenever package code changes.
 
 ## Direction 3: Native Image Loading Rewrite
@@ -63,7 +63,8 @@ Current policy:
 - Rust plus `wgpu` is the chosen renderer direction, with a thin C++ OpenImageIO plugin boundary and a stock Blender image-datablock bridge.
 - External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch. The C ABI has a byte-buffer session entry point (`clip_renderer_session_open_memory`), and the C++ OIIO adapter now supports `IOProxy` memory opens by reading `oiio:ioproxy` bytes into Rust memory sessions without temp files. This is host-integration plumbing for OIIO/ImBuf callers, not a replacement for the accepted generated-image Blender add-on path.
 - Current native milestone: the stock Blender image-datablock bridge is the
-  add-on runtime path. The add-on calls `clip_capi`, creates generated/packed
+  add-on runtime path. The add-on calls the packaged `clip_cli` worker so native
+  GPU rendering runs outside Blender's UI process, creates generated/packed
   Blender images, records source metadata (mtime, size, SHA-256), and updates
   those images through manual reload, the background watcher, and Blender
   `load_post` freshness scans without writing sidecar PNGs. The watcher uses
@@ -74,10 +75,11 @@ Current policy:
   exposes metadata-only native support summaries,
   and the add-on stores/displays source count, unsupported count, raster/mask
   resource statistics, expandable unsupported layer/node detail lines, compact
-  unsupported layer/node/kind locators, and copyable/searchable support
-  diagnostics plus a searchable unsupported layer index. `tools/build_blender_addon.py`
+  unsupported layer/node/kind issue locators, and copyable/searchable support
+  diagnostics. `tools/build_blender_addon.py`
   builds the installable zip with `__init__.py`, `native_bridge.py`, and the
-  locally built release `clip_capi` library under `clip_studio_importer/native/`;
+  locally built release `clip_cli` worker plus `clip_capi` library under
+  `clip_studio_importer/native/`;
   it no longer packages the Python compositor/loader. The native library
   preference is an override only and can stay empty when the packaged renderer
   is found. The project-root `clip_loader.py` remains slow reference tooling for

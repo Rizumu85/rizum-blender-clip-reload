@@ -128,10 +128,12 @@ class FakeLayout:
 class AddonDiagnosticsTests(unittest.TestCase):
     def test_preferences_draw_explains_empty_native_renderer_override(self) -> None:
         addon = _load_addon_module()
-        original = addon.native_bridge.packaged_renderer_library_path
-        addon.native_bridge.packaged_renderer_library_path = (
-            lambda: "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll"
+        original_worker = addon.native_bridge.packaged_renderer_worker_path
+        original_library = addon.native_bridge.packaged_renderer_library_path
+        addon.native_bridge.packaged_renderer_worker_path = (
+            lambda: "C:/Blender/addons/clip_studio_importer/native/clip_cli.exe"
         )
+        addon.native_bridge.packaged_renderer_library_path = lambda: None
         try:
             preferences = addon.CSI_AddonPreferences()
             preferences.layout = FakeLayout()
@@ -140,7 +142,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
 
             preferences.draw(types.SimpleNamespace())
         finally:
-            addon.native_bridge.packaged_renderer_library_path = original
+            addon.native_bridge.packaged_renderer_worker_path = original_worker
+            addon.native_bridge.packaged_renderer_library_path = original_library
 
         labels = [label for label, _icon in preferences.layout.labels]
         self.assertIn(
@@ -236,13 +239,6 @@ class AddonDiagnosticsTests(unittest.TestCase):
             (
                 addon.IMAGE_OT_copy_clip_support_locations.bl_idname,
                 {"text": "Copy layer locations", "icon": "COPYDOWN"},
-            ),
-            panel.layout.operators,
-        )
-        self.assertIn(
-            (
-                addon.IMAGE_OT_open_clip_support_layer_index.bl_idname,
-                {"text": "Open layer index", "icon": "TEXT"},
             ),
             panel.layout.operators,
         )
@@ -453,61 +449,33 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertEqual(operator.reported[0], {"INFO"})
         self.assertIn("Opened Clip Studio Support - sample image", operator.reported[1])
 
-    def test_open_support_layer_index_operator_writes_structured_text_block(self) -> None:
+    def test_import_operator_does_not_switch_image_editor_image(self) -> None:
         addon = _load_addon_module()
-
-        class FakeImage(dict):
-            name = "sample image"
-
-        image = FakeImage(
-            {
-                addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
-                addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
-                    "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported\n"
-                    "- layer 10 node 5 Raster: raster colour type None is not supported"
-                ),
-            }
-        )
-        text_space = types.SimpleNamespace(type="TEXT_EDITOR", text=None)
+        imported_image = types.SimpleNamespace(name="sample.clip", size=(16, 8))
+        original_image = types.SimpleNamespace(name="already-open")
+        image_space = types.SimpleNamespace(type="IMAGE_EDITOR", image=original_image)
         context = types.SimpleNamespace(
-            space_data=types.SimpleNamespace(image=image),
             screen=types.SimpleNamespace(
                 areas=[
                     types.SimpleNamespace(
-                        type="TEXT_EDITOR",
-                        spaces=[text_space],
+                        type="IMAGE_EDITOR",
+                        spaces=[image_space],
                     )
                 ]
-            ),
+            )
         )
-        operator = addon.IMAGE_OT_open_clip_support_layer_index()
+        original_import = addon._import_clip_as_image
+        addon._import_clip_as_image = lambda _path: imported_image
+        try:
+            operator = addon.IMPORT_OT_clip_studio()
+            operator.filepath = "C:/art/sample.clip"
 
-        self.assertEqual(operator.execute(context), {"FINISHED"})
+            self.assertEqual(operator.execute(context), {"FINISHED"})
+        finally:
+            addon._import_clip_as_image = original_import
 
-        text = addon.bpy.data.texts["Clip Studio Layer Index - sample image"]
-        self.assertIs(text_space.text, text)
-        self.assertIn("Clip Studio unsupported layer index", text.body)
-        self.assertIn("Source: C:/art/sample.clip", text.body)
-        self.assertIn("layer_id\tlayer_name\tnode_id\tkind\treason", text.body)
-        self.assertIn("9\tTone curve\t4\tFilter\tfilter layer is not supported", text.body)
-        self.assertIn(
-            "10\t\t5\tRaster\traster colour type None is not supported",
-            text.body,
-        )
+        self.assertIs(image_space.image, original_image)
         self.assertEqual(operator.reported[0], {"INFO"})
-        self.assertIn(
-            "Opened Clip Studio Layer Index - sample image",
-            operator.reported[1],
-        )
-
-    def test_open_support_layer_index_operator_rejects_missing_locations(self) -> None:
-        addon = _load_addon_module()
-        image = {addon.CLIP_SOURCE_KEY: "C:/art/sample.clip"}
-        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
-        operator = addon.IMAGE_OT_open_clip_support_layer_index()
-
-        self.assertEqual(operator.execute(context), {"CANCELLED"})
-        self.assertEqual(operator.reported[0], {"WARNING"})
 
     def test_status_label_shortens_unknown_values(self) -> None:
         addon = _load_addon_module()

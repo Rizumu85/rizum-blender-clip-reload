@@ -146,12 +146,15 @@ Result:
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
 - The add-on exposes `Native renderer override` as an optional override
-  preference. Native imports create generated images without sidecar PNGs, pack
-  them by default, and store source path, source mtime, source size, source
-  SHA-256, canvas metadata, renderer ABI, renderer version, and reload status
-  custom properties. The installable add-on zip includes the local release
-  `clip_capi` library under `clip_studio_importer/native/`; the override can
-  stay empty when the packaged renderer is found.
+  preference. Native imports render through the packaged out-of-process
+  `clip_cli` worker, create generated images without sidecar PNGs, pack them by
+  default, and store source path, source mtime, source size, source SHA-256,
+  canvas metadata, renderer ABI, renderer version, and reload status custom
+  properties. The installable add-on zip includes the local release `clip_cli`
+  worker plus `clip_capi` library under `clip_studio_importer/native/`; the
+  override can stay empty when the packaged worker is found. The DLL override is
+  retained for explicit development/testing only because in-process wgpu
+  rendering can crash Blender's UI redraw path on Blender 5.0.1/NVIDIA.
 - `Reload from .clip` and the non-blocking watcher update images through the C
   ABI/generated-image path only.
 - Blender `load_post` now scans packed native images, checks the stored source
@@ -180,8 +183,9 @@ Result:
   to show the full stored list, can copy a complete support report to the
   clipboard, and can open the report as a searchable Blender Text datablock.
   Unsupported detail lines are also parsed into structured layer records with
-  layer id, optional layer name, node id, kind, and reason, so the panel can open
-  a dedicated searchable unsupported layer index text block.
+  layer id, optional layer name, node id, kind, and reason, so copied
+  diagnostics can identify source layers for issue reports without adding
+  Blender-side layer navigation.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -191,9 +195,9 @@ Result:
 Remaining bridge work:
 
 - Improve user-facing diagnostics beyond the current image-level
-  status/error/support summary, searchable support report, and searchable layer
-  index, especially true support-detail layer navigation and clearer
-  supported-but-imperfect fidelity residuals.
+  status/error/support summary and searchable support report, especially clearer
+  supported-but-imperfect fidelity residuals. Do not add layer navigation to the
+  Blender add-on.
 - `clip_cli --gpu-support-check` and `clip_cli --gpu-support-json` expose the
   metadata-only support check for developer diagnosis and automation. The text
   and JSON outputs include layer names for unsupported nodes and largest

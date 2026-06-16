@@ -9,8 +9,10 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 1. Install the Blender add-on from `clip_studio_importer.zip`.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
 3. By default, the add-on calls the packaged `clip_capi` native renderer,
-   uploads the returned RGBA pixels into a generated Blender image, and packs
-   the rendered pixels into the `.blend`.
+   through the packaged out-of-process `clip_cli` worker, uploads the returned
+   RGBA pixels into a generated Blender image, and packs the rendered pixels
+   into the `.blend`. The worker keeps native GPU rendering out of Blender's UI
+   process; it is not a Python compositor or sidecar PNG cache.
 4. When the source `.clip` is saved again, auto-reload watches lightweight file
    freshness metadata and refreshes the Blender image after the background
    render finishes.
@@ -22,10 +24,10 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    statistics, missing-source state, and the latest native render error for the
    selected `.clip` image.
    The copied/searchable diagnostics also include source size and SHA-256. The
-   panel shows compact unsupported layer/node/kind/name locators, can copy
-   either those locations or the full support report to the clipboard, and can
-   open either the full report or a structured unsupported layer index as a
-   searchable Blender Text datablock.
+   panel shows compact unsupported layer/node/kind/name issue locators and can
+   copy either those locations or the full support report to the clipboard.
+   These locators are for bug reports and source-file follow-up, not Blender
+   layer navigation.
 
 ## Later Native Workflow
 
@@ -34,8 +36,8 @@ sidecar PNG cache and not a Python compositor:
 
 1. Install the native renderer plus the Blender add-on.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
-3. The add-on calls the native Rust/wgpu renderer and uploads the returned RGBA
-   pixels into a generated Blender `Image`.
+3. The add-on calls the packaged native Rust/wgpu worker and uploads the
+   returned RGBA pixels into a generated Blender `Image`.
 4. The add-on packs the rendered pixels into the `.blend` by default and records
    `.clip` source metadata on the image.
 5. When the `.blend` is reopened, Blender immediately shows the packed last
@@ -71,21 +73,22 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Avoid adding CSP-editing concepts to Blender. The add-on is read-only and only presents the flattened canvas.
 - Prefer ordinary Blender Image semantics when possible. If native OIIO loading works later, `.clip` should behave like PSD/PNG from the artist's point of view.
 - Keep vector, bubble/frame, and text content outside the user-facing promise unless the project scope is explicitly reopened.
+- Do not add layer navigation or CSP layer-management UI. Blender owns the
+  flattened texture reload workflow only.
 
 ## Current UX Gaps
 
 - Background render progress is elapsed-time only; there is no per-layer or
   percentage progress indicator yet.
 - Unsupported layer features are summarized at image level with counts,
-  resource statistics, compact unsupported layer/node/kind locators with layer
-  names when available, and unsupported layer/node details. The panel previews
-  the first few entries, can expand to show the full support-detail list stored
-  on the image, can copy only the locator list or the full support report to the
-  clipboard, and can open the report or a structured unsupported layer index in
-  Blender's Text Editor for searching.
+  resource statistics, compact unsupported layer/node/kind issue locators with
+  layer names when available, and unsupported layer/node details. The panel
+  previews the first few entries, can expand to show the full support-detail
+  list stored on the image, can copy only the locator list or the full support
+  report to the clipboard, and can open the report in Blender's Text Editor for
+  searching.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.
-  The remaining native-path UX work is richer layer navigation beyond copied
-  locators and searchable text indices, such as locating layers in a dedicated
-  browser.
+  The remaining native-path UX work is limited to clearer reload/status/error
+  reporting for the flattened texture workflow.
