@@ -340,27 +340,21 @@ where
             children,
             opacity,
             mask_key,
-        } => {
-            debug_assert_eq!(
-                target_origin,
-                (0, 0),
-                "THROUGH groups render only into full-canvas streaming targets"
-            );
-            render_through_group_with_provider(
-                renderer,
-                provider,
-                state,
-                output_size,
-                children,
-                *opacity,
-                *mask_key,
-                previous_texture,
-                fallback_texture,
-                output_view,
-                pipelines,
-                dirty_bounds,
-            )
-        }
+        } => render_through_group_with_provider(
+            renderer,
+            provider,
+            state,
+            output_size,
+            target_origin,
+            children,
+            *opacity,
+            *mask_key,
+            previous_texture,
+            fallback_texture,
+            output_view,
+            pipelines,
+            dirty_bounds,
+        ),
         GpuNormalStackSource::SolidColor { color, opacity } => {
             let Some(full_bounds) = CanvasRect::full(output_size) else {
                 return Ok(false);

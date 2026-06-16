@@ -66,13 +66,11 @@ where
             current_bounds,
             current_unknown,
         ),
-        GpuNormalStackSource::ThroughGroup { children, .. } => {
-            if known_stack_bounds(provider, children, output_size) == KnownStackBounds::Empty {
-                KnownStackBounds::Empty
-            } else {
-                KnownStackBounds::Unknown
-            }
-        }
+        GpuNormalStackSource::ThroughGroup { children, .. } => merge_source_bounds(
+            known_stack_bounds(provider, children, output_size),
+            current_bounds,
+            current_unknown,
+        ),
         GpuNormalStackSource::SolidColor { .. }
         | GpuNormalStackSource::LutFilter {
             mask_key: Some(_), ..
@@ -199,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn nonempty_through_group_keeps_bounds_unknown() {
+    fn nonempty_through_group_uses_child_bounds() {
         let key = raster_key(1);
         let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
         let sources = vec![GpuNormalStackSource::ThroughGroup {
@@ -210,7 +208,12 @@ mod tests {
 
         assert_eq!(
             known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
-            KnownStackBounds::Unknown
+            KnownStackBounds::Bounded(CanvasRect {
+                x: 1,
+                y: 1,
+                width: 2,
+                height: 2,
+            })
         );
     }
 

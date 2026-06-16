@@ -230,6 +230,7 @@ pub(crate) fn render_through_group_with_provider<P>(
     provider: &mut P,
     state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
+    target_origin: (i32, i32),
     children: &[crate::GpuNormalStackSource],
     opacity: f32,
     mask_key: Option<GpuMaskResourceKey>,
@@ -287,7 +288,7 @@ where
                 1.0,
                 false,
                 GpuRasterBlendMode::Normal,
-                (0, 0),
+                target_origin,
                 cache_origin,
             ),
             "rizum_clip_provider_through_seed_pass",
@@ -361,10 +362,12 @@ where
             mask_key.is_some(),
             GpuRasterBlendMode::Normal,
             cache_origin,
-            (0, 0),
+            target_origin,
         ),
         "rizum_clip_provider_through_resolve_pass",
-        pass_bounds,
+        pass_bounds
+            .translate_to_local(target_origin)
+            .expect("through resolve bounds must fit inside the target"),
     );
     state.retain_optional_mask_cache(mask_cache);
     state.retain_texture_pair(through_pair);

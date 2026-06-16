@@ -239,6 +239,63 @@ fn streamed_through_cache_preserves_parent_dirty_outside_cropped_bounds() {
 }
 
 #[test]
+fn streamed_nested_through_group_resolves_inside_cropped_container() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let red_key = raster_key(7);
+    let green_key = raster_key(8);
+    let mut provider = InlineProvider::new(vec![
+        (
+            red_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(7),
+                size: CanvasSize::new(3, 3),
+                offset: (2, 1),
+                pixels: [255, 0, 0, 255].repeat(9),
+            },
+        ),
+        (
+            green_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(8),
+                size: CanvasSize::new(1, 1),
+                offset: (3, 2),
+                pixels: [0, 255, 0, 255].to_vec(),
+            },
+        ),
+    ]);
+    let sources = [GpuNormalStackSource::Container {
+        children: vec![
+            GpuNormalStackSource::Raster(raster_source_at(red_key, 2, 1)),
+            GpuNormalStackSource::ThroughGroup {
+                children: vec![GpuNormalStackSource::Raster(raster_source_at(
+                    green_key, 3, 2,
+                ))],
+                opacity: 1.0,
+                mask_key: None,
+            },
+        ],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(6, 5), &sources, &mut provider)
+        .expect("draw nested through group inside cropped container");
+
+    let mut expected = [255, 255, 255, 0].repeat(30);
+    for y in 1..=3 {
+        for x in 2..=4 {
+            let offset = ((y * 6 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[255, 0, 0, 255]);
+        }
+    }
+    expected[((2 * 6 + 3) * 4) as usize..((2 * 6 + 3) * 4 + 4) as usize]
+        .copy_from_slice(&[0, 255, 0, 255]);
+    assert_eq!(output.pixels, expected);
+}
+
+#[test]
 fn streamed_lut_filter_scissors_to_existing_dirty_bounds() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = raster_key(7);
