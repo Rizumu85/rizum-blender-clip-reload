@@ -147,7 +147,10 @@ Result:
 - The add-on exposes `Use native renderer` and `Native renderer library`
   preferences. Native imports create generated images without sidecar PNGs,
   pack them by default, and store source path, source mtime, canvas metadata,
-  renderer ABI, and reload status custom properties.
+  renderer ABI, and reload status custom properties. The installable add-on zip
+  now includes the local release `clip_capi` library under
+  `clip_studio_importer/native/`; the library path preference is an override,
+  not the normal packaged path.
 - `Reload from .clip` and the non-blocking watcher update native images through
   the C ABI/generated-image path, while sidecar images continue to use the
   existing PNG reload path.
@@ -163,8 +166,6 @@ Result:
 
 Remaining bridge work:
 
-- Decide how native renderer binaries are packaged/discovered for installed
-  add-ons.
 - Promote native renderer mode from explicit opt-in to the accepted/default
   Blender import path, then delete the Python compositor/loader and sidecar PNG
   workflow.

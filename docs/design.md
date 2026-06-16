@@ -12,9 +12,9 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    `<file>.clip.png`, and loads that PNG as a normal Blender image.
 4. When the source `.clip` is saved again, auto-reload watches the file timestamp and refreshes the Blender image after the background decode finishes.
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
-6. If `Use native renderer` is enabled and a `clip_capi` library is configured,
-   import/reload uses the native generated-image bridge instead of writing a
-   sidecar PNG.
+6. If `Use native renderer` is enabled, import/reload uses the packaged
+   `clip_capi` native generated-image bridge instead of writing a sidecar PNG.
+   The `Native renderer library` preference is only needed as an override.
 
 ## Later Native Workflow
 
@@ -67,8 +67,9 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Background decode progress is only shown as a small `Decoding in background` label when the image panel is visible.
 - Unknown or unsupported layer features are currently console warnings, not surfaced in Blender's UI.
 - Sidecar import/reload writes a PNG next to the `.clip`; there is no cache-location preference.
-- Native renderer mode is still explicit opt-in and currently requires the user
-  or package layout to provide a discoverable `clip_capi` library.
+- Native renderer mode is still explicit opt-in. The installable zip now carries
+  the locally built release `clip_capi` library for automatic discovery, while
+  the preference path remains an override.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize unsupported layer kinds or skipped semantics in the UI.
 - Native generated-image loading exists, including packed-pixel persistence,
   manual reload, background watcher refresh, and `load_post` freshness checks.

@@ -16,7 +16,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 24),
+    "version": (0, 8, 25),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -490,7 +490,7 @@ class CSI_AddonPreferences(AddonPreferences):
     )
     native_library_path: StringProperty(
         name="Native renderer library",
-        description="Path to clip_capi.dll, libclip_capi.so, or libclip_capi.dylib.",
+        description="Optional override path to clip_capi.dll, libclip_capi.so, or libclip_capi.dylib.",
         default="",
         subtype="FILE_PATH",
     )

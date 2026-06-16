@@ -609,6 +609,8 @@ Owns:
 - Packing the latest rendered pixels into the `.blend` by default.
 - Storing and reading `.clip` source-tracking custom properties on images.
 - User-facing import/reload UI.
+- Discovering the packaged native C ABI library from
+  `clip_studio_importer/native/` unless the user supplies an explicit override.
 
 Does not own:
 
@@ -637,6 +639,11 @@ Persistence rules:
   `clip_native_renderer`, `clip_renderer_abi`, and `clip_reload_status`. This is
   Blender add-on state, not a native runtime API; a final accepted native path
   may migrate property names while deleting the sidecar workflow.
+- `tools/build_blender_addon.py` is the current package builder. It writes
+  `clip_studio_importer.zip` and includes the local release native renderer
+  library at `clip_studio_importer/native/clip_capi.dll` on Windows, matching the
+  add-on discovery path. Equivalent `.so`/`.dylib` names are reserved for other
+  platforms.
 - On Blender `load_post`, the current add-on scans native images with
   `clip_native_renderer` plus `clip_source`. If the source exists and is
   newer/different, it asks the native runtime to render and updates the image

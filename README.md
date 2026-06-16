@@ -6,14 +6,14 @@ The default path decodes `.clip` in Python, writes a sidecar PNG cache next to t
 
 ## Status
 
-Package version: `0.8.24`.
+Package version: `0.8.25`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
 - Paper/background layers, masks, opacity, `LayerVisibility` bit flags, clipping layers, folders, and offscreen group compositing.
 - Observed CSP blend modes, plus current adjustment/filter-layer support used by the supplied samples.
 - Blender import, manual reload, and non-blocking auto-reload.
-- Optional native renderer bridge for Blender generated images through `clip_capi`, including packed-image freshness checks after opening a `.blend`.
+- Optional native renderer bridge for Blender generated images through packaged `clip_capi`, including packed-image freshness checks after opening a `.blend`.
 
 Known fidelity gaps:
 - Remaining native GPU differences are low-level formula/quantization cases on complex blend/filter samples.
@@ -33,7 +33,20 @@ Known fidelity gaps:
 3. In the default mode, Blender loads the decoded sidecar PNG at `<source>.clip.png`.
 4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Reload from .clip` in the Image Editor N-panel.
 
-To test the native path, enable `Use native renderer` in the add-on preferences and set `Native renderer library` to the built `clip_capi` library, for example `native/rust/target/release/clip_capi.dll` on Windows. In this mode the add-on creates or updates a generated Blender image, stores `.clip` source metadata on it, repacks the rendered pixels after import/reload, and checks packed native images again when a `.blend` is opened.
+To test the native path, enable `Use native renderer` in the add-on preferences. The installable zip includes the locally built release `clip_capi` library under `clip_studio_importer/native/`, so `Native renderer library` is only needed as an override. In this mode the add-on creates or updates a generated Blender image, stores `.clip` source metadata on it, repacks the rendered pixels after import/reload, and checks packed native images again when a `.blend` is opened.
+
+## Build Package
+
+Build the native C ABI first, then rebuild the installable add-on zip:
+
+```powershell
+cd native\rust
+cargo build --release -q -p clip_capi
+cd ..\..
+python tools\build_blender_addon.py
+```
+
+The package script writes `clip_studio_importer.zip` and, by default, requires and includes the release native renderer library. Use `--no-native` only when intentionally building a Python-only package.
 
 ## Project Layout
 
