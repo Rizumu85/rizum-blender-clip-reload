@@ -13,7 +13,9 @@ mod gpu_provider;
 mod source_crop;
 mod support;
 
-use gpu_provider::{GpuResourcePlan, RuntimeGpuResourceProvider, plan_gpu_mask_resource};
+use gpu_provider::{
+    GpuResourcePlan, PlannedGpuMaskResource, RuntimeGpuResourceProvider, plan_gpu_mask_resource,
+};
 
 const LAYER_COMPOSITE_THROUGH: u32 = 30;
 const LAYER_COMPOSITE_DARKEN: u32 = 1;
@@ -1118,7 +1120,10 @@ impl ClipSession {
             return Ok(None);
         }
 
-        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
+        let (mask_key, opacity) = apply_planned_gpu_mask(
+            plan_gpu_mask_resource(&self.mask_sources, node, self.summary.canvas, resource_plan)?,
+            opacity,
+        );
         let children = self.collect_gpu_sources_in_range(
             index + 1,
             subtree_end,
@@ -1184,7 +1189,10 @@ impl ClipSession {
             return Ok(None);
         }
 
-        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
+        let (mask_key, opacity) = apply_planned_gpu_mask(
+            plan_gpu_mask_resource(&self.mask_sources, node, self.summary.canvas, resource_plan)?,
+            opacity,
+        );
         let children = self.collect_gpu_sources_in_range(
             index + 1,
             subtree_end,
@@ -1278,7 +1286,10 @@ impl ClipSession {
             render_mipmap_id,
             source.clone(),
         );
-        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
+        let (mask_key, opacity) = apply_planned_gpu_mask(
+            plan_gpu_mask_resource(&self.mask_sources, node, self.summary.canvas, resource_plan)?,
+            opacity,
+        );
         Ok(Some(clip_gpu::GpuNormalRasterSource {
             key,
             opacity,
@@ -1357,7 +1368,10 @@ impl ClipSession {
             });
             return Ok(None);
         };
-        let mask_key = plan_gpu_mask_resource(&self.mask_sources, node, resource_plan)?;
+        let (mask_key, opacity) = apply_planned_gpu_mask(
+            plan_gpu_mask_resource(&self.mask_sources, node, self.summary.canvas, resource_plan)?,
+            opacity,
+        );
         Ok(Some(clip_gpu::GpuNormalStackSource::LutFilter {
             lut_rgba,
             opacity,
@@ -2306,6 +2320,17 @@ fn opacity_factor(opacity: LayerOpacity) -> Option<f32> {
         Some(f32::from(opacity.0) / f32::from(LayerOpacity::MAX.0))
     } else {
         None
+    }
+}
+
+fn apply_planned_gpu_mask(
+    mask: PlannedGpuMaskResource,
+    opacity: f32,
+) -> (Option<clip_gpu::GpuMaskResourceKey>, f32) {
+    match mask {
+        PlannedGpuMaskResource::None | PlannedGpuMaskResource::FullyOpaque => (None, opacity),
+        PlannedGpuMaskResource::Key(key) => (Some(key), opacity),
+        PlannedGpuMaskResource::FullyTransparent => (None, 0.0),
     }
 }
 
@@ -3400,7 +3425,7 @@ mod tests {
 
     use clip_file::ClipFileSummary;
     use clip_graph::{RenderNode, RenderNodeId, RenderNodeKind, RenderPlan};
-    use clip_model::{CanvasSize, LayerId, LayerOpacity, Rgba8};
+    use clip_model::{CanvasSize, LayerId, LayerKind, LayerOpacity, LayerVisibility, Rgba8};
 
     use super::{ClipSession, StrictRasterStackDraw, StrictRasterStackOptions};
 
@@ -4131,6 +4156,87 @@ mod tests {
         assert_eq!(folder_image.pixels, flat_image.pixels);
     }
 
+    #[test]
+    fn gpu_selector_folds_off_canvas_zero_fill_mask_to_zero_opacity() {
+        let mut session = synthetic_session(vec![
+            container_node(0, 2, 0, 0),
+            raster_node_with_mask(1, 10, 1, 15, 50, false),
+        ]);
+        session
+            .raster_sources
+            .insert(LayerId(10), raster_source(10, 15));
+        session
+            .mask_sources
+            .insert(LayerId(10), off_canvas_mask_source(10, 50, 0));
+
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .expect("select synthetic masked raster");
+
+        assert!(selection.unsupported.is_empty());
+        assert_eq!(selection.resource_plan.mask_resource_count(), 0);
+        assert_eq!(selection.sources.len(), 1);
+        let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
+            panic!("masked raster was not represented as a raster source");
+        };
+        assert_eq!(raster.opacity, 0.0);
+        assert_eq!(raster.mask_key, None);
+    }
+
+    #[test]
+    fn gpu_selector_elides_off_canvas_opaque_mask_resource() {
+        let mut session = synthetic_session(vec![
+            container_node(0, 2, 0, 0),
+            raster_node_with_mask(1, 10, 1, 15, 50, false),
+        ]);
+        session
+            .raster_sources
+            .insert(LayerId(10), raster_source(10, 15));
+        session
+            .mask_sources
+            .insert(LayerId(10), off_canvas_mask_source(10, 50, 255));
+
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .expect("select synthetic masked raster");
+
+        assert!(selection.unsupported.is_empty());
+        assert_eq!(selection.resource_plan.mask_resource_count(), 0);
+        assert_eq!(selection.sources.len(), 1);
+        let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
+            panic!("masked raster was not represented as a raster source");
+        };
+        assert_eq!(raster.opacity, 1.0);
+        assert_eq!(raster.mask_key, None);
+    }
+
+    #[test]
+    fn gpu_selector_keeps_partial_fill_off_canvas_mask_resource() {
+        let mut session = synthetic_session(vec![
+            container_node(0, 2, 0, 0),
+            raster_node_with_mask(1, 10, 1, 15, 50, false),
+        ]);
+        session
+            .raster_sources
+            .insert(LayerId(10), raster_source(10, 15));
+        session
+            .mask_sources
+            .insert(LayerId(10), off_canvas_mask_source(10, 50, 128));
+
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .expect("select synthetic masked raster");
+
+        assert!(selection.unsupported.is_empty());
+        assert_eq!(selection.resource_plan.mask_resource_count(), 1);
+        assert_eq!(selection.sources.len(), 1);
+        let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
+            panic!("masked raster was not represented as a raster source");
+        };
+        assert_eq!(raster.opacity, 1.0);
+        assert!(raster.mask_key.is_some());
+    }
+
     fn synthetic_session(nodes: Vec<RenderNode>) -> ClipSession {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
         ClipSession {
@@ -4219,6 +4325,82 @@ mod tests {
             render_mipmap_id: Some(render_mipmap_id),
             mask_mipmap_id: None,
             paper_color: None,
+        }
+    }
+
+    fn raster_node_with_mask(
+        id: u32,
+        layer_id: u32,
+        depth: u16,
+        render_mipmap_id: u32,
+        mask_mipmap_id: u32,
+        clip: bool,
+    ) -> RenderNode {
+        let mut node = raster_node(id, layer_id, depth, render_mipmap_id, clip);
+        node.mask_mipmap_id = Some(mask_mipmap_id);
+        node
+    }
+
+    fn raster_source(
+        layer_id: u32,
+        render_mipmap_id: u32,
+    ) -> clip_file::metadata::RasterLayerSource {
+        clip_file::metadata::RasterLayerSource {
+            layer: clip_file::metadata::LayerRecord {
+                id: LayerId(layer_id),
+                kind: LayerKind::Raster,
+                visibility: LayerVisibility(1),
+            },
+            render_mipmap_id,
+            offscreen_id: 1000 + render_mipmap_id,
+            external_id: format!("synthetic-raster-{layer_id}"),
+            pixel_size: CanvasSize::new(2, 2),
+            color_type: None,
+            offset_x: 0,
+            offset_y: 0,
+        }
+    }
+
+    fn off_canvas_mask_source(
+        layer_id: u32,
+        mask_mipmap_id: u32,
+        empty_fill: u8,
+    ) -> clip_file::metadata::MaskLayerSource {
+        clip_file::metadata::MaskLayerSource {
+            layer_id: LayerId(layer_id),
+            mask_mipmap_id,
+            offscreen_id: 2000 + mask_mipmap_id,
+            external_id: format!("synthetic-mask-{layer_id}"),
+            pixel_size: CanvasSize::new(2, 2),
+            empty_fill,
+            offset_x: 20,
+            offset_y: 20,
+        }
+    }
+
+    fn gpu_selector_options() -> StrictRasterStackOptions {
+        StrictRasterStackOptions {
+            allow_alpha_compositing: true,
+            allow_paper: true,
+            allow_layer_opacity: true,
+            allow_masks: true,
+            allow_clipping_runs: true,
+            allow_container_isolation: true,
+            allow_through_groups: true,
+            allow_add_blend: true,
+            allow_add_glow_blend: true,
+            allow_color_burn_blend: true,
+            allow_color_dodge_blend: true,
+            allow_extended_blends: true,
+            allow_glow_dodge_blend: true,
+            allow_hard_mix_blend: true,
+            allow_hsl_blends: true,
+            allow_simple_blends: true,
+            allow_soft_light_blend: true,
+            allow_lut_filters: true,
+            allow_vivid_light_blend: true,
+            allow_w3c_blends: true,
+            allow_initial_terminal_container_elision: false,
         }
     }
 }

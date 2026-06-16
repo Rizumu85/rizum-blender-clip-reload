@@ -46,6 +46,19 @@ impl GpuResourcePlan {
             },
         );
     }
+
+    #[cfg(test)]
+    pub(crate) fn mask_resource_count(&self) -> usize {
+        self.masks.len()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum PlannedGpuMaskResource {
+    None,
+    Key(clip_gpu::GpuMaskResourceKey),
+    FullyTransparent,
+    FullyOpaque,
 }
 
 #[derive(Debug)]
@@ -165,16 +178,46 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
 pub(crate) fn plan_gpu_mask_resource(
     mask_sources: &HashMap<LayerId, clip_file::metadata::MaskLayerSource>,
     node: &clip_graph::RenderNode,
+    canvas: CanvasSize,
     resource_plan: &mut GpuResourcePlan,
-) -> Result<Option<clip_gpu::GpuMaskResourceKey>, RuntimeError> {
+) -> Result<PlannedGpuMaskResource, RuntimeError> {
     let Some(mask_mipmap_id) = node.mask_mipmap_id else {
-        return Ok(None);
+        return Ok(PlannedGpuMaskResource::None);
     };
     let source = mask_sources.get(&node.layer_id).cloned().ok_or(
         clip_file::ClipFileError::LayerHasNoMask {
             layer_id: node.layer_id,
         },
     )?;
+    if source_crop::visible_raster_source_decode_region(
+        source.pixel_size,
+        source.offset_x,
+        source.offset_y,
+        canvas,
+    )?
+    .is_none()
+    {
+        return Ok(match source.empty_fill {
+            0 => PlannedGpuMaskResource::FullyTransparent,
+            255 => PlannedGpuMaskResource::FullyOpaque,
+            _ => planned_gpu_mask_key(node, mask_mipmap_id, source, resource_plan),
+        });
+    }
+
+    Ok(planned_gpu_mask_key(
+        node,
+        mask_mipmap_id,
+        source,
+        resource_plan,
+    ))
+}
+
+fn planned_gpu_mask_key(
+    node: &clip_graph::RenderNode,
+    mask_mipmap_id: u32,
+    source: clip_file::metadata::MaskLayerSource,
+    resource_plan: &mut GpuResourcePlan,
+) -> PlannedGpuMaskResource {
     let key = clip_gpu::GpuMaskResourceKey {
         layer_id: node.layer_id,
         mask_mipmap_id,
@@ -188,7 +231,7 @@ pub(crate) fn plan_gpu_mask_resource(
             source,
         },
     );
-    Ok(Some(key))
+    PlannedGpuMaskResource::Key(key)
 }
 
 struct MaskUploadPayload {
