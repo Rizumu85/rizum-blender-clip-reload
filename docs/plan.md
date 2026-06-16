@@ -91,13 +91,17 @@ Current policy:
 - Streaming intermediate caches should stay cropped whenever metadata proves finite canvas bounds: clipping runs use the base visible bounds, isolated containers use the union of child bounds, and THROUGH groups use a bounded after-cache seeded from the parent-before texture. Source/cache resolve uniforms carry both source and target origins, and wgpu scissors are translated from global dirty bounds into local attachment coordinates. Unknown stacks, solid layers, and leading LUT filters keep full-canvas intermediate allocation; masked or unmasked LUT filters after bounded draws keep the prior dirty bounds by sampling masks at target-origin-adjusted canvas coordinates. Runtime masks upload as cropped R8 textures with canvas origin and fill metadata, and shaders sample outside cropped bounds as fill. Bounded nested THROUGH groups inside containers carry the parent target origin and keep cropped cache bounds. The remaining large-stack performance blocker is visible-tile inflate/upload and GPU pass throughput plus leading filter and unknown intermediate full-canvas cases.
 - Streaming scheduling should skip sources that provably cannot affect output before decode/upload or cache allocation: zero-opacity rasters, containers, THROUGH groups, clipping bases/siblings, LUT filters, and transparent solid colors. Clipping runs with no provably effective clipped siblings may render their base directly instead of allocating a clipping cache. Keep this limited to faithful no-op cases; do not generalize it into heuristic pruning or post-processing.
 - Metadata-only mask planning may elide constant off-canvas masks before provider decode/upload: fill `0` folds the source to zero opacity, fill `255` drops the mask resource as fully opaque, and partial fill values stay on the real mask-resource path. Keep this as a faithful resource-planning optimization only.
-- High-leverage native performance work should investigate the Silicate-style
-  atlas/tile-silo pattern before local micro-optimizations: upload visible
-  raster/mask tiles into shared atlas resources, build per-canvas-tile ordered
-  work lists from the strict render plan, and collapse raster/clipping stretches
-  into one or a few tile-local shader passes while keeping filters, THROUGH
-  groups, and isolated containers as explicit semantic barriers until faithful
-  tile-local models exist. See `docs/native-performance-investigation.md`.
+- High-leverage native performance work has moved from broad investigation to a
+  validated atlas/tile-silo direction. `clip_cli --tile-silo-estimate` shows
+  RealArt/Terra/Aya-class samples have canvas-sized raster metadata but very low
+  compressed CHNKExta tile occupancy, so the next performance milestone should
+  build an external tile-block atlas that uploads compressed-present raster/mask
+  tiles and treats empty tiles as fill/transparent records. After that, build
+  per-canvas-tile ordered work lists from the strict render plan and collapse
+  raster/clipping stretches into one or a few tile-local shader passes while
+  keeping filters, THROUGH groups, and isolated containers as explicit semantic
+  barriers until faithful tile-local models exist. See
+  `docs/native-performance-investigation.md`.
 - Native raster extraction now applies render offscreen placement through `LayerRenderOffscrOffsetX/Y`, matching the existing mask placement model and the known `Ref_Terra404_Live2D` negative-X render sources. This removes a structural decode gap before further large-reference GPU work.
 - Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.
 - Native support diagnostics use a metadata-only strict selector. `clip_cli --gpu-support-check` validates graph, raster source, mask source, and LUT-filter support without tile decode, GPU initialization, or rendering, and labels resource/unsupported layer ids with layer names when available. `clip_cli --gpu-support-json` emits the same support/resource/unsupported-node data as pure JSON for automation and issue capture, also carrying layer names when available. Other CLI plan, resource, stack, unsupported, and trace diagnostics should use the same layer-label helper so layer ids are easy to map back to Blender support reports. These commands must remain diagnostics only, not fallback renderers.

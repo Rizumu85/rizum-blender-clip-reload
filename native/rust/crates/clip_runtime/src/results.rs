@@ -1,7 +1,7 @@
 use std::fmt;
 
 use clip_graph::{RenderNodeId, RenderNodeKind};
-use clip_model::{LayerId, Rgba8};
+use clip_model::{CanvasSize, LayerId, Rgba8};
 
 #[derive(Debug)]
 pub struct SimpleRasterStackGpuResult {
@@ -68,6 +68,45 @@ pub struct NormalRasterStackPixelTraceInput {
     pub opacity: Option<f32>,
     pub rgba: Option<Rgba8>,
     pub mask_alpha: Option<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct NativeTileSiloEstimateResult {
+    pub canvas: CanvasSize,
+    pub tile_size: u32,
+    pub canvas_tiles_x: u32,
+    pub canvas_tiles_y: u32,
+    pub canvas_tile_count: u64,
+    pub top_level_source_count: usize,
+    pub total_source_event_count: usize,
+    pub raster_source_count: usize,
+    pub clipped_raster_source_count: usize,
+    pub solid_source_count: usize,
+    pub lut_filter_count: usize,
+    pub clipping_run_count: usize,
+    pub container_clipping_run_count: usize,
+    pub container_count: usize,
+    pub clipped_container_count: usize,
+    pub through_group_count: usize,
+    pub mask_reference_count: usize,
+    pub unique_raster_resource_count: usize,
+    pub unique_mask_resource_count: usize,
+    pub raster_tile_slot_count: u64,
+    pub mask_tile_slot_count: u64,
+    pub raster_compressed_tile_slot_count: u64,
+    pub raster_empty_tile_slot_count: u64,
+    pub mask_compressed_tile_slot_count: u64,
+    pub mask_empty_tile_slot_count: u64,
+    pub external_compressed_bytes: u64,
+    pub raster_tile_event_count: u64,
+    pub solid_tile_event_count: u64,
+    pub active_canvas_tile_count: usize,
+    pub max_raster_events_per_tile: u32,
+    pub mean_raster_events_per_active_tile: f64,
+    pub collapsible_segment_count: usize,
+    pub collapsible_source_event_count: usize,
+    pub semantic_barrier_count: usize,
+    pub unsupported_count: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

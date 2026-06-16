@@ -22,13 +22,15 @@ mod selector_tree;
 mod source_crop;
 mod stack_plan;
 mod support;
+mod tile_silo_estimate;
 
 pub use error::RuntimeError;
 pub use results::{
-    DrawRasterLayerGpuResult, NormalRasterStackGpuResult, NormalRasterStackPixelTraceInput,
-    NormalRasterStackPixelTraceResult, NormalRasterStackPixelTraceSample,
-    NormalRasterStackResourceStats, NormalRasterStackSupportResult, SimpleRasterStackGpuResult,
-    SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason,
+    DrawRasterLayerGpuResult, NativeTileSiloEstimateResult, NormalRasterStackGpuResult,
+    NormalRasterStackPixelTraceInput, NormalRasterStackPixelTraceResult,
+    NormalRasterStackPixelTraceSample, NormalRasterStackResourceStats,
+    NormalRasterStackSupportResult, SimpleRasterStackGpuResult, SimpleRasterStackUnsupported,
+    SimpleRasterStackUnsupportedReason,
 };
 
 #[cfg(test)]

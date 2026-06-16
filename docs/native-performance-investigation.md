@@ -77,6 +77,38 @@ and from reusing atlas resources across tile-local work. If CSP semantics force
 too many barriers, the same instrumentation will show where smaller optimizers
 are still justified.
 
+## Validation Diagnostic
+
+`clip_cli --tile-silo-estimate [--tile-size <px>]` is the current
+metadata/block-level validator for this direction. It does not initialize wgpu
+or decode pixel payloads. It reuses the strict native render selection, walks
+the recursive GPU source tree, and inspects CHNKExta tile block headers to
+separate compressed tiles from empty tiles.
+
+The first validation run showed that large `.clip` samples often have
+canvas-sized raster metadata even when most source tiles are empty. This means
+metadata-only visible bounds are not enough to judge atlas value; the actual
+CHNKExta compressed/empty block split is the stronger signal.
+
+Sample estimates with `tile_size=256`:
+
+- `Test_RealArt.clip`: raster metadata slots `131712`, raster compressed tiles
+  `2220`, raster empty tiles `129492`, mask compressed tiles `223`, semantic
+  barriers `67`, collapsible raster/clipping segments `75`.
+- `Ref_Terra404_Live2D.clip`: raster metadata slots `326040`, raster compressed
+  tiles `4826`, raster empty tiles `321214`, mask compressed tiles `2052`,
+  semantic barriers `220`, collapsible raster/clipping segments `178`.
+- `Ref_绫音Aya_Live2D.clip`: raster metadata slots `55575`, raster compressed
+  tiles `924`, raster empty tiles `54651`, mask compressed tiles `2`, semantic
+  barriers `47`, collapsible raster/clipping segments `42`.
+
+Conclusion: the first high-leverage implementation should build an external
+tile-block atlas that uploads compressed-present raster/mask tiles and treats
+empty tiles as fill/transparent records, then add tile-local work lists for
+collapsing raster/clipping stretches. The pass-collapse side still matters, but
+the block-level evidence says empty-tile skipping is the first order-of-magnitude
+piece to validate in code.
+
 ## Non-Goals
 
 - Do not add a CPU compositor fallback.

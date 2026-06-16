@@ -4,7 +4,9 @@ use std::io::Write;
 
 use clip_model::Rect;
 
-use super::{decode_external_tile_blocks, visit_external_tile_block_selection};
+use super::{
+    decode_external_tile_blocks, inspect_external_tile_blocks, visit_external_tile_block_selection,
+};
 use crate::tile_region::tile_block_selection_for_region;
 
 #[test]
@@ -59,6 +61,24 @@ fn selected_tile_visitor_reuses_region_selection_without_inflating_skipped_block
 
     assert_eq!(external_id, "external");
     assert_eq!(visited, vec![(1, vec![5, 6, 7, 8])]);
+}
+
+#[test]
+fn block_stats_do_not_inflate_compressed_blocks() {
+    let body = external_body(&[
+        compressed_data_block(&[1, 2, 3, 4]),
+        corrupt_compressed_data_block(4),
+        empty_data_block(4),
+    ]);
+
+    let stats = inspect_external_tile_blocks(&body, 4, 3).unwrap();
+
+    assert_eq!(stats.external_id, "external");
+    assert_eq!(stats.block_count, 3);
+    assert_eq!(stats.compressed_block_count, 2);
+    assert_eq!(stats.empty_block_count, 1);
+    assert_eq!(stats.uncompressed_bytes, 12);
+    assert!(stats.compressed_bytes > 0);
 }
 
 fn external_body(blocks: &[Vec<u8>]) -> Vec<u8> {

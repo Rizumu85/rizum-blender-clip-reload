@@ -3,30 +3,16 @@ use std::io::Read;
 use flate2::read::ZlibDecoder;
 
 mod reader;
+mod stats;
+mod types;
 
 use crate::ClipFileError;
 use crate::tile_region::TileBlockSelection;
 use reader::{read_be_u32, read_be_u64, read_le_u32, read_utf16_be, skip};
+pub use stats::{ExternalTileBlockStats, inspect_external_tile_blocks};
+pub use types::{ExternalTileBlob, ExternalTileBlock, ExternalTileBlocks};
 
 const BLOCK_NAME_MARKER: u32 = 0x0042_006c;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExternalTileBlob {
-    pub external_id: String,
-    pub bytes: Vec<u8>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExternalTileBlock {
-    pub tile_index: usize,
-    pub bytes: Vec<u8>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExternalTileBlocks {
-    pub external_id: String,
-    pub blocks: Vec<ExternalTileBlock>,
-}
 
 pub fn decode_external_tile_blob(
     body: &[u8],

@@ -21,6 +21,7 @@ pub enum RuntimeError {
     },
     EmptyRenderPlan,
     InvalidRegion,
+    InvalidTileSize,
     OutputBufferTooSmall {
         expected: usize,
         actual: usize,
@@ -72,6 +73,7 @@ impl fmt::Display for RuntimeError {
             ),
             Self::EmptyRenderPlan => f.write_str("render plan has no drawable native sources"),
             Self::InvalidRegion => f.write_str("requested image region is outside the canvas"),
+            Self::InvalidTileSize => f.write_str("tile size must be greater than zero"),
             Self::OutputBufferTooSmall { expected, actual } => write!(
                 f,
                 "output buffer too small: expected at least {expected} bytes, got {actual}",
