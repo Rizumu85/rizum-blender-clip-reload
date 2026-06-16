@@ -265,9 +265,8 @@ where
             .take()
             .expect("streaming encoder must exist before flush");
         self.queue.submit([encoder.finish()]);
-        self.device
-            .poll(wgpu::PollType::wait_indefinitely())
-            .map_err(|err| E::from(GpuRenderError::PollFailed(err.to_string())))?;
+        // Queue order plus the final readback poll waits for completion; intermediate flushes only
+        // need resources to stay alive until the command buffer is submitted.
         self.clear_retained_resources();
         self.encoder = Some(
             self.device
