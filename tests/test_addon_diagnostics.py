@@ -395,7 +395,10 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon._support_status_label(addon.native_bridge.SUPPORT_STATUS_FULL),
             "Full native support",
         )
-        self.assertLessEqual(len(addon._short_diagnostic("x" * 200)), 120)
+        diagnostic = addon._short_diagnostic("x" * 200)
+        self.assertLessEqual(len(diagnostic), 120)
+        self.assertTrue(diagnostic.endswith("..."))
+        self.assertTrue(diagnostic.isascii())
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 35),
+    "version": (0, 8, 36),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -109,7 +109,9 @@ def _short_diagnostic(message: str, limit: int = 120) -> str:
     text = " ".join(str(message).split())
     if len(text) <= limit:
         return text
-    return text[: limit - 1] + "…"
+    if limit <= 3:
+        return "." * max(limit, 0)
+    return text[: limit - 3] + "..."
 
 
 def _image_int_property(img, key: str, default: int = 0) -> int:
@@ -551,7 +553,7 @@ def _async_decode(
         return
 
     # Hop back to the main thread. bpy.app.timers.register is safe from worker
-    # threads in modern Blender — internally it pushes into a thread-safe queue
+    # threads in modern Blender - internally it pushes into a thread-safe queue
     # processed at the next event loop tick (sub-frame latency, not poll
     # interval).
     def _on_main():
@@ -630,7 +632,7 @@ def _register_watcher():
 def _unregister_watcher():
     if bpy.app.timers.is_registered(_watcher_tick):
         bpy.app.timers.unregister(_watcher_tick)
-    # Drop any pending state — worker threads are daemon, will die with Blender.
+    # Drop any pending state - worker threads are daemon, will die with Blender.
     with _state_lock:
         _in_flight.clear()
 
@@ -733,7 +735,7 @@ class CSI_AddonPreferences(AddonPreferences):
         layout.prop(self, "debug")
         layout.prop(self, "native_library_path")
         layout.label(
-            text="Save a .clip in CSP — Blender's UI stays responsive while it renders in the background.",
+            text="Save a .clip in CSP - Blender's UI stays responsive while it renders in the background.",
             icon="INFO",
         )
 
