@@ -1,0 +1,459 @@
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum PlannedLutFilterMode {
+    ToneCurveRgb,
+    GradientMapLum,
+}
+
+const TONE_CURVE_COMPACT_STRIDE: usize = 0x82;
+const FILTER_TYPE_BRIGHTNESS_CONTRAST: u32 = 1;
+const FILTER_TYPE_LEVEL_CORRECTION: u32 = 2;
+const FILTER_TYPE_TONE_CURVE: u32 = 3;
+const FILTER_TYPE_INVERT: u32 = 6;
+const FILTER_TYPE_POSTERIZATION: u32 = 7;
+const FILTER_TYPE_GRADIENT_MAP: u32 = 9;
+const GRADIENT_STOP_DENOMINATOR: f32 = 32768.0 * 256.0 / 255.0;
+
+pub(crate) fn lut_filter_rgba(
+    filter_type: u32,
+    payload: &[u8],
+) -> Option<(&'static str, PlannedLutFilterMode, Vec<u8>)> {
+    match filter_type {
+        FILTER_TYPE_BRIGHTNESS_CONTRAST => Some((
+            "BrightnessContrast",
+            PlannedLutFilterMode::ToneCurveRgb,
+            brightness_contrast_lut_rgba(payload)?,
+        )),
+        FILTER_TYPE_LEVEL_CORRECTION => Some((
+            "LevelCorrection",
+            PlannedLutFilterMode::ToneCurveRgb,
+            level_correction_lut_rgba(payload)?,
+        )),
+        FILTER_TYPE_TONE_CURVE => Some((
+            "ToneCurve",
+            PlannedLutFilterMode::ToneCurveRgb,
+            tone_curve_lut_rgba(payload)?,
+        )),
+        FILTER_TYPE_INVERT => Some((
+            "Invert",
+            PlannedLutFilterMode::ToneCurveRgb,
+            invert_lut_rgba(),
+        )),
+        FILTER_TYPE_POSTERIZATION => Some((
+            "Posterization",
+            PlannedLutFilterMode::ToneCurveRgb,
+            posterization_lut_rgba(payload)?,
+        )),
+        FILTER_TYPE_GRADIENT_MAP => Some((
+            "GradientMap",
+            PlannedLutFilterMode::GradientMapLum,
+            gradient_map_lut_rgba(payload)?,
+        )),
+        _ => None,
+    }
+}
+
+fn brightness_contrast_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
+    let brightness = read_be_i32(payload, 0)?;
+    let contrast = read_be_i32(payload, 4)?;
+    let brightness_lut = brightness_lut(brightness);
+    let contrast_lut = contrast_lut(contrast);
+    let mut combined = [0u8; 256];
+    for input in 0..256usize {
+        combined[input] = contrast_lut[usize::from(brightness_lut[input])];
+    }
+    Some(uniform_rgb_lut_rgba(&combined))
+}
+
+fn level_correction_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
+    if payload.len() < 0x40 {
+        return None;
+    }
+    let group = [
+        read_be_u16(payload, 0)?,
+        read_be_u16(payload, 2)?,
+        read_be_u16(payload, 4)?,
+        read_be_u16(payload, 6)?,
+        read_be_u16(payload, 8)?,
+    ];
+    Some(uniform_rgb_lut_rgba(&level_correction_lut(group)))
+}
+
+fn tone_curve_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
+    let curves = tone_curve_compact_curves(payload)?;
+    if curves.is_empty() {
+        return None;
+    }
+    let mut luts = Vec::with_capacity(curves.len().min(4));
+    for curve in curves.iter().take(4) {
+        luts.push(tone_curve_bspline_lut(curve)?);
+    }
+    let master = &luts[0];
+    let red = luts.get(1).unwrap_or(master);
+    let green = luts.get(2).unwrap_or(master);
+    let blue = luts.get(3).unwrap_or(master);
+    let mut lut_rgba = vec![0u8; 256 * 4];
+    for input in 0..256usize {
+        let offset = input * 4;
+        lut_rgba[offset] = master[usize::from(red[input])];
+        lut_rgba[offset + 1] = master[usize::from(green[input])];
+        lut_rgba[offset + 2] = master[usize::from(blue[input])];
+        lut_rgba[offset + 3] = 255;
+    }
+    Some(lut_rgba)
+}
+
+fn invert_lut_rgba() -> Vec<u8> {
+    let mut lut = [0u8; 256];
+    for (input, value) in lut.iter_mut().enumerate() {
+        *value = 255 - input as u8;
+    }
+    uniform_rgb_lut_rgba(&lut)
+}
+
+fn posterization_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
+    let levels = read_be_i32(payload, 0)?.max(2) as i64;
+    let mut lut = [0u8; 256];
+    for (input, value) in lut.iter_mut().enumerate() {
+        let bin = ((input as i64 * levels) / 256).min(levels - 1);
+        *value = ((bin as f32 * 255.0 / (levels - 1) as f32) + 0.5)
+            .floor()
+            .clamp(0.0, 255.0) as u8;
+    }
+    Some(uniform_rgb_lut_rgba(&lut))
+}
+
+fn linear_lut(start_x: i32, start_y: i32, end_x: i32, end_y: i32) -> [u8; 256] {
+    let mut lut = [0u8; 256];
+    if start_x > 0 {
+        let end = start_x.min(256) as usize;
+        lut[..end].fill(clamp_i32_to_byte(start_y));
+    }
+
+    let span = end_x - start_x;
+    let slope = if span != 0 {
+        (end_y - start_y) as f32 / span as f32
+    } else {
+        0.0
+    };
+    let lo = start_x.max(0);
+    let hi = end_x.min(256);
+    if lo < hi {
+        for x in lo..hi {
+            lut[x as usize] = (x as f32 * slope + (start_y as f32 - start_x as f32 * slope) + 0.5)
+                .floor()
+                .clamp(0.0, 255.0) as u8;
+        }
+    }
+
+    if end_x < 256 {
+        let start = end_x.max(0) as usize;
+        lut[start..].fill(clamp_i32_to_byte(end_y));
+    }
+    lut
+}
+
+fn brightness_lut(amount: i32) -> [u8; 256] {
+    let amount = amount.clamp(-127, 127);
+    if amount > 0 {
+        return linear_lut(amount, 0, 255, 255 - amount);
+    }
+    if amount < 0 {
+        return linear_lut(0, -amount, 255, 255);
+    }
+    identity_lut()
+}
+
+fn contrast_lut(amount: i32) -> [u8; 256] {
+    if amount == 0 || !(-127..128).contains(&amount) {
+        return identity_lut();
+    }
+    if amount > 0 {
+        return linear_lut(amount, 0, 255 - amount, 255);
+    }
+    linear_lut(0, -amount, 255, 255 + amount)
+}
+
+fn level_correction_lut(group: [u16; 5]) -> [u8; 256] {
+    let [in_low_raw, mid_raw, in_high_raw, out_low_raw, out_high_raw] = group;
+    let in_low = f32::from(in_low_raw) * 255.0 / 65535.0;
+    let mid = f32::from(mid_raw) * 255.0 / 65535.0;
+    let in_high = f32::from(in_high_raw) * 255.0 / 65535.0;
+    let out_low = f32::from(out_low_raw) * 255.0 / 65535.0;
+    let out_high = f32::from(out_high_raw) * 255.0 / 65535.0;
+    if in_high <= in_low {
+        return identity_lut();
+    }
+
+    let mid_t = ((mid - in_low) / (in_high - in_low)).clamp(1e-4, 0.9999);
+    let gamma = 0.5f32.ln() / mid_t.ln();
+    let exponent = 1.0 / gamma.max(1e-4);
+    let mut lut = [0u8; 256];
+    for (input, value) in lut.iter_mut().enumerate() {
+        let t = ((input as f32 - in_low) / (in_high - in_low)).clamp(0.0, 1.0);
+        let y = out_low + t.powf(exponent) * (out_high - out_low);
+        *value = (y + 0.5).floor().clamp(0.0, 255.0) as u8;
+    }
+    lut
+}
+
+fn tone_curve_compact_curves(payload: &[u8]) -> Option<Vec<Vec<(u16, u16)>>> {
+    if !payload.len().is_multiple_of(TONE_CURVE_COMPACT_STRIDE) {
+        return None;
+    }
+    let mut curves = Vec::with_capacity(payload.len() / TONE_CURVE_COMPACT_STRIDE);
+    for chunk in payload.chunks_exact(TONE_CURVE_COMPACT_STRIDE) {
+        let count = read_be_u16(chunk, 0)? as usize;
+        if count > 32 {
+            return None;
+        }
+        let mut points = Vec::with_capacity(count);
+        for point_index in 0..count {
+            let point_offset = 2 + point_index * 4;
+            let x = read_be_u16(chunk, point_offset)?;
+            let y = read_be_u16(chunk, point_offset + 2)?;
+            points.push((x, y));
+        }
+        curves.push(points);
+    }
+    Some(curves)
+}
+
+fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
+    if points.len() < 2 {
+        return Some(identity_lut());
+    }
+    if points == [(0, 0), (65535, 65535)] {
+        return Some(identity_lut());
+    }
+
+    let pts: Vec<(f64, f64)> = points
+        .iter()
+        .map(|(x, y)| {
+            (
+                f64::from(((u32::from(*x) + 256) / 257).min(255)),
+                f64::from(((u32::from(*y) + 256) / 257).min(255)),
+            )
+        })
+        .collect();
+    let mut table = [0.0f64; 256];
+    for (index, value) in table.iter_mut().enumerate() {
+        *value = index as f64;
+    }
+    let step_x = (pts.last()?.0 - pts.first()?.0).abs() / 255.0;
+    if step_x <= 0.0 {
+        return None;
+    }
+
+    if pts.len() == 2 {
+        let (x0, y0) = pts[0];
+        let (x1, y1) = pts[1];
+        let mut sample_x = x0;
+        for value in &mut table {
+            *value = if x1 == x0 {
+                y0
+            } else {
+                ((y1 - y0) / (x1 - x0)) * (sample_x - x0) + y0
+            };
+            sample_x += step_x;
+        }
+    } else {
+        let mut have_previous = false;
+        let mut previous_x = 0.0;
+        let mut previous_y = 0.0;
+        let mut base_x = 0.0;
+        for curve_idx in 1..pts.len() - 1 {
+            let (mut x_prev, mut y_prev) = pts[curve_idx - 1];
+            let (x_mid, y_mid) = pts[curve_idx];
+            let (mut x_next, mut y_next) = pts[curve_idx + 1];
+            if curve_idx == 1 {
+                x_prev -= x_mid - x_prev;
+                y_prev -= y_mid - y_prev;
+            }
+            if curve_idx == pts.len() - 2 {
+                x_next -= x_mid - x_next;
+                y_next -= y_mid - y_next;
+            }
+
+            let mut segment_previous_x = previous_x;
+            for sample_idx in 0..258 {
+                let t = f64::from(sample_idx) / 257.0;
+                let w_prev = (1.0 - t) * (1.0 - t) * 0.5;
+                let w_next = t * t * 0.5;
+                let w_mid = (t - t * t) + 0.5;
+                let x = x_prev * w_prev + x_mid * w_mid + x_next * w_next;
+                let y = y_prev * w_prev + y_mid * w_mid + y_next * w_next;
+
+                let mut next_base_x = x;
+                if have_previous {
+                    let lo = x.min(segment_previous_x);
+                    let hi = x.max(segment_previous_x);
+                    next_base_x = base_x;
+                    let mut sample_offset = 0.0;
+                    while sample_offset <= hi - lo + 1e-9 {
+                        let sample_x = sample_offset + lo;
+                        let out_idx = ((sample_x - base_x) / step_x + 0.5) as i32;
+                        if (0..256).contains(&out_idx) {
+                            let sample_y = if x == segment_previous_x {
+                                previous_y
+                            } else {
+                                ((y - previous_y) / (x - segment_previous_x))
+                                    * (sample_x - segment_previous_x)
+                                    + previous_y
+                            };
+                            table[out_idx as usize] = sample_y;
+                        }
+                        sample_offset += step_x;
+                    }
+                }
+                have_previous = true;
+                segment_previous_x = x;
+                base_x = next_base_x;
+                previous_y = y;
+            }
+            previous_x = segment_previous_x;
+        }
+    }
+
+    let mut lut = [0u8; 256];
+    for (index, value) in table.iter().enumerate() {
+        lut[index] = (value + 0.5).floor().clamp(0.0, 255.0) as u8;
+    }
+    if points.first()?.1 < 1 {
+        lut[0] = 0;
+    }
+    if points.last()?.1 > 254 {
+        lut[255] = 255;
+    }
+    Some(lut)
+}
+
+fn gradient_map_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
+    if payload.len() < 28 {
+        return None;
+    }
+    let count = read_be_i32(payload, 12)?;
+    if count <= 0 {
+        return None;
+    }
+    let mut nodes = Vec::new();
+    let mut offset = 28usize;
+    for _ in 0..count {
+        if offset.checked_add(28)? > payload.len() {
+            break;
+        }
+        let r_raw = read_be_u32(payload, offset)?;
+        let g_raw = read_be_u32(payload, offset + 4)?;
+        let b_raw = read_be_u32(payload, offset + 8)?;
+        let stop_raw = read_be_u32(payload, offset + 20)?;
+        nodes.push((
+            stop_raw as f32 / GRADIENT_STOP_DENOMINATOR,
+            [
+                gradient_color_byte(r_raw),
+                gradient_color_byte(g_raw),
+                gradient_color_byte(b_raw),
+            ],
+        ));
+        offset += 28;
+    }
+    if nodes.is_empty() {
+        return None;
+    }
+    nodes.sort_by(|left, right| left.0.total_cmp(&right.0));
+
+    let mut lut_rgba = vec![0u8; 256 * 4];
+    for input in 0..256usize {
+        let lum = input as f32 / 255.0;
+        let color = gradient_map_color_at_lum(lum, &nodes);
+        let out = input * 4;
+        lut_rgba[out] = color[0];
+        lut_rgba[out + 1] = color[1];
+        lut_rgba[out + 2] = color[2];
+        lut_rgba[out + 3] = 255;
+    }
+    Some(lut_rgba)
+}
+
+fn uniform_rgb_lut_rgba(lut: &[u8; 256]) -> Vec<u8> {
+    rgb_luts_rgba(lut, lut, lut)
+}
+
+fn rgb_luts_rgba(red: &[u8; 256], green: &[u8; 256], blue: &[u8; 256]) -> Vec<u8> {
+    let mut lut_rgba = vec![0u8; 256 * 4];
+    for input in 0..256usize {
+        let offset = input * 4;
+        lut_rgba[offset] = red[input];
+        lut_rgba[offset + 1] = green[input];
+        lut_rgba[offset + 2] = blue[input];
+        lut_rgba[offset + 3] = 255;
+    }
+    lut_rgba
+}
+
+fn identity_lut() -> [u8; 256] {
+    let mut lut = [0u8; 256];
+    for (index, value) in lut.iter_mut().enumerate() {
+        *value = index as u8;
+    }
+    lut
+}
+
+fn gradient_color_byte(raw_channel: u32) -> u8 {
+    let compact = ((raw_channel >> 16) & 0xffff) as f32;
+    (compact / 256.0 + 0.5).floor().clamp(0.0, 255.0) as u8
+}
+
+fn gradient_map_color_at_lum(lum: f32, nodes: &[(f32, [u8; 3])]) -> [u8; 3] {
+    let (first_pos, first_color) = nodes[0];
+    if lum <= first_pos {
+        return first_color;
+    }
+    let (last_pos, last_color) = nodes[nodes.len() - 1];
+    if lum >= last_pos {
+        return last_color;
+    }
+    for pair in nodes.windows(2) {
+        let (p0, c0) = pair[0];
+        let (p1, c1) = pair[1];
+        if lum >= p0 && lum <= p1 {
+            let t = ((lum - p0) / (p1 - p0).max(1e-6)).clamp(0.0, 1.0);
+            return [
+                lerp_gradient_byte(c0[0], c1[0], t),
+                lerp_gradient_byte(c0[1], c1[1], t),
+                lerp_gradient_byte(c0[2], c1[2], t),
+            ];
+        }
+    }
+    last_color
+}
+
+fn lerp_gradient_byte(start: u8, end: u8, t: f32) -> u8 {
+    (f32::from(start) * (1.0 - t) + f32::from(end) * t + 0.5)
+        .floor()
+        .clamp(0.0, 255.0) as u8
+}
+
+fn clamp_i32_to_byte(value: i32) -> u8 {
+    value.clamp(0, 255) as u8
+}
+
+fn read_be_i32(bytes: &[u8], offset: usize) -> Option<i32> {
+    Some(i32::from_be_bytes(
+        bytes.get(offset..offset + 4)?.try_into().ok()?,
+    ))
+}
+
+fn read_be_u32(bytes: &[u8], offset: usize) -> Option<u32> {
+    Some(u32::from_be_bytes(
+        bytes.get(offset..offset + 4)?.try_into().ok()?,
+    ))
+}
+
+fn read_be_u16(bytes: &[u8], offset: usize) -> Option<u16> {
+    Some(u16::from_be_bytes(
+        bytes.get(offset..offset + 2)?.try_into().ok()?,
+    ))
+}
+
+#[cfg(test)]
+#[path = "filter_lut_tests.rs"]
+mod tests;

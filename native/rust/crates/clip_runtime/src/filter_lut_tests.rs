@@ -1,0 +1,132 @@
+use std::path::Path;
+
+use clip_model::LayerId;
+
+use super::{
+    FILTER_TYPE_BRIGHTNESS_CONTRAST, FILTER_TYPE_GRADIENT_MAP, FILTER_TYPE_INVERT,
+    FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION, PlannedLutFilterMode, lut_filter_rgba,
+};
+
+#[test]
+fn brightness_contrast_lut_matches_python_formula_anchors() {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&20i32.to_be_bytes());
+    payload.extend_from_slice(&(-10i32).to_be_bytes());
+
+    let (name, mode, lut) =
+        lut_filter_rgba(FILTER_TYPE_BRIGHTNESS_CONTRAST, &payload).expect("build LUT");
+
+    assert_eq!(name, "BrightnessContrast");
+    assert!(matches!(mode, PlannedLutFilterMode::ToneCurveRgb));
+    for (input, expected) in [
+        (0usize, 10u8),
+        (20, 10),
+        (64, 51),
+        (128, 110),
+        (200, 176),
+        (255, 227),
+    ] {
+        assert_eq!(&lut[input * 4..input * 4 + 3], [expected; 3].as_slice());
+    }
+}
+
+#[test]
+fn level_correction_lut_matches_python_formula_anchors() {
+    let payload = level_payload([0, 20000, 65535, 0, 65535]);
+
+    let (name, mode, lut) =
+        lut_filter_rgba(FILTER_TYPE_LEVEL_CORRECTION, &payload).expect("build LUT");
+
+    assert_eq!(name, "LevelCorrection");
+    assert!(matches!(mode, PlannedLutFilterMode::ToneCurveRgb));
+    for (input, expected) in [
+        (0usize, 0u8),
+        (25, 5),
+        (64, 24),
+        (128, 78),
+        (192, 157),
+        (230, 214),
+        (255, 255),
+    ] {
+        assert_eq!(&lut[input * 4..input * 4 + 3], [expected; 3].as_slice());
+    }
+}
+
+#[test]
+fn invert_and_posterization_luts_match_python_formula_anchors() {
+    let (invert_name, invert_mode, invert_lut) =
+        lut_filter_rgba(FILTER_TYPE_INVERT, &[]).expect("build invert LUT");
+    assert_eq!(invert_name, "Invert");
+    assert!(matches!(invert_mode, PlannedLutFilterMode::ToneCurveRgb));
+    for (input, expected) in [(0usize, 255u8), (64, 191), (255, 0)] {
+        assert_eq!(
+            &invert_lut[input * 4..input * 4 + 3],
+            [expected; 3].as_slice()
+        );
+    }
+
+    let payload = 4i32.to_be_bytes();
+    let (posterize_name, posterize_mode, posterize_lut) =
+        lut_filter_rgba(FILTER_TYPE_POSTERIZATION, &payload).expect("build posterize LUT");
+    assert_eq!(posterize_name, "Posterization");
+    assert!(matches!(posterize_mode, PlannedLutFilterMode::ToneCurveRgb));
+    for (input, expected) in [
+        (0usize, 0u8),
+        (63, 0),
+        (64, 85),
+        (127, 85),
+        (128, 170),
+        (191, 170),
+        (192, 255),
+        (255, 255),
+    ] {
+        assert_eq!(
+            &posterize_lut[input * 4..input * 4 + 3],
+            [expected; 3].as_slice()
+        );
+    }
+}
+
+#[test]
+fn malformed_lut_filter_payloads_fail_closed() {
+    assert!(lut_filter_rgba(FILTER_TYPE_BRIGHTNESS_CONTRAST, &[0; 7]).is_none());
+    assert!(lut_filter_rgba(FILTER_TYPE_LEVEL_CORRECTION, &[0; 0x3f]).is_none());
+    assert!(lut_filter_rgba(FILTER_TYPE_POSTERIZATION, &[0; 3]).is_none());
+    assert!(lut_filter_rgba(99, &[]).is_none());
+}
+
+#[test]
+fn gradient_map_lut_matches_test_gradiation_baseline_anchors() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Gradiation.clip");
+    let container =
+        clip_file::container::ClipContainer::open(path).expect("open Test_Gradiation.clip");
+    let filter = clip_file::metadata::read_filter_layer_source_from_sqlite(
+        container.sqlite_bytes(),
+        LayerId(6),
+    )
+    .expect("read gradient map payload");
+    let (name, mode, lut) =
+        lut_filter_rgba(filter.filter_type, &filter.payload).expect("build gradient map LUT");
+
+    assert_eq!(name, "GradientMap");
+    assert!(matches!(mode, PlannedLutFilterMode::GradientMapLum));
+    assert_eq!(filter.filter_type, FILTER_TYPE_GRADIENT_MAP);
+    for (input, expected) in [
+        (0usize, [77, 96, 126]),
+        (1, [98, 100, 123]),
+        (64, [186, 132, 133]),
+        (128, [151, 174, 180]),
+        (192, [198, 215, 201]),
+        (255, [255, 253, 236]),
+    ] {
+        assert_eq!(&lut[input * 4..input * 4 + 3], expected.as_slice());
+    }
+}
+
+fn level_payload(group: [u16; 5]) -> Vec<u8> {
+    let mut payload = vec![0u8; 0x40];
+    for (index, value) in group.iter().enumerate() {
+        payload[index * 2..index * 2 + 2].copy_from_slice(&value.to_be_bytes());
+    }
+    payload
+}

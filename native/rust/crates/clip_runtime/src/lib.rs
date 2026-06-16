@@ -9,10 +9,12 @@ use clip_file::ClipFileSummary;
 use clip_graph::{LayerGraphInput, RenderNodeId, RenderNodeKind, RenderPlan};
 use clip_model::{CanvasSize, LayerId, LayerOpacity, Rect, Rgba8};
 
+mod filter_lut;
 mod gpu_provider;
 mod source_crop;
 mod support;
 
+use filter_lut::{PlannedLutFilterMode, lut_filter_rgba};
 use gpu_provider::{
     GpuResourcePlan, PlannedGpuMaskResource, RuntimeGpuResourceProvider, plan_gpu_mask_resource,
 };
@@ -2230,12 +2232,6 @@ struct PlannedThroughGroup {
     draws: Vec<StrictRasterStackDraw>,
 }
 
-#[derive(Clone, Copy, Debug)]
-enum PlannedLutFilterMode {
-    ToneCurveRgb,
-    GradientMapLum,
-}
-
 #[derive(Debug)]
 struct PlannedLutFilter {
     render_node_id: RenderNodeId,
@@ -3120,279 +3116,6 @@ fn gpu_raster_blend_mode(blend_mode: StrictRasterBlendMode) -> clip_gpu::GpuRast
     }
 }
 
-const TONE_CURVE_COMPACT_STRIDE: usize = 0x82;
-const FILTER_TYPE_TONE_CURVE: u32 = 3;
-const FILTER_TYPE_GRADIENT_MAP: u32 = 9;
-const GRADIENT_STOP_DENOMINATOR: f32 = 32768.0 * 256.0 / 255.0;
-
-fn lut_filter_rgba(
-    filter_type: u32,
-    payload: &[u8],
-) -> Option<(&'static str, PlannedLutFilterMode, Vec<u8>)> {
-    match filter_type {
-        FILTER_TYPE_TONE_CURVE => Some((
-            "ToneCurve",
-            PlannedLutFilterMode::ToneCurveRgb,
-            tone_curve_lut_rgba(payload)?,
-        )),
-        FILTER_TYPE_GRADIENT_MAP => Some((
-            "GradientMap",
-            PlannedLutFilterMode::GradientMapLum,
-            gradient_map_lut_rgba(payload)?,
-        )),
-        _ => None,
-    }
-}
-
-fn tone_curve_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
-    let curves = tone_curve_compact_curves(payload)?;
-    if curves.is_empty() {
-        return None;
-    }
-    let mut luts = Vec::with_capacity(curves.len().min(4));
-    for curve in curves.iter().take(4) {
-        luts.push(tone_curve_bspline_lut(curve)?);
-    }
-    let master = &luts[0];
-    let red = luts.get(1).unwrap_or(master);
-    let green = luts.get(2).unwrap_or(master);
-    let blue = luts.get(3).unwrap_or(master);
-    let mut lut_rgba = vec![0u8; 256 * 4];
-    for input in 0..256usize {
-        let offset = input * 4;
-        lut_rgba[offset] = master[usize::from(red[input])];
-        lut_rgba[offset + 1] = master[usize::from(green[input])];
-        lut_rgba[offset + 2] = master[usize::from(blue[input])];
-        lut_rgba[offset + 3] = 255;
-    }
-    Some(lut_rgba)
-}
-
-fn tone_curve_compact_curves(payload: &[u8]) -> Option<Vec<Vec<(u16, u16)>>> {
-    if !payload.len().is_multiple_of(TONE_CURVE_COMPACT_STRIDE) {
-        return None;
-    }
-    let mut curves = Vec::with_capacity(payload.len() / TONE_CURVE_COMPACT_STRIDE);
-    for chunk in payload.chunks_exact(TONE_CURVE_COMPACT_STRIDE) {
-        let count = u16::from_be_bytes(chunk.get(0..2)?.try_into().ok()?) as usize;
-        if count > 32 {
-            return None;
-        }
-        let mut points = Vec::with_capacity(count);
-        for point_index in 0..count {
-            let point_offset = 2 + point_index * 4;
-            let x = u16::from_be_bytes(chunk.get(point_offset..point_offset + 2)?.try_into().ok()?);
-            let y = u16::from_be_bytes(
-                chunk
-                    .get(point_offset + 2..point_offset + 4)?
-                    .try_into()
-                    .ok()?,
-            );
-            points.push((x, y));
-        }
-        curves.push(points);
-    }
-    Some(curves)
-}
-
-fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
-    if points.len() < 2 {
-        return Some(identity_lut());
-    }
-    if points == [(0, 0), (65535, 65535)] {
-        return Some(identity_lut());
-    }
-
-    let pts: Vec<(f64, f64)> = points
-        .iter()
-        .map(|(x, y)| {
-            (
-                f64::from(((u32::from(*x) + 256) / 257).min(255)),
-                f64::from(((u32::from(*y) + 256) / 257).min(255)),
-            )
-        })
-        .collect();
-    let mut table = [0.0f64; 256];
-    for (index, value) in table.iter_mut().enumerate() {
-        *value = index as f64;
-    }
-    let step_x = (pts.last()?.0 - pts.first()?.0).abs() / 255.0;
-    if step_x <= 0.0 {
-        return None;
-    }
-
-    if pts.len() == 2 {
-        let (x0, y0) = pts[0];
-        let (x1, y1) = pts[1];
-        let mut sample_x = x0;
-        for value in &mut table {
-            *value = if x1 == x0 {
-                y0
-            } else {
-                ((y1 - y0) / (x1 - x0)) * (sample_x - x0) + y0
-            };
-            sample_x += step_x;
-        }
-    } else {
-        let mut have_previous = false;
-        let mut previous_x = 0.0;
-        let mut previous_y = 0.0;
-        let mut base_x = 0.0;
-        for curve_idx in 1..pts.len() - 1 {
-            let (mut x_prev, mut y_prev) = pts[curve_idx - 1];
-            let (x_mid, y_mid) = pts[curve_idx];
-            let (mut x_next, mut y_next) = pts[curve_idx + 1];
-            if curve_idx == 1 {
-                x_prev -= x_mid - x_prev;
-                y_prev -= y_mid - y_prev;
-            }
-            if curve_idx == pts.len() - 2 {
-                x_next -= x_mid - x_next;
-                y_next -= y_mid - y_next;
-            }
-
-            let mut segment_previous_x = previous_x;
-            for sample_idx in 0..258 {
-                let t = f64::from(sample_idx) / 257.0;
-                let w_prev = (1.0 - t) * (1.0 - t) * 0.5;
-                let w_next = t * t * 0.5;
-                let w_mid = (t - t * t) + 0.5;
-                let x = x_prev * w_prev + x_mid * w_mid + x_next * w_next;
-                let y = y_prev * w_prev + y_mid * w_mid + y_next * w_next;
-
-                let mut next_base_x = x;
-                if have_previous {
-                    let lo = x.min(segment_previous_x);
-                    let hi = x.max(segment_previous_x);
-                    next_base_x = base_x;
-                    let mut sample_offset = 0.0;
-                    while sample_offset <= hi - lo + 1e-9 {
-                        let sample_x = sample_offset + lo;
-                        let out_idx = ((sample_x - base_x) / step_x + 0.5) as i32;
-                        if (0..256).contains(&out_idx) {
-                            let sample_y = if x == segment_previous_x {
-                                previous_y
-                            } else {
-                                ((y - previous_y) / (x - segment_previous_x))
-                                    * (sample_x - segment_previous_x)
-                                    + previous_y
-                            };
-                            table[out_idx as usize] = sample_y;
-                        }
-                        sample_offset += step_x;
-                    }
-                }
-                have_previous = true;
-                segment_previous_x = x;
-                base_x = next_base_x;
-                previous_y = y;
-            }
-            previous_x = segment_previous_x;
-        }
-    }
-
-    let mut lut = [0u8; 256];
-    for (index, value) in table.iter().enumerate() {
-        lut[index] = (value + 0.5).floor().clamp(0.0, 255.0) as u8;
-    }
-    if points.first()?.1 < 1 {
-        lut[0] = 0;
-    }
-    if points.last()?.1 > 254 {
-        lut[255] = 255;
-    }
-    Some(lut)
-}
-
-fn identity_lut() -> [u8; 256] {
-    let mut lut = [0u8; 256];
-    for (index, value) in lut.iter_mut().enumerate() {
-        *value = index as u8;
-    }
-    lut
-}
-
-fn gradient_map_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
-    if payload.len() < 28 {
-        return None;
-    }
-    let count = i32::from_be_bytes(payload.get(12..16)?.try_into().ok()?);
-    if count <= 0 {
-        return None;
-    }
-    let mut nodes = Vec::new();
-    let mut offset = 28usize;
-    for _ in 0..count {
-        if offset.checked_add(28)? > payload.len() {
-            break;
-        }
-        let r_raw = u32::from_be_bytes(payload.get(offset..offset + 4)?.try_into().ok()?);
-        let g_raw = u32::from_be_bytes(payload.get(offset + 4..offset + 8)?.try_into().ok()?);
-        let b_raw = u32::from_be_bytes(payload.get(offset + 8..offset + 12)?.try_into().ok()?);
-        let stop_raw = u32::from_be_bytes(payload.get(offset + 20..offset + 24)?.try_into().ok()?);
-        nodes.push((
-            stop_raw as f32 / GRADIENT_STOP_DENOMINATOR,
-            [
-                gradient_color_byte(r_raw),
-                gradient_color_byte(g_raw),
-                gradient_color_byte(b_raw),
-            ],
-        ));
-        offset += 28;
-    }
-    if nodes.is_empty() {
-        return None;
-    }
-    nodes.sort_by(|left, right| left.0.total_cmp(&right.0));
-
-    let mut lut_rgba = vec![0u8; 256 * 4];
-    for input in 0..256usize {
-        let lum = input as f32 / 255.0;
-        let color = gradient_map_color_at_lum(lum, &nodes);
-        let out = input * 4;
-        lut_rgba[out] = color[0];
-        lut_rgba[out + 1] = color[1];
-        lut_rgba[out + 2] = color[2];
-        lut_rgba[out + 3] = 255;
-    }
-    Some(lut_rgba)
-}
-
-fn gradient_color_byte(raw_channel: u32) -> u8 {
-    let compact = ((raw_channel >> 16) & 0xffff) as f32;
-    (compact / 256.0 + 0.5).floor().clamp(0.0, 255.0) as u8
-}
-
-fn gradient_map_color_at_lum(lum: f32, nodes: &[(f32, [u8; 3])]) -> [u8; 3] {
-    let (first_pos, first_color) = nodes[0];
-    if lum <= first_pos {
-        return first_color;
-    }
-    let (last_pos, last_color) = nodes[nodes.len() - 1];
-    if lum >= last_pos {
-        return last_color;
-    }
-    for pair in nodes.windows(2) {
-        let (p0, c0) = pair[0];
-        let (p1, c1) = pair[1];
-        if lum >= p0 && lum <= p1 {
-            let t = ((lum - p0) / (p1 - p0).max(1e-6)).clamp(0.0, 1.0);
-            return [
-                lerp_gradient_byte(c0[0], c1[0], t),
-                lerp_gradient_byte(c0[1], c1[1], t),
-                lerp_gradient_byte(c0[2], c1[2], t),
-            ];
-        }
-    }
-    last_color
-}
-
-fn lerp_gradient_byte(start: u8, end: u8, t: f32) -> u8 {
-    (f32::from(start) * (1.0 - t) + f32::from(end) * t + 0.5)
-        .floor()
-        .clamp(0.0, 255.0) as u8
-}
-
 fn byte_diff_count(expected: &[u8], actual: &[u8]) -> usize {
     expected
         .iter()
@@ -3460,34 +3183,6 @@ mod tests {
     fn alpha_is_fully_opaque_checks_every_pixel() {
         assert!(super::alpha_is_fully_opaque(&[1, 2, 3, 255, 4, 5, 6, 255]));
         assert!(!super::alpha_is_fully_opaque(&[1, 2, 3, 255, 4, 5, 6, 254]));
-    }
-
-    #[test]
-    fn gradient_map_lut_matches_test_gradiation_baseline_anchors() {
-        let path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Gradiation.clip");
-        let container =
-            clip_file::container::ClipContainer::open(path).expect("open Test_Gradiation.clip");
-        let filter = clip_file::metadata::read_filter_layer_source_from_sqlite(
-            container.sqlite_bytes(),
-            LayerId(6),
-        )
-        .expect("read gradient map payload");
-        let (name, mode, lut) = super::lut_filter_rgba(filter.filter_type, &filter.payload)
-            .expect("build gradient map LUT");
-
-        assert_eq!(name, "GradientMap");
-        assert!(matches!(mode, super::PlannedLutFilterMode::GradientMapLum));
-        for (input, expected) in [
-            (0usize, [77, 96, 126]),
-            (1, [98, 100, 123]),
-            (64, [186, 132, 133]),
-            (128, [151, 174, 180]),
-            (192, [198, 215, 201]),
-            (255, [255, 253, 236]),
-        ] {
-            assert_eq!(&lut[input * 4..input * 4 + 3], expected.as_slice());
-        }
     }
 
     #[test]
@@ -3649,6 +3344,59 @@ mod tests {
             selection.draws[1],
             StrictRasterStackDraw::Raster(_)
         ));
+    }
+
+    #[test]
+    fn gpu_selector_accepts_python_backed_one_dimensional_lut_filters() {
+        let mut session = synthetic_session(vec![
+            container_node(0, 2, 0, 0),
+            filter_node(1, 10, 1),
+            filter_node(2, 11, 1),
+            filter_node(3, 12, 1),
+            filter_node(4, 13, 1),
+        ]);
+        session.filter_sources.insert(
+            LayerId(10),
+            filter_source(10, 1, brightness_contrast_payload(20, -10)),
+        );
+        session.filter_sources.insert(
+            LayerId(11),
+            filter_source(11, 2, level_payload([0, 20000, 65535, 0, 65535])),
+        );
+        session
+            .filter_sources
+            .insert(LayerId(12), filter_source(12, 6, Vec::new()));
+        session.filter_sources.insert(
+            LayerId(13),
+            filter_source(13, 7, 4i32.to_be_bytes().to_vec()),
+        );
+
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .expect("select synthetic LUT filters");
+
+        assert!(selection.unsupported.is_empty());
+        assert_eq!(selection.sources.len(), 4);
+        for (source, (input, expected)) in selection.sources.iter().zip([
+            (64usize, 51u8),
+            (64usize, 24u8),
+            (64usize, 191u8),
+            (64usize, 85u8),
+        ]) {
+            let clip_gpu::GpuNormalStackSource::LutFilter {
+                lut_rgba,
+                filter_mode,
+                ..
+            } = source
+            else {
+                panic!("source was not represented as a LUT filter");
+            };
+            assert_eq!(*filter_mode, clip_gpu::GpuLutFilterMode::ToneCurveRgb);
+            assert_eq!(
+                &lut_rgba[input * 4..input * 4 + 3],
+                [expected; 3].as_slice()
+            );
+        }
     }
 
     #[test]
@@ -4296,6 +4044,21 @@ mod tests {
         }
     }
 
+    fn filter_node(id: u32, layer_id: u32, depth: u16) -> RenderNode {
+        RenderNode {
+            id: RenderNodeId(id),
+            layer_id: LayerId(layer_id),
+            kind: RenderNodeKind::Filter,
+            depth,
+            clip: false,
+            opacity: LayerOpacity::MAX,
+            composite: 0,
+            render_mipmap_id: None,
+            mask_mipmap_id: None,
+            paper_color: None,
+        }
+    }
+
     fn raster_node(
         id: u32,
         layer_id: u32,
@@ -4359,6 +4122,33 @@ mod tests {
             offset_x: 0,
             offset_y: 0,
         }
+    }
+
+    fn filter_source(
+        layer_id: u32,
+        filter_type: u32,
+        payload: Vec<u8>,
+    ) -> clip_file::metadata::FilterLayerSource {
+        clip_file::metadata::FilterLayerSource {
+            layer_id: LayerId(layer_id),
+            filter_type,
+            payload,
+        }
+    }
+
+    fn brightness_contrast_payload(brightness: i32, contrast: i32) -> Vec<u8> {
+        let mut payload = Vec::with_capacity(8);
+        payload.extend_from_slice(&brightness.to_be_bytes());
+        payload.extend_from_slice(&contrast.to_be_bytes());
+        payload
+    }
+
+    fn level_payload(group: [u16; 5]) -> Vec<u8> {
+        let mut payload = vec![0u8; 0x40];
+        for (index, value) in group.iter().enumerate() {
+            payload[index * 2..index * 2 + 2].copy_from_slice(&value.to_be_bytes());
+        }
+        payload
     }
 
     fn off_canvas_mask_source(
