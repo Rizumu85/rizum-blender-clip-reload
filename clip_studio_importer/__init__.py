@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 38),
+    "version": (0, 8, 39),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -200,12 +200,17 @@ def _support_location_lines(img) -> list[str]:
 
 
 def _short_support_location(location: str) -> str:
-    parts = str(location).split()
-    if len(parts) >= 5 and parts[0] == "layer" and parts[2] == "node":
-        kind = " ".join(parts[4:])
+    text = str(location)
+    if text.startswith("layer ") and " node " in text:
+        layer_label, node_detail = text[len("layer "):].split(" node ", 1)
+        parts = node_detail.split(maxsplit=1)
+        if not parts:
+            return text
+        node_id = parts[0]
+        kind = parts[1] if len(parts) > 1 else ""
         suffix = f" {kind}" if kind else ""
-        return f"layer {parts[1]}/node {parts[3]}{suffix}"
-    return str(location)
+        return f"layer {layer_label}/node {node_id}{suffix}"
+    return text
 
 
 def _support_location_summary(img, *, limit: int = 3) -> str:

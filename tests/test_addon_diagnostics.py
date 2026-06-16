@@ -331,7 +331,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         image = {
             addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
             addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
-                "- layer 9 node 4 Filter: filter layer is not supported\n"
+                "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported\n"
                 "- layer 10 node 5 Raster: raster colour type None is not supported"
             ),
         }
@@ -346,10 +346,30 @@ class AddonDiagnosticsTests(unittest.TestCase):
         clipboard = context.window_manager.clipboard
         self.assertIn("Clip Studio unsupported layer locations", clipboard)
         self.assertIn("Source: C:/art/sample.clip", clipboard)
-        self.assertIn("- layer 9 node 4 Filter", clipboard)
+        self.assertIn("- layer 9 [Tone curve] node 4 Filter", clipboard)
         self.assertIn("- layer 10 node 5 Raster", clipboard)
         self.assertNotIn("filter layer is not supported", clipboard)
         self.assertEqual(operator.reported[0], {"INFO"})
+
+    def test_panel_summarizes_named_support_locations(self) -> None:
+        addon = _load_addon_module()
+        image = {
+            addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
+            addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_OK,
+            addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_UNSUPPORTED,
+            addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "1 unsupported node(s).",
+            addon.native_bridge.CLIP_SUPPORT_DETAILS_KEY: (
+                "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported"
+            ),
+        }
+        panel = addon.IMAGE_PT_clip_studio()
+        panel.layout = FakeLayout()
+        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+
+        panel.draw(context)
+
+        labels = [label for label, _icon in panel.layout.labels]
+        self.assertIn("Locations: layer 9 [Tone curve]/node 4 Filter", labels)
 
     def test_open_support_diagnostics_operator_writes_text_block(self) -> None:
         addon = _load_addon_module()

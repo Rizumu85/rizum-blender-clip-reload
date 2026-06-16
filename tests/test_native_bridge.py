@@ -239,14 +239,14 @@ class NativeBridgeTests(unittest.TestCase):
         locations = native_bridge.support_detail_locations(
             (
                 "- layer 9 node 4 Filter: filter layer is not supported",
-                "- layer 10 node 5 Raster: raster colour type None is not supported",
+                "- layer 10 [Layer 2] node 5 Raster: raster colour type None is not supported",
                 "plain summary line",
             )
         )
 
         self.assertEqual(
             locations,
-            ("layer 9 node 4 Filter", "layer 10 node 5 Raster"),
+            ("layer 9 node 4 Filter", "layer 10 [Layer 2] node 5 Raster"),
         )
 
     def test_successful_update_clears_previous_reload_error(self) -> None:

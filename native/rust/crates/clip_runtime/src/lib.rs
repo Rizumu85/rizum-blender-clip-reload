@@ -138,6 +138,14 @@ impl ClipSession {
         &self.render_plan
     }
 
+    pub fn layer_name(&self, layer_id: LayerId) -> Option<&str> {
+        self.render_plan
+            .nodes
+            .iter()
+            .find(|node| node.layer_id == layer_id)
+            .map(|node| node.layer_name.as_str())
+    }
+
     pub fn read_raster_layer_rgba_via_gpu(
         &self,
         layer_id: LayerId,
@@ -2531,6 +2539,7 @@ fn byte_diff_count(expected: &[u8], actual: &[u8]) -> usize {
 fn layer_graph_input_from_file(record: &clip_file::metadata::LayerGraphRecord) -> LayerGraphInput {
     LayerGraphInput {
         id: record.id,
+        name: record.name.clone(),
         kind: record.kind,
         visibility: record.visibility,
         clip: record.clip,
@@ -3489,6 +3498,7 @@ mod tests {
         RenderNode {
             id: RenderNodeId(id),
             layer_id: LayerId(layer_id),
+            layer_name: String::new(),
             kind: RenderNodeKind::Container,
             depth,
             clip: false,
@@ -3504,6 +3514,7 @@ mod tests {
         RenderNode {
             id: RenderNodeId(id),
             layer_id: LayerId(layer_id),
+            layer_name: String::new(),
             kind: RenderNodeKind::Paper,
             depth,
             clip: false,
@@ -3524,6 +3535,7 @@ mod tests {
         RenderNode {
             id: RenderNodeId(id),
             layer_id: LayerId(layer_id),
+            layer_name: String::new(),
             kind: RenderNodeKind::Filter,
             depth,
             clip: false,
@@ -3556,6 +3568,7 @@ mod tests {
         RenderNode {
             id: RenderNodeId(id),
             layer_id: LayerId(layer_id),
+            layer_name: String::new(),
             kind: RenderNodeKind::Raster,
             depth,
             clip,

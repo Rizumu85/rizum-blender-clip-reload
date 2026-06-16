@@ -247,7 +247,11 @@ pub extern "C" fn clip_renderer_session_support_info(
                 };
             }
             write_support_report(
-                &support_report(result.source_count, &result.unsupported),
+                &support_report(
+                    Some(&session.inner),
+                    result.source_count,
+                    &result.unsupported,
+                ),
                 out_report,
                 report_len,
                 out_required_report_len,
@@ -261,6 +265,7 @@ pub extern "C" fn clip_renderer_session_support_info(
 }
 
 fn support_report(
+    session: Option<&ClipSession>,
     source_count: usize,
     unsupported: &[clip_runtime::SimpleRasterStackUnsupported],
 ) -> String {
@@ -269,12 +274,31 @@ fn support_report(
     }
     let mut report = format!("{} unsupported node(s).", unsupported.len());
     for item in unsupported {
+        let layer_label = support_layer_label(session, item);
         report.push_str(&format!(
-            "\n- layer {} node {} {:?}: {}",
-            item.layer_id.0, item.render_node_id.0, item.kind, item.reason,
+            "\n- {layer_label} node {} {:?}: {}",
+            item.render_node_id.0, item.kind, item.reason,
         ));
     }
     report
+}
+
+fn support_layer_label(
+    session: Option<&ClipSession>,
+    item: &clip_runtime::SimpleRasterStackUnsupported,
+) -> String {
+    let name = session
+        .and_then(|session| session.layer_name(item.layer_id))
+        .unwrap_or("")
+        .trim();
+    if name.is_empty() {
+        return format!("layer {}", item.layer_id.0);
+    }
+    let name = name
+        .chars()
+        .map(|ch| if ch.is_control() { ' ' } else { ch })
+        .collect::<String>();
+    format!("layer {} [{}]", item.layer_id.0, name)
 }
 
 fn write_support_report(
@@ -500,7 +524,7 @@ mod tests {
             })
             .collect();
 
-        let report = support_report(12, &unsupported);
+        let report = support_report(None, 12, &unsupported);
 
         assert!(report.starts_with("10 unsupported node(s)."));
         assert!(report.contains(
@@ -516,5 +540,30 @@ mod tests {
             "- layer 18 node 13 Filter: filter layer is not in the strict raster stack pass"
         ));
         assert!(!report.contains("more unsupported node(s)"));
+    }
+
+    #[test]
+    fn support_report_includes_layer_names_when_session_has_them() {
+        use clip_graph::{RenderNodeId, RenderNodeKind};
+        use clip_model::LayerId;
+        use clip_runtime::{SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason};
+
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../../img/Test_Clipping.clip");
+        let session = ClipSession::open(path).expect("open Test_Clipping.clip");
+        let unsupported = vec![SimpleRasterStackUnsupported {
+            render_node_id: RenderNodeId(2),
+            layer_id: LayerId(10),
+            kind: RenderNodeKind::Raster,
+            reason: SimpleRasterStackUnsupportedReason::Composite(999),
+        }];
+
+        let report = support_report(Some(&session), 4, &unsupported);
+
+        assert!(
+            report.contains(
+                "- layer 10 [Layer 1] node 2 Raster: LayerComposite 999 is not direct copy"
+            )
+        );
     }
 }

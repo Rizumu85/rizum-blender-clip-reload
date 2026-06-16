@@ -24,9 +24,10 @@ impl RenderNodeKind {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LayerGraphInput {
     pub id: LayerId,
+    pub name: String,
     pub kind: LayerKind,
     pub visibility: LayerVisibility,
     pub clip: bool,
@@ -43,6 +44,7 @@ pub struct LayerGraphInput {
 pub struct RenderNode {
     pub id: RenderNodeId,
     pub layer_id: LayerId,
+    pub layer_name: String,
     pub kind: RenderNodeKind,
     pub depth: u16,
     pub clip: bool,
@@ -58,6 +60,7 @@ impl RenderNode {
         Self {
             id,
             layer_id: layer.id,
+            layer_name: layer.name,
             kind: RenderNodeKind::from_layer_kind(layer.kind),
             depth,
             clip: layer.clip,

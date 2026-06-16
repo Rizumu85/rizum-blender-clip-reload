@@ -96,7 +96,7 @@ impl Planner {
     fn new(layers: &[LayerGraphInput]) -> Result<Self, RenderPlanError> {
         let mut by_id = HashMap::with_capacity(layers.len());
         for layer in layers {
-            if by_id.insert(layer.id, *layer).is_some() {
+            if by_id.insert(layer.id, layer.clone()).is_some() {
                 return Err(RenderPlanError::DuplicateLayerId(layer.id));
             }
         }
@@ -111,7 +111,7 @@ impl Planner {
         let root =
             self.layers
                 .get(&root_layer_id)
-                .copied()
+                .cloned()
                 .ok_or(RenderPlanError::MissingLayer {
                     layer_id: root_layer_id,
                 })?;
@@ -130,7 +130,7 @@ impl Planner {
             let layer =
                 self.layers
                     .get(&current)
-                    .copied()
+                    .cloned()
                     .ok_or(RenderPlanError::MissingLinkedLayer {
                         from_layer_id: from,
                         target_layer_id: current,
@@ -161,14 +161,16 @@ impl Planner {
         let node_id = RenderNodeId(
             u32::try_from(self.nodes.len()).map_err(|_| RenderPlanError::NodeCountOverflow)?,
         );
+        let first_child_layer_id = layer.first_child_layer_id;
+        let layer_id = layer.id;
         self.nodes
             .push(RenderNode::from_layer_input(node_id, layer, depth));
 
-        if let Some(first_child_layer_id) = layer.first_child_layer_id {
+        if let Some(first_child_layer_id) = first_child_layer_id {
             let child_depth = depth
                 .checked_add(1)
-                .ok_or(RenderPlanError::DepthOverflow { layer_id: layer.id })?;
-            self.traverse_chain(first_child_layer_id, child_depth, layer.id)?;
+                .ok_or(RenderPlanError::DepthOverflow { layer_id })?;
+            self.traverse_chain(first_child_layer_id, child_depth, layer_id)?;
         }
 
         Ok(())
@@ -232,6 +234,7 @@ mod tests {
     fn layer(id: LayerId, kind: LayerKind) -> TestLayer {
         TestLayer(LayerGraphInput {
             id,
+            name: String::new(),
             kind,
             visibility: LayerVisibility(1),
             clip: false,

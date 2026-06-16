@@ -58,7 +58,8 @@ SUPPORT_STATUS_UNSUPPORTED = "unsupported"
 SUPPORT_STATUS_UNKNOWN = "unknown"
 
 _SUPPORT_DETAIL_LOCATION_RE = re.compile(
-    r"^- layer (?P<layer_id>\d+) node (?P<node_id>\d+) (?P<kind>[^:]+)"
+    r"^- layer (?P<layer_id>\d+)(?: \[(?P<name>[^\]]+)\])? "
+    r"node (?P<node_id>\d+) (?P<kind>[^:]+)"
 )
 
 
@@ -509,8 +510,13 @@ def support_detail_locations(details: Any) -> tuple[str, ...]:
         if not match:
             continue
         locations.append(
-            "layer {layer_id} node {node_id} {kind}".format(
+            "layer {layer_id}{name} node {node_id} {kind}".format(
                 layer_id=match.group("layer_id"),
+                name=(
+                    f" [{match.group('name').strip()}]"
+                    if match.group("name")
+                    else ""
+                ),
                 node_id=match.group("node_id"),
                 kind=match.group("kind").strip(),
             )

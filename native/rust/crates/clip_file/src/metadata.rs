@@ -62,6 +62,7 @@ pub struct FilterLayerSource {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LayerGraphRecord {
     pub id: LayerId,
+    pub name: String,
     pub kind: LayerKind,
     pub visibility: LayerVisibility,
     pub clip: bool,
@@ -459,12 +460,13 @@ pub fn read_layer_graph_records_from_sqlite(
     );
     let query = format!(
         "SELECT \
-            MainId, LayerType, LayerVisibility, LayerClip, LayerOpacity, \
+            MainId, {}, LayerType, LayerVisibility, LayerClip, LayerOpacity, \
             LayerComposite, LayerNextIndex, LayerFirstChildIndex, \
             LayerRenderMipmap, LayerLayerMaskMipmap, \
             {}, {}, {}, {}, {}, {}, {} \
          FROM Layer \
          ORDER BY MainId",
+        optional_text_expr(&layer_columns, "LayerName"),
         optional_i64_expr(&layer_columns, "DrawColorEnable"),
         optional_i64_expr(&layer_columns, "DrawColorMainRed"),
         optional_i64_expr(&layer_columns, "DrawColorMainGreen"),
@@ -477,24 +479,26 @@ pub fn read_layer_graph_records_from_sqlite(
 
     let rows = stmt.query_map([], |row| {
         let id: i64 = row.get(0)?;
-        let layer_type: i64 = row.get(1)?;
-        let visibility: i64 = row.get(2)?;
-        let clip: i64 = row.get(3)?;
-        let opacity: i64 = row.get(4)?;
-        let composite: i64 = row.get(5)?;
-        let next_layer_id: i64 = row.get(6)?;
-        let first_child_layer_id: i64 = row.get(7)?;
-        let render_mipmap_id: i64 = row.get(8)?;
-        let mask_mipmap_id: i64 = row.get(9)?;
-        let draw_color_enable: i64 = row.get::<_, Option<i64>>(10)?.unwrap_or(0);
-        let draw_color_red: i64 = row.get::<_, Option<i64>>(11)?.unwrap_or(0);
-        let draw_color_green: i64 = row.get::<_, Option<i64>>(12)?.unwrap_or(0);
-        let draw_color_blue: i64 = row.get::<_, Option<i64>>(13)?.unwrap_or(0);
-        let palette_red: i64 = row.get::<_, Option<i64>>(14)?.unwrap_or(0);
-        let palette_green: i64 = row.get::<_, Option<i64>>(15)?.unwrap_or(0);
-        let palette_blue: i64 = row.get::<_, Option<i64>>(16)?.unwrap_or(0);
+        let name: String = row.get(1)?;
+        let layer_type: i64 = row.get(2)?;
+        let visibility: i64 = row.get(3)?;
+        let clip: i64 = row.get(4)?;
+        let opacity: i64 = row.get(5)?;
+        let composite: i64 = row.get(6)?;
+        let next_layer_id: i64 = row.get(7)?;
+        let first_child_layer_id: i64 = row.get(8)?;
+        let render_mipmap_id: i64 = row.get(9)?;
+        let mask_mipmap_id: i64 = row.get(10)?;
+        let draw_color_enable: i64 = row.get::<_, Option<i64>>(11)?.unwrap_or(0);
+        let draw_color_red: i64 = row.get::<_, Option<i64>>(12)?.unwrap_or(0);
+        let draw_color_green: i64 = row.get::<_, Option<i64>>(13)?.unwrap_or(0);
+        let draw_color_blue: i64 = row.get::<_, Option<i64>>(14)?.unwrap_or(0);
+        let palette_red: i64 = row.get::<_, Option<i64>>(15)?.unwrap_or(0);
+        let palette_green: i64 = row.get::<_, Option<i64>>(16)?.unwrap_or(0);
+        let palette_blue: i64 = row.get::<_, Option<i64>>(17)?.unwrap_or(0);
         Ok((
             id,
+            name,
             layer_type,
             visibility,
             clip,
@@ -518,6 +522,7 @@ pub fn read_layer_graph_records_from_sqlite(
     for row in rows {
         let (
             id,
+            name,
             layer_type,
             visibility,
             clip,
@@ -553,6 +558,7 @@ pub fn read_layer_graph_records_from_sqlite(
         };
         records.push(LayerGraphRecord {
             id,
+            name,
             kind,
             visibility: LayerVisibility(checked_i64_to_u32(visibility, "Layer.LayerVisibility")?),
             clip: clip != 0,
@@ -599,6 +605,14 @@ fn optional_i64_expr(columns: &HashSet<String>, column: &str) -> String {
         column.to_owned()
     } else {
         format!("0 AS {column}")
+    }
+}
+
+fn optional_text_expr(columns: &HashSet<String>, column: &str) -> String {
+    if columns.contains(column) {
+        column.to_owned()
+    } else {
+        format!("'' AS {column}")
     }
 }
 

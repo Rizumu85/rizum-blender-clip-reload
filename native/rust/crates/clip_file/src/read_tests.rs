@@ -30,11 +30,13 @@ fn reads_test_clipping_layer_graph_records() {
 
     assert_eq!(records.len(), 4);
     assert_eq!(records[0].id, LayerId(2));
+    assert_eq!(records[0].name, "");
     assert_eq!(records[0].kind, clip_model::LayerKind::Folder);
     assert_eq!(records[0].first_child_layer_id, Some(LayerId(4)));
     assert_eq!(records[0].next_layer_id, None);
 
     assert_eq!(records[1].id, LayerId(4));
+    assert_eq!(records[1].name, "Paper");
     assert_eq!(records[1].kind, clip_model::LayerKind::Paper);
     assert_eq!(records[1].next_layer_id, Some(LayerId(10)));
     assert_eq!(
@@ -48,11 +50,13 @@ fn reads_test_clipping_layer_graph_records() {
     );
 
     assert_eq!(records[2].id, LayerId(10));
+    assert_eq!(records[2].name, "Layer 1");
     assert_eq!(records[2].kind, clip_model::LayerKind::Raster);
     assert_eq!(records[2].next_layer_id, Some(LayerId(11)));
     assert_eq!(records[2].render_mipmap_id, Some(15));
 
     assert_eq!(records[3].id, LayerId(11));
+    assert_eq!(records[3].name, "Layer 2");
     assert_eq!(records[3].kind, clip_model::LayerKind::Raster);
     assert_eq!(records[3].next_layer_id, None);
     assert_eq!(records[3].render_mipmap_id, Some(16));

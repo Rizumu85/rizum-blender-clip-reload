@@ -22,9 +22,9 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    statistics, missing-source state, and the latest native render error for the
    selected `.clip` image.
    The copied/searchable diagnostics also include source size and SHA-256. The
-   panel shows compact unsupported layer/node/kind locators, can copy either
-   those locations or the full support report to the clipboard, and can open the
-   full report as a searchable Blender Text datablock.
+   panel shows compact unsupported layer/node/kind/name locators, can copy
+   either those locations or the full support report to the clipboard, and can
+   open the full report as a searchable Blender Text datablock.
 
 ## Later Native Workflow
 
@@ -76,8 +76,9 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Background render progress is elapsed-time only; there is no per-layer or
   percentage progress indicator yet.
 - Unsupported layer features are summarized at image level with counts,
-  resource statistics, compact unsupported layer/node/kind locators, and
-  unsupported layer/node details. The panel previews the first few entries, can
+  resource statistics, compact unsupported layer/node/kind locators with layer
+  names when available, and unsupported layer/node details. The panel previews
+  the first few entries, can
   expand to show the full support-detail list stored on the image, can copy only
   the locator list or the full support report to the clipboard, and can open the
   report in Blender's Text Editor for searching.
