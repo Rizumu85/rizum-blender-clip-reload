@@ -18,10 +18,14 @@ mod stream_provider;
 mod stream_resources;
 #[cfg(test)]
 mod stream_resources_tests;
+mod stream_sequence;
 mod stream_state;
 #[cfg(test)]
 mod stream_tests;
 mod stream_through;
+mod stream_tile_silo;
+mod stream_tile_silo_pipeline;
+mod stream_tile_silo_plan;
 mod stream_utils;
 pub mod types;
 mod validation;

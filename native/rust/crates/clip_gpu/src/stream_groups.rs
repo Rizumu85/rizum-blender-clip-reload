@@ -5,7 +5,7 @@ use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
     raster_source_uniform_bytes_with_target_origin_and_mask,
 };
-use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
+use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::CanvasRect;
 use crate::stream_clipping::encode_clipped_stack_source_with_provider;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
@@ -13,6 +13,7 @@ use crate::stream_resources::{
     known_clipping_run_activity, known_raster_source_bounds, mask_view_with_provider,
     pass_bounds_for_change, raster_view_with_provider,
 };
+use crate::stream_sequence::encode_source_sequence_with_provider;
 use crate::stream_state::{RenderedStreamingCache, StreamingEncoder, StreamingTexturePair};
 use crate::{
     GpuClippedStackSource, GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterBlendMode,
@@ -293,25 +294,23 @@ where
     );
     let mut dirty_bounds = None;
 
-    for child in children {
-        let did_write = encode_source_with_provider(
-            renderer,
-            provider,
-            state,
-            output_size,
-            cache_origin,
-            child,
-            container_pair.texture(previous_index),
-            fallback_texture,
-            container_pair.view(previous_index),
-            container_pair.view(next_index),
-            pipelines,
-            &mut dirty_bounds,
-        )?;
-        if did_write {
-            std::mem::swap(&mut previous_index, &mut next_index);
-        }
-    }
+    let updated = encode_source_sequence_with_provider(
+        renderer,
+        provider,
+        state,
+        output_size,
+        cache_origin,
+        children,
+        &container_pair,
+        previous_index,
+        next_index,
+        Some(fallback_texture),
+        pipelines,
+        &mut dirty_bounds,
+    )?;
+    previous_index = updated.0;
+    next_index = updated.1;
+    let _ = next_index;
 
     Ok(RenderedStreamingCache::new_with_origin(
         container_pair,

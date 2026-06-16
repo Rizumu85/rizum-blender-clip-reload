@@ -1,10 +1,13 @@
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use clip_model::CanvasSize;
 
 use crate::pass::{WHITE_TRANSPARENT, create_rgba8_texture};
 use crate::stream_bounds::CanvasRect;
+use crate::stream_tile_silo_pipeline::TileSiloPipeline;
 use crate::{
     GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterResourceCache, GpuRasterResourceInfo,
     GpuRasterResourceKey, GpuRenderError,
@@ -17,6 +20,7 @@ const MAX_STREAMING_RETAINED_RESOURCE_BYTES: usize = 256 * 1024 * 1024;
 pub(crate) struct StreamingTexturePair {
     textures: [wgpu::Texture; 2],
     views: [wgpu::TextureView; 2],
+    size: CanvasSize,
     byte_len: usize,
 }
 
@@ -39,6 +43,7 @@ impl StreamingTexturePair {
         Self {
             textures,
             views,
+            size,
             byte_len: rgba8_pair_byte_len(size),
         }
     }
@@ -49,6 +54,10 @@ impl StreamingTexturePair {
 
     pub(crate) fn view(&self, index: usize) -> &wgpu::TextureView {
         &self.views[index]
+    }
+
+    pub(crate) fn size(&self) -> CanvasSize {
+        self.size
     }
 
     fn byte_len(&self) -> usize {
@@ -126,6 +135,7 @@ pub(crate) struct StreamingEncoder<'a, E> {
     retained_lut_textures: Vec<wgpu::Texture>,
     retained_intermediate_caches: Vec<RenderedStreamingCache>,
     retained_texture_pairs: Vec<StreamingTexturePair>,
+    tile_silo_pipeline: OnceCell<Rc<TileSiloPipeline>>,
     _error: PhantomData<E>,
 }
 
@@ -157,6 +167,7 @@ where
             retained_lut_textures: Vec::new(),
             retained_intermediate_caches: Vec::new(),
             retained_texture_pairs: Vec::new(),
+            tile_silo_pipeline: OnceCell::new(),
             _error: PhantomData,
         }
     }
@@ -169,6 +180,12 @@ where
         self.encoder
             .as_mut()
             .expect("streaming encoder must exist before finish")
+    }
+
+    pub(crate) fn tile_silo_pipeline(&self) -> Rc<TileSiloPipeline> {
+        self.tile_silo_pipeline
+            .get_or_init(|| Rc::new(TileSiloPipeline::new(self.device)))
+            .clone()
     }
 
     pub(crate) fn clear_rgba8_texture_pair(
@@ -274,6 +291,11 @@ where
 
     pub(crate) fn retain_lut_texture(&mut self, texture: wgpu::Texture) {
         self.add_retained_bytes(256 * 4);
+        self.retained_lut_textures.push(texture);
+    }
+
+    pub(crate) fn retain_texture(&mut self, texture: wgpu::Texture, byte_len: usize) {
+        self.add_retained_bytes(byte_len);
         self.retained_lut_textures.push(texture);
     }
 

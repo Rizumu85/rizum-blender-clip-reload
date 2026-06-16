@@ -21,6 +21,7 @@ use crate::stream_resources::{
     known_clipped_sibling_activity, known_raster_source_bounds, mask_view_with_provider,
     pass_bounds_for_change, raster_view_with_provider,
 };
+use crate::stream_sequence::encode_source_sequence_with_provider;
 use crate::stream_state::{StreamingEncoder, StreamingTexturePair};
 use crate::stream_through::render_through_group_with_provider;
 use crate::stream_utils::{local_pass_bounds, lut_filter_label, renderer_context_queue};
@@ -108,34 +109,28 @@ fn encode_sources_with_provider<P>(
     output_size: CanvasSize,
     sources: &[GpuNormalStackSource],
     accum_pair: &StreamingTexturePair,
-    mut previous_index: usize,
-    mut next_index: usize,
+    previous_index: usize,
+    next_index: usize,
     pipelines: &NormalStackPipelines,
 ) -> Result<(usize, usize), P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
     let mut dirty_bounds = None;
-    for source in sources {
-        let did_write = encode_source_with_provider(
-            renderer,
-            provider,
-            state,
-            output_size,
-            (0, 0),
-            source,
-            accum_pair.texture(previous_index),
-            accum_pair.texture(previous_index),
-            accum_pair.view(previous_index),
-            accum_pair.view(next_index),
-            pipelines,
-            &mut dirty_bounds,
-        )?;
-        if did_write {
-            std::mem::swap(&mut previous_index, &mut next_index);
-        }
-    }
-    Ok((previous_index, next_index))
+    encode_source_sequence_with_provider(
+        renderer,
+        provider,
+        state,
+        output_size,
+        (0, 0),
+        sources,
+        accum_pair,
+        previous_index,
+        next_index,
+        None,
+        pipelines,
+        &mut dirty_bounds,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]

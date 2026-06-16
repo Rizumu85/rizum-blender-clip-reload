@@ -161,9 +161,59 @@ Verification after the milestone:
 - `Ref_Terra404_Live2D.clip --compare-png Ref_Terra404_Live2D.png` release:
   no wgpu OOM, `premul_max=5`, 4.756s on this machine.
 
-Next quantity-level work is tile-local work lists and pass collapse for
-raster/clipping stretches. Filters, THROUGH groups, and isolated containers
-remain semantic barriers until faithful tile-local models exist.
+Next quantity-level work is to extend atlas-backed execution beyond ordinary
+raster runs: direct compressed-tile atlas uploads, mask/clipping events, and
+larger faithful tile-local segments. Filters, THROUGH groups, and isolated
+containers remain semantic barriers until faithful tile-local models exist.
+
+## Atlas Raster Run Collapse Milestone
+
+The second Silicate-shaped milestone is implemented in the streaming provider
+path. It is deliberately narrower than a complete long-lived atlas renderer:
+
+- `clip_gpu::stream_sequence` scans normal source sequences and attempts to
+  collapse consecutive eligible raster sources before falling back to the
+  existing per-source encoder.
+- `clip_gpu::stream_tile_silo_plan` builds a per-run atlas layout plus
+  attachment-local 256px tile work lists. It supports non-zero target origins,
+  so cropped container caches can participate instead of only the top-level
+  canvas.
+- `clip_gpu::stream_tile_silo` copies the already-cropped raster textures into a
+  per-run atlas and issues one shader pass. The shader loads only the current
+  tile's ordered event list and applies Normal or standard blend modes in
+  sequence, quantizing after each event to preserve the existing multi-pass
+  byte behaviour.
+- `clip_gpu::stream_tile_silo_pipeline` keeps the tile-silo bind group layout
+  and render pipeline cached per streaming render through `StreamingEncoder`,
+  avoiding a WGSL/pipeline rebuild for every collapsed run.
+
+Current eligibility is conservative and faithful: only unmasked raster sources
+with nonzero opacity and supported Normal/standard blend modes are collapsed.
+Masks, clipping-run nodes, filters, THROUGH groups, containers as source nodes,
+and byte-domain special blends (`AddGlow`, `ColorDodge`, `ColorBurn`,
+`GlowDodge`) remain explicit barriers and use the existing pass path.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
+- New GPU unit tests lock Normal raster-run collapse, standard Multiply order,
+  non-zero target-origin container collapse, and planner barriers for masks and
+  byte-domain blends.
+- Guard samples remain stable: `Test_Clipping` exact, `Test_ClippingEdge`
+  exact, `Test_FolderNested` exact, `Test_Mask` `raw_max=1` /
+  `premul_max=1`, `Test_ToneCurve` `raw_max=17` / `premul_max=17`, and
+  `Test_AddGlowMultiply` `raw_max=5` / `premul_max=3`.
+- Direct release executable timings on this machine:
+  `Test_RealArt.clip --compare-png Test_RealArt.png` is `raw_max=5` /
+  `premul_max=2` in about 2.559s; `Ref_Terra404_Live2D.clip --compare-png
+  Ref_Terra404_Live2D.png` is `premul_max=5` in about 3.943s.
+
+The remaining order-of-magnitude path is still a fuller atlas architecture:
+decode/upload compressed `.clip` tiles directly into atlas storage, represent
+masks and clipping relationships as tile events, and reduce per-run atlas copy
+cost. This milestone proves the pass-collapse execution shape inside the
+accepted streaming renderer without adding fallback compositing or
+post-processing.
 
 ## Compressed Occupancy Planner
 
