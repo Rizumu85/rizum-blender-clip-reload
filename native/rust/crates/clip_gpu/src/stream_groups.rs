@@ -7,6 +7,7 @@ use crate::source_params::{
 };
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::CanvasRect;
+use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_resources::{
     known_clipping_run_activity, known_raster_source_bounds, known_stack_activity,
     mask_view_with_provider, pass_bounds_for_change, preserving_pass_bounds_for_change,
@@ -43,7 +44,7 @@ where
         return Ok(RenderedStreamingCache::empty());
     };
     let cache_size = CanvasSize::new(pass_bounds.width, pass_bounds.height);
-    let cache_origin = canvas_rect_origin(pass_bounds);
+    let cache_origin = pass_bounds.origin_i32();
     let local_cache_bounds =
         CanvasRect::full(cache_size).expect("non-empty clipping bounds must create local bounds");
 
@@ -153,13 +154,6 @@ where
     ))
 }
 
-fn canvas_rect_origin(bounds: CanvasRect) -> (i32, i32) {
-    (
-        i32::try_from(bounds.x).expect("canvas x origin must fit shader i32"),
-        i32::try_from(bounds.y).expect("canvas y origin must fit shader i32"),
-    )
-}
-
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn render_container_with_provider<P>(
     renderer: &GpuRenderer,
@@ -173,9 +167,14 @@ pub(crate) fn render_container_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if known_stack_activity(provider, children, output_size).is_empty() {
-        return Ok(RenderedStreamingCache::empty());
-    }
+    let (cache_size, cache_origin) = match known_stack_bounds(provider, children, output_size) {
+        KnownStackBounds::Empty => return Ok(RenderedStreamingCache::empty()),
+        KnownStackBounds::Bounded(bounds) => (
+            CanvasSize::new(bounds.width, bounds.height),
+            bounds.origin_i32(),
+        ),
+        KnownStackBounds::Unknown => (output_size, (0, 0)),
+    };
 
     let container_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
@@ -183,7 +182,7 @@ where
         state.device(),
         "rizum_clip_provider_container_cache_a",
         "rizum_clip_provider_container_cache_b",
-        output_size,
+        cache_size,
         container_usage,
     );
     let mut previous_index = 0usize;
@@ -202,6 +201,7 @@ where
             provider,
             state,
             output_size,
+            cache_origin,
             child,
             container_pair.texture(previous_index),
             fallback_texture,
@@ -215,10 +215,11 @@ where
         }
     }
 
-    Ok(RenderedStreamingCache::new(
+    Ok(RenderedStreamingCache::new_with_origin(
         container_pair,
         previous_index,
         dirty_bounds,
+        cache_origin,
     ))
 }
 
@@ -278,6 +279,7 @@ where
             provider,
             state,
             output_size,
+            (0, 0),
             child,
             previous_texture,
             fallback_texture,

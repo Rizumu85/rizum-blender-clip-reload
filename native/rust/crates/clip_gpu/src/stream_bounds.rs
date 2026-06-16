@@ -64,6 +64,27 @@ impl CanvasRect {
             && other.y < self.bottom()
     }
 
+    pub(crate) fn origin_i32(self) -> (i32, i32) {
+        (
+            i32::try_from(self.x).expect("canvas x origin must fit shader i32"),
+            i32::try_from(self.y).expect("canvas y origin must fit shader i32"),
+        )
+    }
+
+    pub(crate) fn translate_to_local(self, origin: (i32, i32)) -> Option<Self> {
+        let local_x = i64::from(self.x) - i64::from(origin.0);
+        let local_y = i64::from(self.y) - i64::from(origin.1);
+        if local_x < 0 || local_y < 0 {
+            return None;
+        }
+        Some(Self {
+            x: u32::try_from(local_x).ok()?,
+            y: u32::try_from(local_y).ok()?,
+            width: self.width,
+            height: self.height,
+        })
+    }
+
     fn right(self) -> u32 {
         self.x + self.width
     }
@@ -144,5 +165,38 @@ mod tests {
             width: 2,
             height: 2,
         }));
+    }
+
+    #[test]
+    fn rect_translates_to_local_origin() {
+        assert_eq!(
+            CanvasRect {
+                x: 5,
+                y: 7,
+                width: 3,
+                height: 2,
+            }
+            .translate_to_local((4, 6)),
+            Some(CanvasRect {
+                x: 1,
+                y: 1,
+                width: 3,
+                height: 2,
+            })
+        );
+    }
+
+    #[test]
+    fn rect_rejects_translation_before_local_origin() {
+        assert_eq!(
+            CanvasRect {
+                x: 3,
+                y: 7,
+                width: 3,
+                height: 2,
+            }
+            .translate_to_local((4, 6)),
+            None
+        );
     }
 }

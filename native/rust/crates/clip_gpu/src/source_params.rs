@@ -57,6 +57,22 @@ pub(crate) fn generated_raster_source_uniform_bytes_with_blend_and_origin(
     blend_mode: GpuRasterBlendMode,
     source_origin: (i32, i32),
 ) -> [u8; 48] {
+    generated_raster_source_uniform_bytes_with_blend_and_origins(
+        opacity,
+        has_mask,
+        blend_mode,
+        source_origin,
+        (0, 0),
+    )
+}
+
+pub(crate) fn generated_raster_source_uniform_bytes_with_blend_and_origins(
+    opacity: f32,
+    has_mask: bool,
+    blend_mode: GpuRasterBlendMode,
+    source_origin: (i32, i32),
+    target_origin: (i32, i32),
+) -> [u8; 48] {
     normal_source_uniform_bytes(
         [0.0, 0.0, 0.0, 0.0],
         opacity,
@@ -65,8 +81,8 @@ pub(crate) fn generated_raster_source_uniform_bytes_with_blend_and_origin(
         blend_kind(blend_mode),
         source_origin.0,
         source_origin.1,
-        0,
-        0,
+        target_origin.0,
+        target_origin.1,
     )
 }
 
@@ -140,7 +156,10 @@ mod tests {
 
     use crate::{GpuNormalRasterSource, GpuRasterBlendMode, GpuRasterResourceKey};
 
-    use super::raster_source_uniform_bytes_with_target_origin;
+    use super::{
+        generated_raster_source_uniform_bytes_with_blend_and_origins,
+        raster_source_uniform_bytes_with_target_origin,
+    };
 
     #[test]
     fn target_origin_uses_tail_padding_bytes() {
@@ -163,5 +182,21 @@ mod tests {
         assert_eq!(&bytes[36..40], &4i32.to_ne_bytes());
         assert_eq!(&bytes[40..44], &5i32.to_ne_bytes());
         assert_eq!(&bytes[44..48], &6i32.to_ne_bytes());
+    }
+
+    #[test]
+    fn generated_source_records_source_and_target_origins() {
+        let bytes = generated_raster_source_uniform_bytes_with_blend_and_origins(
+            0.5,
+            true,
+            GpuRasterBlendMode::Normal,
+            (7, 8),
+            (9, 10),
+        );
+
+        assert_eq!(&bytes[32..36], &7i32.to_ne_bytes());
+        assert_eq!(&bytes[36..40], &8i32.to_ne_bytes());
+        assert_eq!(&bytes[40..44], &9i32.to_ne_bytes());
+        assert_eq!(&bytes[44..48], &10i32.to_ne_bytes());
     }
 }

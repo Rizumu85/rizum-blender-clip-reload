@@ -59,14 +59,6 @@ pub(crate) struct RenderedStreamingCache {
 }
 
 impl RenderedStreamingCache {
-    pub(crate) fn new(
-        pair: StreamingTexturePair,
-        output_index: usize,
-        bounds: Option<CanvasRect>,
-    ) -> Self {
-        Self::new_with_origin(pair, output_index, bounds, (0, 0))
-    }
-
     pub(crate) fn new_with_origin(
         pair: StreamingTexturePair,
         output_index: usize,

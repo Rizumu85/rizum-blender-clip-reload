@@ -9,6 +9,7 @@ mod shaders;
 mod source_params;
 pub mod stream;
 mod stream_bounds;
+mod stream_extents;
 mod stream_groups;
 mod stream_resources;
 mod stream_state;

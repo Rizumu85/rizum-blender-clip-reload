@@ -65,7 +65,7 @@ impl GpuNormalStackResourceProvider for InlineProvider {
         _renderer: &GpuRenderer,
         _key: GpuMaskResourceKey,
     ) -> Result<GpuMaskResourceCache, Self::Error> {
-        unreachable!("cropped clipping cache fixture has no masks")
+        unreachable!("stream origin fixtures have no masks")
     }
 }
 
@@ -113,13 +113,95 @@ fn streamed_clipping_cache_resolves_from_cropped_origin() {
     assert_eq!(output.pixels, expected);
 }
 
+#[test]
+fn streamed_container_cache_resolves_from_cropped_origin() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(3);
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(3),
+            size: CanvasSize::new(2, 2),
+            offset: (1, 1),
+            pixels: [0, 255, 0, 255].repeat(4),
+        },
+    )]);
+    let sources = [GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::Raster(raster_source(key))],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw streamed cropped container");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 4 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 255, 0, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+}
+
+#[test]
+fn streamed_nested_container_resolves_into_cropped_parent_origin() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = raster_key(4);
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(4),
+            size: CanvasSize::new(2, 2),
+            offset: (2, 1),
+            pixels: [255, 255, 0, 255].repeat(4),
+        },
+    )]);
+    let nested = GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::Raster(raster_source_at(key, 2, 1))],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    };
+    let sources = [GpuNormalStackSource::Container {
+        children: vec![nested],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(5, 4), &sources, &mut provider)
+        .expect("draw streamed nested cropped container");
+
+    let mut expected = [255, 255, 255, 0].repeat(20);
+    for y in 1..=2 {
+        for x in 2..=3 {
+            let offset = ((y * 5 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[255, 255, 0, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+}
+
 fn raster_source(key: GpuRasterResourceKey) -> GpuNormalRasterSource {
+    raster_source_at(key, 1, 1)
+}
+
+fn raster_source_at(
+    key: GpuRasterResourceKey,
+    offset_x: i32,
+    offset_y: i32,
+) -> GpuNormalRasterSource {
     GpuNormalRasterSource {
         key,
         opacity: 1.0,
         mask_key: None,
-        offset_x: 1,
-        offset_y: 1,
+        offset_x,
+        offset_y,
         blend_mode: GpuRasterBlendMode::Normal,
     }
 }

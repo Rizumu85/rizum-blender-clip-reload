@@ -6,9 +6,8 @@ use crate::pass::{
     encode_normal_source_pass, encode_normal_source_pass_scissored,
 };
 use crate::source_params::{
-    generated_raster_source_uniform_bytes_with_blend,
-    generated_raster_source_uniform_bytes_with_blend_and_origin, lut_filter_uniform_bytes,
-    raster_source_uniform_bytes, solid_source_uniform_bytes,
+    generated_raster_source_uniform_bytes_with_blend_and_origins, lut_filter_uniform_bytes,
+    raster_source_uniform_bytes_with_target_origin, solid_source_uniform_bytes,
 };
 use crate::stream_bounds::CanvasRect;
 use crate::stream_groups::{
@@ -148,6 +147,7 @@ where
             provider,
             state,
             output_size,
+            (0, 0),
             source,
             accum_pair.texture(previous_index),
             accum_pair.texture(previous_index),
@@ -169,6 +169,7 @@ pub(crate) fn encode_source_with_provider<P>(
     provider: &mut P,
     state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
+    target_origin: (i32, i32),
     source: &GpuNormalStackSource,
     previous_texture: &wgpu::Texture,
     fallback_texture: &wgpu::Texture,
@@ -217,9 +218,9 @@ where
                 previous_view,
                 mask_view.as_ref(),
                 output_view,
-                raster_source_uniform_bytes(effective_raster),
+                raster_source_uniform_bytes_with_target_origin(effective_raster, target_origin),
                 "rizum_clip_provider_normal_raster_pass",
-                pass_bounds,
+                local_pass_bounds(pass_bounds, target_origin),
             );
             state.retain_raster_cache(raster_cache);
             state.retain_optional_mask_cache(mask_cache);
@@ -258,14 +259,15 @@ where
                 previous_view,
                 previous_view,
                 output_view,
-                generated_raster_source_uniform_bytes_with_blend_and_origin(
+                generated_raster_source_uniform_bytes_with_blend_and_origins(
                     1.0,
                     false,
                     base.blend_mode,
                     clipping_cache.texture_origin(),
+                    target_origin,
                 ),
                 "rizum_clip_provider_clipping_resolve_pass",
-                pass_bounds,
+                local_pass_bounds(pass_bounds, target_origin),
             );
             state.retain_intermediate_cache(clipping_cache);
             state.finish_pass()?;
@@ -318,13 +320,15 @@ where
                 previous_view,
                 mask_view.as_ref(),
                 output_view,
-                generated_raster_source_uniform_bytes_with_blend(
+                generated_raster_source_uniform_bytes_with_blend_and_origins(
                     *opacity,
                     mask_key.is_some(),
                     *blend_mode,
+                    container_cache.texture_origin(),
+                    target_origin,
                 ),
                 "rizum_clip_provider_container_resolve_pass",
-                pass_bounds,
+                local_pass_bounds(pass_bounds, target_origin),
             );
             state.retain_intermediate_cache(container_cache);
             state.retain_optional_mask_cache(mask_cache);
@@ -336,20 +340,27 @@ where
             children,
             opacity,
             mask_key,
-        } => render_through_group_with_provider(
-            renderer,
-            provider,
-            state,
-            output_size,
-            children,
-            *opacity,
-            *mask_key,
-            previous_texture,
-            fallback_texture,
-            output_view,
-            pipelines,
-            dirty_bounds,
-        ),
+        } => {
+            debug_assert_eq!(
+                target_origin,
+                (0, 0),
+                "THROUGH groups render only into full-canvas streaming targets"
+            );
+            render_through_group_with_provider(
+                renderer,
+                provider,
+                state,
+                output_size,
+                children,
+                *opacity,
+                *mask_key,
+                previous_texture,
+                fallback_texture,
+                output_view,
+                pipelines,
+                dirty_bounds,
+            )
+        }
         GpuNormalStackSource::SolidColor { color, opacity } => {
             let Some(full_bounds) = CanvasRect::full(output_size) else {
                 return Ok(false);
@@ -426,4 +437,10 @@ fn lut_filter_label(filter_mode: GpuLutFilterMode) -> &'static str {
         GpuLutFilterMode::ToneCurveRgb => "rizum_clip_provider_tone_curve_pass",
         GpuLutFilterMode::GradientMapLum => "rizum_clip_provider_gradient_map_pass",
     }
+}
+
+fn local_pass_bounds(pass_bounds: CanvasRect, target_origin: (i32, i32)) -> CanvasRect {
+    pass_bounds
+        .translate_to_local(target_origin)
+        .expect("global pass bounds must fit inside the streaming target")
 }
