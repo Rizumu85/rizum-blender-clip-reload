@@ -12,39 +12,72 @@ pub(crate) struct TileBlockRef<'a> {
     pub(crate) bytes: &'a [u8],
 }
 
-pub(crate) fn tile_indices_for_region(
-    width: u32,
-    height: u32,
-    region: Rect,
-) -> Result<Vec<usize>, ClipFileError> {
-    let region = validate_tile_region(width, height, region)?;
-    let cols = tile_cols(width)?;
-    let mut indices = Vec::new();
-    for tile_y in tile_span(region.y, region.bottom) {
-        for tile_x in tile_span(region.x, region.right) {
-            indices.push(tile_y * cols + tile_x);
-        }
-    }
-    Ok(indices)
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct TileBlockSelection {
+    cols: usize,
+    tile_x_start: usize,
+    tile_x_end: usize,
+    tile_y_start: usize,
+    tile_y_end: usize,
+    count: usize,
 }
 
-pub(crate) fn decode_rgba_tile_blocks_region(
-    blocks: &[TileBlockRef<'_>],
-    width: u32,
-    height: u32,
-    region: Rect,
-) -> Result<RgbaTileImage, ClipFileError> {
-    let region = validate_tile_region(width, height, region)?;
-    let cols = tile_cols(width)?;
-    let tile_count = checked_tile_count(width, height)?;
-    let mut pixels = rgba_output_buffer(region.width, region.height)?;
+impl TileBlockSelection {
+    pub(crate) fn count(self) -> usize {
+        self.count
+    }
 
-    for block in blocks {
-        validate_block(block, tile_count, RGBA_TILE_BYTES)?;
-        let tile_x = block.tile_index % cols;
-        let tile_y = block.tile_index / cols;
-        let Some(copy) = tile_copy_rect(region, tile_x, tile_y) else {
-            continue;
+    pub(crate) fn covers_all_tiles(self, expected_tile_count: usize) -> bool {
+        self.count == expected_tile_count
+    }
+
+    pub(crate) fn contains(self, tile_index: usize) -> bool {
+        let tile_x = tile_index % self.cols;
+        let tile_y = tile_index / self.cols;
+        tile_x >= self.tile_x_start
+            && tile_x < self.tile_x_end
+            && tile_y >= self.tile_y_start
+            && tile_y < self.tile_y_end
+    }
+
+    pub(crate) fn last_tile_index(self) -> Option<usize> {
+        if self.count == 0 {
+            return None;
+        }
+        Some((self.tile_y_end - 1) * self.cols + self.tile_x_end - 1)
+    }
+}
+
+pub(crate) struct TileRegionWriter {
+    region: TileRegion,
+    cols: usize,
+    tile_count: usize,
+    pixels: Vec<u8>,
+}
+
+impl TileRegionWriter {
+    pub(crate) fn new(width: u32, height: u32, region: Rect) -> Result<Self, ClipFileError> {
+        let region = validate_tile_region(width, height, region)?;
+        let cols = tile_cols(width)?;
+        let tile_count = checked_tile_count(width, height)?;
+        let pixels = rgba_output_buffer(region.width, region.height)?;
+        Ok(Self {
+            region,
+            cols,
+            tile_count,
+            pixels,
+        })
+    }
+
+    pub(crate) fn write_rgba_block(
+        &mut self,
+        block: TileBlockRef<'_>,
+    ) -> Result<(), ClipFileError> {
+        validate_block(&block, self.tile_count, RGBA_TILE_BYTES)?;
+        let tile_x = block.tile_index % self.cols;
+        let tile_y = block.tile_index / self.cols;
+        let Some(copy) = tile_copy_rect(self.region, tile_x, tile_y) else {
+            return Ok(());
         };
         let alpha_start = 0usize;
         let bgra_start = MASK_TILE_BYTES;
@@ -53,10 +86,10 @@ pub(crate) fn decode_rgba_tile_blocks_region(
             let source_pixel = (copy.source_y + row) * TILE_SIZE + copy.source_x;
             let alpha_row_start = alpha_start + source_pixel;
             let bgra_row_start = bgra_start + source_pixel * 4;
-            let dest_start = ((copy.dest_y + row) * region.width + copy.dest_x) * 4;
+            let dest_start = ((copy.dest_y + row) * self.region.width + copy.dest_x) * 4;
             let alpha_row = &block.bytes[alpha_row_start..alpha_row_start + copy.width];
             let bgra_row = &block.bytes[bgra_row_start..bgra_row_start + copy.width * 4];
-            let dest_row = &mut pixels[dest_start..dest_start + copy.width * 4];
+            let dest_row = &mut self.pixels[dest_start..dest_start + copy.width * 4];
 
             for ((dst, bgra), alpha) in dest_row
                 .chunks_exact_mut(4)
@@ -69,28 +102,18 @@ pub(crate) fn decode_rgba_tile_blocks_region(
                 dst[3] = *alpha;
             }
         }
+        Ok(())
     }
 
-    region_image(region, pixels)
-}
-
-pub(crate) fn decode_gray_tile_blocks_region(
-    blocks: &[TileBlockRef<'_>],
-    width: u32,
-    height: u32,
-    region: Rect,
-) -> Result<RgbaTileImage, ClipFileError> {
-    let region = validate_tile_region(width, height, region)?;
-    let cols = tile_cols(width)?;
-    let tile_count = checked_tile_count(width, height)?;
-    let mut pixels = rgba_output_buffer(region.width, region.height)?;
-
-    for block in blocks {
-        validate_block(block, tile_count, GRAY_RGBA_TILE_BYTES)?;
-        let tile_x = block.tile_index % cols;
-        let tile_y = block.tile_index / cols;
-        let Some(copy) = tile_copy_rect(region, tile_x, tile_y) else {
-            continue;
+    pub(crate) fn write_gray_block(
+        &mut self,
+        block: TileBlockRef<'_>,
+    ) -> Result<(), ClipFileError> {
+        validate_block(&block, self.tile_count, GRAY_RGBA_TILE_BYTES)?;
+        let tile_x = block.tile_index % self.cols;
+        let tile_y = block.tile_index / self.cols;
+        let Some(copy) = tile_copy_rect(self.region, tile_x, tile_y) else {
+            return Ok(());
         };
         let alpha_start = 0usize;
         let gray_start = MASK_TILE_BYTES;
@@ -99,10 +122,10 @@ pub(crate) fn decode_gray_tile_blocks_region(
             let source_pixel = (copy.source_y + row) * TILE_SIZE + copy.source_x;
             let alpha_row_start = alpha_start + source_pixel;
             let gray_row_start = gray_start + source_pixel;
-            let dest_start = ((copy.dest_y + row) * region.width + copy.dest_x) * 4;
+            let dest_start = ((copy.dest_y + row) * self.region.width + copy.dest_x) * 4;
             let alpha_row = &block.bytes[alpha_row_start..alpha_row_start + copy.width];
             let gray_row = &block.bytes[gray_row_start..gray_row_start + copy.width];
-            let dest_row = &mut pixels[dest_start..dest_start + copy.width * 4];
+            let dest_row = &mut self.pixels[dest_start..dest_start + copy.width * 4];
 
             for ((dst, gray), alpha) in dest_row.chunks_exact_mut(4).zip(gray_row).zip(alpha_row) {
                 dst[0] = *gray;
@@ -111,34 +134,24 @@ pub(crate) fn decode_gray_tile_blocks_region(
                 dst[3] = *alpha;
             }
         }
+        Ok(())
     }
 
-    region_image(region, pixels)
-}
-
-pub(crate) fn decode_mono_tile_blocks_region(
-    blocks: &[TileBlockRef<'_>],
-    width: u32,
-    height: u32,
-    region: Rect,
-) -> Result<RgbaTileImage, ClipFileError> {
-    let region = validate_tile_region(width, height, region)?;
-    let cols = tile_cols(width)?;
-    let tile_count = checked_tile_count(width, height)?;
-    let mut pixels = rgba_output_buffer(region.width, region.height)?;
-    let white_start = MONO_RGBA_TILE_BYTES / 2;
-
-    for block in blocks {
-        validate_block(block, tile_count, MONO_RGBA_TILE_BYTES)?;
-        let tile_x = block.tile_index % cols;
-        let tile_y = block.tile_index / cols;
-        let Some(copy) = tile_copy_rect(region, tile_x, tile_y) else {
-            continue;
+    pub(crate) fn write_mono_block(
+        &mut self,
+        block: TileBlockRef<'_>,
+    ) -> Result<(), ClipFileError> {
+        validate_block(&block, self.tile_count, MONO_RGBA_TILE_BYTES)?;
+        let tile_x = block.tile_index % self.cols;
+        let tile_y = block.tile_index / self.cols;
+        let Some(copy) = tile_copy_rect(self.region, tile_x, tile_y) else {
+            return Ok(());
         };
+        let white_start = MONO_RGBA_TILE_BYTES / 2;
 
         for row in 0..copy.height {
-            let dest_start = ((copy.dest_y + row) * region.width + copy.dest_x) * 4;
-            let dest_row = &mut pixels[dest_start..dest_start + copy.width * 4];
+            let dest_start = ((copy.dest_y + row) * self.region.width + copy.dest_x) * 4;
+            let dest_row = &mut self.pixels[dest_start..dest_start + copy.width * 4];
 
             for (local_x, dst) in dest_row.chunks_exact_mut(4).enumerate() {
                 let bit_index = (copy.source_y + row) * TILE_SIZE + copy.source_x + local_x;
@@ -154,9 +167,42 @@ pub(crate) fn decode_mono_tile_blocks_region(
                 }
             }
         }
+        Ok(())
     }
 
-    region_image(region, pixels)
+    pub(crate) fn finish(self) -> Result<RgbaTileImage, ClipFileError> {
+        region_image(self.region, self.pixels)
+    }
+}
+
+pub(crate) fn tile_block_selection_for_region(
+    width: u32,
+    height: u32,
+    region: Rect,
+) -> Result<TileBlockSelection, ClipFileError> {
+    let region = validate_tile_region(width, height, region)?;
+    let cols = tile_cols(width)?;
+    let tile_x_start = region.x / TILE_SIZE;
+    let tile_x_end = region.right.div_ceil(TILE_SIZE);
+    let tile_y_start = region.y / TILE_SIZE;
+    let tile_y_end = region.bottom.div_ceil(TILE_SIZE);
+    let width = tile_x_end
+        .checked_sub(tile_x_start)
+        .ok_or(ClipFileError::TileSizeOverflow)?;
+    let height = tile_y_end
+        .checked_sub(tile_y_start)
+        .ok_or(ClipFileError::TileSizeOverflow)?;
+    let count = width
+        .checked_mul(height)
+        .ok_or(ClipFileError::TileSizeOverflow)?;
+    Ok(TileBlockSelection {
+        cols,
+        tile_x_start,
+        tile_x_end,
+        tile_y_start,
+        tile_y_end,
+        count,
+    })
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -227,10 +273,6 @@ fn validate_block(
         });
     }
     Ok(())
-}
-
-fn tile_span(start: usize, end: usize) -> std::ops::Range<usize> {
-    start / TILE_SIZE..end.div_ceil(TILE_SIZE)
 }
 
 fn tile_copy_rect(region: TileRegion, tile_x: usize, tile_y: usize) -> Option<TileCopyRect> {

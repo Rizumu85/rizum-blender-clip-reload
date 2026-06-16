@@ -4,6 +4,7 @@ pub mod container;
 mod error;
 pub mod external;
 pub mod metadata;
+mod placement;
 mod read;
 mod tile_region;
 pub mod tiles;

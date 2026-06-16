@@ -2,7 +2,10 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder;
 use std::io::Write;
 
-use super::decode_external_tile_blocks;
+use clip_model::Rect;
+
+use super::{decode_external_tile_blocks, visit_external_tile_block_selection};
+use crate::tile_region::tile_block_selection_for_region;
 
 #[test]
 fn selected_tile_decode_skips_unwanted_compressed_blocks() {
@@ -35,6 +38,27 @@ fn selected_tile_decode_stops_after_last_wanted_block() {
     assert_eq!(blocks.blocks.len(), 1);
     assert_eq!(blocks.blocks[0].tile_index, 0);
     assert_eq!(blocks.blocks[0].bytes, vec![1, 2, 3, 4]);
+}
+
+#[test]
+fn selected_tile_visitor_reuses_region_selection_without_inflating_skipped_blocks() {
+    let body = external_body(&[
+        corrupt_compressed_data_block(4),
+        compressed_data_block(&[5, 6, 7, 8]),
+        corrupt_compressed_data_block(4),
+    ]);
+    let selection = tile_block_selection_for_region(512, 256, Rect::new(256, 0, 64, 64)).unwrap();
+    let mut visited = Vec::new();
+
+    let external_id =
+        visit_external_tile_block_selection(&body, 9, 4, 2, selection, |tile_index, bytes| {
+            visited.push((tile_index, bytes.to_vec()));
+            Ok(())
+        })
+        .unwrap();
+
+    assert_eq!(external_id, "external");
+    assert_eq!(visited, vec![(1, vec![5, 6, 7, 8])]);
 }
 
 fn external_body(blocks: &[Vec<u8>]) -> Vec<u8> {
