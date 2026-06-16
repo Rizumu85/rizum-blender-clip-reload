@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use clip_model::CanvasSize;
 
-use crate::pass::{clear_rgba8_texture, create_rgba8_texture};
+use crate::pass::{WHITE_TRANSPARENT, create_rgba8_texture};
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuMaskResourceCache, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError};
 
@@ -154,9 +154,42 @@ where
             .expect("streaming encoder must exist before finish")
     }
 
-    pub(crate) fn clear_rgba8_texture(&mut self, view: &wgpu::TextureView, label: &'static str) {
+    pub(crate) fn clear_rgba8_texture_pair(
+        &mut self,
+        first: &wgpu::TextureView,
+        second: &wgpu::TextureView,
+        label: &'static str,
+    ) {
         let encoder = self.encoder_mut();
-        clear_rgba8_texture(encoder, view, label);
+        {
+            let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some(label),
+                color_attachments: &[
+                    Some(wgpu::RenderPassColorAttachment {
+                        view: first,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    }),
+                    Some(wgpu::RenderPassColorAttachment {
+                        view: second,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    }),
+                ],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+                multiview_mask: None,
+            });
+        }
         self.has_pending_commands = true;
     }
 

@@ -82,13 +82,10 @@ impl GpuRenderer {
         let mut previous_index = 0usize;
         let mut next_index = 1usize;
 
-        state.clear_rgba8_texture(
+        state.clear_rgba8_texture_pair(
             accum_pair.view(previous_index),
-            "rizum_clip_provider_normal_initial_clear",
-        );
-        state.clear_rgba8_texture(
             accum_pair.view(next_index),
-            "rizum_clip_provider_normal_spare_clear",
+            "rizum_clip_provider_normal_initial_clear",
         );
 
         let updated = encode_sources_with_provider(

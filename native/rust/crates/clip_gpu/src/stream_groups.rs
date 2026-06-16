@@ -53,13 +53,10 @@ where
     let mut next_index = 1usize;
     let mut dirty_bounds = Some(pass_bounds);
 
-    state.clear_rgba8_texture(
+    state.clear_rgba8_texture_pair(
         clipping_pair.view(previous_index),
-        "rizum_clip_provider_clipping_initial_clear",
-    );
-    state.clear_rgba8_texture(
         clipping_pair.view(next_index),
-        "rizum_clip_provider_clipping_spare_clear",
+        "rizum_clip_provider_clipping_initial_clear",
     );
 
     {
@@ -170,13 +167,10 @@ where
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
 
-    state.clear_rgba8_texture(
+    state.clear_rgba8_texture_pair(
         container_pair.view(previous_index),
-        "rizum_clip_provider_container_initial_clear",
-    );
-    state.clear_rgba8_texture(
         container_pair.view(next_index),
-        "rizum_clip_provider_container_spare_clear",
+        "rizum_clip_provider_container_initial_clear",
     );
     let mut dirty_bounds = None;
 
@@ -240,13 +234,10 @@ where
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
     let before_view = before_texture.create_view(&wgpu::TextureViewDescriptor::default());
-    state.clear_rgba8_texture(
+    state.clear_rgba8_texture_pair(
         through_pair.view(previous_index),
-        "rizum_clip_provider_through_initial_clear",
-    );
-    state.clear_rgba8_texture(
         through_pair.view(next_index),
-        "rizum_clip_provider_through_spare_clear",
+        "rizum_clip_provider_through_initial_clear",
     );
     let mut after_dirty_bounds = *parent_dirty_bounds;
     let mut has_child_output = false;
