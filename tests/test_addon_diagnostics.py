@@ -311,6 +311,13 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_ERROR,
             addon.native_bridge.CLIP_RELOAD_ERROR_KEY: "native renderer failed loudly",
             addon.native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY: 2.4,
+            addon.native_bridge.CLIP_PHASE_WORKER_SECONDS_KEY: 1.1,
+            addon.native_bridge.CLIP_PHASE_OUTPUT_READ_SECONDS_KEY: 0.2,
+            addon.native_bridge.CLIP_PHASE_CONVERT_SECONDS_KEY: 0.3,
+            addon.native_bridge.CLIP_PHASE_FOREACH_SECONDS_KEY: 0.4,
+            addon.native_bridge.CLIP_PHASE_UPDATE_SECONDS_KEY: 0.5,
+            addon.native_bridge.CLIP_PHASE_PACK_SECONDS_KEY: 0.6,
+            addon.native_bridge.CLIP_PHASE_UPLOAD_SECONDS_KEY: 1.8,
             addon.native_bridge.CLIP_CANVAS_WIDTH_KEY: 640,
             addon.native_bridge.CLIP_CANVAS_HEIGHT_KEY: 480,
             addon.native_bridge.CLIP_RENDERER_ABI_KEY: 1,
@@ -338,6 +345,9 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn("Source SHA-256: abcd1234", clipboard)
         self.assertIn("Status: Render failed", clipboard)
         self.assertIn("Last render duration: 2.4s", clipboard)
+        self.assertIn("Timing phases:", clipboard)
+        self.assertIn("- Native worker: 1.1s", clipboard)
+        self.assertIn("- Blender upload total: 1.8s", clipboard)
         self.assertIn("Canvas: 640x480", clipboard)
         self.assertIn("Renderer ABI: 1", clipboard)
         self.assertIn("Renderer version: 0.1.0-test", clipboard)

@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 from typing import Any
 
 
@@ -31,6 +32,13 @@ CLIP_RELOAD_STATUS_KEY = "clip_reload_status"
 CLIP_RELOAD_ERROR_KEY = "clip_reload_error"
 CLIP_RELOAD_STARTED_AT_KEY = "clip_reload_started_at"
 CLIP_RELOAD_LAST_SECONDS_KEY = "clip_reload_last_seconds"
+CLIP_PHASE_WORKER_SECONDS_KEY = "clip_phase_worker_seconds"
+CLIP_PHASE_OUTPUT_READ_SECONDS_KEY = "clip_phase_output_read_seconds"
+CLIP_PHASE_CONVERT_SECONDS_KEY = "clip_phase_convert_seconds"
+CLIP_PHASE_FOREACH_SECONDS_KEY = "clip_phase_foreach_seconds"
+CLIP_PHASE_UPDATE_SECONDS_KEY = "clip_phase_update_seconds"
+CLIP_PHASE_PACK_SECONDS_KEY = "clip_phase_pack_seconds"
+CLIP_PHASE_UPLOAD_SECONDS_KEY = "clip_phase_upload_seconds"
 CLIP_SUPPORT_STATUS_KEY = "clip_support_status"
 CLIP_SUPPORT_REPORT_KEY = "clip_support_report"
 CLIP_SUPPORT_DETAILS_KEY = "clip_support_details"
@@ -85,6 +93,8 @@ class NativeRenderResult:
     source_sha256: str
     pixels_rgba8: bytes
     support_summary: "NativeSupportSummary | None" = None
+    worker_seconds: float | None = None
+    output_read_seconds: float | None = None
 
 
 @dataclass(frozen=True)
@@ -235,6 +245,8 @@ class NativeRendererLibrary:
                 source_sha256=source_sha256,
                 pixels_rgba8=bytes(pixels),
                 support_summary=support_summary,
+                worker_seconds=None,
+                output_read_seconds=None,
             )
         finally:
             self._dll.clip_renderer_session_close(session)
@@ -398,22 +410,44 @@ def create_or_update_image(
     if len(result.pixels_rgba8) != result.width * result.height * 4:
         raise NativeBridgeError("native renderer returned an invalid RGBA buffer length")
 
+    upload_started = time.perf_counter()
     image = _ensure_image(bpy_module, result, image=image, image_name=image_name)
     image.source = "GENERATED"
     if hasattr(image, "colorspace_settings"):
         image.colorspace_settings.name = "sRGB"
 
-    image.pixels.foreach_set(
-        _rgba8_to_blender_float_sequence(
-            result.pixels_rgba8,
-            result.width,
-            result.height,
-        )
+    convert_started = time.perf_counter()
+    pixels = _rgba8_to_blender_float_sequence(
+        result.pixels_rgba8,
+        result.width,
+        result.height,
     )
+    convert_seconds = time.perf_counter() - convert_started
+
+    foreach_started = time.perf_counter()
+    image.pixels.foreach_set(pixels)
+    foreach_seconds = time.perf_counter() - foreach_started
+
+    update_started = time.perf_counter()
     image.update()
+    update_seconds = time.perf_counter() - update_started
+
     _write_source_properties(image, result)
+    pack_seconds = 0.0
     if pack and hasattr(image, "pack"):
+        pack_started = time.perf_counter()
         image.pack()
+        pack_seconds = time.perf_counter() - pack_started
+    upload_seconds = time.perf_counter() - upload_started
+    _write_phase_properties(
+        image,
+        result,
+        convert_seconds=convert_seconds,
+        foreach_seconds=foreach_seconds,
+        update_seconds=update_seconds,
+        pack_seconds=pack_seconds,
+        upload_seconds=upload_seconds,
+    )
     return image
 
 
@@ -614,20 +648,24 @@ class NativeRendererWorker:
                 str(json_path),
             ]
             creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            worker_started = time.perf_counter()
             completed = subprocess.run(
                 command,
                 capture_output=True,
                 text=True,
                 creationflags=creationflags,
             )
+            worker_seconds = time.perf_counter() - worker_started
             if completed.returncode != 0:
                 message = completed.stderr.strip() or completed.stdout.strip()
                 raise NativeBridgeError(
                     f"native renderer worker failed with exit code {completed.returncode}: {message}"
                 )
             try:
+                read_started = time.perf_counter()
                 metadata = json.loads(json_path.read_text(encoding="utf-8"))
                 pixels = rgba_path.read_bytes()
+                output_read_seconds = time.perf_counter() - read_started
             except OSError as exc:
                 raise NativeBridgeError(f"native renderer worker output missing: {exc}") from exc
             except json.JSONDecodeError as exc:
@@ -686,6 +724,8 @@ class NativeRendererWorker:
             source_sha256=source_sha256,
             pixels_rgba8=pixels,
             support_summary=support_summary,
+            worker_seconds=worker_seconds,
+            output_read_seconds=output_read_seconds,
         )
 
 
@@ -758,6 +798,31 @@ def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_EXTERNAL_COUNT_KEY] = result.external_data_count
     _write_support_properties(image, result.support_summary)
     write_reload_status(image, RELOAD_STATUS_OK)
+
+
+def _write_phase_properties(
+    image: Any,
+    result: NativeRenderResult,
+    *,
+    convert_seconds: float,
+    foreach_seconds: float,
+    update_seconds: float,
+    pack_seconds: float,
+    upload_seconds: float,
+) -> None:
+    if result.worker_seconds is None:
+        _delete_image_key(image, CLIP_PHASE_WORKER_SECONDS_KEY)
+    else:
+        image[CLIP_PHASE_WORKER_SECONDS_KEY] = float(result.worker_seconds)
+    if result.output_read_seconds is None:
+        _delete_image_key(image, CLIP_PHASE_OUTPUT_READ_SECONDS_KEY)
+    else:
+        image[CLIP_PHASE_OUTPUT_READ_SECONDS_KEY] = float(result.output_read_seconds)
+    image[CLIP_PHASE_CONVERT_SECONDS_KEY] = float(convert_seconds)
+    image[CLIP_PHASE_FOREACH_SECONDS_KEY] = float(foreach_seconds)
+    image[CLIP_PHASE_UPDATE_SECONDS_KEY] = float(update_seconds)
+    image[CLIP_PHASE_PACK_SECONDS_KEY] = float(pack_seconds)
+    image[CLIP_PHASE_UPLOAD_SECONDS_KEY] = float(upload_seconds)
 
 
 def _write_support_properties(image: Any, summary: NativeSupportSummary | None) -> None:

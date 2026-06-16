@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 45),
+    "version": (0, 8, 46),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -54,11 +54,14 @@ _in_flight: set = set()                 # clip paths currently being decoded
 # --------------------------------------------------------------------------- #
 
 def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
-    return native_bridge.import_clip_as_image(
+    started_at = time.time()
+    image = native_bridge.import_clip_as_image(
         clip_path,
         bpy_module=bpy,
         pack=True,
     )
+    image[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
+    return image
 
 
 def _addon_prefs():
@@ -122,6 +125,13 @@ def _image_float_property(img, key: str, default: float = 0.0) -> float:
         return float(img.get(key, default))
     except (TypeError, ValueError):
         return default
+
+
+def _image_has_property(img, key: str) -> bool:
+    try:
+        return key in img.keys()
+    except AttributeError:
+        return key in img
 
 
 def _format_seconds(value: float) -> str:
@@ -235,6 +245,10 @@ def _support_diagnostic_text(img) -> str:
     last_seconds = _image_float_property(img, native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY)
     if last_seconds:
         lines.append(f"Last render duration: {_format_seconds(last_seconds)}")
+    phase_lines = _timing_phase_lines(img)
+    if phase_lines:
+        lines.append("Timing phases:")
+        lines.extend(f"- {line}" for line in phase_lines)
     if width and height:
         lines.append(f"Canvas: {width}x{height}")
     renderer_abi = _image_int_property(img, native_bridge.CLIP_RENDERER_ABI_KEY)
@@ -270,6 +284,25 @@ def _support_diagnostic_text(img) -> str:
     if error:
         lines.append(f"Render error: {error}")
     return "\n".join(lines)
+
+
+def _timing_phase_lines(img) -> list[str]:
+    phases = [
+        ("Native worker", native_bridge.CLIP_PHASE_WORKER_SECONDS_KEY),
+        ("Worker output read", native_bridge.CLIP_PHASE_OUTPUT_READ_SECONDS_KEY),
+        ("RGBA8 to Blender floats", native_bridge.CLIP_PHASE_CONVERT_SECONDS_KEY),
+        ("Blender foreach_set", native_bridge.CLIP_PHASE_FOREACH_SECONDS_KEY),
+        ("Blender image update", native_bridge.CLIP_PHASE_UPDATE_SECONDS_KEY),
+        ("Blender image pack", native_bridge.CLIP_PHASE_PACK_SECONDS_KEY),
+        ("Blender upload total", native_bridge.CLIP_PHASE_UPLOAD_SECONDS_KEY),
+    ]
+    lines = []
+    for label, key in phases:
+        if not _image_has_property(img, key):
+            continue
+        seconds = _image_float_property(img, key)
+        lines.append(f"{label}: {_format_seconds(seconds)}")
+    return lines
 
 
 def _support_report_text_name(img) -> str:
@@ -384,13 +417,13 @@ class IMAGE_OT_reload_clip_studio(Operator):
             result = native_bridge.render_clip_rgba8(
                 clip_path,
             )
-            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             native_bridge.create_or_update_image(
                 bpy,
                 result,
                 image=img,
                 pack=True,
             )
+            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
         except Exception as exc:
             img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             native_bridge.write_reload_error(img, str(exc))
@@ -546,7 +579,6 @@ def _async_decode(
     def _on_main():
         img = bpy.data.images.get(image_name)
         if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
-            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             if native_result is not None:
                 native_bridge.create_or_update_image(
                     bpy,
@@ -554,6 +586,7 @@ def _async_decode(
                     image=img,
                     pack=True,
                 )
+                img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
             try:
                 if _addon_prefs().debug:
                     print(f"[clip_studio_importer] reloaded {clip_path}")
@@ -856,6 +889,11 @@ class IMAGE_PT_clip_studio(Panel):
             layout.label(
                 text=f"Last render: {_format_seconds(last_seconds)}",
                 icon="TIME",
+            )
+        for line in _timing_phase_lines(img):
+            layout.label(
+                text=_short_diagnostic(line),
+                icon="BLANK1",
             )
         prefs = _addon_prefs()
         layout.prop(prefs, "auto_reload", text="Auto-reload on .clip change")

@@ -331,11 +331,13 @@ wgpu conclusions:
   consideration as `write_buffer`: staging memory is a short-lived allocation
   released after the next submit. Our direct compressed raster tile path can
   call `write_texture` once per non-empty source tile chunk, so RealArt/Terra
-  scale into thousands of short-lived upload calls. The next upload-side
-  experiment should therefore batch many atlas chunks into one or a few
-  explicitly managed staging buffers and issue `copy_buffer_to_texture` copies
-  in the existing encoder. This is evidence-backed for this workload; it is not
-  a generic rejection of `write_texture`.
+  scale into thousands of short-lived upload calls. This is evidence for
+  measuring upload strategy, not evidence to replace `write_texture` blindly:
+  a first explicit mapped-staging-buffer attempt batched atlas chunks into
+  `copy_buffer_to_texture` commands but regressed RealArt worker timing on this
+  machine, likely because it added a second CPU copy before wgpu's backend copy.
+  Do not restore that shape without a profile showing upload calls dominate and
+  a design that avoids duplicated CPU copying.
 - The separate instancing/atlas references point in the same direction as
   Silicate: group per-source data into buffers/atlases and draw many logical
   items with one pass/draw instead of repeatedly updating uniforms or issuing
