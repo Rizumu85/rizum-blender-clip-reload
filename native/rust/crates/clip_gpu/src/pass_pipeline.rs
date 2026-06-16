@@ -1,118 +1,202 @@
+use std::cell::OnceCell;
+
 use clip_model::CanvasSize;
 
 use crate::shaders::*;
 use crate::stream_bounds::CanvasRect;
 use crate::types::GpuNormalRasterSource;
-use crate::{GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterResourceCache, GpuRenderError};
+use crate::{
+    GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterBlendMode, GpuRasterResourceCache,
+    GpuRenderError,
+};
 pub(crate) struct NormalStackPipelines {
     pub(crate) bind_group_layout: wgpu::BindGroupLayout,
-    pub(crate) alpha_pipeline: wgpu::RenderPipeline,
-    pub(crate) clipped_pipeline: wgpu::RenderPipeline,
-    pub(crate) clipped_byte_pipeline: wgpu::RenderPipeline,
-    pub(crate) through_pipeline: wgpu::RenderPipeline,
-    pub(crate) add_glow_pipeline: wgpu::RenderPipeline,
-    pub(crate) color_dodge_pipeline: wgpu::RenderPipeline,
-    pub(crate) color_burn_pipeline: wgpu::RenderPipeline,
-    pub(crate) glow_dodge_pipeline: wgpu::RenderPipeline,
-    pub(crate) standard_blend_pipeline: wgpu::RenderPipeline,
-    pub(crate) lut_filter_pipeline: wgpu::RenderPipeline,
+    alpha_pipeline: OnceCell<wgpu::RenderPipeline>,
+    clipped_pipeline: OnceCell<wgpu::RenderPipeline>,
+    clipped_byte_pipeline: OnceCell<wgpu::RenderPipeline>,
+    through_pipeline: OnceCell<wgpu::RenderPipeline>,
+    add_glow_pipeline: OnceCell<wgpu::RenderPipeline>,
+    color_dodge_pipeline: OnceCell<wgpu::RenderPipeline>,
+    color_burn_pipeline: OnceCell<wgpu::RenderPipeline>,
+    glow_dodge_pipeline: OnceCell<wgpu::RenderPipeline>,
+    standard_blend_pipeline: OnceCell<wgpu::RenderPipeline>,
+    lut_filter_pipeline: OnceCell<wgpu::RenderPipeline>,
 }
 
 impl NormalStackPipelines {
     pub(crate) fn new(device: &wgpu::Device) -> Self {
         let bind_group_layout = create_normal_source_bind_group_layout(device);
-        let alpha_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            NORMAL_ALPHA_OVER_SHADER,
-            "rizum_clip_normal_alpha_shader",
-            "rizum_clip_normal_alpha_pipeline",
-            "rizum_clip_normal_alpha_pipeline_layout",
-        );
-        let clipped_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            CLIPPED_NORMAL_PRESERVE_SHADER,
-            "rizum_clip_clipped_normal_preserve_shader",
-            "rizum_clip_clipped_normal_preserve_pipeline",
-            "rizum_clip_clipped_normal_preserve_pipeline_layout",
-        );
-        let clipped_byte_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            CLIPPED_BYTE_PRESERVE_SHADER,
-            "rizum_clip_clipped_byte_preserve_shader",
-            "rizum_clip_clipped_byte_preserve_pipeline",
-            "rizum_clip_clipped_byte_preserve_pipeline_layout",
-        );
-        let through_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            THROUGH_GROUP_RESOLVE_SHADER,
-            "rizum_clip_through_group_resolve_shader",
-            "rizum_clip_through_group_resolve_pipeline",
-            "rizum_clip_through_group_resolve_pipeline_layout",
-        );
-        let add_glow_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            ADD_GLOW_SHADER,
-            "rizum_clip_add_glow_shader",
-            "rizum_clip_add_glow_pipeline",
-            "rizum_clip_add_glow_pipeline_layout",
-        );
-        let color_dodge_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            COLOR_DODGE_SHADER,
-            "rizum_clip_color_dodge_shader",
-            "rizum_clip_color_dodge_pipeline",
-            "rizum_clip_color_dodge_pipeline_layout",
-        );
-        let color_burn_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            COLOR_BURN_SHADER,
-            "rizum_clip_color_burn_shader",
-            "rizum_clip_color_burn_pipeline",
-            "rizum_clip_color_burn_pipeline_layout",
-        );
-        let glow_dodge_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            GLOW_DODGE_SHADER,
-            "rizum_clip_glow_dodge_shader",
-            "rizum_clip_glow_dodge_pipeline",
-            "rizum_clip_glow_dodge_pipeline_layout",
-        );
-        let standard_blend_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            STANDARD_BLEND_SHADER,
-            "rizum_clip_standard_blend_shader",
-            "rizum_clip_standard_blend_pipeline",
-            "rizum_clip_standard_blend_pipeline_layout",
-        );
-        let lut_filter_pipeline = create_normal_source_pipeline(
-            device,
-            &bind_group_layout,
-            LUT_FILTER_SHADER,
-            "rizum_clip_lut_filter_shader",
-            "rizum_clip_lut_filter_pipeline",
-            "rizum_clip_lut_filter_pipeline_layout",
-        );
         Self {
             bind_group_layout,
-            alpha_pipeline,
-            clipped_pipeline,
-            clipped_byte_pipeline,
-            through_pipeline,
-            add_glow_pipeline,
-            color_dodge_pipeline,
-            color_burn_pipeline,
-            glow_dodge_pipeline,
-            standard_blend_pipeline,
-            lut_filter_pipeline,
+            alpha_pipeline: OnceCell::new(),
+            clipped_pipeline: OnceCell::new(),
+            clipped_byte_pipeline: OnceCell::new(),
+            through_pipeline: OnceCell::new(),
+            add_glow_pipeline: OnceCell::new(),
+            color_dodge_pipeline: OnceCell::new(),
+            color_burn_pipeline: OnceCell::new(),
+            glow_dodge_pipeline: OnceCell::new(),
+            standard_blend_pipeline: OnceCell::new(),
+            lut_filter_pipeline: OnceCell::new(),
+        }
+    }
+
+    pub(crate) fn alpha_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.alpha_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                NORMAL_ALPHA_OVER_SHADER,
+                "rizum_clip_normal_alpha_shader",
+                "rizum_clip_normal_alpha_pipeline",
+                "rizum_clip_normal_alpha_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn clipped_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.clipped_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                CLIPPED_NORMAL_PRESERVE_SHADER,
+                "rizum_clip_clipped_normal_preserve_shader",
+                "rizum_clip_clipped_normal_preserve_pipeline",
+                "rizum_clip_clipped_normal_preserve_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn clipped_byte_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.clipped_byte_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                CLIPPED_BYTE_PRESERVE_SHADER,
+                "rizum_clip_clipped_byte_preserve_shader",
+                "rizum_clip_clipped_byte_preserve_pipeline",
+                "rizum_clip_clipped_byte_preserve_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn through_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.through_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                THROUGH_GROUP_RESOLVE_SHADER,
+                "rizum_clip_through_group_resolve_shader",
+                "rizum_clip_through_group_resolve_pipeline",
+                "rizum_clip_through_group_resolve_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn add_glow_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.add_glow_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                ADD_GLOW_SHADER,
+                "rizum_clip_add_glow_shader",
+                "rizum_clip_add_glow_pipeline",
+                "rizum_clip_add_glow_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn color_dodge_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.color_dodge_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                COLOR_DODGE_SHADER,
+                "rizum_clip_color_dodge_shader",
+                "rizum_clip_color_dodge_pipeline",
+                "rizum_clip_color_dodge_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn color_burn_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.color_burn_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                COLOR_BURN_SHADER,
+                "rizum_clip_color_burn_shader",
+                "rizum_clip_color_burn_pipeline",
+                "rizum_clip_color_burn_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn glow_dodge_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.glow_dodge_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                GLOW_DODGE_SHADER,
+                "rizum_clip_glow_dodge_shader",
+                "rizum_clip_glow_dodge_pipeline",
+                "rizum_clip_glow_dodge_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn standard_blend_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.standard_blend_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                STANDARD_BLEND_SHADER,
+                "rizum_clip_standard_blend_shader",
+                "rizum_clip_standard_blend_pipeline",
+                "rizum_clip_standard_blend_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn lut_filter_pipeline(&self, device: &wgpu::Device) -> &wgpu::RenderPipeline {
+        self.lut_filter_pipeline.get_or_init(|| {
+            create_normal_source_pipeline(
+                device,
+                &self.bind_group_layout,
+                LUT_FILTER_SHADER,
+                "rizum_clip_lut_filter_shader",
+                "rizum_clip_lut_filter_pipeline",
+                "rizum_clip_lut_filter_pipeline_layout",
+            )
+        })
+    }
+
+    pub(crate) fn raster_source_pipeline(
+        &self,
+        device: &wgpu::Device,
+        blend_mode: GpuRasterBlendMode,
+    ) -> &wgpu::RenderPipeline {
+        match blend_mode {
+            GpuRasterBlendMode::Normal => self.alpha_pipeline(device),
+            GpuRasterBlendMode::AddGlow => self.add_glow_pipeline(device),
+            GpuRasterBlendMode::ColorDodge => self.color_dodge_pipeline(device),
+            GpuRasterBlendMode::ColorBurn => self.color_burn_pipeline(device),
+            GpuRasterBlendMode::GlowDodge => self.glow_dodge_pipeline(device),
+            _ => self.standard_blend_pipeline(device),
+        }
+    }
+
+    pub(crate) fn clipped_source_pipeline(
+        &self,
+        device: &wgpu::Device,
+        blend_mode: GpuRasterBlendMode,
+    ) -> &wgpu::RenderPipeline {
+        match blend_mode {
+            GpuRasterBlendMode::AddGlow
+            | GpuRasterBlendMode::ColorBurn
+            | GpuRasterBlendMode::ColorDodge
+            | GpuRasterBlendMode::GlowDodge => self.clipped_byte_pipeline(device),
+            _ => self.clipped_pipeline(device),
         }
     }
 }

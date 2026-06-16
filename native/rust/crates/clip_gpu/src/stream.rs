@@ -1,6 +1,5 @@
 use clip_model::CanvasSize;
 
-use crate::blend::raster_source_pipeline;
 use crate::lut_filter::{create_lut_filter_texture, encode_lut_filter_pass_scissored};
 use crate::pass::{
     NormalStackPipelines, encode_normal_source_pass, encode_normal_source_pass_scissored,
@@ -182,18 +181,11 @@ where
                 raster.key.layer_id,
                 previous_view,
             )?;
+            let pipeline = pipelines.raster_source_pipeline(state.device(), raster.blend_mode);
             encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                raster_source_pipeline(
-                    raster.blend_mode,
-                    &pipelines.alpha_pipeline,
-                    &pipelines.add_glow_pipeline,
-                    &pipelines.color_dodge_pipeline,
-                    &pipelines.color_burn_pipeline,
-                    &pipelines.glow_dodge_pipeline,
-                    &pipelines.standard_blend_pipeline,
-                ),
+                pipeline,
                 &pipelines.bind_group_layout,
                 &source_view,
                 previous_view,
@@ -245,18 +237,11 @@ where
             else {
                 return Ok(false);
             };
+            let pipeline = pipelines.raster_source_pipeline(state.device(), base.blend_mode);
             encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                raster_source_pipeline(
-                    base.blend_mode,
-                    &pipelines.alpha_pipeline,
-                    &pipelines.add_glow_pipeline,
-                    &pipelines.color_dodge_pipeline,
-                    &pipelines.color_burn_pipeline,
-                    &pipelines.glow_dodge_pipeline,
-                    &pipelines.standard_blend_pipeline,
-                ),
+                pipeline,
                 &pipelines.bind_group_layout,
                 clipping_cache.view(),
                 previous_view,
@@ -300,18 +285,11 @@ where
             else {
                 return Ok(false);
             };
+            let pipeline = pipelines.raster_source_pipeline(state.device(), *blend_mode);
             encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                raster_source_pipeline(
-                    *blend_mode,
-                    &pipelines.alpha_pipeline,
-                    &pipelines.add_glow_pipeline,
-                    &pipelines.color_dodge_pipeline,
-                    &pipelines.color_burn_pipeline,
-                    &pipelines.glow_dodge_pipeline,
-                    &pipelines.standard_blend_pipeline,
-                ),
+                pipeline,
                 &pipelines.bind_group_layout,
                 clipping_cache.view(),
                 previous_view,
@@ -362,18 +340,11 @@ where
                     .unwrap_or(clip_model::LayerId(0)),
                 previous_view,
             )?;
+            let pipeline = pipelines.raster_source_pipeline(state.device(), *blend_mode);
             encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                raster_source_pipeline(
-                    *blend_mode,
-                    &pipelines.alpha_pipeline,
-                    &pipelines.add_glow_pipeline,
-                    &pipelines.color_dodge_pipeline,
-                    &pipelines.color_burn_pipeline,
-                    &pipelines.glow_dodge_pipeline,
-                    &pipelines.standard_blend_pipeline,
-                ),
+                pipeline,
                 &pipelines.bind_group_layout,
                 container_cache.view(),
                 previous_view,
@@ -420,10 +391,11 @@ where
             let Some(full_bounds) = CanvasRect::full(output_size) else {
                 return Ok(false);
             };
+            let pipeline = pipelines.alpha_pipeline(state.device());
             encode_normal_source_pass(
                 state.device(),
                 state.encoder_mut(),
-                &pipelines.alpha_pipeline,
+                pipeline,
                 &pipelines.bind_group_layout,
                 previous_view,
                 previous_view,
@@ -469,10 +441,11 @@ where
             )
             .map_err(P::Error::from)?;
             let lut_view = lut_texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let pipeline = pipelines.lut_filter_pipeline(state.device());
             encode_lut_filter_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                &pipelines.lut_filter_pipeline,
+                pipeline,
                 &pipelines.bind_group_layout,
                 previous_view,
                 mask_view.view(),

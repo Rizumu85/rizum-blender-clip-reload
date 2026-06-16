@@ -15,6 +15,7 @@ pub struct SimpleRasterStackGpuResult {
 pub struct NormalRasterStackGpuResult {
     pub image: Option<clip_file::tiles::RgbaTileImage>,
     pub source_count: usize,
+    pub resource_stats: NormalRasterStackResourceStats,
     pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
     pub mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
     pub unsupported: Vec<SimpleRasterStackUnsupported>,
@@ -41,6 +42,32 @@ pub struct NormalRasterStackResourceStats {
     pub max_mask_width: u32,
     pub max_mask_height: u32,
     pub max_mask_bytes: u64,
+}
+
+impl NormalRasterStackResourceStats {
+    pub(crate) fn add_raster_source(&mut self, source: &clip_file::metadata::RasterLayerSource) {
+        let bytes = u64::from(source.pixel_size.width) * u64::from(source.pixel_size.height) * 4;
+        self.raster_count += 1;
+        self.raster_bytes += bytes;
+        if bytes > self.max_raster_bytes {
+            self.max_raster_bytes = bytes;
+            self.max_raster_layer_id = Some(source.layer.id);
+            self.max_raster_width = source.pixel_size.width;
+            self.max_raster_height = source.pixel_size.height;
+        }
+    }
+
+    pub(crate) fn add_mask_source(&mut self, source: &clip_file::metadata::MaskLayerSource) {
+        let bytes = u64::from(source.pixel_size.width) * u64::from(source.pixel_size.height);
+        self.mask_count += 1;
+        self.mask_bytes += bytes;
+        if bytes > self.max_mask_bytes {
+            self.max_mask_bytes = bytes;
+            self.max_mask_layer_id = Some(source.layer_id);
+            self.max_mask_width = source.pixel_size.width;
+            self.max_mask_height = source.pixel_size.height;
+        }
+    }
 }
 
 #[derive(Debug)]

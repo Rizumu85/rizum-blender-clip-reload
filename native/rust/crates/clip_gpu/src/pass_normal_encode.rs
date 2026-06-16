@@ -28,16 +28,16 @@ impl GpuRenderer {
         encoder: &mut wgpu::CommandEncoder,
     ) -> Result<(usize, usize), GpuRenderError> {
         let bind_group_layout = &pipelines.bind_group_layout;
-        let alpha_pipeline = &pipelines.alpha_pipeline;
-        let clipped_pipeline = &pipelines.clipped_pipeline;
-        let clipped_byte_pipeline = &pipelines.clipped_byte_pipeline;
-        let through_pipeline = &pipelines.through_pipeline;
-        let add_glow_pipeline = &pipelines.add_glow_pipeline;
-        let color_dodge_pipeline = &pipelines.color_dodge_pipeline;
-        let color_burn_pipeline = &pipelines.color_burn_pipeline;
-        let glow_dodge_pipeline = &pipelines.glow_dodge_pipeline;
-        let standard_blend_pipeline = &pipelines.standard_blend_pipeline;
-        let lut_filter_pipeline = &pipelines.lut_filter_pipeline;
+        let alpha_pipeline = pipelines.alpha_pipeline(&self.context.device);
+        let clipped_pipeline = pipelines.clipped_pipeline(&self.context.device);
+        let clipped_byte_pipeline = pipelines.clipped_byte_pipeline(&self.context.device);
+        let through_pipeline = pipelines.through_pipeline(&self.context.device);
+        let add_glow_pipeline = pipelines.add_glow_pipeline(&self.context.device);
+        let color_dodge_pipeline = pipelines.color_dodge_pipeline(&self.context.device);
+        let color_burn_pipeline = pipelines.color_burn_pipeline(&self.context.device);
+        let glow_dodge_pipeline = pipelines.glow_dodge_pipeline(&self.context.device);
+        let standard_blend_pipeline = pipelines.standard_blend_pipeline(&self.context.device);
+        let lut_filter_pipeline = pipelines.lut_filter_pipeline(&self.context.device);
         for source in sources {
             let previous_view =
                 accum_textures[previous_index].create_view(&wgpu::TextureViewDescriptor::default());

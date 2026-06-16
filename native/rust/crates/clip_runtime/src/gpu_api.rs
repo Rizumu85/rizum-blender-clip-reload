@@ -238,6 +238,7 @@ impl ClipSession {
             return Ok(NormalRasterStackGpuResult {
                 image: None,
                 source_count,
+                resource_stats: resource_plan.resource_stats(),
                 drawn_resources: Vec::new(),
                 mask_resources: Vec::new(),
                 unsupported,
@@ -245,6 +246,7 @@ impl ClipSession {
         }
 
         let renderer = clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?;
+        let resource_stats = resource_plan.resource_stats();
         let mut provider =
             RuntimeGpuResourceProvider::new(&self.container, self.summary.canvas, resource_plan)?;
         let output = renderer.draw_normal_stack_with_provider_to_rgba8(
@@ -260,6 +262,7 @@ impl ClipSession {
                 pixels: output.pixels,
             }),
             source_count,
+            resource_stats,
             drawn_resources: output.drawn_resources,
             mask_resources: provider.mask_resources,
             unsupported,

@@ -63,10 +63,11 @@ where
     if let Some(global_cache_bounds) = cache_global_bounds {
         let local_cache_bounds = CanvasRect::full(cache_size)
             .expect("non-empty through bounds must create local bounds");
+        let pipeline = pipelines.alpha_pipeline(state.device());
         encode_normal_source_pass_scissored(
             state.device(),
             state.encoder_mut(),
-            &pipelines.alpha_pipeline,
+            pipeline,
             &pipelines.bind_group_layout,
             before_view,
             through_pair.view(previous_index),
@@ -137,10 +138,11 @@ where
     let Some(pass_bounds) = through_resolve_bounds(*parent_dirty_bounds, after_dirty_bounds) else {
         return Ok(false);
     };
+    let pipeline = pipelines.through_pipeline(state.device());
     encode_normal_source_pass_scissored(
         state.device(),
         state.encoder_mut(),
-        &pipelines.through_pipeline,
+        pipeline,
         &pipelines.bind_group_layout,
         after_view,
         before_view,

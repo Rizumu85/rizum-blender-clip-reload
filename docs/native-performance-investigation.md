@@ -44,6 +44,22 @@ The important pattern is not "wgpu" by itself. The pattern is: upload tiled
 sources into a shared atlas, build compact per-tile work lists, then collapse
 many layer passes into one or a few tile-local shader passes.
 
+Follow-up source review on 2026-06-16 reinforced the same conclusion:
+
+- Silicate keeps a long-lived app/compositor/pipeline state and renders updates
+  through a compositor thread or tick. The exact thread model is not directly
+  portable to the Blender worker path because the current add-on intentionally
+  launches an out-of-process worker per render, but the resource lifetime lesson
+  still applies: avoid rebuilding GPU setup that is not used by the current
+  file.
+- Silicate's large-file speed comes from chunk-local work, not from a magic
+  blend formula. It avoids full-canvas layer passes by drawing canvas tiles as
+  instances and letting each tile's `silo` range drive the fragment loop.
+- The `.clip` equivalent should therefore prioritize atlas/tile-silo execution
+  before more local pass tuning. Current streaming optimizations make the
+  existing pass-heavy path tolerable, but RealArt/Terra-class files still encode
+  hundreds of raster passes.
+
 ## Implications for `.clip`
 
 The current renderer is faithful but pass-heavy: many sources, containers,
@@ -144,6 +160,28 @@ Verification after the milestone:
 Next quantity-level work is tile-local work lists and pass collapse for
 raster/clipping stretches. Filters, THROUGH groups, and isolated containers
 remain semantic barriers until faithful tile-local models exist.
+
+## Worker Setup Optimization
+
+The Blender worker path now avoids a duplicate support-check selection and a
+second full-canvas host-region copy. `clip_cli` worker mode calls
+`ClipSession::draw_normal_raster_stack_via_gpu()` directly, writes the returned
+RGBA buffer, and builds support JSON from the render result's resource stats.
+The normal-stack GPU pipeline set is also lazy: the streaming renderer creates
+only the blend/filter pipelines used by the current file instead of eagerly
+constructing every normal-stack pipeline for each short-lived worker process.
+
+Release worker timings on this machine:
+
+- `Test_RealArt.clip --blender-render-rgba --blender-render-json` improved from
+  about 2.511s after sparse uploads to about 2.175s.
+- `Ref_Terra404_Live2D.clip --blender-render-rgba --blender-render-json`
+  improved from about 3.610s to about 3.379s.
+
+This is a real fixed-cost reduction, but it is not the next order-of-magnitude
+lever. The same runs still draw hundreds of raster resources (`341` for
+RealArt, `709` for Terra). The next large step remains a Silicate-style
+tile-silo renderer that collapses raster/clipping stretches.
 
 ## Non-Goals
 

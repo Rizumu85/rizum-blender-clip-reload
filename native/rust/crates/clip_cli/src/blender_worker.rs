@@ -1,8 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use clip_model::Rect;
-use clip_runtime::ClipSession;
+use clip_runtime::{ClipSession, RuntimeError};
 use serde_json::json;
 
 pub(crate) fn write_blender_render_files(
@@ -15,21 +14,25 @@ pub(crate) fn write_blender_render_files(
     let root_layer_id = summary.root_layer_id.0;
     let layer_count = summary.layer_count;
     let external_data_count = summary.external_data_count;
-    let support = session
-        .check_normal_raster_stack_support()
+    let render = session
+        .draw_normal_raster_stack_via_gpu()
         .map_err(|err| err.to_string())?;
-    let stats = support.resource_stats;
-
-    let byte_len = usize::try_from(u64::from(canvas.width) * u64::from(canvas.height) * 4)
-        .map_err(|_| "canvas byte length does not fit in usize".to_string())?;
-    let mut pixels = vec![0u8; byte_len];
-    session
-        .read_rgba8_region(Rect::new(0, 0, canvas.width, canvas.height), &mut pixels)
+    if !render.unsupported.is_empty() {
+        return Err(RuntimeError::UnsupportedRenderPlan {
+            unsupported: render.unsupported,
+        }
+        .to_string());
+    }
+    let source_count = render.source_count;
+    let stats = render.resource_stats;
+    let unsupported_items = render.unsupported;
+    let image = render
+        .image
+        .ok_or(RuntimeError::EmptyRenderPlan)
         .map_err(|err| err.to_string())?;
-    fs::write(rgba_path, &pixels).map_err(|err| err.to_string())?;
+    fs::write(rgba_path, &image.pixels).map_err(|err| err.to_string())?;
 
-    let unsupported = support
-        .unsupported
+    let unsupported = unsupported_items
         .iter()
         .map(|item| {
             json!({
@@ -41,16 +44,13 @@ pub(crate) fn write_blender_render_files(
             })
         })
         .collect::<Vec<_>>();
-    let report = if support.unsupported.is_empty() {
-        format!(
-            "Full native support for {} source(s).",
-            support.source_count
-        )
+    let report = if unsupported_items.is_empty() {
+        format!("Full native support for {} source(s).", source_count)
     } else {
         format!(
             "{} unsupported node(s) across {} source(s).",
-            support.unsupported.len(),
-            support.source_count
+            unsupported_items.len(),
+            source_count
         )
     };
     let metadata = json!({
@@ -61,8 +61,8 @@ pub(crate) fn write_blender_render_files(
         "external_data_count": external_data_count,
         "renderer_version": env!("CARGO_PKG_VERSION"),
         "support": {
-            "source_count": support.source_count,
-            "unsupported_count": support.unsupported.len(),
+            "source_count": source_count,
+            "unsupported_count": unsupported_items.len(),
             "report": report,
             "unsupported": unsupported,
         },

@@ -81,10 +81,11 @@ where
             base.key.layer_id,
             clipping_pair.view(previous_index),
         )?;
+        let pipeline = pipelines.alpha_pipeline(state.device());
         encode_normal_source_pass_scissored(
             state.device(),
             state.encoder_mut(),
-            &pipelines.alpha_pipeline,
+            pipeline,
             &pipelines.bind_group_layout,
             &source_view,
             clipping_pair.view(previous_index),
@@ -198,10 +199,11 @@ where
                 .unwrap_or(clip_model::LayerId(0)),
             clipping_pair.view(previous_index),
         )?;
+        let pipeline = pipelines.alpha_pipeline(state.device());
         encode_normal_source_pass_scissored(
             state.device(),
             state.encoder_mut(),
-            &pipelines.alpha_pipeline,
+            pipeline,
             &pipelines.bind_group_layout,
             base_cache.view(),
             clipping_pair.view(previous_index),

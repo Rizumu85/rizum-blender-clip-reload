@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use clip_graph::RenderNodeId;
 use clip_model::{CanvasSize, LayerId};
 
-use crate::{RuntimeError, source_crop};
+use crate::{NormalRasterStackResourceStats, RuntimeError, source_crop};
 
 mod sparse;
 
@@ -52,6 +52,21 @@ impl GpuResourcePlan {
     #[cfg(test)]
     pub(crate) fn mask_resource_count(&self) -> usize {
         self.masks.len()
+    }
+
+    pub(crate) fn resource_stats(&self) -> NormalRasterStackResourceStats {
+        let mut stats = NormalRasterStackResourceStats::default();
+        let mut rasters: Vec<_> = self.rasters.values().collect();
+        rasters.sort_by_key(|meta| meta.render_node_id.0);
+        for meta in rasters {
+            stats.add_raster_source(&meta.source);
+        }
+        let mut masks: Vec<_> = self.masks.values().collect();
+        masks.sort_by_key(|meta| meta.render_node_id.0);
+        for meta in masks {
+            stats.add_mask_source(&meta.source);
+        }
+        stats
     }
 }
 

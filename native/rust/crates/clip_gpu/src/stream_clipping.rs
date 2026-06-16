@@ -1,6 +1,5 @@
 use clip_model::CanvasSize;
 
-use crate::blend::clipped_source_pipeline;
 use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
@@ -69,14 +68,11 @@ where
                 raster.key.layer_id,
                 clipping_pair.view(*previous_index),
             )?;
+            let pipeline = pipelines.clipped_source_pipeline(state.device(), raster.blend_mode);
             encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                clipped_source_pipeline(
-                    raster.blend_mode,
-                    &pipelines.clipped_pipeline,
-                    &pipelines.clipped_byte_pipeline,
-                ),
+                pipeline,
                 &pipelines.bind_group_layout,
                 &source_view,
                 clipping_pair.view(*previous_index),
@@ -127,14 +123,11 @@ where
                 *layer_id,
                 clipping_pair.view(*previous_index),
             )?;
+            let pipeline = pipelines.clipped_source_pipeline(state.device(), *blend_mode);
             encode_normal_source_pass_scissored(
                 state.device(),
                 state.encoder_mut(),
-                clipped_source_pipeline(
-                    *blend_mode,
-                    &pipelines.clipped_pipeline,
-                    &pipelines.clipped_byte_pipeline,
-                ),
+                pipeline,
                 &pipelines.bind_group_layout,
                 source_cache.view(),
                 clipping_pair.view(*previous_index),

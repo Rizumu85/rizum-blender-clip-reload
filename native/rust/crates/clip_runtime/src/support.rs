@@ -20,32 +20,6 @@ pub(super) struct StrictRasterStackSupportSelection {
     pub(super) unsupported: Vec<SimpleRasterStackUnsupported>,
 }
 
-impl NormalRasterStackResourceStats {
-    pub(super) fn add_raster_source(&mut self, source: &clip_file::metadata::RasterLayerSource) {
-        let bytes = u64::from(source.pixel_size.width) * u64::from(source.pixel_size.height) * 4;
-        self.raster_count += 1;
-        self.raster_bytes += bytes;
-        if bytes > self.max_raster_bytes {
-            self.max_raster_bytes = bytes;
-            self.max_raster_layer_id = Some(source.layer.id);
-            self.max_raster_width = source.pixel_size.width;
-            self.max_raster_height = source.pixel_size.height;
-        }
-    }
-
-    pub(super) fn add_mask_source(&mut self, source: &clip_file::metadata::MaskLayerSource) {
-        let bytes = u64::from(source.pixel_size.width) * u64::from(source.pixel_size.height);
-        self.mask_count += 1;
-        self.mask_bytes += bytes;
-        if bytes > self.max_mask_bytes {
-            self.max_mask_bytes = bytes;
-            self.max_mask_layer_id = Some(source.layer_id);
-            self.max_mask_width = source.pixel_size.width;
-            self.max_mask_height = source.pixel_size.height;
-        }
-    }
-}
-
 impl ClipSession {
     pub fn check_normal_raster_stack_support(
         &self,

@@ -96,11 +96,17 @@ Current policy:
   `clip_cli --tile-silo-estimate` showed RealArt/Terra/Aya-class samples have
   canvas-sized raster metadata but very low compressed CHNKExta tile occupancy;
   the first implementation now uses those compressed-present bounds for sparse
-  decode/upload and empty-tile skipping. The next milestone is per-canvas-tile
-  ordered work lists from the strict render plan and collapsing raster/clipping
+  decode/upload and empty-tile skipping. A follow-up source review of
+  Avarel/silicate confirms that the next order-of-magnitude milestone is
+  per-canvas-tile ordered work lists from the strict render plan plus
+  atlas-backed raster/mask tile storage, then collapsing raster/clipping
   stretches into one or a few tile-local shader passes while keeping filters,
   THROUGH groups, and isolated containers as explicit semantic barriers until
-  faithful tile-local models exist. See `docs/native-performance-investigation.md`.
+  faithful tile-local models exist. Short-lived Blender worker setup now avoids
+  duplicate support selection/full-canvas region copying and lazily creates only
+  the normal-stack pipelines used by the current file; this is a useful fixed
+  cost reduction, not a replacement for tile-silo rendering. See
+  `docs/native-performance-investigation.md`.
 - Native raster extraction now applies render offscreen placement through `LayerRenderOffscrOffsetX/Y`, matching the existing mask placement model and the known `Ref_Terra404_Live2D` negative-X render sources. This removes a structural decode gap before further large-reference GPU work.
 - Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.
 - Native support diagnostics use a metadata-only strict selector. `clip_cli --gpu-support-check` validates graph, raster source, mask source, and LUT-filter support without tile decode, GPU initialization, or rendering, and labels resource/unsupported layer ids with layer names when available. `clip_cli --gpu-support-json` emits the same support/resource/unsupported-node data as pure JSON for automation and issue capture, also carrying layer names when available. Other CLI plan, resource, stack, unsupported, and trace diagnostics should use the same layer-label helper so layer ids are easy to map back to Blender support reports. These commands must remain diagnostics only, not fallback renderers.

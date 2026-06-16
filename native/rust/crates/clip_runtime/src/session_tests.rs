@@ -829,6 +829,23 @@ fn normal_folder_with_real_test_clipping_children_matches_flat_stack() {
 }
 
 #[test]
+fn normal_gpu_result_reuses_support_resource_stats() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
+    let session = ClipSession::open(&path).expect("open Test_Clipping.clip");
+
+    let support = session
+        .check_normal_raster_stack_support()
+        .expect("check support");
+    let render = session
+        .draw_normal_raster_stack_via_gpu()
+        .expect("draw normal stack");
+
+    assert_eq!(render.source_count, support.source_count);
+    assert_eq!(render.resource_stats, support.resource_stats);
+    assert_eq!(render.unsupported, support.unsupported);
+}
+
+#[test]
 fn gpu_selector_accepts_container_base_clipping_runs_in_aya_fixture() {
     let path = fixture_path_ending("Aya_Live2D.clip");
     let session = ClipSession::open(&path).expect("open Aya fixture");
