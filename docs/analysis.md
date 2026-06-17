@@ -3647,3 +3647,38 @@ their existing pre-over u8 target quantization. Guards stayed stable:
 `Test_AddGlowMultiply` remains `raw_max=5` / `premul_max=3`, `Test_SoftLight`
 and `Test_ColorBurn` remain exact, `Test_ToneCurve` remains the known
 `raw_max=17`, and `Test_Clipping` remains exact.
+
+2026-06-17 Tone Curve IDA compact/runtime boundary follow-up: live IDA MCP was
+connected to `iswCoreTG.dll` and `iswCmnTG.dll` to re-check the proposed
+16-bit/33-sample Tone Curve fix. `CSLayerFilterData::CreateLookUpTableToneCurveStatic
+@ 0x12304050` consumes already-expanded runtime `TONECURVEDATA`, creates a
+256-entry `RCLookUpTable`, and calls imported `rtGetBsplineIntTable(points,
+count, table, 256)`. The runtime points are byte-domain `tagPOINT` integers:
+the function tests endpoints against `0`/`255`, clamps the final byte table, and
+does not consume the SQLite compact `uint16 count + uint16 point pairs` payload
+directly. `CSAdjustmentLayer_ReadSelf @ 0x122bee00` confirms the archive layout
+for this runtime structure is `int32 count + tagPOINT[32]`, with 260-byte
+blocks for master/R/G/B. `rtGetBsplineIntTable @ iswCmnTG:0x1216b9c0` really is
+a quadratic B-spline helper with mirrored boundary controls, 33 samples
+(`t=i/32`), span divided by the requested table size (`/256` here), line
+segment fill, and `+0.5` rounding. However, replaying that runtime helper
+directly on the SQLite compact payload after byte scaling is rejected by
+samples: `Test_ToneCurve` worsens from `max=17`, `visible=6107` to
+`max=67`, `visible=1012389`, and the isolated `Test_ToneCure2`/`6` guards lose
+their `raw_max=1`, `visible_px=0` result. The current compact-payload importer
+path remains the best sample-backed rule: compact coordinates are converted with
+`ceil(value / 257)`, then the existing byte-domain B-spline table is used. The
+IDA runtime helper is evidence for expanded archive/runtime data, not a direct
+replacement for compact SQLite filter payload interpretation.
+
+The old `Test_ToneCurve` residual is now narrowed further. At the max pixel
+`(370,96)`, CSP without the Tone Curve layer is `[114,186,234,255]`, current
+native/Python output is `[157,249,255,255]`, and CSP export is
+`[174,250,255,255]`. The compact curves include near-vertical byte-domain
+steps, for example master `(109,45)->(110,223)` and red `(114,97)->(115,255)`.
+Current red evaluation at that pixel is `114 -> red LUT 175 -> master LUT 157`,
+and no input value maps to `174` under the current full-strength LUT chain.
+Because `Test_ToneCure6` uses the same compact curve records and still compares
+at `raw_max=1` / `visible_px=0`, the remaining old-sample gap should be treated
+as an unrecovered compact-expansion/runtime-context quantization edge, not as a
+global Tone Curve order, 16-bit-domain, or IDA-runtime-B-spline replacement.
