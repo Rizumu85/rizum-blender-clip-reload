@@ -3602,3 +3602,18 @@ strict GPU compares at `Test_HSL3 raw_max=1`, `Test_HSL4 raw_max=1`,
 `Test_HSL5 raw_max=1`, and the older combined `Test_HSL` improves from
 `raw_max=59` / `premul_visible_px=47638` to `raw_max=3` /
 `premul_visible_px=12696`.
+
+2026-06-17 Tone Curve isolated fixture follow-up: the user's new small
+`Test_ToneCure*` fixtures split the compact Tone Curve payload by channel.
+`Test_ToneCure2` contains only the master/RGB curve, `Test_ToneCure3` only the
+R curve, `Test_ToneCure4` only the G curve, `Test_ToneCure5` only the B curve,
+and `Test_ToneCure6` contains the combined master+R+G+B payload matching the
+older `Test_ToneCurve` curve records. Both native strict GPU and the Python
+verifier compare all five at `raw_max=1` with `visible_px=0`. Therefore
+single-curve LUT generation, per-channel application, and the ordinary
+master-after-channel ordering are sample-backed on the small isolated matrix.
+`Test_ToneCurve_WithoutToneCurve.clip` removes the filter layer from the older
+large sample and compares exact (`raw_max=0`), proving that sample's base-layer
+composition is not the source of the residual. The remaining older combined
+`Test_ToneCurve raw_max=17` gap should stay focused on masked-filter interaction
+or sample-specific rounding, not on broad single-curve LUT replacement.
