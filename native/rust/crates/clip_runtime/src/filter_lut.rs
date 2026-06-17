@@ -11,6 +11,8 @@ pub(crate) enum PlannedLutFilterMode {
 }
 
 const TONE_CURVE_COMPACT_STRIDE: usize = 0x82;
+const TONE_CURVE_TABLE_SIZE: usize = 0x10000;
+const TONE_CURVE_BYTE_SAMPLE_STEP: usize = 257;
 const FILTER_TYPE_BRIGHTNESS_CONTRAST: u32 = 1;
 const FILTER_TYPE_LEVEL_CORRECTION: u32 = 2;
 const FILTER_TYPE_TONE_CURVE: u32 = 3;
@@ -115,18 +117,28 @@ fn tone_curve_lut_rgba(payload: &[u8]) -> Option<Vec<u8>> {
     }
     let mut luts = Vec::with_capacity(curves.len().min(4));
     for curve in curves.iter().take(4) {
-        luts.push(tone_curve_bspline_lut(curve)?);
+        luts.push(tone_curve_compact_lut16(curve)?);
     }
     let master = &luts[0];
-    let red = luts.get(1).unwrap_or(master);
-    let green = luts.get(2).unwrap_or(master);
-    let blue = luts.get(3).unwrap_or(master);
     let mut lut_rgba = vec![0u8; 256 * 4];
     for input in 0..256usize {
         let offset = input * 4;
-        lut_rgba[offset] = master[usize::from(red[input])];
-        lut_rgba[offset + 1] = master[usize::from(green[input])];
-        lut_rgba[offset + 2] = master[usize::from(blue[input])];
+        let sample_index = input * TONE_CURVE_BYTE_SAMPLE_STEP;
+        let red_index = luts
+            .get(1)
+            .map(|lut| usize::from(lut[sample_index]))
+            .unwrap_or(sample_index);
+        let green_index = luts
+            .get(2)
+            .map(|lut| usize::from(lut[sample_index]))
+            .unwrap_or(sample_index);
+        let blue_index = luts
+            .get(3)
+            .map(|lut| usize::from(lut[sample_index]))
+            .unwrap_or(sample_index);
+        lut_rgba[offset] = (master[red_index] >> 8) as u8;
+        lut_rgba[offset + 1] = (master[green_index] >> 8) as u8;
+        lut_rgba[offset + 2] = (master[blue_index] >> 8) as u8;
         lut_rgba[offset + 3] = 255;
     }
     Some(lut_rgba)
@@ -271,28 +283,22 @@ fn tone_curve_compact_curves(payload: &[u8]) -> Option<Vec<Vec<(u16, u16)>>> {
     Some(curves)
 }
 
-fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
+fn tone_curve_compact_lut16(points: &[(u16, u16)]) -> Option<Vec<u16>> {
     if points.len() < 2 {
-        return Some(identity_lut());
-    }
-    if points == [(0, 0), (65535, 65535)] {
-        return Some(identity_lut());
+        return Some(
+            (0..TONE_CURVE_TABLE_SIZE)
+                .map(|value| value as u16)
+                .collect(),
+        );
     }
 
     let pts: Vec<(f64, f64)> = points
         .iter()
-        .map(|(x, y)| {
-            (
-                f64::from(((u32::from(*x) + 256) / 257).min(255)),
-                f64::from(((u32::from(*y) + 256) / 257).min(255)),
-            )
-        })
+        .map(|(x, y)| (f64::from(*x), f64::from(*y)))
         .collect();
-    let mut table = [0.0f64; 256];
-    for (index, value) in table.iter_mut().enumerate() {
-        *value = index as f64;
-    }
-    let step_x = (pts.last()?.0 - pts.first()?.0).abs() / 255.0;
+    let mut table = vec![0.0f64; TONE_CURVE_TABLE_SIZE];
+    let step_x = (i32::from(points.last()?.0) - i32::from(points.first()?.0)).abs() as f64
+        / TONE_CURVE_TABLE_SIZE as f64;
     if step_x <= 0.0 {
         return None;
     }
@@ -314,6 +320,7 @@ fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
         let mut previous_x = 0.0;
         let mut previous_y = 0.0;
         let mut base_x = 0.0;
+        let mut previous_out_idx = 0usize;
         for curve_idx in 1..pts.len() - 1 {
             let (mut x_prev, mut y_prev) = pts[curve_idx - 1];
             let (x_mid, y_mid) = pts[curve_idx];
@@ -328,24 +335,22 @@ fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
             }
 
             let mut segment_previous_x = previous_x;
-            for sample_idx in 0..258 {
-                let t = f64::from(sample_idx) / 257.0;
+            for sample_idx in 0..33 {
+                let t = f64::from(sample_idx) / 32.0;
                 let w_prev = (1.0 - t) * (1.0 - t) * 0.5;
                 let w_next = t * t * 0.5;
                 let w_mid = (t - t * t) + 0.5;
                 let x = x_prev * w_prev + x_mid * w_mid + x_next * w_next;
                 let y = y_prev * w_prev + y_mid * w_mid + y_next * w_next;
 
-                let mut next_base_x = x;
                 if have_previous {
                     let lo = x.min(segment_previous_x);
                     let hi = x.max(segment_previous_x);
-                    next_base_x = base_x;
                     let mut sample_offset = 0.0;
                     while sample_offset <= hi - lo + 1e-9 {
                         let sample_x = sample_offset + lo;
                         let out_idx = ((sample_x - base_x) / step_x + 0.5) as i32;
-                        if (0..256).contains(&out_idx) {
+                        if (0..TONE_CURVE_TABLE_SIZE as i32).contains(&out_idx) {
                             let sample_y = if x == segment_previous_x {
                                 previous_y
                             } else {
@@ -353,29 +358,36 @@ fn tone_curve_bspline_lut(points: &[(u16, u16)]) -> Option<[u8; 256]> {
                                     * (sample_x - segment_previous_x)
                                     + previous_y
                             };
-                            table[out_idx as usize] = sample_y;
+                            let out_idx = out_idx as usize;
+                            table[out_idx] = sample_y;
+                            let fill_start = previous_out_idx + 1;
+                            if fill_start < out_idx {
+                                table[fill_start..out_idx].fill(sample_y);
+                            }
+                            previous_out_idx = out_idx;
                         }
                         sample_offset += step_x;
                     }
+                } else {
+                    base_x = x;
                 }
                 have_previous = true;
                 segment_previous_x = x;
-                base_x = next_base_x;
                 previous_y = y;
             }
             previous_x = segment_previous_x;
         }
     }
 
-    let mut lut = [0u8; 256];
-    for (index, value) in table.iter().enumerate() {
-        lut[index] = (value + 0.5).floor().clamp(0.0, 255.0) as u8;
-    }
-    if points.first()?.1 < 1 {
+    let mut lut: Vec<u16> = table
+        .iter()
+        .map(|value| (value + 0.5).floor().clamp(0.0, 65535.0) as u16)
+        .collect();
+    if points.first()?.1 == 0 {
         lut[0] = 0;
     }
-    if points.last()?.1 > 254 {
-        lut[255] = 255;
+    if points.last()?.1 == u16::MAX {
+        lut[TONE_CURVE_TABLE_SIZE - 1] = u16::MAX;
     }
     Some(lut)
 }

@@ -5,7 +5,7 @@ use clip_model::LayerId;
 use super::{
     FILTER_TYPE_BRIGHTNESS_CONTRAST, FILTER_TYPE_COLOR_BALANCE, FILTER_TYPE_GRADIENT_MAP,
     FILTER_TYPE_HSL, FILTER_TYPE_INVERT, FILTER_TYPE_LEVEL_CORRECTION, FILTER_TYPE_POSTERIZATION,
-    FILTER_TYPE_THRESHOLD, PlannedLutFilterMode, lut_filter_rgba,
+    FILTER_TYPE_THRESHOLD, FILTER_TYPE_TONE_CURVE, PlannedLutFilterMode, lut_filter_rgba,
 };
 
 #[test]
@@ -167,6 +167,26 @@ fn color_balance_lut_matches_normal_python_formula_anchors() {
     ] {
         assert_eq!(&lut[input * 4..input * 4 + 3], expected.as_slice());
     }
+}
+
+#[test]
+fn tone_curve_lut_matches_csp_compact_16bit_path_anchors() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_ToneCurve.clip");
+    let container = clip_file::container::ClipContainer::open(path).expect("open tone curve clip");
+    let filter = clip_file::metadata::read_filter_layer_source_from_sqlite(
+        container.sqlite_bytes(),
+        LayerId(6),
+    )
+    .expect("read tone curve payload");
+    let (name, mode, lut) =
+        lut_filter_rgba(filter.filter_type, &filter.payload).expect("build tone curve LUT");
+
+    assert_eq!(filter.filter_type, FILTER_TYPE_TONE_CURVE);
+    assert_eq!(name, "ToneCurve");
+    assert!(matches!(mode, PlannedLutFilterMode::ToneCurveRgb));
+    assert_eq!(lut[114 * 4], 174);
+    assert_eq!(lut[186 * 4 + 1], 250);
+    assert_eq!(lut[234 * 4 + 2], 255);
 }
 
 #[test]

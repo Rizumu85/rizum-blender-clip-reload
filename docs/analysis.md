@@ -3682,3 +3682,34 @@ Because `Test_ToneCure6` uses the same compact curve records and still compares
 at `raw_max=1` / `visible_px=0`, the remaining old-sample gap should be treated
 as an unrecovered compact-expansion/runtime-context quantization edge, not as a
 global Tone Curve order, 16-bit-domain, or IDA-runtime-B-spline replacement.
+
+2026-06-17 Tone Curve compact `SAdjustmentCurves` closure: the previous
+`rtGetBsplineIntTable` rejection remains valid for the runtime archive helper,
+but it was not the SQLite compact payload path. Live IDA MCP was switched to
+`CLIPStudioPaint.exe` because `FilterLayerInfo` and the Planeswalker filter
+registration strings are not owned by `iswCoreTG.dll` or `iswCmnTG.dll`.
+`FilterLayerInfo @ 0x1444e7660` is only registered by `sub_1400CA020`; the
+Tone Curve compact payload path is Planeswalker `SAdjustmentCurves`.
+`sub_1424C5930` case `3` initializes Tone Curve defaults via `sub_141A1D800`,
+copies `4160` bytes (`32 * 0x82`), and installs the filter behavior through
+`sub_1423EFFA0`. `sub_141A1D3A0` imports exactly 32 compact records of
+`uint16 count + 32 * (uint16 x, uint16 y)`, and `sub_141A1DBC0` exports the
+same raw u16 sequence.
+
+The render-side compact path is `sub_1423F2570`. It builds the master table
+from record `0` through `sub_141A1D640 -> sub_141AB20F0`, then builds RGB
+channel tables from records `1..3` through `sub_141A1D460 -> sub_141AB20F0`.
+`sub_141AB20F0` allocates a 65536-entry u16 `PWLookupTable`; its helper
+`sub_141AB24B0` uses mirrored boundary controls, 33 samples per segment
+(`t=i/32`), line-segment fill, gap fill, and `+0.5` rounding in 16-bit space.
+`sub_141A80690` composes each channel table through the master table in the
+same 16-bit domain, then builds the byte table by sampling `input * 257` and
+taking the high byte. Therefore the old importer bug was the early
+`ceil(value / 257)` byte-domain compact expansion, not an unknown packed
+payload transform. Implementing this path in `clip_loader.py` and native
+`clip_runtime::filter_lut` makes `Test_ToneCurve` and isolated
+`Test_ToneCure2`..`Test_ToneCure6` exact in both Python verifier and strict
+native GPU output. The old max pixel `(370,96)` now maps pre-filter
+`[114,186,234]` to CSP's `[174,250,255]`. Guards stayed stable:
+`Test_Gradiation` remains `raw_max=10` / `premul_max=10`, and
+`Test_AddGlowMultiply` remains `raw_max=5` / `premul_max=3`.

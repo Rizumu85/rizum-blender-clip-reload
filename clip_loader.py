@@ -867,7 +867,7 @@ def _apply_level_adjust(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None
 
 
 _TONE_CURVE_COMPACT_STRIDE = 0x82  # uint16 count + 32 uint16 point pairs.
-_IDENTITY_TONE_CURVE_POINTS = ((0, 0), (65535, 65535))
+_TONE_CURVE_TABLE_SIZE = 0x10000
 _GRADIENT_STOP_DENOMINATOR = 32768.0 * 256.0 / 255.0
 
 
@@ -887,26 +887,19 @@ def _tone_curve_compact_curves(payload: bytes) -> list[tuple[tuple[int, int], ..
     return curves
 
 
-def _tone_curve_bspline_lut(points: tuple[tuple[int, int], ...]) -> np.ndarray | None:
+def _tone_curve_compact_lut16(points: tuple[tuple[int, int], ...]) -> np.ndarray | None:
     count = len(points)
     if count < 2:
-        return np.arange(256, dtype=np.uint8)
+        return np.arange(_TONE_CURVE_TABLE_SIZE, dtype=np.uint16)
     if any(not (0 <= x <= 65535 and 0 <= y <= 65535) for x, y in points):
         return None
-    if count == 2 and points == _IDENTITY_TONE_CURVE_POINTS:
-        return np.arange(256, dtype=np.uint8)
 
-    # CSP stores the SQLite payload in compact 16-bit coordinates, but the PSD
-    # `curv` export and runtime LUT behavior match a byte-domain point table.
-    pts = [
-        (
-            float(min(255, int(np.ceil(x / 257.0)))),
-            float(min(255, int(np.ceil(y / 257.0)))),
-        )
-        for x, y in points
-    ]
-    table = np.arange(256, dtype=np.float64)
-    step_x = abs(pts[-1][0] - pts[0][0]) / 255.0
+    # IDA: Planeswalker::SAdjustmentCurves stores compact 0x82-byte records.
+    # CSP expands each record to a 65536-entry u16 table, composes RGB through
+    # the master table in that domain, then samples input*257 as the final byte.
+    pts = [(float(x), float(y)) for x, y in points]
+    table = np.zeros(_TONE_CURVE_TABLE_SIZE, dtype=np.float64)
+    step_x = abs(int(pts[-1][0] - pts[0][0])) / float(_TONE_CURVE_TABLE_SIZE)
     if step_x <= 0.0:
         return None
 
@@ -914,7 +907,7 @@ def _tone_curve_bspline_lut(points: tuple[tuple[int, int], ...]) -> np.ndarray |
         x0, y0 = pts[0]
         x1, y1 = pts[1]
         sample_x = x0
-        for idx in range(256):
+        for idx in range(_TONE_CURVE_TABLE_SIZE):
             if x1 == x0:
                 table[idx] = y0
             else:
@@ -925,6 +918,7 @@ def _tone_curve_bspline_lut(points: tuple[tuple[int, int], ...]) -> np.ndarray |
         previous_x = 0.0
         previous_y = 0.0
         base_x = 0.0
+        previous_out_idx = 0
         for curve_idx in range(1, count - 1):
             x_prev, y_prev = pts[curve_idx - 1]
             x_mid, y_mid = pts[curve_idx]
@@ -937,24 +931,22 @@ def _tone_curve_bspline_lut(points: tuple[tuple[int, int], ...]) -> np.ndarray |
                 y_next -= y_mid - y_next
 
             segment_previous_x = previous_x
-            for sample_idx in range(258):
-                t = sample_idx / 257.0
+            for sample_idx in range(33):
+                t = sample_idx / 32.0
                 w_prev = (1.0 - t) * (1.0 - t) * 0.5
                 w_next = t * t * 0.5
                 w_mid = (t - t * t) + 0.5
                 x = x_prev * w_prev + x_mid * w_mid + x_next * w_next
                 y = y_prev * w_prev + y_mid * w_mid + y_next * w_next
 
-                next_base_x = x
                 if have_previous:
                     lo = min(x, segment_previous_x)
                     hi = max(x, segment_previous_x)
-                    next_base_x = base_x
                     sample_offset = 0.0
                     while sample_offset <= hi - lo + 1e-9:
                         sample_x = sample_offset + lo
                         out_idx = int(((sample_x - base_x) / step_x) + 0.5)
-                        if 0 <= out_idx < 256:
+                        if 0 <= out_idx < _TONE_CURVE_TABLE_SIZE:
                             if x == segment_previous_x:
                                 sample_y = previous_y
                             else:
@@ -964,34 +956,43 @@ def _tone_curve_bspline_lut(points: tuple[tuple[int, int], ...]) -> np.ndarray |
                                     + previous_y
                                 )
                             table[out_idx] = sample_y
+                            fill_start = previous_out_idx + 1
+                            if fill_start < out_idx:
+                                table[fill_start:out_idx] = sample_y
+                            previous_out_idx = out_idx
                         sample_offset += step_x
+                else:
+                    base_x = x
                 have_previous = True
                 segment_previous_x = x
-                base_x = next_base_x
                 previous_y = y
             previous_x = segment_previous_x
 
-    lut = np.clip(np.floor(table + 0.5), 0, 255).astype(np.uint8)
-    if points[0][1] < 1:
+    lut = np.clip(np.floor(table + 0.5), 0, 65535).astype(np.uint16)
+    if points[0][1] <= 0:
         lut[0] = 0
-    if points[-1][1] > 254:
-        lut[-1] = 255
+    if points[-1][1] >= 65535:
+        lut[-1] = 65535
     return lut
 
 
 def _apply_tone_curve(rgb_u8: np.ndarray, payload: bytes) -> np.ndarray | None:
     curves = _tone_curve_compact_curves(payload)
     if curves:
-        # CSP's compact payload stores 16-bit tone-curve points. Per-channel
-        # RGB curves are applied first, then the master curve is applied.
-        luts = [_tone_curve_bspline_lut(curve) for curve in curves[:4]]
+        luts = [_tone_curve_compact_lut16(curve) for curve in curves[:4]]
         if any(lut is None for lut in luts):
             return None
+        identity16 = np.arange(_TONE_CURVE_TABLE_SIZE, dtype=np.uint16)
+        master = luts[0]
         out = rgb_u8.copy()
-        if len(luts) >= 4:
-            for channel, lut in enumerate(luts[1:4]):
-                out[..., channel] = lut[out[..., channel]]
-        out = luts[0][out]
+        for channel in range(3):
+            channel_lut = luts[channel + 1] if channel + 1 < len(luts) else identity16
+            combined = master[channel_lut]
+            lut8 = np.array(
+                [int(combined[input_value * 257]) >> 8 for input_value in range(256)],
+                dtype=np.uint8,
+            )
+            out[..., channel] = lut8[out[..., channel]]
         return out
     return None
 
