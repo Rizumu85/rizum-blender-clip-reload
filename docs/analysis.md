@@ -3755,3 +3755,28 @@ chain, so keep this as sample-backed plus constant-backed evidence rather than
 a fully recovered native blend function. This correction applies only to the
 HSL blend `lum()` helper, not `color_compare_lum` for Darker/Lighter Color and
 not Gradient Map's grayscale index.
+
+2026-06-17 Saturation blend high-clamp follow-up: after the HSL luminosity
+weight fix, `Test_Saturation.clip` still had a small shared Python/native
+residual (`raw_max=2`, `visible_px=9`). Replaying the stack shows all visible
+pixels are ordinary opaque Saturation blend with the same source
+`[84,51,250,255]`; the residual is not source sampling, alpha, masks, or layer
+ordering. The failing bases are high-blue colours such as `[202,196,230]`,
+`[220,218,227]`, `[156,140,238]`, and `[151,134,239]`. Current HSL Saturation
+does `set_lum(set_sat(dst, sat(src)), lum(dst))`, but after the high-end
+luminosity clamp the minimum output channel rounds one LSB too low, e.g.
+`[202,196,230]` produced `[203,191,255]` while CSP exports `[203,193,255]`.
+Ceiling the minimum channel after the high-end clamp improves that pixel to
+`[203,192,255]`, which is within one LSB; applying the rule globally or to
+near-neutral bases is rejected because it disturbs the Pin Light/Hue/Saturation
+area in `IllustrationBlendModes2`. The accepted scope is therefore:
+Saturation blend only, after high-end `set_lum` clamp only, and only when the
+quantized base saturation span is greater than `4/255`. The existing
+near-neutral tiny-span behaviour still covers spans at or below `4/255`
+(`IllustrationBlendModes2` prefix `[224,223,226]` has span `3/255`). With the
+scoped rule, `Test_Saturation` becomes `raw_max=1` / `visible_px=0`, while
+`Test_Color` and `Test_Hue` remain `raw_max=1` / `visible_px=0`. A native A/B
+probe on `IllustrationBlendModes2` showed the scoped rule is not the cause of
+its current `raw_max=9`: disabling the new ceil branch entirely gave
+`raw_mean=0.247104`, `visible_px=38187`, while the scoped rule gives
+`raw_mean=0.246172`, `visible_px=38164`.

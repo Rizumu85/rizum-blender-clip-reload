@@ -656,9 +656,12 @@ Eighteenth milestone progress:
   Glow Dodge. The standard blend pass covers the remaining ordinary blend modes
   and quantizes the pure blend target to the u8 grid before alpha-over.
 - Darker Color and Lighter Color compare source/destination with Rec.709 luma
-  (`0.2126/0.7152/0.0722`). HSL modes keep the W3C-style luminosity function
-  and quantize `set_sat` tiny spans (`max-min <= 2/255`) to min/max channel
-  membership.
+  (`0.2126/0.7152/0.0722`). HSL blend modes use CSP's sample-backed luminosity
+  weights (`0.3/0.6/0.1`) and quantize `set_sat` tiny spans
+  (`max-min <= 2/255`) to min/max channel membership. Saturation additionally
+  ceils the minimum output channel after the high-end luminosity clamp when the
+  quantized base span is greater than `4/255`; near-neutral spans keep the
+  tiny-span path.
 - The NORMAL alpha-over pass explicitly rounds to the u8 grid before writing
   `Rgba8Unorm`, which keeps later byte-domain blend passes from seeing
   backend-dependent UNORM truncation.
@@ -696,9 +699,9 @@ Eighteenth milestone progress:
 - C ABI full-image comparison for `Test_HardMix`, `Test_ColorBurn`,
   `Test_GlowDodge`, `Test_ColorDodge`, `Test_FolderNested`,
   `Test_FolderVisibility`, and `Test_Clipping` is exact. `Test_VividLight`,
-  `Test_SoftLight`, `Test_Hue`, `Test_AddGlow`, and `Test_Mask` remain within
-  `raw_max=1` and `premul_max=1`; `Test_Saturation` and `Test_Color` remain
-  within `raw_max=2` and `premul_max=2`.
+  `Test_SoftLight`, `Test_Hue`, `Test_Saturation`, `Test_Color`,
+  `Test_AddGlow`, and `Test_Mask` remain within `raw_max=1` and
+  `premul_max=1`.
 - `Test_AddGlowMultiply.clip` continues to report the clipped siblings
   unsupported, so the new Add Glow support is not being used as a clipping-run
   substitute.
@@ -714,8 +717,8 @@ Eighteenth milestone progress:
 - `IllustrationBlendModes2.clip --gpu-normal-stack` now reports
   `unsupported=0` after adding Linear Burn, Darker/Lighter Color, Linear Light,
   Pin Light, Exclusion, Brightness/Luminosity, and Divide. C ABI comparison
-  against `IllustrationBlendModes2.png` is currently `raw_max=8`,
-  `premul_max=8`, and `premul_visible_px=29259`. GPU prefix trace at
+  against `IllustrationBlendModes2.png` is currently `raw_max=9`,
+  `premul_max=9`, and `premul_visible_px=38164`. GPU prefix trace at
   `(427,138)` identifies the residual as `PinLight -> Hue -> Saturation`.
   Raising HSL tiny-span quantization from `2/255` to `3/255` improves this
   image but regresses `Test_Saturation`, so that candidate is rejected.

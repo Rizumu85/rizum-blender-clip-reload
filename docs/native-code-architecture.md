@@ -344,9 +344,12 @@ Progress:
 - The standard blend pass quantizes the pure blend target to the u8 grid before
   alpha-over.
 - Darker Color and Lighter Color use Rec.709 luma
-  (`0.2126/0.7152/0.0722`) for source/destination comparison. HSL modes keep
-  the W3C-style luminosity function and quantize `set_sat` tiny spans
-  (`max-min <= 2/255`) to min/max channel membership.
+  (`0.2126/0.7152/0.0722`) for source/destination comparison. HSL blend modes
+  use CSP's sample-backed luminosity weights (`0.3/0.6/0.1`) and quantize
+  `set_sat` tiny spans (`max-min <= 2/255`) to min/max channel membership.
+  Saturation additionally ceils the minimum output channel after the high-end
+  luminosity clamp when the quantized base span is greater than `4/255`;
+  near-neutral spans keep the tiny-span path.
 - Clipping runs can now use a non-NORMAL base plus clipped siblings for all
   currently supported raster blend modes. The base renders into its owned cache
   with NORMAL, clipped standard modes preserve the base alpha through the
@@ -402,18 +405,17 @@ Progress:
   `Test_FolderVisibility.clip`, `Test_Clipping.clip`, and
   `Test_SoftLight.clip`, `Test_ Grayscale.clip`, and
   `Test_Monochrome.clip` compare exactly against CSP PNGs through the C ABI.
-  `Test_Hue.clip`, `Test_VividLight.clip`, `Test_AddGlow.clip`, and
-  `Test_Mask.clip` remain within `raw_max=1` / `premul_max=1`;
-  `Test_Saturation.clip` and `Test_Color.clip` remain within `raw_max=2` /
-  `premul_max=2`. `Test_AddGlowMultiply.clip` now routes without unsupported
-  nodes and compares at `raw_max=5` / `premul_max=3`.
+  `Test_Hue.clip`, `Test_Saturation.clip`, `Test_Color.clip`,
+  `Test_VividLight.clip`, `Test_AddGlow.clip`, and `Test_Mask.clip` remain
+  within `raw_max=1` / `premul_max=1`. `Test_AddGlowMultiply.clip` now routes
+  without unsupported nodes and compares at `raw_max=5` / `premul_max=3`.
 - `IllustrationBlendModes.clip --gpu-normal-stack` and
   `IllustrationBlendModes2.clip --gpu-normal-stack` now report
   `unsupported=0`. C ABI comparisons remain diagnostic rather than exact:
   `IllustrationBlendModes.png` is currently `raw_max=72`,
   `premul_max=72`, `premul_visible_px=16946`; `IllustrationBlendModes2.png`
-  is currently `raw_max=8`, `premul_max=8`,
-  `premul_visible_px=29259`. Current trace evidence points
+  is currently `raw_max=9`, `premul_max=9`,
+  `premul_visible_px=38164`. Current trace evidence points
   `IllustrationBlendModes.png` at a narrow Subtract -> Color Dodge -> Color Burn
   interaction around `(266,244)` and `IllustrationBlendModes2.png` at a
   Pin Light/Hue/Saturation chain around `(427,138)`.

@@ -1047,6 +1047,23 @@ fn saturation_raster_source_quantizes_tiny_base_span() {
 }
 
 #[test]
+fn saturation_raster_source_ceils_min_channel_after_high_luminosity_clip_for_non_tiny_base_span() {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Saturation,
+            [84, 51, 250, 255],
+            Rgba8 {
+                r: 202,
+                g: 196,
+                b: 230,
+                a: 255,
+            },
+        ),
+        [203, 192, 255, 255]
+    );
+}
+
+#[test]
 fn color_raster_source_uses_hsl_blend_formula() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = GpuRasterResourceKey {

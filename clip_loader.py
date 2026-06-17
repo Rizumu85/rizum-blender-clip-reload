@@ -461,7 +461,11 @@ def _lum(c: np.ndarray) -> np.ndarray:
     return 0.3 * c[..., 0] + 0.6 * c[..., 1] + 0.1 * c[..., 2]
 
 
-def _set_lum(c: np.ndarray, l: np.ndarray) -> np.ndarray:
+def _set_lum(
+    c: np.ndarray,
+    l: np.ndarray,
+    ceil_min_after_high_clip: bool | np.ndarray = False,
+) -> np.ndarray:
     """Translate c so its luminosity equals l, then clip into [0,1]."""
     diff = (l - _lum(c))[..., None]
     out = c + diff
@@ -476,6 +480,21 @@ def _set_lum(c: np.ndarray, l: np.ndarray) -> np.ndarray:
     above = mx > 1
     out_above = L + (out - L) * ((1.0 - L) / np.maximum(mx - L, 1e-6))
     out = np.where(above, out_above, out)
+    if isinstance(ceil_min_after_high_clip, np.ndarray) or ceil_min_after_high_clip:
+        # CSP's Saturation blend rounds the low channel up after the high-end
+        # luminosity clamp. This is only applied to Saturation; Hue/Color and
+        # Brightness keep the ordinary W3C-style set_lum rounding.
+        min_channel = np.argmin(out, axis=-1)
+        ceiled = np.ceil(np.clip(out, 0.0, 1.0) * 255.0 - 1e-12) / 255.0
+        high_clipped = above[..., 0]
+        if isinstance(ceil_min_after_high_clip, np.ndarray):
+            high_clipped = high_clipped & ceil_min_after_high_clip
+        for channel in range(3):
+            out[..., channel] = np.where(
+                high_clipped & (min_channel == channel),
+                ceiled[..., channel],
+                out[..., channel],
+            )
     return out
 
 
@@ -593,7 +612,11 @@ def _blend_func(mode: str, s: np.ndarray, d: np.ndarray) -> np.ndarray:
     if mode == "HUE":
         return _set_lum(_set_sat(s, _sat(d)), _lum(d))
     if mode == "SATURATION":
-        return _set_lum(_set_sat(d, _sat(s)), _lum(d))
+        return _set_lum(
+            _set_sat(d, _sat(s)),
+            _lum(d),
+            ceil_min_after_high_clip=_sat(d) > (4.0 / 255.0),
+        )
     if mode == "COLOR":
         return _set_lum(s, _lum(d))
     if mode == "LUMINOSITY" or mode == "BRIGHTNESS":

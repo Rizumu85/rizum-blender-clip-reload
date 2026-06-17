@@ -53,6 +53,10 @@ fn quantize_rgb_u8(value: vec3<f32>) -> vec3<f32> {
     return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 + vec3<f32>(0.5)) / 255.0;
 }
 
+fn ceil_rgb_u8(value: vec3<f32>) -> vec3<f32> {
+    return ceil(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 - vec3<f32>(0.000001)) / 255.0;
+}
+
 fn min3(value: vec3<f32>) -> f32 {
     return min(value.r, min(value.g, value.b));
 }
@@ -85,6 +89,36 @@ fn set_lum(value: vec3<f32>, target_lum: f32) -> vec3<f32> {
     if (out_max > 1.0) {
         out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
             ((1.0 - out_lum) / max(out_max - out_lum, 0.000001));
+    }
+    return out;
+}
+
+fn set_lum_saturation(value: vec3<f32>, target_lum: f32, base_sat: f32) -> vec3<f32> {
+    var out = value + vec3<f32>(target_lum - lum(value));
+    let out_lum = lum(out);
+    let out_min = min3(out);
+    let out_max = max3(out);
+    if (out_min < 0.0) {
+        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
+            (out_lum / max(out_lum - out_min, 0.000001));
+    }
+    let clipped_high = out_max > 1.0;
+    if (clipped_high) {
+        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
+            ((1.0 - out_lum) / max(out_max - out_lum, 0.000001));
+        if (base_sat > (4.0 / 255.0)) {
+            let ceiled = ceil_rgb_u8(out);
+            let clipped_min = min3(out);
+            if (out.r <= clipped_min + 0.000001) {
+                out.r = ceiled.r;
+            }
+            if (out.g <= clipped_min + 0.000001) {
+                out.g = ceiled.g;
+            }
+            if (out.b <= clipped_min + 0.000001) {
+                out.b = ceiled.b;
+            }
+        }
     }
     return out;
 }
@@ -142,7 +176,7 @@ fn hsl_blend(src: vec3<f32>, dst: vec3<f32>, blend_kind: u32) -> vec3<f32> {
     if (blend_kind == 24u) {
         let src_q = quantize_rgb_u8(src);
         let dst_q = quantize_rgb_u8(dst);
-        return set_lum(set_sat(dst_q, sat(src_q)), lum(dst_q));
+        return set_lum_saturation(set_sat(dst_q, sat(src_q)), lum(dst_q), sat(dst_q));
     }
     if (blend_kind == 26u) {
         let src_q = quantize_rgb_u8(src);
