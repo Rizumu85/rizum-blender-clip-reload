@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 47),
+    "version": (0, 8, 48),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -62,6 +62,31 @@ def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
     )
     image[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
     return image
+
+
+def _show_image_in_open_image_editors(context, image) -> int:
+    screen = getattr(context, "screen", None)
+    if screen is None:
+        screen = getattr(getattr(bpy, "context", None), "screen", None)
+    if screen is None:
+        return 0
+
+    shown = 0
+    for area in getattr(screen, "areas", []):
+        if getattr(area, "type", "") != "IMAGE_EDITOR":
+            continue
+        spaces = getattr(area, "spaces", None)
+        active_space = getattr(spaces, "active", None)
+        if active_space is None:
+            try:
+                active_space = spaces[0]
+            except (TypeError, IndexError):
+                active_space = None
+        if active_space is None or not hasattr(active_space, "image"):
+            continue
+        active_space.image = image
+        shown += 1
+    return shown
 
 
 def _addon_prefs():
@@ -408,6 +433,7 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
             self.report({"ERROR"}, f"Failed to read .clip: {exc}")
             return {"CANCELLED"}
 
+        _show_image_in_open_image_editors(context, img)
         self.report({"INFO"},
                     f"Imported {img.name} ({img.size[0]}x{img.size[1]})")
         return {"FINISHED"}

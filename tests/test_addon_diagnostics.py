@@ -486,17 +486,26 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertEqual(operator.reported[0], {"INFO"})
         self.assertIn("Opened Clip Studio Support - sample image", operator.reported[1])
 
-    def test_import_operator_does_not_switch_image_editor_image(self) -> None:
+    def test_import_operator_shows_image_in_open_image_editors(self) -> None:
         addon = _load_addon_module()
         imported_image = types.SimpleNamespace(name="sample.clip", size=(16, 8))
         original_image = types.SimpleNamespace(name="already-open")
         image_space = types.SimpleNamespace(type="IMAGE_EDITOR", image=original_image)
+        uv_space = types.SimpleNamespace(type="IMAGE_EDITOR", ui_type="UV", image=original_image)
         context = types.SimpleNamespace(
             screen=types.SimpleNamespace(
                 areas=[
                     types.SimpleNamespace(
                         type="IMAGE_EDITOR",
                         spaces=[image_space],
+                    ),
+                    types.SimpleNamespace(
+                        type="IMAGE_EDITOR",
+                        spaces=types.SimpleNamespace(active=uv_space),
+                    ),
+                    types.SimpleNamespace(
+                        type="VIEW_3D",
+                        spaces=[types.SimpleNamespace(type="VIEW_3D")],
                     )
                 ]
             )
@@ -511,7 +520,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         finally:
             addon._import_clip_as_image = original_import
 
-        self.assertIs(image_space.image, original_image)
+        self.assertIs(image_space.image, imported_image)
+        self.assertIs(uv_space.image, imported_image)
         self.assertEqual(operator.reported[0], {"INFO"})
 
     def test_status_label_shortens_unknown_values(self) -> None:

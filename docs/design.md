@@ -13,6 +13,8 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    RGBA pixels into a generated Blender image, and packs the rendered pixels
    into the `.blend`. The worker keeps native GPU rendering out of Blender's UI
    process; it is not a Python compositor or sidecar PNG cache.
+   If the current Blender screen already has Image Editor or UV Editor areas
+   open, those editors switch to the newly imported image.
 4. When the source `.clip` is saved again, auto-reload watches lightweight file
    freshness metadata and refreshes the Blender image after the background
    render finishes.
@@ -55,6 +57,9 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 ## Blender UI Surface
 
 - Import menu entry: `File > Import > Clip Studio (.clip)`.
+- Import completion shows the new generated image in any Image Editor or UV
+  Editor areas already open on the current screen. It does not create new
+  editors or change the user's workspace layout.
 - Image Editor N-panel: `Image > Clip Studio`.
 - Add-on preferences:
   - `Auto-reload on .clip change`
