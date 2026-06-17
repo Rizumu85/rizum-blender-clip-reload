@@ -3630,3 +3630,20 @@ distinct colours such as `#FFFED1` versus `#FFFFCA`. Therefore the manual
 Difference display path is not sensitive enough for this low-amplitude residual;
 use raw PNG byte comparison and sampled pixels for the oracle until native CSP
 evidence explains the remaining Tone Curve/cache quantization gap.
+
+2026-06-17 native Multiply edge quantization follow-up: a local isolated
+Multiply fixture showed native strict GPU was slightly worse than the Python
+reference compositor on semi-transparent Multiply edges. At `(476,158)`, the
+destination was paper `[226,226,226,255]`, the Multiply source was
+`[147,97,187,104]`, CSP exported `[186,168,200,255]`, Python produced
+`[187,169,201,255]`, and the old native shader produced `[187,169,202,255]`.
+Full-image native comparison was `raw_max=2`, `raw_visible_px=73`, while Python
+was `max=1`, `visible_px=0`. Offline variants showed the best non-overfit rule
+is to keep the W3C Multiply product unquantized before the alpha-over step while
+leaving the final u8 output rounding in place; this matches Python and brings
+native to `raw_max=1`, `raw_visible_px=0`. The change is scoped to Multiply in
+both the standard shader and tile-silo shader; other standard blend modes keep
+their existing pre-over u8 target quantization. Guards stayed stable:
+`Test_AddGlowMultiply` remains `raw_max=5` / `premul_max=3`, `Test_SoftLight`
+and `Test_ColorBurn` remain exact, `Test_ToneCurve` remains the known
+`raw_max=17`, and `Test_Clipping` remains exact.

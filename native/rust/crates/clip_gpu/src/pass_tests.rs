@@ -727,7 +727,24 @@ fn darken_raster_source_uses_standard_blend_formula() {
 fn multiply_raster_source_uses_w3c_blend_formula() {
     assert_eq!(
         draw_one_pixel_standard_blend(GpuRasterBlendMode::Multiply),
-        [69, 44, 198, 255]
+        [69, 45, 198, 255]
+    );
+}
+
+#[test]
+fn multiply_raster_source_keeps_unquantized_blend_product() {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Multiply,
+            [147, 97, 187, 104],
+            Rgba8 {
+                r: 226,
+                g: 226,
+                b: 226,
+                a: 255,
+            },
+        ),
+        [187, 169, 201, 255]
     );
 }
 
