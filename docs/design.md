@@ -76,7 +76,7 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   placeholder image, create new editors, or change the user's workspace layout.
 - Image Editor N-panel: `Image > Clip Studio`.
   - `Manual Reload`
-  - pack status with adjacent `Pack`
+  - short pack status (`Packed` / `Needs Pack`) with adjacent `Pack`
   - non-ready render status, pack status, errors, lower `Copy Diagnostic`, and
     unsupported-node locators only when unsupported nodes exist
   - Developer Mode-only timing and open-diagnostics controls

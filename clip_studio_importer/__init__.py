@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 60),
+    "version": (0, 8, 61),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -94,11 +94,11 @@ def _mark_image_needs_pack(image) -> None:
 
 def _pack_status_label(status: str) -> str:
     return {
-        PACK_STATUS_PACKED: "Packed in .blend",
-        PACK_STATUS_NEEDS_PACK: "Needs pack",
+        PACK_STATUS_PACKED: "Packed",
+        PACK_STATUS_NEEDS_PACK: "Needs Pack",
         PACK_STATUS_RENDERING: "Waiting for render",
         PACK_STATUS_PACKING: "Packing",
-        PACK_STATUS_ERROR: "Pack needs attention",
+        PACK_STATUS_ERROR: "Pack Error",
     }.get(status, "Unknown")
 
 
@@ -552,9 +552,13 @@ class IMAGE_OT_reload_clip_studio(Operator):
 
 
 class IMAGE_OT_pack_clip_studio(Operator):
-    """Pack the selected .clip image's current pixels into the .blend."""
+    """Pack current pixels now. Saving the .blend also packs images that need it."""
     bl_idname = "image.pack_clip_studio"
     bl_label = "Pack Clip Studio Image"
+    bl_description = (
+        "Pack current pixels into the .blend now. Saving the .blend also packs "
+        "Needs Pack images automatically."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
