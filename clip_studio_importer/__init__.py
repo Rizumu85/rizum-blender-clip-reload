@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 61),
+    "version": (0, 8, 62),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -92,6 +92,20 @@ def _mark_image_needs_pack(image) -> None:
     _set_pack_status(image, PACK_STATUS_NEEDS_PACK)
 
 
+def _resolve_clip_source_path(path: str | None) -> str:
+    return native_bridge.resolve_source_path(str(path or ""), _blender_abspath())
+
+
+def _blender_abspath():
+    bpy_path = getattr(bpy, "path", None)
+    return getattr(bpy_path, "abspath", None)
+
+
+def _image_source_matches(img, clip_path: str) -> bool:
+    stored_path = str(img.get(CLIP_SOURCE_KEY, "") or "")
+    return stored_path == clip_path or _resolve_clip_source_path(stored_path) == clip_path
+
+
 def _pack_status_label(status: str) -> str:
     return {
         PACK_STATUS_PACKED: "Packed",
@@ -131,7 +145,7 @@ def _pack_image_now(image) -> float:
 def _schedule_pack_after_initial_import(image_name: str, clip_path: str) -> None:
     def _on_pack():
         img = bpy.data.images.get(image_name)
-        if img is None or img.get(CLIP_SOURCE_KEY) != clip_path:
+        if img is None or not _image_source_matches(img, clip_path):
             return None
         with _state_lock:
             running = bool(clip_path and clip_path in _in_flight)
@@ -466,7 +480,7 @@ def _schedule_async_decode(
 
     img = bpy.data.images.get(image_name) if image_name else None
     previous_manifest_json = ""
-    if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+    if img is not None and _image_source_matches(img, clip_path):
         previous_manifest_json = str(
             img.get(native_bridge.CLIP_RELOAD_MANIFEST_KEY, "") or ""
         )
@@ -536,13 +550,14 @@ class IMAGE_OT_reload_clip_studio(Operator):
 
     def execute(self, context):
         img = context.space_data.image
-        clip_path = img.get(CLIP_SOURCE_KEY)
+        stored_clip_path = img.get(CLIP_SOURCE_KEY)
+        clip_path = _resolve_clip_source_path(stored_clip_path)
         if not clip_path or not os.path.exists(clip_path):
             native_bridge.write_reload_status(
                 img,
                 native_bridge.RELOAD_STATUS_MISSING,
             )
-            self.report({"ERROR"}, f"Source .clip not found: {clip_path!r}")
+            self.report({"ERROR"}, f"Source .clip not found: {stored_clip_path!r}")
             return {"CANCELLED"}
         if not _schedule_async_decode(clip_path, img.name):
             self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
@@ -720,7 +735,7 @@ def _async_decode(
     if not success:
         def _on_error():
             img = bpy.data.images.get(image_name) if image_name else None
-            if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+            if img is not None and _image_source_matches(img, clip_path):
                 img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
                 native_bridge.write_reload_error(img, error_message)
                 if img.get(CLIP_PACK_STATUS_KEY) == PACK_STATUS_RENDERING:
@@ -742,7 +757,7 @@ def _async_decode(
         img = bpy.data.images.get(image_name) if image_name else None
         if img is None and not create_on_success:
             return None
-        if img is not None and img.get(CLIP_SOURCE_KEY) != clip_path:
+        if img is not None and not _image_source_matches(img, clip_path):
             return None
         if native_result is not None:
             img = native_bridge.create_or_update_image(
@@ -790,7 +805,10 @@ def _watcher_tick():
         if not clip_path:
             continue
 
-        state = native_bridge.inspect_native_image_source(img)
+        state = native_bridge.inspect_native_image_source(
+            img,
+            resolve_path=_blender_abspath(),
+        )
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:
@@ -843,7 +861,11 @@ def _load_post_refresh_native_images(_dummy):
         if not img.get(CLIP_NATIVE_KEY):
             continue
 
-        state = native_bridge.inspect_native_image_source(img, check_hash=True)
+        state = native_bridge.inspect_native_image_source(
+            img,
+            resolve_path=_blender_abspath(),
+            check_hash=True,
+        )
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:

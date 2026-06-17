@@ -706,6 +706,30 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertFalse(state.should_reload)
         self.assertEqual(state.status, native_bridge.RELOAD_STATUS_OK)
 
+    def test_inspect_native_image_source_resolves_blender_relative_path(self) -> None:
+        image = FakeImage("sample", 1, 1)
+        image[native_bridge.CLIP_SOURCE_KEY] = "//img/sample.clip"
+        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
+        image[native_bridge.CLIP_SIZE_KEY] = "42"
+        seen_paths = []
+
+        def record_exists(path: str) -> bool:
+            seen_paths.append(path)
+            return True
+
+        state = native_bridge.inspect_native_image_source(
+            image,
+            resolve_path=lambda path: "C:/project/img/sample.clip",
+            exists=record_exists,
+            getmtime=lambda path: 10.0,
+            getsize=lambda path: 42,
+        )
+
+        self.assertEqual(state.clip_path, "C:/project/img/sample.clip")
+        self.assertEqual(seen_paths, ["C:/project/img/sample.clip"])
+        self.assertFalse(state.should_reload)
+        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_OK)
+
     def test_inspect_native_image_source_marks_newer_source_stale(self) -> None:
         image = FakeImage("sample", 1, 1)
         image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"

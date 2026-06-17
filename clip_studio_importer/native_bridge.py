@@ -548,13 +548,15 @@ def create_or_update_image(
 def inspect_native_image_source(
     image: Any,
     *,
+    resolve_path: Any | None = None,
     exists: Any = os.path.exists,
     getmtime: Any = os.path.getmtime,
     getsize: Any = os.path.getsize,
     getsha256: Any | None = None,
     check_hash: bool = False,
 ) -> NativeImageSourceState:
-    clip_path = str(image.get(CLIP_SOURCE_KEY, "") or "")
+    stored_clip_path = str(image.get(CLIP_SOURCE_KEY, "") or "")
+    clip_path = resolve_source_path(stored_clip_path, resolve_path)
     stored_mtime = _parse_mtime(image.get(CLIP_MTIME_KEY, ""))
     stored_size = _parse_int(image.get(CLIP_SIZE_KEY, ""))
     stored_sha256 = str(image.get(CLIP_SHA256_KEY, "") or "")
@@ -1043,6 +1045,16 @@ def source_file_sha256(path: str | os.PathLike[str]) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def resolve_source_path(path: str, resolve_path: Any | None = None) -> str:
+    if not path or resolve_path is None:
+        return path
+    try:
+        resolved = resolve_path(path)
+    except Exception:
+        return path
+    return str(resolved or path)
 
 
 def _ensure_image(
