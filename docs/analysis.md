@@ -3621,4 +3621,12 @@ The separate `img/Test_ToneCurve.clip.png` file compares exact to the native
 PNG, but it is not the CSP export oracle for this fixture. The manual CSP
 Difference check with an imported native-output layer showing black therefore
 needs a separate import/color-management/display-path explanation; it should not
-be treated as proof that the raw PNG comparator is wrong.
+be treated as proof that the raw PNG comparator is wrong. A follow-up profile
+sanity check found CSP reports both embedded and working profiles as
+`sRGB IEC61966-2.1`, perceptual intent, `IccLibrary`; tagging the native
+diagnostic PNG with the CSP export's sRGB ICC profile still looked visually
+black in CSP Difference mode, but eyedropper samples in the same area confirmed
+distinct colours such as `#FFFED1` versus `#FFFFCA`. Therefore the manual
+Difference display path is not sensitive enough for this low-amplitude residual;
+use raw PNG byte comparison and sampled pixels for the oracle until native CSP
+evidence explains the remaining Tone Curve/cache quantization gap.
