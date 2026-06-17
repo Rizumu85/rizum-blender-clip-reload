@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 62),
+    "version": (0, 8, 63),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -1013,7 +1013,7 @@ class IMAGE_PT_clip_studio(Panel):
         if pack_status:
             pack_row = layout.row(align=True)
             pack_row.label(
-                text=f"Pack: {_pack_status_label(pack_status)}",
+                text=_pack_status_label(pack_status),
                 icon=_pack_status_icon(pack_status),
             )
             pack_row.operator(
