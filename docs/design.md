@@ -24,17 +24,18 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    reuses unchanged raster/mask GPU textures and renders matching patch reloads
    as dirty-region GPU outputs rather than full-canvas renders. Reload does not
    pack immediately.
-5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
-6. Add-on preferences report whether the packaged native renderer worker is
-   present; users do not choose a renderer path.
-7. The Image Editor N-panel shows source file, render status, elapsed and last
-   render timing, pack status, `Pack Now`, missing-source state, and the latest
-   render or pack error for the selected `.clip` image. It does not show native
-   renderer mode, full-support summaries, renderer version, resource counts, or
-   largest-resource metadata in the normal UI. When unsupported native nodes
-   exist, the panel shows compact unsupported layer/node/kind/name issue
-   locators and copy/open diagnostics actions. These locators are for bug
-   reports and source-file follow-up, not Blender layer navigation.
+5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload`.
+6. Add-on preferences expose reload timing, debug logging, and Developer Mode;
+   users do not choose a renderer path.
+7. The Image Editor N-panel shows source file, non-ready render status, pack
+   status, `Pack Now`, missing-source state, and the latest render or pack error
+   for the selected `.clip` image. It does not show native renderer mode,
+   full-support summaries, renderer version, resource counts, largest-resource
+   metadata, successful packaged-worker status, or render timing in the normal
+   UI. Developer Mode reveals last-render timing, phase timing, and an open
+   diagnostics action. When unsupported native nodes exist, the panel shows
+   compact unsupported layer/node/kind/name issue locators. These locators are
+   for bug reports and source-file follow-up, not Blender layer navigation.
 
 ## Later Native Workflow
 
@@ -74,15 +75,17 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   Editor areas already open on the current screen. It does not create a
   placeholder image, create new editors, or change the user's workspace layout.
 - Image Editor N-panel: `Image > Clip Studio`.
-  - `Reload from .clip`
+  - `Reload`
   - `Pack Now`
-  - render status, pack status, timing diagnostics, errors, and unsupported-node
-    locators only when unsupported nodes exist
+  - non-ready render status, pack status, errors, lower `Copy Diagnostic`, and
+    unsupported-node locators only when unsupported nodes exist
+  - Developer Mode-only timing and open-diagnostics controls
 - Add-on preferences:
-  - `Auto-reload on .clip change`
-  - `Poll interval (seconds)`
+  - `Autoreload .Clip`
+  - `Check Timer Frequency (s)`
   - `Debug log`
-  - Packaged native renderer found/missing status
+  - `Developer Mode`
+  - Packaged native renderer missing status only
 
 ## Interaction Principles
 
@@ -108,15 +111,17 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 ## Current UX Gaps
 
-- Background render progress is elapsed-time only; there is no per-layer or
-  percentage progress indicator yet.
+- Background render progress is elapsed-time only, and detailed render timing is
+  hidden behind Developer Mode; there is no per-layer or percentage progress
+  indicator yet.
 - Unsupported layer features are summarized in the panel only when unsupported
   native nodes exist, using compact layer/node/kind issue locators with layer
   names when available plus a short preview of unsupported details. Full native
-  support summaries, renderer version, source/resource counts, and largest
-  raster/mask metadata are kept out of the normal UI. Copied/opened diagnostics
-  focus on issue/debug fields: source path, source size/hash, status, timing,
-  canvas size, renderer version, unsupported node count/locations/details, and
+  support summaries, renderer version, source/resource counts, largest
+  raster/mask metadata, successful packaged-worker status, and normal timing
+  details are kept out of the normal UI. Copied/opened diagnostics focus on
+  issue/debug fields: source path, source size/hash, status, timing, canvas
+  size, renderer version, unsupported node count/locations/details, and
   render/pack errors.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including manual reload, background

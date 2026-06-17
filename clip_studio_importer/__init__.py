@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 56),
+    "version": (0, 8, 57),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -525,7 +525,7 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
 class IMAGE_OT_reload_clip_studio(Operator):
     """Re-render the .clip file this image was imported from."""
     bl_idname = "image.reload_clip_studio"
-    bl_label = "Reload from .clip"
+    bl_label = "Reload"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -776,7 +776,7 @@ def _watcher_tick():
     except Exception:
         return 1.0
 
-    interval = max(prefs.poll_interval, 0.25)
+    interval = max(prefs.poll_interval, 0.1)
     if not prefs.auto_reload:
         return interval
 
@@ -916,22 +916,27 @@ class CSI_AddonPreferences(AddonPreferences):
     bl_idname = ADDON_PKG
 
     auto_reload: BoolProperty(
-        name="Auto-reload on .clip change",
+        name="Autoreload .Clip",
         description="Watch every imported .clip's mtime and re-render "
                     "when it changes. Rendering runs on a background thread so "
                     "Blender's UI stays responsive.",
         default=True,
     )
     poll_interval: FloatProperty(
-        name="Poll interval (seconds)",
+        name="Check Timer Frequency (s)",
         description="How often to check .clip mtimes and file sizes.",
         default=0.5,
-        min=0.25,
+        min=0.1,
         max=10.0,
     )
     debug: BoolProperty(
         name="Debug log",
         description="Print extra info to the system console.",
+        default=False,
+    )
+    developer_mode: BoolProperty(
+        name="Developer Mode",
+        description="Show render timing and diagnostic actions in the image panel.",
         default=False,
     )
 
@@ -942,21 +947,12 @@ class CSI_AddonPreferences(AddonPreferences):
         row.enabled = self.auto_reload
         row.prop(self, "poll_interval")
         layout.prop(self, "debug")
-        packaged_worker_path = native_bridge.packaged_renderer_worker_path()
-        if packaged_worker_path:
-            layout.label(
-                text="Packaged native renderer found.",
-                icon="CHECKMARK",
-            )
-        else:
+        layout.prop(self, "developer_mode")
+        if not native_bridge.packaged_renderer_worker_path():
             layout.label(
                 text="Packaged native renderer missing; rebuild the add-on package.",
                 icon="ERROR",
             )
-        layout.label(
-            text="Save a .clip in CSP - Blender's UI stays responsive while it renders in the background.",
-            icon="INFO",
-        )
 
 
 class IMAGE_PT_clip_studio(Panel):
@@ -976,11 +972,14 @@ class IMAGE_PT_clip_studio(Panel):
         layout = self.layout
         clip_path = img.get(CLIP_SOURCE_KEY, "")
         status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
+        prefs = _addon_prefs()
+        developer_mode = bool(getattr(prefs, "developer_mode", False))
         layout.label(text=f"Source: {os.path.basename(clip_path)}")
-        layout.label(
-            text=f"Status: {_reload_status_label(status)}",
-            icon=_reload_status_icon(status),
-        )
+        if status != native_bridge.RELOAD_STATUS_OK:
+            layout.label(
+                text=_reload_status_label(status),
+                icon=_reload_status_icon(status),
+            )
         pack_status = str(img.get(CLIP_PACK_STATUS_KEY, "") or "")
         if pack_status:
             layout.label(
@@ -1040,28 +1039,12 @@ class IMAGE_PT_clip_studio(Panel):
                     ),
                     icon="INFO",
                 )
-            layout.operator(
-                IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
-                text="Copy diagnostics",
-                icon="COPYDOWN",
-            )
             if _support_location_lines(img):
                 layout.operator(
                     IMAGE_OT_copy_clip_support_locations.bl_idname,
                     text="Copy layer locations",
                     icon="COPYDOWN",
                 )
-            layout.operator(
-                IMAGE_OT_open_clip_support_diagnostics.bl_idname,
-                text="Open diagnostics",
-                icon="TEXT",
-            )
-        else:
-            layout.operator(
-                IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
-                text="Copy diagnostics",
-                icon="COPYDOWN",
-            )
         if status == native_bridge.RELOAD_STATUS_MISSING:
             layout.label(text="Packed pixels are still visible.", icon="INFO")
         elif status == native_bridge.RELOAD_STATUS_ERROR:
@@ -1071,7 +1054,7 @@ class IMAGE_PT_clip_studio(Panel):
                     text=f"Error: {_short_diagnostic(message)}",
                     icon="ERROR",
                 )
-        layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, icon="FILE_REFRESH")
+        layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, text="Reload", icon="FILE_REFRESH")
         layout.operator(IMAGE_OT_pack_clip_studio.bl_idname, text="Pack Now", icon="CHECKMARK")
         if status == native_bridge.RELOAD_STATUS_REFRESHING:
             started_at = _image_float_property(
@@ -1083,22 +1066,32 @@ class IMAGE_PT_clip_studio(Panel):
                     text=f"Elapsed: {_format_seconds(time.time() - started_at)}",
                     icon="SORTTIME",
                 )
-        last_seconds = _image_float_property(
-            img,
-            native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY,
+        if developer_mode:
+            last_seconds = _image_float_property(
+                img,
+                native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY,
+            )
+            if last_seconds:
+                layout.label(
+                    text=f"Last render: {_format_seconds(last_seconds)}",
+                    icon="TIME",
+                )
+            for line in _timing_phase_lines(img):
+                layout.label(
+                    text=_short_diagnostic(line),
+                    icon="BLANK1",
+                )
+            layout.operator(
+                IMAGE_OT_open_clip_support_diagnostics.bl_idname,
+                text="Open Diagnostics",
+                icon="TEXT",
+            )
+        layout.operator(
+            IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
+            text="Copy Diagnostic",
+            icon="COPYDOWN",
         )
-        if last_seconds:
-            layout.label(
-                text=f"Last render: {_format_seconds(last_seconds)}",
-                icon="TIME",
-            )
-        for line in _timing_phase_lines(img):
-            layout.label(
-                text=_short_diagnostic(line),
-                icon="BLANK1",
-            )
-        prefs = _addon_prefs()
-        layout.prop(prefs, "auto_reload", text="Auto-reload on .clip change")
+        layout.prop(prefs, "auto_reload", text="Autoreload .Clip")
         # If a render is currently running for this image's clip, show a hint.
         with _state_lock:
             running = clip_path in _in_flight

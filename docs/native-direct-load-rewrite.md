@@ -153,12 +153,12 @@ Result:
   renderer ABI, renderer version, reload status, and pack status custom
   properties. The installable add-on zip includes the local
   release `clip_cli` worker plus `clip_capi` library under
-  `clip_studio_importer/native/`; preferences report whether that packaged
-  worker is present instead of exposing a user renderer override. The direct
+  `clip_studio_importer/native/`; preferences expose reload/debug controls
+  instead of successful packaged-worker status or a user renderer override. The direct
   `clip_capi` path remains internal development/test plumbing because
   in-process wgpu rendering can crash Blender's UI redraw path on Blender
   5.0.1/NVIDIA.
-- Initial import, `Reload from .clip`, and the non-blocking watcher update
+- Initial import, `Reload`, and the non-blocking watcher update
   images through the C ABI/generated-image path only. Initial import waits for
   the worker to return real canvas pixels before creating and showing the
   generated Blender image, then schedules initial pack as a separate main-thread
