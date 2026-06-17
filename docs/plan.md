@@ -45,7 +45,7 @@ Current focus:
   create generated Blender images, store source-tracking properties, and update
   through the add-on's reload/watch path without writing sidecar PNGs.
 - Keep persistence explicit and cheap during reload: successful renders mark the
-  image as needing pack, `Pack Now` packs immediately on user request, and
+  image as needing pack, `Pack` packs immediately on user request, and
   Blender `save_pre` packs dirty native images before saving the `.blend`.
 - Keep reload updates manifest-driven where possible: the worker should compare
   the prior reload manifest with the current `.clip` graph/source chunks, return
@@ -79,7 +79,7 @@ Current policy:
   Blender `load_post` freshness scans without writing sidecar PNGs. The watcher
   uses lightweight mtime/size checks, while `load_post` can also compare
   SHA-256. Successful renders do not pack immediately; they mark the image as
-  needing pack, with `Pack Now` and a `save_pre` handler providing persistence.
+  needing pack, with `Pack` and a `save_pre` handler providing persistence.
   Render failures are stored as image metadata and shown in the Image Editor
   panel, while successful renders clear old error metadata. The add-on records
   elapsed/last render timing for manual and background renders. Reloads store a
@@ -142,7 +142,7 @@ Current policy:
   slowed RealArt on this machine; keep `Queue::write_texture` until profiling
   proves a no-extra-copy upload design is worthwhile. The likely Blender
   product lever of deferred packing is now implemented in the Blender add-on:
-  reload avoids immediate `image.pack()`, while manual `Pack Now` and save-time
+  reload avoids immediate `image.pack()`, while manual `Pack` and save-time
   packing preserve `.blend` persistence. See `docs/native-performance-investigation.md`.
 - Native raster extraction now applies render offscreen placement through `LayerRenderOffscrOffsetX/Y`, matching the existing mask placement model and the known `Ref_Terra404_Live2D` negative-X render sources. This removes a structural decode gap before further large-reference GPU work.
 - Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.

@@ -28,7 +28,7 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 6. Add-on preferences expose reload timing, debug logging, and Developer Mode;
    users do not choose a renderer path.
 7. The Image Editor N-panel shows source file, non-ready render status, pack
-   status with adjacent `Pack Now`, missing-source state, and the latest render or pack error
+   status with adjacent `Pack`, missing-source state, and the latest render or pack error
    for the selected `.clip` image. It does not show native renderer mode,
    full-support summaries, renderer version, resource counts, largest-resource
    metadata, successful packaged-worker status, or render timing in the normal
@@ -54,7 +54,7 @@ sidecar PNG cache and not a Python compositor:
    full canvas.
 4. The add-on records `.clip` source metadata on the image. Initial imports
    auto-pack after the completed image is shown; reloads mark images as needing
-   pack. Dirty reloads are packed either by the `Pack Now` button or
+   pack. Dirty reloads are packed either by the `Pack` button or
    automatically from Blender's `save_pre` handler before saving the `.blend`.
 5. When the `.blend` is reopened, Blender immediately shows the packed last
    render. The add-on then checks the source `.clip`; if it changed, the add-on
@@ -76,7 +76,7 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   placeholder image, create new editors, or change the user's workspace layout.
 - Image Editor N-panel: `Image > Clip Studio`.
   - `Manual Reload`
-  - pack status with adjacent `Pack Now`
+  - pack status with adjacent `Pack`
   - non-ready render status, pack status, errors, lower `Copy Diagnostic`, and
     unsupported-node locators only when unsupported nodes exist
   - Developer Mode-only timing and open-diagnostics controls
@@ -90,7 +90,7 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Keep the Blender UI responsive while reloading large `.clip` files.
 - Keep generated images source-tracked once real pixels exist. Initial import
   packs after the completed image is shown; reload defers persistence cost by
-  marking images as needing pack, `Pack Now` packs the current pixels on demand,
+  marking images as needing pack, `Pack` packs the current pixels on demand,
   and `save_pre` packs dirty native images before the `.blend` is saved.
 - Prefer manifest-driven reload diffs over timestamp-only reload behaviour.
   Same-graph raster/mask compressed-tile changes may update only dirty rects;
@@ -124,6 +124,6 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including manual reload, background
   watcher refresh, `load_post` freshness checks, explicit pack status, manual
-  `Pack Now`, and save-time packing for dirty native images. The remaining
+  `Pack`, and save-time packing for dirty native images. The remaining
   native-path UX work is limited to clearer progress reporting for the
   flattened texture workflow.

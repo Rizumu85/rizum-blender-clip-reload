@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 59),
+    "version": (0, 8, 60),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -992,8 +992,7 @@ class IMAGE_PT_clip_studio(Panel):
             )
             pack_row.operator(
                 IMAGE_OT_pack_clip_studio.bl_idname,
-                text="Pack Now",
-                icon="CHECKMARK",
+                text="Pack",
             )
             pack_error = img.get(CLIP_PACK_ERROR_KEY, "")
             if pack_error:
@@ -1004,8 +1003,7 @@ class IMAGE_PT_clip_studio(Panel):
         else:
             layout.operator(
                 IMAGE_OT_pack_clip_studio.bl_idname,
-                text="Pack Now",
-                icon="CHECKMARK",
+                text="Pack",
             )
         unsupported_count = _image_int_property(
             img,

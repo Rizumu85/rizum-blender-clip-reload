@@ -374,7 +374,7 @@ Blender conclusions:
   should be measured in the add-on UI before changing persistence semantics.
 - The main product-level speed lever is packing policy. The add-on now keeps
   generated images visible and source-tracked immediately, marks successful
-  renders as needing pack, and persists them through explicit `Pack Now` or a
+  renders as needing pack, and persists them through explicit `Pack` or a
   Blender `save_pre` handler. This is not a renderer fallback and does not
   change pixel semantics; it moves `image.pack()` cost out of the reload path.
 - Smaller Blender bridge optimizations are still worth measuring after phase

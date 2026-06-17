@@ -40,7 +40,7 @@ Result: the bridge works in stock Blender 5.0.1 without sidecar PNG output. It
 is not a true file-backed image format; reload must be owned by the add-on unless
 Blender gains an ImBuf/filetype bridge. The accepted persistence model is to
 store `.clip` source tracking metadata immediately, keep rendered pixels in a
-generated image datablock, and pack dirty native images through `Pack Now` or
+generated image datablock, and pack dirty native images through `Pack` or
 Blender `save_pre`.
 
 Completed third milestone foundation: native `.clip` data path.
@@ -649,7 +649,7 @@ Owns:
 - Creating and updating `bpy.types.Image` datablocks.
 - Passing file paths and reload events to the native runtime.
 - Uploading final RGBA bytes returned by the native runtime.
-- Deferring pixel persistence until explicit `Pack Now` or Blender `save_pre`
+- Deferring pixel persistence until explicit `Pack` or Blender `save_pre`
   packing.
 - Storing and reading `.clip` source-tracking custom properties on images.
 - User-facing import/reload UI.
@@ -695,7 +695,7 @@ Persistence rules:
   pixels. If the source is missing, it keeps the packed pixels visible and
   records `clip_reload_status = "missing_source"`.
 - Successful renders mark the image as needing pack instead of calling
-  `image.pack()` immediately. Users can pack the current pixels with `Pack Now`,
+  `image.pack()` immediately. Users can pack the current pixels with `Pack`,
   and the add-on's persistent `save_pre` handler packs dirty native images
   before saving the `.blend`.
 
@@ -747,7 +747,7 @@ Target stock Blender add-on flow:
 5. Add-on creates or updates a generated `bpy.types.Image`.
 6. Add-on uploads the RGBA bytes with Blender's bulk pixel API.
 7. Add-on records source freshness custom properties and marks the image as
-   needing pack. `Pack Now` or Blender `save_pre` later packs the current pixels
+   needing pack. `Pack` or Blender `save_pre` later packs the current pixels
    into the `.blend`.
 
 This flow is still a native renderer path. Python only owns Blender UI and

@@ -33,7 +33,7 @@ For the stock Blender bridge, the accepted persistence model is:
 - Create or update a generated `bpy.types.Image`.
 - Upload native-rendered RGBA pixels into that image.
 - Initial import packs after the completed image is shown. Reload renders mark
-  the image as needing pack; `Pack Now` packs the current pixels immediately,
+  the image as needing pack; `Pack` packs the current pixels immediately,
   and Blender `save_pre` packs dirty native images before the file is saved.
 - Store source tracking properties on the image, including the original `.clip`
   path, source mtime, source size, source SHA-256, canvas dimensions, renderer
@@ -169,7 +169,7 @@ Result:
   source changed or stored freshness metadata is missing, and records
   `missing_source` while keeping packed pixels visible if the source is gone.
   A persistent `save_pre` handler packs dirty native images before saving the
-  `.blend`, and the Image Editor panel exposes `Pack Now`.
+  `.blend`, and the Image Editor panel exposes `Pack`.
 - `clip_studio_importer/__init__.py` no longer imports `clip_loader`, no longer
   exposes a `Use native renderer` off switch, and no longer writes or reloads
   sidecar PNGs. `tools/build_blender_addon.py` packages only `__init__.py`,
