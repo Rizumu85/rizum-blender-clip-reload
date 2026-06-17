@@ -158,9 +158,10 @@ Result:
   in-process wgpu rendering can crash Blender's UI redraw path on Blender
   5.0.1/NVIDIA.
 - Initial import, `Reload from .clip`, and the non-blocking watcher update
-  images through the C ABI/generated-image path only. Import first creates a
-  generated placeholder image so Blender can stay responsive while the worker
-  renders.
+  images through the C ABI/generated-image path only. Initial import waits for
+  the worker to return real canvas pixels before creating and showing the
+  generated Blender image, avoiding a confusing temporary placeholder while
+  Blender remains responsive.
 - Blender `load_post` now scans native images, checks the stored source
   mtime/size/hash against the current `.clip`, queues a native refresh when the
   source changed or stored freshness metadata is missing, and records

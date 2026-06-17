@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 49),
+    "version": (0, 8, 50),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -128,33 +128,16 @@ def _pack_image_now(image) -> float:
     return seconds
 
 
-def _create_pending_clip_image(clip_path: str):
-    source = os.path.abspath(clip_path)
-    name = os.path.basename(source) or "Clip Studio Image"
-    image = bpy.data.images.new(
-        name,
-        width=1,
-        height=1,
-        alpha=True,
-        float_buffer=False,
-    )
-    image.source = "GENERATED"
-    if hasattr(image, "colorspace_settings"):
-        image.colorspace_settings.name = "sRGB"
-    image[CLIP_SOURCE_KEY] = source
-    image[CLIP_NATIVE_KEY] = True
-    try:
-        image[CLIP_MTIME_KEY] = str(os.path.getmtime(source))
-        image[CLIP_SIZE_KEY] = str(os.path.getsize(source))
-    except OSError:
-        pass
-    image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
-    native_bridge.write_reload_status(
-        image,
-        native_bridge.RELOAD_STATUS_REFRESHING,
-    )
-    _set_pack_status(image, PACK_STATUS_RENDERING)
-    return image
+def _unique_image_name(name: str) -> str:
+    base = name or "Clip Studio Image"
+    if bpy.data.images.get(base) is None:
+        return base
+    index = 1
+    while True:
+        candidate = f"{base}.{index:03d}"
+        if bpy.data.images.get(candidate) is None:
+            return candidate
+        index += 1
 
 
 def _show_image_in_open_image_editors(context, image) -> int:
@@ -491,14 +474,17 @@ def _show_text_in_editor(context, text) -> bool:
 
 def _schedule_async_decode(
     clip_path: str,
-    image_name: str,
+    image_name: str | None,
+    *,
+    create_on_success: bool = False,
+    show_on_success: bool = False,
 ) -> bool:
     with _state_lock:
         if clip_path in _in_flight:
             return False
         _in_flight.add(clip_path)
 
-    img = bpy.data.images.get(image_name)
+    img = bpy.data.images.get(image_name) if image_name else None
     if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
         img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
         native_bridge.write_reload_status(
@@ -509,7 +495,7 @@ def _schedule_async_decode(
 
     threading.Thread(
         target=_async_decode,
-        args=(clip_path, image_name),
+        args=(clip_path, image_name, create_on_success, show_on_success),
         daemon=True,
     ).start()
     return True
@@ -529,21 +515,18 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
     filter_glob: StringProperty(default="*.clip", options={"HIDDEN"})
 
     def execute(self, context):
-        clip_path = self.filepath
-        try:
-            img = _create_pending_clip_image(clip_path)
-        except Exception as exc:
-            self.report({"ERROR"}, f"Failed to start .clip import: {exc}")
-            return {"CANCELLED"}
-
-        _show_image_in_open_image_editors(context, img)
-        if not _schedule_async_decode(img.get(CLIP_SOURCE_KEY), img.name):
-            native_bridge.write_reload_error(img, "Render is already in progress for this source")
-            _set_pack_status(img, PACK_STATUS_ERROR, error="Render did not start")
+        clip_path = os.path.abspath(self.filepath)
+        image_name = _unique_image_name(os.path.basename(clip_path))
+        if not _schedule_async_decode(
+            clip_path,
+            image_name,
+            create_on_success=True,
+            show_on_success=True,
+        ):
             self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
             return {"CANCELLED"}
         self.report({"INFO"},
-                    f"Rendering {img.name} in the background")
+                    f"Rendering {os.path.basename(clip_path)} in the background")
         return {"FINISHED"}
 
 
@@ -710,7 +693,9 @@ class IMAGE_OT_open_clip_support_diagnostics(Operator):
 
 def _async_decode(
     clip_path: str,
-    image_name: str,
+    image_name: str | None,
+    create_on_success: bool = False,
+    show_on_success: bool = False,
 ):
     """Worker-thread entry point for native render.
 
@@ -735,7 +720,7 @@ def _async_decode(
 
     if not success:
         def _on_error():
-            img = bpy.data.images.get(image_name)
+            img = bpy.data.images.get(image_name) if image_name else None
             if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
                 img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
                 native_bridge.write_reload_error(img, error_message)
@@ -755,18 +740,25 @@ def _async_decode(
     # processed at the next event loop tick (sub-frame latency, not poll
     # interval).
     def _on_main():
-        img = bpy.data.images.get(image_name)
-        if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
-            if native_result is not None:
-                native_bridge.create_or_update_image(
-                    bpy,
-                    native_result,
-                    image=img,
-                    pack=False,
-                    allow_resize=True,
-                )
-                img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
-                _mark_image_needs_pack(img)
+        img = bpy.data.images.get(image_name) if image_name else None
+        if img is None and not create_on_success:
+            return None
+        if img is not None and img.get(CLIP_SOURCE_KEY) != clip_path:
+            return None
+        if native_result is not None:
+            img = native_bridge.create_or_update_image(
+                bpy,
+                native_result,
+                image=img,
+                image_name=image_name if create_on_success else None,
+                pack=False,
+                allow_resize=img is not None,
+            )
+            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
+            _mark_image_needs_pack(img)
+            if show_on_success:
+                _show_image_in_open_image_editors(bpy.context, img)
+        if img is not None:
             try:
                 if _addon_prefs().debug:
                     print(f"[clip_studio_importer] reloaded {clip_path}")

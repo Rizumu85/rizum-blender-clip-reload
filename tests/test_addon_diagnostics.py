@@ -546,7 +546,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertEqual(operator.reported[0], {"INFO"})
         self.assertIn("Opened Clip Studio Support - sample image", operator.reported[1])
 
-    def test_import_operator_shows_image_in_open_image_editors(self) -> None:
+    def test_import_operator_defers_image_creation_until_render_finishes(self) -> None:
         addon = _load_addon_module()
         original_image = types.SimpleNamespace(name="already-open")
         image_space = types.SimpleNamespace(type="IMAGE_EDITOR", image=original_image)
@@ -571,9 +571,18 @@ class AddonDiagnosticsTests(unittest.TestCase):
         )
         scheduled = []
         original_schedule = addon._schedule_async_decode
-        addon._schedule_async_decode = (
-            lambda path, name: scheduled.append((path, name)) or True
-        )
+
+        def fake_schedule(
+            path,
+            name,
+            *,
+            create_on_success=False,
+            show_on_success=False,
+        ):
+            scheduled.append((path, name, create_on_success, show_on_success))
+            return True
+
+        addon._schedule_async_decode = fake_schedule
         try:
             operator = addon.IMPORT_OT_clip_studio()
             operator.filepath = "C:/art/sample.clip"
@@ -582,14 +591,105 @@ class AddonDiagnosticsTests(unittest.TestCase):
         finally:
             addon._schedule_async_decode = original_schedule
 
-        imported_image = addon.bpy.data.images.get("sample.clip")
-        self.assertIsNotNone(imported_image)
-        self.assertIs(image_space.image, imported_image)
-        self.assertIs(uv_space.image, imported_image)
-        self.assertEqual(imported_image[addon.native_bridge.CLIP_RELOAD_STATUS_KEY], "refreshing")
-        self.assertEqual(imported_image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_RENDERING)
-        self.assertEqual(scheduled, [(imported_image[addon.CLIP_SOURCE_KEY], imported_image.name)])
+        self.assertIsNone(addon.bpy.data.images.get("sample.clip"))
+        self.assertIs(image_space.image, original_image)
+        self.assertIs(uv_space.image, original_image)
+        self.assertEqual(
+            scheduled,
+            [(addon.os.path.abspath("C:/art/sample.clip"), "sample.clip", True, True)],
+        )
         self.assertEqual(operator.reported[0], {"INFO"})
+
+    def test_import_operator_reserves_unique_name_without_overwriting_existing_image(self) -> None:
+        addon = _load_addon_module()
+        existing = addon.bpy.data.images.new(
+            "sample.clip",
+            width=1,
+            height=1,
+            alpha=True,
+            float_buffer=False,
+        )
+        scheduled = []
+        original_schedule = addon._schedule_async_decode
+
+        def fake_schedule(
+            path,
+            name,
+            *,
+            create_on_success=False,
+            show_on_success=False,
+        ):
+            scheduled.append((path, name, create_on_success, show_on_success))
+            return True
+
+        addon._schedule_async_decode = fake_schedule
+        try:
+            operator = addon.IMPORT_OT_clip_studio()
+            operator.filepath = "C:/art/sample.clip"
+
+            self.assertEqual(operator.execute(types.SimpleNamespace()), {"FINISHED"})
+        finally:
+            addon._schedule_async_decode = original_schedule
+
+        self.assertIs(addon.bpy.data.images.get("sample.clip"), existing)
+        self.assertIsNone(addon.bpy.data.images.get("sample.clip.001"))
+        self.assertEqual(
+            scheduled,
+            [(addon.os.path.abspath("C:/art/sample.clip"), "sample.clip.001", True, True)],
+        )
+
+    def test_initial_async_decode_creates_image_and_shows_it_on_success(self) -> None:
+        addon = _load_addon_module()
+        original_image = types.SimpleNamespace(name="already-open")
+        image_space = types.SimpleNamespace(type="IMAGE_EDITOR", image=original_image)
+        addon.bpy.context.screen = types.SimpleNamespace(
+            areas=[
+                types.SimpleNamespace(
+                    type="IMAGE_EDITOR",
+                    spaces=[image_space],
+                )
+            ]
+        )
+        result = addon.native_bridge.NativeRenderResult(
+            clip_path="C:/art/sample.clip",
+            width=1,
+            height=1,
+            root_layer_id=2,
+            layer_count=3,
+            external_data_count=4,
+            renderer_abi=addon.native_bridge.EXPECTED_ABI_VERSION,
+            renderer_version="0.1.0-test",
+            source_mtime=10.0,
+            source_size=4,
+            source_sha256="abcd",
+            pixels_rgba8=bytes([255, 0, 0, 255]),
+            support_summary=None,
+            worker_seconds=1.2,
+            output_read_seconds=0.1,
+        )
+        original_render = addon.native_bridge.render_clip_rgba8
+        original_register = addon.bpy.app.timers.register
+        addon.native_bridge.render_clip_rgba8 = lambda _path: result
+        addon.bpy.app.timers.register = lambda callback, **_kwargs: callback()
+        try:
+            addon._async_decode(
+                "C:/art/sample.clip",
+                "sample.clip",
+                create_on_success=True,
+                show_on_success=True,
+            )
+        finally:
+            addon.native_bridge.render_clip_rgba8 = original_render
+            addon.bpy.app.timers.register = original_register
+
+        image = addon.bpy.data.images.get("sample.clip")
+        self.assertIsNotNone(image)
+        self.assertIs(image_space.image, image)
+        self.assertFalse(image.packed)
+        self.assertTrue(image.updated)
+        self.assertEqual(image[addon.CLIP_SOURCE_KEY], "C:/art/sample.clip")
+        self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_NEEDS_PACK)
+        self.assertEqual(image[addon.native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
 
     def test_reload_operator_schedules_background_render(self) -> None:
         addon = _load_addon_module()

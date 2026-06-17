@@ -8,13 +8,13 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 
 1. Install the Blender add-on from `clip_studio_importer.zip`.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
-3. By default, the add-on creates a generated Blender image immediately and
-   starts the packaged out-of-process `clip_cli` worker in the background. When
-   the worker returns RGBA pixels, the add-on uploads them into that image and
-   marks the image as needing pack. The worker keeps native GPU rendering out of
-   Blender's UI process; it is not a Python compositor or sidecar PNG cache.
-   If the current Blender screen already has Image Editor or UV Editor areas
-   open, those editors switch to the newly imported image.
+3. By default, the add-on starts the packaged out-of-process `clip_cli` worker
+   in the background without creating a temporary placeholder image. When the
+   worker returns RGBA pixels, the add-on creates the generated Blender image,
+   uploads the pixels, marks the image as needing pack, and then switches any
+   already-open Image Editor or UV Editor areas to that completed image. The
+   worker keeps native GPU rendering out of Blender's UI process; it is not a
+   Python compositor or sidecar PNG cache.
 4. When the source `.clip` is saved again, auto-reload watches lightweight file
    freshness metadata and refreshes the Blender image after the background
    render finishes. Reload does not pack immediately.
@@ -38,9 +38,10 @@ sidecar PNG cache and not a Python compositor:
 
 1. Install the native renderer plus the Blender add-on.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
-3. The add-on creates a generated Blender `Image`, calls the packaged native
-   Rust/wgpu worker in the background, and uploads the returned RGBA pixels into
-   that image on the main thread.
+3. The add-on calls the packaged native Rust/wgpu worker in the background.
+   Initial import creates the generated Blender `Image` only after the worker
+   returns real canvas pixels; reload updates the existing generated image on
+   the main thread.
 4. The add-on records `.clip` source metadata on the image and marks successful
    renders as needing pack. Dirty images are packed either by the `Pack Now`
    button or automatically from Blender's `save_pre` handler before saving the
@@ -61,8 +62,8 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 - Import menu entry: `File > Import > Clip Studio (.clip)`.
 - Import completion shows the new generated image in any Image Editor or UV
-  Editor areas already open on the current screen. It does not create new
-  editors or change the user's workspace layout.
+  Editor areas already open on the current screen. It does not create a
+  placeholder image, create new editors, or change the user's workspace layout.
 - Image Editor N-panel: `Image > Clip Studio`.
   - `Reload from .clip`
   - `Pack Now`
@@ -76,9 +77,10 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 ## Interaction Principles
 
 - Keep the Blender UI responsive while reloading large `.clip` files.
-- Keep generated images source-tracked immediately, but defer persistence cost:
-  reload marks images as needing pack, `Pack Now` packs the current pixels on
-  demand, and `save_pre` packs dirty native images before the `.blend` is saved.
+- Keep generated images source-tracked once real pixels exist, but defer
+  persistence cost: reload marks images as needing pack, `Pack Now` packs the
+  current pixels on demand, and `save_pre` packs dirty native images before the
+  `.blend` is saved.
 - Make failures visible through Blender reports for direct actions and through
   image-level status/error metadata for background work.
 - Avoid adding CSP-editing concepts to Blender. The add-on is read-only and only presents the flattened canvas.
