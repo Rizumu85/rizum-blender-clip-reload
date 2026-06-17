@@ -126,31 +126,14 @@ fn set_lum_rec601(value: vec3<f32>, target_lum: f32) -> vec3<f32> {
 }
 
 fn set_lum_saturation(value: vec3<f32>, target_lum: f32, base_sat: f32) -> vec3<f32> {
-    var out = value + vec3<f32>(target_lum - lum(value));
-    let out_lum = lum(out);
-    let out_min = min3(out);
-    let out_max = max3(out);
-    if (out_min < 0.0) {
-        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
-            (out_lum / max(out_lum - out_min, 0.000001));
-    }
-    let clipped_high = out_max > 1.0;
-    if (clipped_high) {
-        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
-            ((1.0 - out_lum) / max(out_max - out_lum, 0.000001));
-        if (base_sat > (4.0 / 255.0)) {
-            let ceiled = ceil_rgb_u8(out);
-            let clipped_min = min3(out);
-            if (out.r <= clipped_min + 0.000001) {
-                out.r = ceiled.r;
-            }
-            if (out.g <= clipped_min + 0.000001) {
-                out.g = ceiled.g;
-            }
-            if (out.b <= clipped_min + 0.000001) {
-                out.b = ceiled.b;
-            }
-        }
+    let needs_ceil = base_sat > (4.0 / 255.0) && max3(value + vec3<f32>(target_lum - lum(value))) > 1.0;
+    var out = set_lum(value, target_lum);
+    if (needs_ceil) {
+        let ceiled = ceil_rgb_u8(out);
+        let clipped_min = min3(out);
+        if (out.r <= clipped_min + 0.000001) { out.r = ceiled.r; }
+        if (out.g <= clipped_min + 0.000001) { out.g = ceiled.g; }
+        if (out.b <= clipped_min + 0.000001) { out.b = ceiled.b; }
     }
     return out;
 }
