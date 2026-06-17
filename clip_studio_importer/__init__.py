@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 52),
+    "version": (0, 8, 53),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -325,6 +325,15 @@ def _support_diagnostic_text(img) -> str:
     last_seconds = _image_float_property(img, native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY)
     if last_seconds:
         lines.append(f"Last render duration: {_format_seconds(last_seconds)}")
+    diff_mode = str(img.get(native_bridge.CLIP_RELOAD_DIFF_MODE_KEY, "") or "")
+    if diff_mode:
+        patch_count = _image_int_property(img, native_bridge.CLIP_RELOAD_PATCH_COUNT_KEY)
+        if diff_mode == "patch":
+            lines.append(f"Reload diff: patch ({patch_count} rects)")
+        elif diff_mode == "no_change":
+            lines.append("Reload diff: no changed tiles")
+        else:
+            lines.append("Reload diff: full")
     phase_lines = _timing_phase_lines(img)
     if phase_lines:
         lines.append("Timing phases:")
@@ -456,7 +465,11 @@ def _schedule_async_decode(
         _in_flight.add(clip_path)
 
     img = bpy.data.images.get(image_name) if image_name else None
+    previous_manifest_json = ""
     if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
+        previous_manifest_json = str(
+            img.get(native_bridge.CLIP_RELOAD_MANIFEST_KEY, "") or ""
+        )
         img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
         native_bridge.write_reload_status(
             img,
@@ -472,6 +485,7 @@ def _schedule_async_decode(
             create_on_success,
             show_on_success,
             auto_pack_on_success,
+            previous_manifest_json,
         ),
         daemon=True,
     ).start()
@@ -675,6 +689,7 @@ def _async_decode(
     create_on_success: bool = False,
     show_on_success: bool = False,
     auto_pack_on_success: bool = False,
+    previous_manifest_json: str = "",
 ):
     """Worker-thread entry point for native render.
 
@@ -688,6 +703,7 @@ def _async_decode(
     try:
         native_result = native_bridge.render_clip_rgba8(
             clip_path,
+            previous_manifest_json=previous_manifest_json or None,
         )
         success = True
     except Exception as exc:

@@ -391,6 +391,22 @@ Blender conclusions:
   temporary/internal, with no persistent sidecar artifact and no fallback
   compositor.
 
+Implemented diff-reload seam:
+
+- The add-on now stores a native reload manifest on the generated Blender
+  Image. The packaged worker can compare that manifest with the current `.clip`
+  render graph and raster/mask CHNKExta compressed-tile fingerprints, then
+  return `full`, `patch`, or `no_change` metadata. The Blender bridge applies
+  patch payload rows directly to dirty `Image.pixels` rects using bottom-row
+  Blender coordinates, avoiding full `foreach_set` for same-graph tile edits.
+- This milestone is intentionally conservative. Canvas/root changes, visible
+  node-order changes, and non-raster semantic changes still promote to full
+  image updates. The current short-lived worker still renders through the
+  existing full native path before slicing patch bytes, so native GPU/DAG cache
+  reuse remains future work. The important accepted seam is now present:
+  future persistent worker or tile-DAG cache invalidation can replace patch
+  production without changing the Blender image-update protocol.
+
 ## Non-Goals
 
 - Do not add a CPU compositor fallback.

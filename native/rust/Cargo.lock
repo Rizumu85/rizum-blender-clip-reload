@@ -187,6 +187,8 @@ dependencies = [
  "clip_gpu",
  "clip_graph",
  "clip_model",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

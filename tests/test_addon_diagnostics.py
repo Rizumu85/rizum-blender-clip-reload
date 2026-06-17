@@ -759,7 +759,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         original_render = addon.native_bridge.render_clip_rgba8
         original_register = addon.bpy.app.timers.register
         timer_callbacks = []
-        addon.native_bridge.render_clip_rgba8 = lambda _path: result
+        addon.native_bridge.render_clip_rgba8 = lambda _path, **_kwargs: result
         addon.bpy.app.timers.register = (
             lambda callback, **kwargs: timer_callbacks.append((callback, kwargs))
         )
@@ -853,7 +853,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         )
         original_render = addon.native_bridge.render_clip_rgba8
         original_register = addon.bpy.app.timers.register
-        addon.native_bridge.render_clip_rgba8 = lambda _path: result
+        addon.native_bridge.render_clip_rgba8 = lambda _path, **_kwargs: result
         addon.bpy.app.timers.register = lambda callback, **_kwargs: callback()
         try:
             addon._async_decode("C:/art/sample.clip", "sample.clip")

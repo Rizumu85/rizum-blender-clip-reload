@@ -23,9 +23,13 @@ native_bridge = _load_native_bridge()
 class FakePixels:
     def __init__(self) -> None:
         self.values = None
+        self.slices = []
 
     def foreach_set(self, values) -> None:
         self.values = list(values)
+
+    def __setitem__(self, key, values) -> None:
+        self.slices.append((key, list(values)))
 
 
 class FakeColorSettings:
@@ -83,7 +87,7 @@ class FakeBpy:
 
 
 class FakeRenderer:
-    def render_rgba8(self, clip_path):
+    def render_rgba8(self, clip_path, **_kwargs):
         return native_bridge.NativeRenderResult(
             clip_path=str(clip_path),
             width=1,
@@ -495,6 +499,99 @@ class NativeBridgeTests(unittest.TestCase):
             native_bridge.RELOAD_STATUS_REFRESHING,
         )
         self.assertEqual(image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY], "10.0")
+
+    def test_create_or_update_applies_patch_rows_to_existing_image(self) -> None:
+        bpy = FakeBpy()
+        image = FakeImage("sample", 4, 4)
+        result = native_bridge.NativeRenderResult(
+            clip_path="sample.clip",
+            width=4,
+            height=4,
+            root_layer_id=2,
+            layer_count=3,
+            external_data_count=4,
+            renderer_abi=native_bridge.EXPECTED_ABI_VERSION,
+            renderer_version="0.1.0-test",
+            source_mtime=123.5,
+            source_size=8,
+            source_sha256="abcd1234",
+            pixels_rgba8=bytes(
+                [
+                    255,
+                    0,
+                    0,
+                    255,
+                    0,
+                    255,
+                    0,
+                    255,
+                    0,
+                    0,
+                    255,
+                    255,
+                    255,
+                    255,
+                    0,
+                    255,
+                ]
+            ),
+            support_summary=None,
+            reload_manifest_json='{"abi":1}',
+            reload_diff_mode="patch",
+            reload_diff_reason="source tile payload changed",
+            patches=(
+                native_bridge.NativeRenderPatch(
+                    x=1,
+                    y=2,
+                    width=2,
+                    height=2,
+                    byte_offset=0,
+                ),
+            ),
+        )
+
+        native_bridge.create_or_update_image(bpy, result, image=image)
+
+        self.assertIsNone(image.pixels.values)
+        self.assertEqual(len(image.pixels.slices), 2)
+        first_key, first_values = image.pixels.slices[0]
+        second_key, second_values = image.pixels.slices[1]
+        self.assertEqual(first_key, slice(20, 28, None))
+        self.assertEqual(second_key, slice(4, 12, None))
+        self.assertEqual(first_values, [1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
+        self.assertEqual(second_values, [0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0])
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_MANIFEST_KEY], '{"abi":1}')
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_DIFF_MODE_KEY], "patch")
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_PATCH_COUNT_KEY], 1)
+
+    def test_create_or_update_no_change_updates_properties_without_pixels(self) -> None:
+        bpy = FakeBpy()
+        image = FakeImage("sample", 1, 1)
+        result = native_bridge.NativeRenderResult(
+            clip_path="sample.clip",
+            width=1,
+            height=1,
+            root_layer_id=2,
+            layer_count=3,
+            external_data_count=4,
+            renderer_abi=native_bridge.EXPECTED_ABI_VERSION,
+            renderer_version="0.1.0-test",
+            source_mtime=123.5,
+            source_size=8,
+            source_sha256="abcd1234",
+            pixels_rgba8=b"",
+            support_summary=None,
+            reload_manifest_json='{"abi":1}',
+            reload_diff_mode="no_change",
+            reload_diff_reason="reload manifest is unchanged",
+        )
+
+        native_bridge.create_or_update_image(bpy, result, image=image)
+
+        self.assertIsNone(image.pixels.values)
+        self.assertEqual(image.pixels.slices, [])
+        self.assertFalse(image.updated)
+        self.assertEqual(image[native_bridge.CLIP_RELOAD_DIFF_MODE_KEY], "no_change")
 
     def test_update_existing_image_rejects_size_mismatch(self) -> None:
         bpy = FakeBpy()

@@ -13,6 +13,7 @@ mod filter_lut;
 mod gpu_api;
 mod gpu_provider;
 mod region;
+mod reload_diff;
 mod results;
 mod selector_gpu;
 mod selector_gpu_resources;
@@ -27,6 +28,10 @@ mod tile_silo_occupancy;
 mod tile_silo_options;
 
 pub use error::RuntimeError;
+pub use reload_diff::{
+    ReloadDiffManifest, ReloadDiffMode, ReloadDiffNode, ReloadDiffPlan, ReloadDiffSource,
+    ReloadDiffTile, ReloadPatchRect,
+};
 pub use results::{
     DrawRasterLayerGpuResult, NativeTileSiloEstimateResult, NormalRasterStackGpuResult,
     NormalRasterStackPixelTraceInput, NormalRasterStackPixelTraceResult,

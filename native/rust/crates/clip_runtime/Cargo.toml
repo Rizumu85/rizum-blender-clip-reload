@@ -11,3 +11,7 @@ clip_file = { path = "../clip_file" }
 clip_gpu = { path = "../clip_gpu" }
 clip_graph = { path = "../clip_graph" }
 clip_model = { path = "../clip_model" }
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"

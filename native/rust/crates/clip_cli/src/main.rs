@@ -21,7 +21,7 @@ fn main() {
     let _program = args.next();
     let Some(path) = args.next() else {
         eprintln!(
-            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json>] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--tile-silo-estimate] [--tile-size <px>]"
+            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--tile-silo-estimate] [--tile-size <px>]"
         );
         process::exit(2);
     };
@@ -43,9 +43,22 @@ fn main() {
         &options.blender_render_rgba_path,
         &options.blender_render_json_path,
     ) {
-        if let Err(err) =
-            blender_worker::write_blender_render_files(&mut session, rgba_path, json_path)
-        {
+        let previous_manifest = match &options.blender_reload_old_json_path {
+            Some(path) => match read_reload_manifest(path) {
+                Ok(manifest) => Some(manifest),
+                Err(err) => {
+                    eprintln!("failed to read Blender reload manifest {:?}: {err}", path);
+                    process::exit(1);
+                }
+            },
+            None => None,
+        };
+        if let Err(err) = blender_worker::write_blender_render_files(
+            &mut session,
+            rgba_path,
+            json_path,
+            previous_manifest.as_ref(),
+        ) {
             eprintln!(
                 "failed to render Blender worker files from {:?}: {err}",
                 path
@@ -458,6 +471,7 @@ struct CliOptions {
     compare_png_path: Option<PathBuf>,
     blender_render_rgba_path: Option<PathBuf>,
     blender_render_json_path: Option<PathBuf>,
+    blender_reload_old_json_path: Option<PathBuf>,
 }
 
 fn parse_options(args: Vec<OsString>) -> CliOptions {
@@ -538,6 +552,12 @@ fn parse_options(args: Vec<OsString>) -> CliOptions {
                 process::exit(2);
             };
             options.blender_render_json_path = Some(PathBuf::from(path));
+        } else if arg == "--blender-reload-old-json" {
+            let Some(path) = iter.next() else {
+                eprintln!("missing value after --blender-reload-old-json");
+                process::exit(2);
+            };
+            options.blender_reload_old_json_path = Some(PathBuf::from(path));
         } else if arg == "--plan-only" {
             options.plan_only = true;
         } else {
@@ -546,6 +566,11 @@ fn parse_options(args: Vec<OsString>) -> CliOptions {
         }
     }
     options
+}
+
+fn read_reload_manifest(path: &PathBuf) -> Result<clip_runtime::ReloadDiffManifest, String> {
+    let bytes = std::fs::read(path).map_err(|err| err.to_string())?;
+    serde_json::from_slice(&bytes).map_err(|err| err.to_string())
 }
 
 fn parse_next_u32(iter: &mut impl Iterator<Item = OsString>, label: &str) -> u32 {

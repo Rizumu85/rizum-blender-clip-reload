@@ -57,6 +57,9 @@ CLIP_SUPPORT_MAX_MASK_LAYER_KEY = "clip_support_max_mask_layer"
 CLIP_SUPPORT_MAX_MASK_WIDTH_KEY = "clip_support_max_mask_width"
 CLIP_SUPPORT_MAX_MASK_HEIGHT_KEY = "clip_support_max_mask_height"
 CLIP_SUPPORT_MAX_MASK_BYTES_KEY = "clip_support_max_mask_bytes"
+CLIP_RELOAD_MANIFEST_KEY = "clip_reload_manifest_json"
+CLIP_RELOAD_DIFF_MODE_KEY = "clip_reload_diff_mode"
+CLIP_RELOAD_PATCH_COUNT_KEY = "clip_reload_patch_count"
 
 RELOAD_STATUS_OK = "ok"
 RELOAD_STATUS_STALE = "stale_source"
@@ -95,6 +98,19 @@ class NativeRenderResult:
     support_summary: "NativeSupportSummary | None" = None
     worker_seconds: float | None = None
     output_read_seconds: float | None = None
+    reload_manifest_json: str = ""
+    reload_diff_mode: str = "full"
+    reload_diff_reason: str = ""
+    patches: tuple["NativeRenderPatch", ...] = ()
+
+
+@dataclass(frozen=True)
+class NativeRenderPatch:
+    x: int
+    y: int
+    width: int
+    height: int
+    byte_offset: int
 
 
 @dataclass(frozen=True)
@@ -373,12 +389,16 @@ def render_clip_rgba8(
     clip_path: str | os.PathLike[str],
     *,
     renderer: Any | None = None,
+    previous_manifest_json: str | None = None,
 ) -> NativeRenderResult:
     if renderer is not None:
         return renderer.render_rgba8(clip_path)
     worker_path = packaged_renderer_worker_path()
     if worker_path:
-        return NativeRendererWorker(worker_path).render_rgba8(clip_path)
+        return NativeRendererWorker(worker_path).render_rgba8(
+            clip_path,
+            previous_manifest_json=previous_manifest_json,
+        )
     raise NativeBridgeError("packaged native renderer worker not found; rebuild the add-on package")
 
 
@@ -408,7 +428,18 @@ def create_or_update_image(
     pack: bool = True,
     allow_resize: bool = False,
 ) -> Any:
-    if len(result.pixels_rgba8) != result.width * result.height * 4:
+    if result.reload_diff_mode == "patch":
+        expected_len = sum(patch.width * patch.height * 4 for patch in result.patches)
+        if len(result.pixels_rgba8) != expected_len:
+            raise NativeBridgeError("native renderer returned an invalid patch RGBA buffer length")
+        if image is None:
+            raise NativeBridgeError("native renderer returned a patch without an existing image")
+    elif result.reload_diff_mode == "no_change":
+        if result.pixels_rgba8:
+            raise NativeBridgeError("native renderer returned pixels for an unchanged reload")
+        if image is None:
+            raise NativeBridgeError("native renderer returned no-change without an existing image")
+    elif len(result.pixels_rgba8) != result.width * result.height * 4:
         raise NativeBridgeError("native renderer returned an invalid RGBA buffer length")
 
     upload_started = time.perf_counter()
@@ -423,21 +454,31 @@ def create_or_update_image(
     if hasattr(image, "colorspace_settings"):
         image.colorspace_settings.name = "sRGB"
 
-    convert_started = time.perf_counter()
-    pixels = _rgba8_to_blender_float_sequence(
-        result.pixels_rgba8,
-        result.width,
-        result.height,
-    )
-    convert_seconds = time.perf_counter() - convert_started
+    if result.reload_diff_mode == "patch":
+        convert_seconds, foreach_seconds = _apply_rgba8_patches_to_image(image, result)
+        update_started = time.perf_counter()
+        image.update()
+        update_seconds = time.perf_counter() - update_started
+    elif result.reload_diff_mode == "no_change":
+        convert_seconds = 0.0
+        foreach_seconds = 0.0
+        update_seconds = 0.0
+    else:
+        convert_started = time.perf_counter()
+        pixels = _rgba8_to_blender_float_sequence(
+            result.pixels_rgba8,
+            result.width,
+            result.height,
+        )
+        convert_seconds = time.perf_counter() - convert_started
 
-    foreach_started = time.perf_counter()
-    image.pixels.foreach_set(pixels)
-    foreach_seconds = time.perf_counter() - foreach_started
+        foreach_started = time.perf_counter()
+        image.pixels.foreach_set(pixels)
+        foreach_seconds = time.perf_counter() - foreach_started
 
-    update_started = time.perf_counter()
-    image.update()
-    update_seconds = time.perf_counter() - update_started
+        update_started = time.perf_counter()
+        image.update()
+        update_seconds = time.perf_counter() - update_started
 
     _write_source_properties(image, result)
     pack_seconds = 0.0
@@ -640,7 +681,12 @@ class NativeRendererWorker:
     def __init__(self, executable_path: str | os.PathLike[str]):
         self.executable_path = str(Path(executable_path).resolve())
 
-    def render_rgba8(self, clip_path: str | os.PathLike[str]) -> NativeRenderResult:
+    def render_rgba8(
+        self,
+        clip_path: str | os.PathLike[str],
+        *,
+        previous_manifest_json: str | None = None,
+    ) -> NativeRenderResult:
         source = str(Path(clip_path).resolve())
         with tempfile.TemporaryDirectory(prefix="rizum_clip_render_") as temp_dir:
             temp = Path(temp_dir)
@@ -654,6 +700,10 @@ class NativeRendererWorker:
                 "--blender-render-json",
                 str(json_path),
             ]
+            if previous_manifest_json:
+                old_manifest_path = temp / "old_manifest.json"
+                old_manifest_path.write_text(previous_manifest_json, encoding="utf-8")
+                command.extend(["--blender-reload-old-json", str(old_manifest_path)])
             creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
             worker_started = time.perf_counter()
             completed = subprocess.run(
@@ -680,7 +730,20 @@ class NativeRendererWorker:
 
         width = int(metadata["width"])
         height = int(metadata["height"])
-        if len(pixels) != width * height * 4:
+        reload_diff = metadata.get("reload_diff", {}) or {}
+        reload_mode = str(reload_diff.get("mode", "full") or "full")
+        reload_reason = str(reload_diff.get("reason", "") or "")
+        reload_manifest_json = _compact_json(reload_diff.get("manifest"))
+        patches = _worker_reload_patches(reload_diff.get("rects", []) or [])
+        if reload_mode == "patch":
+            expected_len = sum(patch.width * patch.height * 4 for patch in patches)
+        elif reload_mode == "no_change":
+            expected_len = 0
+        else:
+            expected_len = width * height * 4
+            reload_mode = "full"
+            patches = ()
+        if len(pixels) != expected_len:
             raise NativeBridgeError("native renderer worker returned an invalid RGBA buffer length")
 
         support = metadata.get("support", {})
@@ -733,6 +796,10 @@ class NativeRendererWorker:
             support_summary=support_summary,
             worker_seconds=worker_seconds,
             output_read_seconds=output_read_seconds,
+            reload_manifest_json=reload_manifest_json,
+            reload_diff_mode=reload_mode,
+            reload_diff_reason=reload_reason,
+            patches=patches,
         )
 
 
@@ -749,6 +816,35 @@ def _worker_unsupported_detail(item: Any) -> str:
     if reason:
         detail = f"{detail}: {reason}"
     return detail
+
+
+def _worker_reload_patches(rects: Any) -> tuple[NativeRenderPatch, ...]:
+    patches: list[NativeRenderPatch] = []
+    offset = 0
+    for item in rects:
+        x = int(item.get("x", 0) or 0)
+        y = int(item.get("y", 0) or 0)
+        width = int(item.get("width", 0) or 0)
+        height = int(item.get("height", 0) or 0)
+        if width <= 0 or height <= 0:
+            continue
+        patches.append(
+            NativeRenderPatch(
+                x=x,
+                y=y,
+                width=width,
+                height=height,
+                byte_offset=offset,
+            )
+        )
+        offset += width * height * 4
+    return tuple(patches)
+
+
+def _compact_json(value: Any) -> str:
+    if value is None:
+        return ""
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
 def source_file_sha256(path: str | os.PathLike[str]) -> str:
@@ -807,6 +903,15 @@ def _write_source_properties(image: Any, result: NativeRenderResult) -> None:
     image[CLIP_ROOT_LAYER_KEY] = result.root_layer_id
     image[CLIP_LAYER_COUNT_KEY] = result.layer_count
     image[CLIP_EXTERNAL_COUNT_KEY] = result.external_data_count
+    if result.reload_manifest_json:
+        try:
+            image[CLIP_RELOAD_MANIFEST_KEY] = result.reload_manifest_json
+        except Exception:
+            _delete_image_key(image, CLIP_RELOAD_MANIFEST_KEY)
+    else:
+        _delete_image_key(image, CLIP_RELOAD_MANIFEST_KEY)
+    image[CLIP_RELOAD_DIFF_MODE_KEY] = result.reload_diff_mode
+    image[CLIP_RELOAD_PATCH_COUNT_KEY] = len(result.patches)
     _write_support_properties(image, result.support_summary)
     write_reload_status(image, RELOAD_STATUS_OK)
 
@@ -917,6 +1022,42 @@ def _rgba8_to_blender_float_sequence(pixels: bytes, width: int, height: int) -> 
             start = y * row_len
             values.extend(value / 255.0 for value in pixels[start : start + row_len])
         return values
+
+
+def _rgba8_row_to_blender_float_sequence(pixels: bytes) -> Any:
+    try:
+        import numpy as np
+
+        return np.frombuffer(pixels, dtype=np.uint8).astype(np.float32) / np.float32(255.0)
+    except Exception:
+        return array("f", (value / 255.0 for value in pixels))
+
+
+def _apply_rgba8_patches_to_image(image: Any, result: NativeRenderResult) -> tuple[float, float]:
+    convert_seconds = 0.0
+    foreach_seconds = 0.0
+    for patch in result.patches:
+        row_len = patch.width * 4
+        patch_len = row_len * patch.height
+        patch_bytes = result.pixels_rgba8[
+            patch.byte_offset : patch.byte_offset + patch_len
+        ]
+        if len(patch_bytes) != patch_len:
+            raise NativeBridgeError("native renderer patch buffer is truncated")
+        for row in range(patch.height):
+            row_start = row * row_len
+            row_end = row_start + row_len
+            convert_started = time.perf_counter()
+            values = _rgba8_row_to_blender_float_sequence(patch_bytes[row_start:row_end])
+            convert_seconds += time.perf_counter() - convert_started
+
+            blender_y = result.height - 1 - (patch.y + row)
+            pixel_start = (blender_y * result.width + patch.x) * 4
+            pixel_end = pixel_start + row_len
+            foreach_started = time.perf_counter()
+            image.pixels[pixel_start:pixel_end] = values
+            foreach_seconds += time.perf_counter() - foreach_started
+    return convert_seconds, foreach_seconds
 
 
 def _status_name(status: int) -> str:

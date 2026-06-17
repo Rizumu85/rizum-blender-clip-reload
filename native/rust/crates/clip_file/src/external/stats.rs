@@ -33,6 +33,7 @@ pub struct ExternalCompressedTile {
     pub tile_x: usize,
     pub tile_y: usize,
     pub compressed_bytes: usize,
+    pub compressed_hash: u64,
 }
 
 pub fn inspect_external_tile_blocks(
@@ -117,6 +118,7 @@ fn inspect_external_tile_blocks_inner(
                         tile_x: block.index % tile_cols,
                         tile_y: block.index / tile_cols,
                         compressed_bytes: compressed.len(),
+                        compressed_hash: stable_hash64(compressed),
                     });
                 }
             }
@@ -144,6 +146,15 @@ fn inspect_external_tile_blocks_inner(
         stats,
         compressed_tiles,
     })
+}
+
+fn stable_hash64(bytes: &[u8]) -> u64 {
+    let mut hash = 0xcbf2_9ce4_8422_2325u64;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
 }
 
 #[derive(Default)]

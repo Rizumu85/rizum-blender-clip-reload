@@ -47,15 +47,18 @@ Current focus:
 - Keep persistence explicit and cheap during reload: successful renders mark the
   image as needing pack, `Pack Now` packs immediately on user request, and
   Blender `save_pre` packs dirty native images before saving the `.blend`.
+- Keep reload updates manifest-driven where possible: the worker should compare
+  the prior reload manifest with the current `.clip` graph/source chunks, return
+  no-change or dirty-rect patch payloads for same-graph tile edits, and fall
+  back to full image updates for structural or broad changes.
 - Keep native render state visible in Blender: image metadata and the Image
   Editor panel should report ready, refreshing, stale, missing-source,
   render-error states, and elapsed/last render timing.
-- Surface native support summaries in Blender from the metadata-only C ABI
-  support check, including resource statistics, expandable unsupported
-  layer/node details, copyable diagnostic text, and searchable Text Editor
-  reports. Compact unsupported layer/node/kind locators may be copied for issue
-  reports, but the Blender add-on must not grow layer-navigation or CSP
-  layer-management UI.
+- Surface only actionable native support failures in the normal Blender UI.
+  Compact unsupported layer/node/kind locators may be copied for issue reports,
+  while renderer version, resource statistics, full-support summaries, and other
+  debug metadata stay in copied/opened diagnostics instead of the panel. The
+  Blender add-on must not grow layer-navigation or CSP layer-management UI.
 - Rebuild `clip_studio_importer.zip` whenever package code changes.
 
 ## Direction 3: Native Image Loading Rewrite
@@ -77,12 +80,16 @@ Current policy:
   needing pack, with `Pack Now` and a `save_pre` handler providing persistence.
   Render failures are stored as image metadata and shown in the Image Editor
   panel, while successful renders clear old error metadata. The add-on records
-  elapsed/last render timing for manual and background renders. The C ABI
-  exposes metadata-only native support summaries,
-  and the add-on stores/displays source count, unsupported count, raster/mask
-  resource statistics, expandable unsupported layer/node detail lines, compact
-  unsupported layer/node/kind issue locators, and copyable/searchable support
-  diagnostics. `tools/build_blender_addon.py`
+  elapsed/last render timing for manual and background renders. Reloads store a
+  native manifest on the generated image and pass it back to the packaged
+  worker; same-graph raster/mask compressed-tile edits can return dirty-rect
+  patch payloads or no-change metadata instead of forcing a full Blender
+  `foreach_set`, while canvas/root/node-order/container/filter/paper semantic
+  changes still use conservative full image updates. The C ABI exposes
+  metadata-only native support summaries, and the add-on stores native support
+  metadata but displays only unsupported counts, expandable unsupported
+  layer/node detail lines, compact unsupported layer/node/kind issue locators,
+  and copyable/searchable diagnostics when failures exist. `tools/build_blender_addon.py`
   builds the installable zip with `__init__.py`, `native_bridge.py`, and the
   locally built release `clip_cli` worker plus `clip_capi` library under
   `clip_studio_importer/native/`;
