@@ -43,7 +43,43 @@ pub(crate) fn write_blender_render_files_with_renderer(
             Some((&support.unsupported, support.source_count)),
             0,
             Some(support.resource_stats),
+            clip_runtime::GpuTextureCacheStats::default(),
             reload_plan_metadata(&reload_plan, 0),
+        );
+        let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
+        fs::write(json_path, metadata).map_err(|err| err.to_string())?;
+        return Ok(());
+    }
+
+    if reload_plan.mode == ReloadDiffMode::Patch
+        && let Some(renderer) = renderer
+    {
+        let render = renderer
+            .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
+            .map_err(|err| err.to_string())?;
+        if !render.unsupported.is_empty() {
+            return Err(RuntimeError::UnsupportedRenderPlan {
+                unsupported: render.unsupported,
+            }
+            .to_string());
+        }
+        let source_count = render.source_count;
+        let stats = render.resource_stats;
+        let texture_cache_stats = render.texture_cache_stats;
+        let unsupported_items = render.unsupported;
+        let payload_bytes = render.payload.len();
+        fs::write(rgba_path, &render.payload).map_err(|err| err.to_string())?;
+
+        let metadata = base_metadata(
+            session,
+            root_layer_id,
+            layer_count,
+            external_data_count,
+            Some((&unsupported_items, source_count)),
+            payload_bytes,
+            Some(stats),
+            texture_cache_stats,
+            reload_plan_metadata(&reload_plan, payload_bytes),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -63,6 +99,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
     }
     let source_count = render.source_count;
     let stats = render.resource_stats;
+    let texture_cache_stats = render.texture_cache_stats;
     let unsupported_items = render.unsupported;
     let image = render
         .image
@@ -87,6 +124,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
         Some((&unsupported_items, source_count)),
         payload_bytes,
         Some(stats),
+        texture_cache_stats,
         reload_plan_metadata(&reload_plan, payload_bytes),
     );
     let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
@@ -102,6 +140,7 @@ fn base_metadata(
     support: Option<(&[clip_runtime::SimpleRasterStackUnsupported], usize)>,
     payload_bytes: usize,
     stats: Option<clip_runtime::NormalRasterStackResourceStats>,
+    texture_cache: clip_runtime::GpuTextureCacheStats,
     reload_diff: serde_json::Value,
 ) -> serde_json::Value {
     let canvas = session.summary().canvas;
@@ -137,6 +176,15 @@ fn base_metadata(
         "renderer_version": env!("CARGO_PKG_VERSION"),
         "payload_bytes": payload_bytes,
         "reload_diff": reload_diff,
+        "texture_cache": {
+            "raster_hits": texture_cache.raster_hits,
+            "raster_misses": texture_cache.raster_misses,
+            "mask_hits": texture_cache.mask_hits,
+            "mask_misses": texture_cache.mask_misses,
+            "cached_rasters": texture_cache.cached_rasters,
+            "cached_masks": texture_cache.cached_masks,
+            "cached_bytes": texture_cache.cached_bytes,
+        },
         "support": {
             "source_count": source_count,
             "unsupported_count": unsupported_items.len(),

@@ -118,7 +118,9 @@ where
     else {
         return Ok(false);
     };
-    let Some(pass_bounds) = union_optional(*dirty_bounds, Some(source_bounds)) else {
+    let Some(pass_bounds) =
+        state.clip_pass_bounds(union_optional(*dirty_bounds, Some(source_bounds)))
+    else {
         return Ok(false);
     };
 

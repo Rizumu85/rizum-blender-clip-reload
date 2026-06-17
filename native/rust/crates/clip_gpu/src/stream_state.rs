@@ -124,6 +124,7 @@ pub(crate) struct StreamingEncoder<'a, E> {
     queue: &'a wgpu::Queue,
     label: &'static str,
     encoder: Option<wgpu::CommandEncoder>,
+    render_bounds: Option<CanvasRect>,
     drawn_resources: Vec<GpuRasterResourceInfo>,
     encoded_passes_since_flush: usize,
     retained_resource_bytes: usize,
@@ -148,6 +149,15 @@ where
         queue: &'a wgpu::Queue,
         label: &'static str,
     ) -> Self {
+        Self::new_with_render_bounds(device, queue, label, None)
+    }
+
+    pub(crate) fn new_with_render_bounds(
+        device: &'a wgpu::Device,
+        queue: &'a wgpu::Queue,
+        label: &'static str,
+        render_bounds: Option<CanvasRect>,
+    ) -> Self {
         Self {
             device,
             queue,
@@ -156,6 +166,7 @@ where
                 device
                     .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(label) }),
             ),
+            render_bounds,
             drawn_resources: Vec::new(),
             encoded_passes_since_flush: 0,
             retained_resource_bytes: 0,
@@ -186,6 +197,18 @@ where
         self.tile_silo_pipeline
             .get_or_init(|| Rc::new(TileSiloPipeline::new(self.device)))
             .clone()
+    }
+
+    pub(crate) fn render_bounds(&self) -> Option<CanvasRect> {
+        self.render_bounds
+    }
+
+    pub(crate) fn clip_pass_bounds(&self, bounds: Option<CanvasRect>) -> Option<CanvasRect> {
+        match (bounds, self.render_bounds) {
+            (Some(bounds), Some(render_bounds)) => bounds.intersection(render_bounds),
+            (Some(bounds), None) => Some(bounds),
+            (None, _) => None,
+        }
     }
 
     pub(crate) fn clear_rgba8_texture_pair(

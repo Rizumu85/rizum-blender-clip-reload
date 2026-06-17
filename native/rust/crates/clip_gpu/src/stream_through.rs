@@ -32,7 +32,8 @@ pub(crate) fn render_through_group_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    let through_bounds = through_cache_bounds(provider, children, output_size);
+    let through_bounds =
+        through_cache_bounds(provider, children, output_size, state.render_bounds());
     let Some((cache_size, cache_origin, cache_global_bounds)) = through_bounds else {
         return Ok(false);
     };
@@ -172,13 +173,19 @@ fn through_cache_bounds<P>(
     provider: &P,
     children: &[crate::GpuNormalStackSource],
     output_size: CanvasSize,
+    render_bounds: Option<CanvasRect>,
 ) -> Option<(CanvasSize, (i32, i32), Option<CanvasRect>)>
 where
     P: GpuNormalStackResourceProvider,
 {
+    let restrict = |bounds: CanvasRect| match render_bounds {
+        Some(render_bounds) => bounds.intersection(render_bounds),
+        None => Some(bounds),
+    };
     match known_stack_bounds(provider, children, output_size) {
         KnownStackBounds::Empty => None,
         KnownStackBounds::Bounded(bounds) if Some(bounds) != CanvasRect::full(output_size) => {
+            let bounds = restrict(bounds)?;
             Some((
                 CanvasSize::new(bounds.width, bounds.height),
                 bounds.origin_i32(),
@@ -189,7 +196,14 @@ where
             if known_stack_activity(provider, children, output_size).is_empty() {
                 None
             } else {
-                Some((output_size, (0, 0), None))
+                match render_bounds {
+                    Some(bounds) => Some((
+                        CanvasSize::new(bounds.width, bounds.height),
+                        bounds.origin_i32(),
+                        Some(bounds),
+                    )),
+                    None => Some((output_size, (0, 0), None)),
+                }
             }
         }
     }

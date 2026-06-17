@@ -404,11 +404,14 @@ Implemented diff-reload seam:
   image updates. The worker now also has a persistent JSON-lines server mode
   that keeps one native process and reusable `RuntimeGpuRenderer` alive across
   Blender requests, avoiding repeated process startup and wgpu device
-  initialization on reload. It still renders through the existing native path
-  before slicing patch bytes, so cross-reload GPU texture/DAG cache reuse
-  remains future work. The important accepted seam is now present: future
-  tile-DAG cache invalidation can replace patch production without changing the
-  Blender image-update protocol.
+  initialization on reload. Persistent server reloads also keep a raster/mask
+  GPU texture cache keyed by source metadata plus CHNKExta compressed-tile
+  fingerprints, so unchanged input textures are reused across requests. Patch
+  reloads now render the stack through dirty-region GPU targets and read back
+  only those patch targets instead of rendering the full canvas and slicing it
+  afterward. A fuller per-subtree tile-DAG cache is still a later native
+  renderer milestone, but the Blender image-update protocol no longer requires
+  full-canvas native rendering for same-graph patch reloads.
 
 ## Non-Goals
 

@@ -20,8 +20,10 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    worker finishes. Reload passes the previous native reload manifest back to a
    persistent native worker when available; unchanged renders only update
    metadata, matching graph/source tile changes update dirty image rects, and
-   structural changes fall back to a full image update. Reload does not pack
-   immediately.
+   structural changes fall back to a full image update. The persistent worker
+   reuses unchanged raster/mask GPU textures and renders matching patch reloads
+   as dirty-region GPU outputs rather than full-canvas renders. Reload does not
+   pack immediately.
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
 6. Add-on preferences report whether the packaged native renderer worker is
    present; users do not choose a renderer path.
@@ -94,7 +96,8 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   canvas, root, node-order, container/filter/paper semantic, or large dirty-area
   changes conservatively use full image updates. Keep the packaged worker
   process alive across requests so reload avoids repeated process startup and
-  wgpu device initialization.
+  wgpu device initialization, reuses unchanged GPU input textures, and produces
+  patch payloads from dirty-region GPU renders.
 - Make failures visible through Blender reports for direct actions and through
   image-level status/error metadata for background work.
 - Avoid adding CSP-editing concepts to Blender. The add-on is read-only and only presents the flattened canvas.

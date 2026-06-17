@@ -5,6 +5,7 @@ use clip_model::{CanvasSize, LayerId};
 
 use crate::{NormalRasterStackResourceStats, RuntimeError, source_crop};
 
+pub(crate) mod cache;
 mod sparse;
 
 #[derive(Clone, Debug)]
@@ -88,6 +89,7 @@ pub(crate) struct RuntimeGpuResourceProvider<'a> {
     raster_offsets: HashMap<clip_gpu::GpuRasterResourceKey, (i32, i32)>,
     pub(crate) mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
     reported_masks: HashSet<clip_gpu::GpuMaskResourceKey>,
+    texture_cache: Option<&'a mut cache::PersistentGpuTextureCache>,
 }
 
 impl<'a> RuntimeGpuResourceProvider<'a> {
@@ -105,7 +107,19 @@ impl<'a> RuntimeGpuResourceProvider<'a> {
             raster_offsets: HashMap::new(),
             mask_resources: Vec::new(),
             reported_masks: HashSet::new(),
+            texture_cache: None,
         })
+    }
+
+    pub(crate) fn with_texture_cache(
+        container: &'a clip_file::container::ClipContainer,
+        canvas: CanvasSize,
+        plan: GpuResourcePlan,
+        texture_cache: &'a mut cache::PersistentGpuTextureCache,
+    ) -> Result<Self, RuntimeError> {
+        let mut provider = Self::new(container, canvas, plan)?;
+        provider.texture_cache = Some(texture_cache);
+        Ok(provider)
     }
 }
 
@@ -148,6 +162,14 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         let visible = self
             .decode_region_for_source(source, &meta.source)?
             .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
+        let cache_key = cache::raster_texture_cache_key(self.container, &meta.source, visible)?;
+        if let Some(texture_cache) = self.texture_cache.as_mut() {
+            if let Some(cache) = texture_cache.raster_cache(&cache_key) {
+                self.raster_offsets
+                    .insert(source.key, (visible.offset_x, visible.offset_y));
+                return Ok(cache);
+            }
+        }
         let image = clip_file::read_resolved_raster_layer_source_rgba_region_from_container(
             self.container,
             &meta.source,
@@ -162,7 +184,11 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             size: CanvasSize::new(image.width, image.height),
             pixels: &image.pixels,
         };
-        Ok(renderer.upload_raster_resources(&[upload])?)
+        let cache = renderer.upload_raster_resources(&[upload])?;
+        if let Some(texture_cache) = self.texture_cache.as_mut() {
+            texture_cache.insert_raster(cache_key, cache.clone());
+        }
+        Ok(cache)
     }
 
     fn raster_run_atlas_tile_pixels(
@@ -170,6 +196,9 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         sources: &[clip_gpu::GpuRasterAtlasSource],
         atlas_size: CanvasSize,
     ) -> Result<Option<clip_gpu::GpuRasterAtlasTilePixels>, Self::Error> {
+        if self.texture_cache.is_some() {
+            return Ok(None);
+        }
         self.build_raster_run_atlas_tile_pixels(sources, atlas_size)
     }
 
@@ -185,6 +214,13 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             })
         })?;
         let mask_payload = read_mask_payload_for_upload(self.container, self.canvas, &meta.source)?;
+        let cache_key = cache::mask_texture_cache_key(self.container, &meta.source, &mask_payload)?;
+        if let Some(texture_cache) = self.texture_cache.as_mut() {
+            if let Some(cache) = texture_cache.mask_cache(&cache_key) {
+                self.report_mask_infos(&cache);
+                return Ok(cache);
+            }
+        }
         let upload = clip_gpu::GpuMaskUpload {
             layer_id: meta.layer_id,
             render_node_id: meta.render_node_id,
@@ -199,10 +235,9 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             pixels: &mask_payload.image.pixels,
         };
         let cache = renderer.upload_mask_resources(&[upload])?;
-        for info in cache.resource_infos() {
-            if self.reported_masks.insert(info.key) {
-                self.mask_resources.push(info);
-            }
+        self.report_mask_infos(&cache);
+        if let Some(texture_cache) = self.texture_cache.as_mut() {
+            texture_cache.insert_mask(cache_key, cache.clone());
         }
         Ok(cache)
     }
@@ -319,9 +354,17 @@ impl RuntimeGpuResourceProvider<'_> {
             resources,
         }))
     }
+
+    fn report_mask_infos(&mut self, cache: &clip_gpu::GpuMaskResourceCache) {
+        for info in cache.resource_infos() {
+            if self.reported_masks.insert(info.key) {
+                self.mask_resources.push(info);
+            }
+        }
+    }
 }
 
-fn rgba_byte_len(size: CanvasSize) -> Result<usize, RuntimeError> {
+pub(crate) fn rgba_byte_len(size: CanvasSize) -> Result<usize, RuntimeError> {
     usize::try_from(
         u64::from(size.width)
             .checked_mul(u64::from(size.height))

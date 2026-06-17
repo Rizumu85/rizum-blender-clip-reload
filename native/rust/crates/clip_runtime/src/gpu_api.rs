@@ -1,8 +1,10 @@
+use std::cell::RefCell;
+
 use clip_graph::RenderNodeKind;
 use clip_model::LayerId;
 
 use crate::blend::StrictRasterBlendMode;
-use crate::gpu_provider::RuntimeGpuResourceProvider;
+use crate::gpu_provider::{RuntimeGpuResourceProvider, cache::PersistentGpuTextureCache};
 use crate::stack_plan::{
     GpuRenderStackSelection, PlannedDecodedRaster, StrictRasterStackDraw, StrictRasterStackOptions,
     byte_diff_count, decoded_containers_in_draws, decoded_lut_filters_in_draws,
@@ -10,19 +12,28 @@ use crate::stack_plan::{
     sample_rgba8, stack_draw_trace_inputs, stack_draw_trace_label,
 };
 use crate::{
-    ClipSession, DrawRasterLayerGpuResult, NormalRasterStackGpuResult,
-    NormalRasterStackPixelTraceResult, NormalRasterStackPixelTraceSample, RuntimeError,
-    SimpleRasterStackGpuResult,
+    ClipSession, DrawRasterLayerGpuResult, GpuTextureCacheStats, NormalRasterStackGpuPatchResult,
+    NormalRasterStackGpuResult, NormalRasterStackPixelTraceResult,
+    NormalRasterStackPixelTraceSample, ReloadPatchRect, RuntimeError, SimpleRasterStackGpuResult,
 };
 
 pub struct RuntimeGpuRenderer {
     renderer: clip_gpu::GpuRenderer,
+    texture_cache: RefCell<Option<PersistentGpuTextureCache>>,
 }
 
 impl RuntimeGpuRenderer {
     pub fn new() -> Result<Self, RuntimeError> {
         Ok(Self {
             renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
+            texture_cache: RefCell::new(None),
+        })
+    }
+
+    pub fn new_with_texture_cache() -> Result<Self, RuntimeError> {
+        Ok(Self {
+            renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
+            texture_cache: RefCell::new(Some(PersistentGpuTextureCache::new())),
         })
     }
 
@@ -30,7 +41,21 @@ impl RuntimeGpuRenderer {
         &self,
         session: &ClipSession,
     ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
-        session.draw_normal_raster_stack_with_renderer(&self.renderer)
+        let mut texture_cache = self.texture_cache.borrow_mut();
+        session.draw_normal_raster_stack_with_renderer(&self.renderer, texture_cache.as_mut())
+    }
+
+    pub fn draw_normal_raster_stack_patches(
+        &self,
+        session: &ClipSession,
+        rects: &[ReloadPatchRect],
+    ) -> Result<NormalRasterStackGpuPatchResult, RuntimeError> {
+        let mut texture_cache = self.texture_cache.borrow_mut();
+        session.draw_normal_raster_stack_patches_with_renderer(
+            &self.renderer,
+            texture_cache.as_mut(),
+            rects,
+        )
     }
 }
 
@@ -223,12 +248,14 @@ impl ClipSession {
     pub fn draw_normal_raster_stack_via_gpu(
         &self,
     ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
-        RuntimeGpuRenderer::new()?.draw_normal_raster_stack(self)
+        let renderer = clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?;
+        self.draw_normal_raster_stack_with_renderer(&renderer, None)
     }
 
     fn draw_normal_raster_stack_with_renderer(
         &self,
         renderer: &clip_gpu::GpuRenderer,
+        mut texture_cache: Option<&mut PersistentGpuTextureCache>,
     ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
         let selection = self.select_gpu_normal_render_stack(StrictRasterStackOptions {
             allow_alpha_compositing: true,
@@ -265,6 +292,7 @@ impl ClipSession {
                 image: None,
                 source_count,
                 resource_stats: resource_plan.resource_stats(),
+                texture_cache_stats: GpuTextureCacheStats::default(),
                 drawn_resources: Vec::new(),
                 mask_resources: Vec::new(),
                 unsupported,
@@ -272,13 +300,33 @@ impl ClipSession {
         }
 
         let resource_stats = resource_plan.resource_stats();
-        let mut provider =
-            RuntimeGpuResourceProvider::new(&self.container, self.summary.canvas, resource_plan)?;
+        let mut provider = match texture_cache.as_deref_mut() {
+            Some(cache) => {
+                cache.begin_frame();
+                RuntimeGpuResourceProvider::with_texture_cache(
+                    &self.container,
+                    self.summary.canvas,
+                    resource_plan,
+                    cache,
+                )?
+            }
+            None => RuntimeGpuResourceProvider::new(
+                &self.container,
+                self.summary.canvas,
+                resource_plan,
+            )?,
+        };
         let output = renderer.draw_normal_stack_with_provider_to_rgba8(
             self.summary.canvas,
             &sources,
             &mut provider,
         )?;
+        let mask_resources = std::mem::take(&mut provider.mask_resources);
+        drop(provider);
+        let texture_cache_stats = texture_cache
+            .as_deref()
+            .map(PersistentGpuTextureCache::frame_stats)
+            .unwrap_or_default();
 
         Ok(NormalRasterStackGpuResult {
             image: Some(clip_file::tiles::RgbaTileImage {
@@ -288,8 +336,104 @@ impl ClipSession {
             }),
             source_count,
             resource_stats,
+            texture_cache_stats,
             drawn_resources: output.drawn_resources,
-            mask_resources: provider.mask_resources,
+            mask_resources,
+            unsupported,
+        })
+    }
+
+    fn draw_normal_raster_stack_patches_with_renderer(
+        &self,
+        renderer: &clip_gpu::GpuRenderer,
+        mut texture_cache: Option<&mut PersistentGpuTextureCache>,
+        rects: &[ReloadPatchRect],
+    ) -> Result<NormalRasterStackGpuPatchResult, RuntimeError> {
+        let selection = self.select_gpu_normal_render_stack(StrictRasterStackOptions {
+            allow_alpha_compositing: true,
+            allow_paper: true,
+            allow_layer_opacity: true,
+            allow_masks: true,
+            allow_clipping_runs: true,
+            allow_container_isolation: true,
+            allow_through_groups: true,
+            allow_add_blend: true,
+            allow_add_glow_blend: true,
+            allow_color_burn_blend: true,
+            allow_color_dodge_blend: true,
+            allow_extended_blends: true,
+            allow_glow_dodge_blend: true,
+            allow_hard_mix_blend: true,
+            allow_hsl_blends: true,
+            allow_simple_blends: true,
+            allow_soft_light_blend: true,
+            allow_lut_filters: true,
+            allow_vivid_light_blend: true,
+            allow_w3c_blends: true,
+            allow_initial_terminal_container_elision: true,
+        })?;
+        let GpuRenderStackSelection {
+            sources,
+            resource_plan,
+            unsupported,
+        } = selection;
+        let source_count = sources.len();
+        let resource_stats = resource_plan.resource_stats();
+
+        if sources.is_empty() || rects.is_empty() {
+            return Ok(NormalRasterStackGpuPatchResult {
+                payload: Vec::new(),
+                source_count,
+                resource_stats,
+                texture_cache_stats: GpuTextureCacheStats::default(),
+                drawn_resources: Vec::new(),
+                mask_resources: Vec::new(),
+                unsupported,
+            });
+        }
+
+        let mut provider = match texture_cache.as_deref_mut() {
+            Some(cache) => {
+                cache.begin_frame();
+                RuntimeGpuResourceProvider::with_texture_cache(
+                    &self.container,
+                    self.summary.canvas,
+                    resource_plan,
+                    cache,
+                )?
+            }
+            None => RuntimeGpuResourceProvider::new(
+                &self.container,
+                self.summary.canvas,
+                resource_plan,
+            )?,
+        };
+        let mut payload = Vec::new();
+        let mut drawn_resources = Vec::new();
+        for rect in rects {
+            let output = renderer.draw_normal_stack_region_with_provider_to_rgba8(
+                self.summary.canvas,
+                clip_model::Rect::new(rect.x, rect.y, rect.width, rect.height),
+                &sources,
+                &mut provider,
+            )?;
+            payload.extend_from_slice(&output.pixels);
+            drawn_resources.extend(output.drawn_resources);
+        }
+        let mask_resources = std::mem::take(&mut provider.mask_resources);
+        drop(provider);
+        let texture_cache_stats = texture_cache
+            .as_deref()
+            .map(PersistentGpuTextureCache::frame_stats)
+            .unwrap_or_default();
+
+        Ok(NormalRasterStackGpuPatchResult {
+            payload,
+            source_count,
+            resource_stats,
+            texture_cache_stats,
+            drawn_resources,
+            mask_resources,
             unsupported,
         })
     }

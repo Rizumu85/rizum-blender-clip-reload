@@ -16,9 +16,32 @@ pub struct NormalRasterStackGpuResult {
     pub image: Option<clip_file::tiles::RgbaTileImage>,
     pub source_count: usize,
     pub resource_stats: NormalRasterStackResourceStats,
+    pub texture_cache_stats: GpuTextureCacheStats,
     pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
     pub mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
     pub unsupported: Vec<SimpleRasterStackUnsupported>,
+}
+
+#[derive(Debug)]
+pub struct NormalRasterStackGpuPatchResult {
+    pub payload: Vec<u8>,
+    pub source_count: usize,
+    pub resource_stats: NormalRasterStackResourceStats,
+    pub texture_cache_stats: GpuTextureCacheStats,
+    pub drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
+    pub mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
+    pub unsupported: Vec<SimpleRasterStackUnsupported>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct GpuTextureCacheStats {
+    pub raster_hits: usize,
+    pub raster_misses: usize,
+    pub mask_hits: usize,
+    pub mask_misses: usize,
+    pub cached_rasters: usize,
+    pub cached_masks: usize,
+    pub cached_bytes: usize,
 }
 
 #[derive(Debug)]

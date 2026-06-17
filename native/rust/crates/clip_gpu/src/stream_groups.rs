@@ -45,7 +45,8 @@ where
     let (raster_cache, source_view, effective_base, uploaded_source_bounds) =
         raster_view_with_provider(renderer, provider, state, output_size, base)?;
     let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-    let Some(pass_bounds) = pass_bounds_for_change(None, source_bounds) else {
+    let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(None, source_bounds))
+    else {
         return Ok(RenderedStreamingCache::empty());
     };
     let cache_size = CanvasSize::new(pass_bounds.width, pass_bounds.height);
@@ -266,7 +267,11 @@ pub(crate) fn render_container_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    let (cache_size, cache_origin) = match known_stack_bounds(provider, children, output_size) {
+    let (cache_size, cache_origin) = match clipped_known_stack_bounds(
+        state.render_bounds(),
+        known_stack_bounds(provider, children, output_size),
+        output_size,
+    ) {
         KnownStackBounds::Empty => return Ok(RenderedStreamingCache::empty()),
         KnownStackBounds::Bounded(bounds) => (
             CanvasSize::new(bounds.width, bounds.height),
@@ -318,4 +323,25 @@ where
         dirty_bounds,
         cache_origin,
     ))
+}
+
+fn clipped_known_stack_bounds(
+    render_bounds: Option<CanvasRect>,
+    stack_bounds: KnownStackBounds,
+    output_size: CanvasSize,
+) -> KnownStackBounds {
+    let Some(render_bounds) = render_bounds else {
+        return stack_bounds;
+    };
+    match stack_bounds {
+        KnownStackBounds::Empty => KnownStackBounds::Empty,
+        KnownStackBounds::Bounded(bounds) => bounds
+            .intersection(render_bounds)
+            .map(KnownStackBounds::Bounded)
+            .unwrap_or(KnownStackBounds::Empty),
+        KnownStackBounds::Unknown => CanvasRect::full(output_size)
+            .and_then(|bounds| bounds.intersection(render_bounds))
+            .map(KnownStackBounds::Bounded)
+            .unwrap_or(KnownStackBounds::Empty),
+    }
 }

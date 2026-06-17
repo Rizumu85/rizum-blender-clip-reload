@@ -15,7 +15,7 @@ struct RenderServerRequest {
 }
 
 pub(crate) fn run_blender_render_server() -> i32 {
-    let renderer = match RuntimeGpuRenderer::new() {
+    let renderer = match RuntimeGpuRenderer::new_with_texture_cache() {
         Ok(renderer) => renderer,
         Err(err) => {
             eprintln!("failed to initialize persistent native renderer: {err}");

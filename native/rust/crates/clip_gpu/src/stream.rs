@@ -1,4 +1,4 @@
-use clip_model::CanvasSize;
+use clip_model::{CanvasSize, Rect};
 
 use crate::lut_filter::{create_lut_filter_texture, encode_lut_filter_pass_scissored};
 use crate::pass::{
@@ -77,6 +77,7 @@ impl GpuRenderer {
             provider,
             &mut state,
             output_size,
+            (0, 0),
             sources,
             &accum_pair,
             previous_index,
@@ -102,6 +103,81 @@ impl GpuRenderer {
             pixels,
         })
     }
+
+    pub fn draw_normal_stack_region_with_provider_to_rgba8<P>(
+        &self,
+        output_size: CanvasSize,
+        region: Rect,
+        sources: &[GpuNormalStackSource],
+        provider: &mut P,
+    ) -> Result<GpuRasterStackOutput, P::Error>
+    where
+        P: GpuNormalStackResourceProvider,
+    {
+        if output_size.width == 0 || output_size.height == 0 {
+            return Err(P::Error::from(GpuRenderError::InvalidImageSize));
+        }
+        if sources.is_empty() {
+            return Err(P::Error::from(GpuRenderError::EmptyRasterStack));
+        }
+        let render_bounds = region_bounds(output_size, region).map_err(P::Error::from)?;
+        let region_size = CanvasSize::new(render_bounds.width, render_bounds.height);
+
+        let accum_usage = wgpu::TextureUsages::RENDER_ATTACHMENT
+            | wgpu::TextureUsages::TEXTURE_BINDING
+            | wgpu::TextureUsages::COPY_SRC;
+        let accum_pair = StreamingTexturePair::new(
+            &self.context.device,
+            "rizum_clip_provider_region_accum_a",
+            "rizum_clip_provider_region_accum_b",
+            region_size,
+            accum_usage,
+        );
+        let pipelines = NormalStackPipelines::new(&self.context.device);
+        let mut state = StreamingEncoder::<P::Error>::new_with_render_bounds(
+            &self.context.device,
+            &self.context.queue,
+            "rizum_clip_provider_region_encoder",
+            Some(render_bounds),
+        );
+        let mut previous_index = 0usize;
+        let next_index = 1usize;
+
+        state.clear_rgba8_texture_pair(
+            accum_pair.view(previous_index),
+            accum_pair.view(next_index),
+            "rizum_clip_provider_region_initial_clear",
+        );
+
+        let updated = encode_sources_with_provider(
+            self,
+            provider,
+            &mut state,
+            output_size,
+            render_bounds.origin_i32(),
+            sources,
+            &accum_pair,
+            previous_index,
+            next_index,
+            &pipelines,
+        )?;
+        previous_index = updated.0;
+        state.flush()?;
+        let drawn_resources = state.into_drawn_resources();
+
+        let pixels = self
+            .read_texture_rgba8(
+                accum_pair.texture(previous_index),
+                region_size.width,
+                region_size.height,
+            )
+            .map_err(P::Error::from)?;
+        Ok(GpuRasterStackOutput {
+            drawn_resources,
+            size: region_size,
+            pixels,
+        })
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -110,6 +186,7 @@ fn encode_sources_with_provider<P>(
     provider: &mut P,
     state: &mut StreamingEncoder<'_, P::Error>,
     output_size: CanvasSize,
+    target_origin: (i32, i32),
     sources: &[GpuNormalStackSource],
     accum_pair: &StreamingTexturePair,
     previous_index: usize,
@@ -125,7 +202,7 @@ where
         provider,
         state,
         output_size,
-        (0, 0),
+        target_origin,
         sources,
         accum_pair,
         previous_index,
@@ -134,6 +211,23 @@ where
         pipelines,
         &mut dirty_bounds,
     )
+}
+
+fn region_bounds(output_size: CanvasSize, region: Rect) -> Result<CanvasRect, GpuRenderError> {
+    if region.is_empty() {
+        return Err(GpuRenderError::InvalidImageSize);
+    }
+    let full = CanvasRect::full(output_size).ok_or(GpuRenderError::InvalidImageSize)?;
+    let bounds = CanvasRect {
+        x: region.x,
+        y: region.y,
+        width: region.width,
+        height: region.height,
+    };
+    bounds
+        .intersection(full)
+        .filter(|intersection| *intersection == bounds)
+        .ok_or(GpuRenderError::InvalidImageSize)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -167,7 +261,9 @@ where
             let (raster_cache, source_view, effective_raster, uploaded_source_bounds) =
                 raster_view_with_provider(renderer, provider, state, output_size, *raster)?;
             let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, source_bounds) else {
+            let Some(pass_bounds) =
+                state.clip_pass_bounds(pass_bounds_for_change(*dirty_bounds, source_bounds))
+            else {
                 return Ok(false);
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
@@ -231,8 +327,10 @@ where
                 fallback_texture,
                 pipelines,
             )?;
-            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, clipping_cache.bounds())
-            else {
+            let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(
+                *dirty_bounds,
+                clipping_cache.bounds(),
+            )) else {
                 return Ok(false);
             };
             let pipeline = pipelines.raster_source_pipeline(state.device(), base.blend_mode);
@@ -279,8 +377,10 @@ where
                 fallback_texture,
                 pipelines,
             )?;
-            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, clipping_cache.bounds())
-            else {
+            let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(
+                *dirty_bounds,
+                clipping_cache.bounds(),
+            )) else {
                 return Ok(false);
             };
             let pipeline = pipelines.raster_source_pipeline(state.device(), *blend_mode);
@@ -323,8 +423,10 @@ where
                 fallback_texture,
                 pipelines,
             )?;
-            let Some(pass_bounds) = pass_bounds_for_change(*dirty_bounds, container_cache.bounds())
-            else {
+            let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(
+                *dirty_bounds,
+                container_cache.bounds(),
+            )) else {
                 return Ok(false);
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
@@ -386,7 +488,7 @@ where
             dirty_bounds,
         ),
         GpuNormalStackSource::SolidColor { color, opacity } => {
-            let Some(full_bounds) = CanvasRect::full(output_size) else {
+            let Some(full_bounds) = state.clip_pass_bounds(CanvasRect::full(output_size)) else {
                 return Ok(false);
             };
             let pipeline = pipelines.alpha_pipeline(state.device());
@@ -420,6 +522,9 @@ where
                     };
                     full_bounds
                 }
+            };
+            let Some(pass_bounds) = state.clip_pass_bounds(Some(pass_bounds)) else {
+                return Ok(false);
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
                 renderer,

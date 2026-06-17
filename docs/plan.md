@@ -1,6 +1,6 @@
 # Plan
 
-Last reconciled: 2026-06-16
+Last reconciled: 2026-06-17
 
 ## Purpose
 
@@ -89,8 +89,11 @@ Current policy:
   Same-graph raster/mask compressed-tile edits can return dirty-rect patch
   payloads or no-change metadata instead of forcing a full Blender `foreach_set`,
   while canvas/root/node-order/container/filter/paper semantic changes still use
-  conservative full image updates. The remaining next-level performance target
-  is cross-reload GPU texture/DAG cache reuse. The C ABI exposes
+  conservative full image updates. Persistent worker reloads reuse raster/mask
+  GPU textures across requests and render patch payloads through a dirty-region
+  GPU stack path instead of rendering the full canvas and slicing it afterward.
+  The remaining next-level performance target is a fuller tile-local
+  mask/clipping DAG cache, not a global full-canvas all-layer texture cache. The C ABI exposes
   metadata-only native support summaries, and the add-on stores native support
   metadata but displays only unsupported counts, expandable unsupported
   layer/node detail lines, compact unsupported layer/node/kind issue locators,

@@ -34,11 +34,11 @@ pub use reload_diff::{
     ReloadDiffTile, ReloadPatchRect,
 };
 pub use results::{
-    DrawRasterLayerGpuResult, NativeTileSiloEstimateResult, NormalRasterStackGpuResult,
-    NormalRasterStackPixelTraceInput, NormalRasterStackPixelTraceResult,
-    NormalRasterStackPixelTraceSample, NormalRasterStackResourceStats,
-    NormalRasterStackSupportResult, SimpleRasterStackGpuResult, SimpleRasterStackUnsupported,
-    SimpleRasterStackUnsupportedReason,
+    DrawRasterLayerGpuResult, GpuTextureCacheStats, NativeTileSiloEstimateResult,
+    NormalRasterStackGpuPatchResult, NormalRasterStackGpuResult, NormalRasterStackPixelTraceInput,
+    NormalRasterStackPixelTraceResult, NormalRasterStackPixelTraceSample,
+    NormalRasterStackResourceStats, NormalRasterStackSupportResult, SimpleRasterStackGpuResult,
+    SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason,
 };
 
 #[cfg(test)]
