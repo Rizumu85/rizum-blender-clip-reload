@@ -1029,7 +1029,8 @@ def _hsv_to_rgb_u8(h: np.ndarray, s: np.ndarray, v: np.ndarray) -> np.ndarray:
     r = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [v, q, p, p, t], default=v)
     g = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [t, v, v, q, p], default=p)
     b = np.select([i == 0, i == 1, i == 2, i == 3, i == 4], [p, p, t, v, v], default=q)
-    return np.clip(np.floor(np.stack([r, g, b], axis=-1) * 255.0 + 0.5), 0, 255).astype(np.uint8)
+    # CSP's fixed-point HSL path truncates the final HSV->RGB byte conversion.
+    return np.clip(np.floor(np.stack([r, g, b], axis=-1) * 255.0), 0, 255).astype(np.uint8)
 
 
 def _apply_hsl_adjust(rgb_u8: np.ndarray, hue: int, saturation: int, luminosity: int) -> np.ndarray:

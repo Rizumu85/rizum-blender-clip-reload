@@ -437,7 +437,7 @@ fn streamed_hsl_filter_matches_csp_fixed_point_hsv_adjust_formula() {
         .expect("draw streamed HSL filter");
 
     let mut expected = [255, 255, 255, 0].repeat(9);
-    expected[((4 * 4) as usize)..((4 * 4 + 4) as usize)].copy_from_slice(&[190, 134, 202, 255]);
+    expected[((4 * 4) as usize)..((4 * 4 + 4) as usize)].copy_from_slice(&[190, 133, 201, 255]);
     assert_eq!(output.pixels, expected);
 }
 

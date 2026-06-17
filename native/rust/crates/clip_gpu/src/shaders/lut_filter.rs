@@ -50,6 +50,11 @@ fn quantize_rgb_u8(value: vec3<f32>) -> vec3<f32> {
     return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 + vec3<f32>(0.5)) / 255.0;
 }
 
+fn truncate_rgb_u8(value: vec3<f32>) -> vec3<f32> {
+    // CSP's fixed-point HSL path truncates the final HSV->RGB byte conversion.
+    return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0) / 255.0;
+}
+
 fn to_u8(value: f32) -> i32 {
     return i32(clamp(floor(value * 255.0 + 0.5), 0.0, 255.0));
 }
@@ -108,7 +113,7 @@ fn hsv_to_rgb_u8(hue: f32, saturation: f32, value: f32) -> vec3<f32> {
     } else if (sector == 4) {
         rgb = vec3<f32>(t, p, value);
     }
-    return quantize_rgb_u8(rgb);
+    return truncate_rgb_u8(rgb);
 }
 
 fn apply_hsl_adjust(value: vec3<f32>) -> vec3<f32> {

@@ -3603,6 +3603,29 @@ strict GPU compares at `Test_HSL3 raw_max=1`, `Test_HSL4 raw_max=1`,
 `raw_max=59` / `premul_visible_px=47638` to `raw_max=3` /
 `premul_visible_px=12696`.
 
+2026-06-17 old-HSL rounding follow-up: the older `Test_HSL.clip` still had
+`raw_max=3` after the isolated HSL2-5 formula fixes, while both Python verifier
+and strict native GPU agreed on the same residual. A selected render of layers
+`3,5` plus filter `13` reproduced the full-image residual exactly, and the HSL
+filter layer mask is a constant `255`, so this is per-pixel HSL quantization
+rather than filter mask/opacity blending. The `FilterLayerInfo`/PSD `hue2`
+payload is `(-24, 35, 26)`.
+
+Rejected probes: applying saturation before luminosity matches one old max
+pixel but regresses the full old sample to `raw_max=23` and breaks
+`Test_HSL5` (`raw_max=26`); removing the positive-luminosity desaturation is
+much worse; small saturation/luminosity scale tweaks can lower the old max to
+`2` but have no native evidence and are sample tuning; a direct integer rewrite
+from the available fixed-point notes is incomplete and regresses combined HSL
+guards. The accepted narrow rule is only the final HSV-to-RGB output
+quantization: CSP's fixed-point path reaches channel bytes through right-shift
+style truncation, not round-to-nearest. Changing `_hsv_to_rgb_u8` and the native
+HSL filter shader to floor/truncate the final RGB values improves old
+`Test_HSL` from `raw_mean=0.499208`, `premul_visible_px=12696` to
+`raw_mean=0.014346`, `premul_visible_px=2668`, with `raw_max=3` unchanged.
+Native guards stay stable: `Test_HSL2` is exact, while `Test_HSL3`,
+`Test_HSL4`, and `Test_HSL5` remain `raw_max=1` / `visible_px=0`.
+
 2026-06-17 Tone Curve isolated fixture follow-up: the user's new small
 `Test_ToneCure*` fixtures split the compact Tone Curve payload by channel.
 `Test_ToneCure2` contains only the master/RGB curve, `Test_ToneCure3` only the
