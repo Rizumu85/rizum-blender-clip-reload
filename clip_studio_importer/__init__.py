@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 58),
+    "version": (0, 8, 59),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -525,7 +525,7 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
 class IMAGE_OT_reload_clip_studio(Operator):
     """Re-render the .clip file this image was imported from."""
     bl_idname = "image.reload_clip_studio"
-    bl_label = "Reload"
+    bl_label = "Manual Reload"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -942,14 +942,17 @@ class CSI_AddonPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, "auto_reload")
-        row = layout.row()
+        reload_box = layout.box()
+        reload_box.prop(self, "auto_reload")
+        row = reload_box.row()
         row.enabled = self.auto_reload
         row.prop(self, "poll_interval")
-        layout.prop(self, "debug")
-        layout.prop(self, "developer_mode")
+
+        developer_box = layout.box()
+        developer_box.prop(self, "debug")
+        developer_box.prop(self, "developer_mode")
         if not native_bridge.packaged_renderer_worker_path():
-            layout.label(
+            developer_box.label(
                 text="Packaged native renderer missing; rebuild the add-on package.",
                 icon="ERROR",
             )
@@ -982,9 +985,15 @@ class IMAGE_PT_clip_studio(Panel):
             )
         pack_status = str(img.get(CLIP_PACK_STATUS_KEY, "") or "")
         if pack_status:
-            layout.label(
+            pack_row = layout.row(align=True)
+            pack_row.label(
                 text=f"Pack: {_pack_status_label(pack_status)}",
                 icon=_pack_status_icon(pack_status),
+            )
+            pack_row.operator(
+                IMAGE_OT_pack_clip_studio.bl_idname,
+                text="Pack Now",
+                icon="CHECKMARK",
             )
             pack_error = img.get(CLIP_PACK_ERROR_KEY, "")
             if pack_error:
@@ -992,6 +1001,12 @@ class IMAGE_PT_clip_studio(Panel):
                     text=f"Pack error: {_short_diagnostic(pack_error)}",
                     icon="ERROR",
                 )
+        else:
+            layout.operator(
+                IMAGE_OT_pack_clip_studio.bl_idname,
+                text="Pack Now",
+                icon="CHECKMARK",
+            )
         unsupported_count = _image_int_property(
             img,
             native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
@@ -1054,8 +1069,11 @@ class IMAGE_PT_clip_studio(Panel):
                     text=f"Error: {_short_diagnostic(message)}",
                     icon="ERROR",
                 )
-        layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, text="Reload", icon="FILE_REFRESH")
-        layout.operator(IMAGE_OT_pack_clip_studio.bl_idname, text="Pack Now", icon="CHECKMARK")
+        layout.operator(
+            IMAGE_OT_reload_clip_studio.bl_idname,
+            text="Manual Reload",
+            icon="FILE_REFRESH",
+        )
         if status == native_bridge.RELOAD_STATUS_REFRESHING:
             started_at = _image_float_property(
                 img,
@@ -1091,7 +1109,6 @@ class IMAGE_PT_clip_studio(Panel):
             text="Copy Diagnostic",
             icon="COPYDOWN",
         )
-        layout.prop(prefs, "auto_reload", text="Autoreload .Clip")
         # If a render is currently running for this image's clip, show a hint.
         with _state_lock:
             running = clip_path in _in_flight

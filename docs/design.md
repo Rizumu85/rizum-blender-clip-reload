@@ -24,11 +24,11 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
    reuses unchanged raster/mask GPU textures and renders matching patch reloads
    as dirty-region GPU outputs rather than full-canvas renders. Reload does not
    pack immediately.
-5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload`.
+5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Manual Reload`.
 6. Add-on preferences expose reload timing, debug logging, and Developer Mode;
    users do not choose a renderer path.
 7. The Image Editor N-panel shows source file, non-ready render status, pack
-   status, `Pack Now`, missing-source state, and the latest render or pack error
+   status with adjacent `Pack Now`, missing-source state, and the latest render or pack error
    for the selected `.clip` image. It does not show native renderer mode,
    full-support summaries, renderer version, resource counts, largest-resource
    metadata, successful packaged-worker status, or render timing in the normal
@@ -75,16 +75,14 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   Editor areas already open on the current screen. It does not create a
   placeholder image, create new editors, or change the user's workspace layout.
 - Image Editor N-panel: `Image > Clip Studio`.
-  - `Reload`
-  - `Pack Now`
+  - `Manual Reload`
+  - pack status with adjacent `Pack Now`
   - non-ready render status, pack status, errors, lower `Copy Diagnostic`, and
     unsupported-node locators only when unsupported nodes exist
   - Developer Mode-only timing and open-diagnostics controls
 - Add-on preferences:
-  - `Autoreload .Clip`
-  - `Check Timer Frequency (s)`
-  - `Debug log`
-  - `Developer Mode`
+  - reload box: `Autoreload .Clip`, `Check Timer Frequency (s)`
+  - developer box: `Debug log`, `Developer Mode`
   - Packaged native renderer missing status only
 
 ## Interaction Principles

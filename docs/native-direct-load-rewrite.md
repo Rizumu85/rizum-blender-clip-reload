@@ -158,7 +158,7 @@ Result:
   `clip_capi` path remains internal development/test plumbing because
   in-process wgpu rendering can crash Blender's UI redraw path on Blender
   5.0.1/NVIDIA.
-- Initial import, `Reload`, and the non-blocking watcher update
+- Initial import, `Manual Reload`, and the non-blocking watcher update
   images through the C ABI/generated-image path only. Initial import waits for
   the worker to return real canvas pixels before creating and showing the
   generated Blender image, then schedules initial pack as a separate main-thread
