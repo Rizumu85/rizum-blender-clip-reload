@@ -3850,3 +3850,38 @@ Rejected probes during this pass:
   `IllustrationBlendModes2` and `IllustrationBlendModes` (`raw_max=178` and
   `86` respectively), so it remains rejected even though it locally explains
   the `(427,138)` PinLight output.
+
+2026-06-17 AddGlowMultiply transparent-target quantization follow-up:
+after the clipped-cache parity work, `Test_AddGlowMultiply` still had a strict
+native `raw_max=2` / `premul_max=2` residual. The hot spot
+`(3594,2277)` traced through a Normal bottom pixel `[169,32,253,219]`,
+an Add Glow clipping base `[135,253,252,95]`, and a clipped Multiply sibling
+`[88,253,164,129]`. The clipped Multiply cache at that point is
+`[90,252,207,95]`; resolving that cache through Add Glow with the old carry
+floor plus nearest RGB divisions produced `[200,142,252,232]` versus CSP
+`[198,142,252,232]`.
+
+Accepted native rule: in Add Glow's byte-domain channel path, round the
+transparent-destination carry term `dst_a * (255 - src_a) / 255`, but when the
+first partial RGB mix resolves into a destination whose alpha is also partial,
+floor that RGB division. Keep opaque destinations rounded to nearest and keep
+the later final-tail RGB division rounded to nearest. This moves the hot spot
+to `[199,142,252,232]` and reduces the full sample to `raw_max=1`,
+`premul_max=1`, `raw_visible_px=0`, and `premul_visible_px=0`.
+
+Rejected probes during this pass:
+
+- Flooring both Add Glow partial RGB divisions locally reached CSP at the
+  sample point, but badly worsened the full image (`raw_mean=0.134784`,
+  `raw_visible_px=1026917`) and regressed the Add Glow one-pixel guard.
+- Flooring the final-tail RGB division only for partial-alpha destinations
+  also worsened `Test_AddGlowMultiply` back to `raw_max=2` with many visible
+  pixels, while `Test_AddGlow` stayed exact. Keep the final-tail division
+  rounded.
+
+Verification after the accepted rule: `clip_gpu` unit tests pass, including the
+new transparent-target Add Glow fixture; `Test_AddGlow` remains exact;
+`Test_AddGlowMultiplyClipping` remains `raw_max=1` / visible `0`;
+`Test_GlowDodge`, `Test_ColorDodge`, `Test_ColorBurn`, and `Test_SoftLight`
+remain exact; `IllustrationBlendModes` remains `raw_max=7`, and
+`IllustrationBlendModes2` remains `raw_max=8`.

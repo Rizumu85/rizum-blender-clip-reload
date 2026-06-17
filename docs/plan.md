@@ -29,7 +29,7 @@ Current focus:
 Open raster targets:
 
 - `Ref_Terra404_Live2D`: complex clipped/grouped highlight stacks and bottom-edge clipped blend residuals are now close; remaining differences are low-level rounding-scale pixels.
-- `Test_AddGlowMultiply`: Add Glow base plus clipped standard-preserve siblings now routes through the native GPU path; Add Glow byte-domain rounding and clipped Multiply preserve parity reduced the remaining CSP residual to `raw_max=2`, `premul_max=2`, matching the Python verifier baseline.
+- `Test_AddGlowMultiply`: Add Glow base plus clipped standard-preserve siblings now routes through the native GPU path; Add Glow byte-domain partial-alpha quantization and clipped Multiply preserve parity reduce the remaining CSP residual to `raw_max=1`, `premul_max=1`, with visible pixels at `0`.
 - `Ref_Kabi_Live2D`: the former large white-eye residual is fixed; the native clipped-folder sibling path now renders recursively and the remaining known max is a small low-level residual around `(1454,1104)`.
 - Non-zero render or mask offsets should stay sample-driven and guarded.
 

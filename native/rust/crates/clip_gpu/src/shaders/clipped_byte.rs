@@ -55,9 +55,14 @@ fn div_round_255(value: i32) -> i32 {
 fn add_glow_channel(dst: i32, src: i32, src_a: i32, dst_a: i32) -> i32 {
     var rgb = dst + src;
     if (src_a < 255) {
-        let b = div255(dst_a * (255 - src_a));
+        let b = div_round_255(dst_a * (255 - src_a));
         let denom = max(b + src_a, 1);
-        rgb = (b * dst + rgb * src_a + denom / 2) / denom;
+        let numer = b * dst + rgb * src_a;
+        if (dst_a <= 254) {
+            rgb = numer / denom;
+        } else {
+            rgb = (numer + denom / 2) / denom;
+        }
     }
     rgb = min(rgb, 255);
 

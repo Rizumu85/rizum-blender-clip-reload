@@ -356,6 +356,51 @@ fn add_glow_raster_source_rounds_partial_tail_like_csp() {
 }
 
 #[test]
+fn add_glow_raster_source_floors_first_partial_mix_into_transparent_target() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = GpuRasterResourceKey {
+        layer_id: LayerId(12),
+        render_mipmap_id: 22,
+    };
+    let pixels = [90u8, 252, 207, 95];
+    let uploads = [GpuRasterUpload {
+        layer_id: key.layer_id,
+        render_node_id: RenderNodeId(3),
+        render_mipmap_id: key.render_mipmap_id,
+        size: CanvasSize::new(1, 1),
+        pixels: &pixels,
+    }];
+    let cache = renderer
+        .upload_raster_resources(&uploads)
+        .expect("upload cached AddGlow source");
+    let sources = [
+        GpuNormalStackSource::SolidColor {
+            color: Rgba8 {
+                r: 169,
+                g: 32,
+                b: 253,
+                a: 219,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            key,
+            opacity: 1.0,
+            mask_key: None,
+            offset_x: 0,
+            offset_y: 0,
+            blend_mode: GpuRasterBlendMode::AddGlow,
+        }),
+    ];
+
+    let output = renderer
+        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .expect("draw AddGlow over transparent target");
+
+    assert_eq!(output.pixels, [199, 142, 252, 232]);
+}
+
+#[test]
 fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let base_key = GpuRasterResourceKey {
