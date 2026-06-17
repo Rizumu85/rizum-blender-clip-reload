@@ -3544,3 +3544,31 @@ max is localized around a semi-transparent gray-over-base region such as
 `(161,253)`, where the pre-filter composite is `[174,161,144]` but CSP is closer
 to `[254,162,144]`; treat that as a separate compositing/filter-scope or alpha
 quantization investigation, not as evidence to restore the old HSL formula.
+
+2026-06-17 fixture triage rechecked the user's prioritized adjustment/filter
+samples after the all-`img` comparison pass:
+
+- `Test_HSL.clip` remains `raw_max=59`, `premul_max=59`. A temporary probe that
+  changed the SQLite saturation payload scale from `/32768` to `/100` made the
+  whole image worse (`raw_max=80`, `raw_mean=28.418291`, nearly all pixels
+  visible), even though it appears attractive at the local max pixel. Layer 2's
+  raw CHNKExta tile bytes at the max are genuinely gray (`alpha=174`,
+  BGRA=`[137,137,137,0]`) and the HSL layer has only the 20-byte
+  `FilterLayerInfo` blob, with no extra colorize/mixing field. Do not accept a
+  saturation-scale change without new CSP-native evidence.
+- `Test_ToneCurve.clip` remains `raw_max=17`, `premul_max=17`. At the max,
+  pre-filter RGB is `[114,186,234]`, current output is `[157,249,255]`, and CSP
+  is `[174,250,255]`. The red channel's per-channel LUT maps `114 -> 175`, but
+  the master LUT maps that to `157`; simple permutations of curve block order,
+  master-before-channel, master-after-channel, or omitting individual channels
+  all lose badly at full-image scale. Keep the current `master(R/G/B(input))`
+  path until the B-spline table generation or native rounding is recovered more
+  precisely.
+- `Test_Gradiation.clip` remains `raw_max=10`, `premul_max=10`. At the max,
+  pre-filter RGB is `[255,77,79]`, current Gradient Map output is
+  `[157,175,179]`, and CSP is `[147,173,180]`; the CSP color is close to the
+  current LUT around index `126` while the current `0.3/0.59/0.11` luminance
+  gives index `130`. Luminance-weight sweeps did not find a clean improvement:
+  alternatives can reduce mean/visible drift but increase max, or keep max while
+  providing no meaningful improvement. Keep the current weights unless a native
+  luminosity-index formula is found.
