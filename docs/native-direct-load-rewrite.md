@@ -182,20 +182,20 @@ Result:
   store `clip_reload_status=error` plus `clip_reload_error`, successful renders
   clear old errors, missing sources store `missing_source`, pack state is stored
   as `clip_pack_status`, and the Image Editor panel displays readable
-  status/error/timing/pack messages plus the renderer version that produced the
-  stored pixels.
+  status/error/timing/pack messages. Renderer version and other native metadata
+  are kept out of the normal UI and are available through copied/opened
+  diagnostics when they help issue reports.
 - `clip_renderer_session_support_info` exposes the runtime metadata-only support
   selector through the C ABI. The C report includes a summary line plus the
-  unsupported layer/node list. The Python bridge stores support status, source
-  count, unsupported count, raster/mask resource counts, largest raster/mask
-  resource metadata, summary report, and `clip_support_details` on the Blender
-  image; the Image Editor panel previews the first few detail lines, can expand
-  to show the full stored list, can copy a complete support report to the
-  clipboard, and can open the report as a searchable Blender Text datablock.
-  Unsupported detail lines are also parsed into structured layer records with
-  layer id, optional layer name, node id, kind, and reason, so copied
-  diagnostics can identify source layers for issue reports without adding
-  Blender-side layer navigation.
+  unsupported layer/node list. The Python bridge stores support status and
+  structured unsupported details on the Blender image, but the Image Editor
+  panel only shows support UI when unsupported nodes exist: a compact locator
+  summary, a short detail preview, and copy/open diagnostics actions. Full
+  native-support summaries, source/resource counts, largest raster/mask
+  metadata, and renderer version are not normal UI labels. Unsupported detail
+  lines are parsed into structured layer records with layer id, optional layer
+  name, node id, kind, and reason, so copied diagnostics can identify source
+  layers for issue reports without adding Blender-side layer navigation.
 - Unit coverage uses fake Blender image/data objects to lock image creation,
   pixel upload, source metadata, packing, size-mismatch rejection, and native
   source freshness states. A direct Python smoke against
@@ -204,10 +204,9 @@ Result:
 
 Remaining bridge work:
 
-- Improve user-facing diagnostics beyond the current image-level
-  status/error/support summary and searchable support report, especially clearer
-  supported-but-imperfect fidelity residuals. Do not add layer navigation to the
-  Blender add-on.
+- Improve user-facing diagnostics beyond the current image-level status/error
+  and unsupported-node locators, especially clearer supported-but-imperfect
+  fidelity residuals. Do not add layer navigation to the Blender add-on.
 - `clip_cli --gpu-support-check` and `clip_cli --gpu-support-json` expose the
   metadata-only support check for developer diagnosis and automation. The text
   and JSON outputs include layer names for unsupported nodes and largest

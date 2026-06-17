@@ -21,15 +21,14 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 5. If auto-reload is disabled or the user wants an immediate refresh, the Image Editor N-panel exposes `Reload from .clip`.
 6. Add-on preferences report whether the packaged native renderer worker is
    present; users do not choose a renderer path.
-7. The Image Editor N-panel shows native render status, elapsed and last render
-   timing, pack status, `Pack Now`, renderer version, native support summary,
-   support resource statistics, missing-source state, and the latest native
-   render or pack error for the selected `.clip` image.
-   The copied/searchable diagnostics also include source size and SHA-256. The
-   panel shows compact unsupported layer/node/kind/name issue locators and can
-   copy either those locations or the full support report to the clipboard.
-   These locators are for bug reports and source-file follow-up, not Blender
-   layer navigation.
+7. The Image Editor N-panel shows source file, render status, elapsed and last
+   render timing, pack status, `Pack Now`, missing-source state, and the latest
+   render or pack error for the selected `.clip` image. It does not show native
+   renderer mode, full-support summaries, renderer version, resource counts, or
+   largest-resource metadata in the normal UI. When unsupported native nodes
+   exist, the panel shows compact unsupported layer/node/kind/name issue
+   locators and copy/open diagnostics actions. These locators are for bug
+   reports and source-file follow-up, not Blender layer navigation.
 
 ## Later Native Workflow
 
@@ -68,7 +67,8 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 - Image Editor N-panel: `Image > Clip Studio`.
   - `Reload from .clip`
   - `Pack Now`
-  - render status, pack status, and timing diagnostics
+  - render status, pack status, timing diagnostics, errors, and unsupported-node
+    locators only when unsupported nodes exist
 - Add-on preferences:
   - `Auto-reload on .clip change`
   - `Poll interval (seconds)`
@@ -94,13 +94,14 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 - Background render progress is elapsed-time only; there is no per-layer or
   percentage progress indicator yet.
-- Unsupported layer features are summarized at image level with counts,
-  resource statistics, compact unsupported layer/node/kind issue locators with
-  layer names when available, and unsupported layer/node details. The panel
-  previews the first few entries, can expand to show the full support-detail
-  list stored on the image, can copy only the locator list or the full support
-  report to the clipboard, and can open the report in Blender's Text Editor for
-  searching.
+- Unsupported layer features are summarized in the panel only when unsupported
+  native nodes exist, using compact layer/node/kind issue locators with layer
+  names when available plus a short preview of unsupported details. Full native
+  support summaries, renderer version, source/resource counts, and largest
+  raster/mask metadata are kept out of the normal UI. Copied/opened diagnostics
+  focus on issue/debug fields: source path, source size/hash, status, timing,
+  canvas size, renderer version, unsupported node count/locations/details, and
+  render/pack errors.
 - Fidelity failures are only visible through rendered image differences; Blender does not yet summarize supported-but-imperfect formula or quantization residuals in the UI.
 - Native generated-image loading exists, including manual reload, background
   watcher refresh, `load_post` freshness checks, explicit pack status, manual
