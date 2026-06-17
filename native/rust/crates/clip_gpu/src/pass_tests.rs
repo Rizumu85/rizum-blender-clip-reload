@@ -882,7 +882,7 @@ fn exclusion_raster_source_uses_standard_blend_formula() {
 fn brightness_raster_source_uses_hsl_blend_formula() {
     assert_eq!(
         draw_one_pixel_standard_blend(GpuRasterBlendMode::Brightness),
-        [144, 102, 228, 255]
+        [144, 103, 228, 255]
     );
 }
 
@@ -981,7 +981,7 @@ fn hue_raster_source_uses_hsl_blend_formula() {
         .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
         .expect("draw Hue source");
 
-    assert_eq!(output.pixels, [53, 78, 178, 255]);
+    assert_eq!(output.pixels, [52, 78, 177, 255]);
 }
 
 #[test]
@@ -1088,7 +1088,7 @@ fn color_raster_source_uses_hsl_blend_formula() {
         .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
         .expect("draw Color source");
 
-    assert_eq!(output.pixels, [53, 78, 178, 255]);
+    assert_eq!(output.pixels, [52, 78, 177, 255]);
 }
 
 #[test]

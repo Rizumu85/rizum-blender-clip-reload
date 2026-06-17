@@ -457,8 +457,8 @@ _BLEND_MAPPING = {
 # --- HSL helpers (Photoshop / W3C non-separable blend math) --- #
 
 def _lum(c: np.ndarray) -> np.ndarray:
-    """Photoshop luminosity: 0.3 R + 0.59 G + 0.11 B."""
-    return 0.3 * c[..., 0] + 0.59 * c[..., 1] + 0.11 * c[..., 2]
+    """CSP HSL blend luminosity: 0.3 R + 0.6 G + 0.1 B."""
+    return 0.3 * c[..., 0] + 0.6 * c[..., 1] + 0.1 * c[..., 2]
 
 
 def _set_lum(c: np.ndarray, l: np.ndarray) -> np.ndarray:

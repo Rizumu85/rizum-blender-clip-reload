@@ -62,7 +62,7 @@ fn max3(value: vec3<f32>) -> f32 {
 }
 
 fn lum(value: vec3<f32>) -> f32 {
-    return 0.3 * value.r + 0.59 * value.g + 0.11 * value.b;
+    return 0.3 * value.r + 0.6 * value.g + 0.1 * value.b;
 }
 
 fn color_compare_lum(value: vec3<f32>) -> f32 {

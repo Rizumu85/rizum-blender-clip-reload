@@ -3736,3 +3736,22 @@ native GPU output. The old max pixel `(370,96)` now maps pre-filter
 `[114,186,234]` to CSP's `[174,250,255]`. Guards stayed stable:
 `Test_Gradiation` remains `raw_max=10` / `premul_max=10`, and
 `Test_AddGlowMultiply` remains `raw_max=5` / `premul_max=3`.
+
+2026-06-17 Color blend luminosity follow-up: `Test_Color.clip` showed a
+shared Python/native residual (`raw_max=2`, `visible_px=12`) rather than a
+strict-GPU parity bug. The max pixels are ordinary `LayerComposite=25` Color
+blend over an opaque base, with a fixed source `[84,51,250,255]`; an example
+destination `[206,201,229]` produced old output `[206,196,255]` while CSP
+exported `[206,198,255]`. Formula probes rejected Rec.709 for this blend family
+because it made `Test_Color` broadly worse (`visible_px=16576`). Changing only
+the non-separable HSL blend luminosity coefficients from `0.3/0.59/0.11` to
+`0.3/0.6/0.1` improves `Test_Color` to `raw_max=1` / `visible_px=0`, leaves
+`Test_Hue` at `raw_max=1` / `visible_px=0`, and improves `Test_Saturation`
+visible pixels from 31 to 9 while keeping the same `raw_max=2`. `Test_SoftLight`,
+`Test_ColorBurn`, and `Test_ColorDodge` guards remain stable/exact. IDA constant
+searches in `iswCoreTG.dll` found double constants for `0.3`, `0.6`, and `0.1`,
+but not `0.59`, `0.11`, or Rec.709; xrefs did not close the raster-blend call
+chain, so keep this as sample-backed plus constant-backed evidence rather than
+a fully recovered native blend function. This correction applies only to the
+HSL blend `lum()` helper, not `color_compare_lum` for Darker/Lighter Color and
+not Gradient Map's grayscale index.
