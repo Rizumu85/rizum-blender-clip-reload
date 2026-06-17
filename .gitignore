@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+tmp_compare/
 
 # Private/customer reference art stays local only.
 img/Ref*

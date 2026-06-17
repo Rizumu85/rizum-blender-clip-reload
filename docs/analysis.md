@@ -3614,6 +3614,11 @@ single-curve LUT generation, per-channel application, and the ordinary
 master-after-channel ordering are sample-backed on the small isolated matrix.
 `Test_ToneCurve_WithoutToneCurve.clip` removes the filter layer from the older
 large sample and compares exact (`raw_max=0`), proving that sample's base-layer
-composition is not the source of the residual. The remaining older combined
-`Test_ToneCurve raw_max=17` gap should stay focused on masked-filter interaction
-or sample-specific rounding, not on broad single-curve LUT replacement.
+composition is not the source of the residual. Re-exporting
+`img/Test_ToneCurve.png` from CSP after the manual Difference check still
+compares at `raw_max=17` / `premul_max=17` against native strict GPU output.
+The separate `img/Test_ToneCurve.clip.png` file compares exact to the native
+PNG, but it is not the CSP export oracle for this fixture. The manual CSP
+Difference check with an imported native-output layer showing black therefore
+needs a separate import/color-management/display-path explanation; it should not
+be treated as proof that the raw PNG comparator is wrong.
