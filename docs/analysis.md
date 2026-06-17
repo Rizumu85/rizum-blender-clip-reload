@@ -3803,3 +3803,50 @@ clip to zero. This changes `(266,244)` to
 `Test_ColorBurn`, `Test_SoftLight`, `Test_Mask`, `Test_Clipping`, and
 `Test_ToneCurve` remain exact, and `Test_AddGlowMultiply` remains
 `raw_max=2` / `premul_max=2`.
+
+2026-06-17 IllustrationBlendModes2 HSL/PinLight follow-up: the remaining
+native max after the Subtract boundary fix is in the
+`PinLight -> Hue -> Saturation` chain, not in support selection or layer
+ordering. Focused traces showed two separate residual families:
+
+- `(382,99)` passes through partial Hue:
+  `Exclusion after=[103,64,15,255]`, Hue source `[84,51,250,77]`, old Hue
+  after `[94,62,55,255]`, Saturation after `[174,31,0,255]`, final
+  `[174,51,250,255]` versus CSP `[166,51,250,255]`.
+- `(427,138)` remains the current max:
+  `PinLight src=[84,51,250,6]` gives `[225,223,226,255]`, full Hue gives
+  `[224,223,226,255]`, Saturation gives `[229,216,255,255]`, while CSP final
+  is `[221,221,255,255]`.
+
+The accepted change is deliberately narrow: for Hue blend only, when the source
+alpha is partial, floor the final standard-pass writeback to the u8 grid instead
+of rounding. This moves `(382,99)` to Hue after `[93,62,54,255]`, Saturation
+after `[167,34,0,255]`, and final `[167,51,250,255]`, within one LSB of CSP at
+that pixel. Guard samples stayed stable: `Test_Hue` remains `raw_max=1` /
+`visible_px=0`, `Test_Color` remains `raw_max=1` / `visible_px=0`, and
+`Test_Saturation` remains `raw_max=1` / `visible_px=0`. Full
+`IllustrationBlendModes2.png` is still `raw_max=8`, now at `(427,138)`.
+
+Rejected probes during this pass:
+
+- Extending the floor writeback to all HSL blend modes removed the old
+  `(382,99)` max but slightly worsened the full image
+  (`raw_mean=0.247173`, `visible_px=38262`), so the accepted scope is Hue-only.
+- Raising Saturation's tiny-span threshold from `2/255` to `3/255`, even with a
+  high-key near-neutral guard, regressed `Test_Saturation` (`raw_max=9`,
+  `visible_px=5` in the high-key probe).
+- Rec.601 HSL luma (`0.299/0.587/0.114`) strongly improved
+  `IllustrationBlendModes2` mean/max (`raw_max=7`, `raw_mean=0.139977`) and
+  explains the blue residuals in the later Color region, but it regressed
+  `Test_Color` and `Test_Saturation` to visible errors. Keep the existing
+  sample-backed `0.3/0.6/0.1` HSL luminosity weights.
+- Hue min-channel ceil for high-key near-neutral destinations regressed
+  `IllustrationBlendModes2` itself (`raw_max=65`) by flipping other near-neutral
+  Hue pixels into a wrong Saturation branch.
+- A byte-domain PinLight target with `256`-style partial-alpha carry worsened
+  `IllustrationBlendModes2` (`raw_max=9`) and broke the existing one-pixel
+  PinLight fixture.
+- A broad standard-pass partial-alpha decrement (`srcA - 1`) severely regressed
+  `IllustrationBlendModes2` and `IllustrationBlendModes` (`raw_max=178` and
+  `86` respectively), so it remains rejected even though it locally explains
+  the `(427,138)` PinLight output.

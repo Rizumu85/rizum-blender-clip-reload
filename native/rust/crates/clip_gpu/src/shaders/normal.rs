@@ -221,6 +221,10 @@ fn quantize_u8(value: vec4<f32>) -> vec4<f32> {
     return floor(clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0 + vec4<f32>(0.5)) / 255.0;
 }
 
+fn floor_quantize_u8(value: vec4<f32>) -> vec4<f32> {
+    return floor(clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0) / 255.0;
+}
+
 fn quantize_rgb_u8(value: vec3<f32>) -> vec3<f32> {
     return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 + vec3<f32>(0.5)) / 255.0;
 }
@@ -511,6 +515,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         blended = select(blended, vec3<f32>(1.0 / 255.0), src_q == dst_q);
     }
     let out_rgb = blended * strength + dst.rgb * (1.0 - strength);
-    return quantize_u8(vec4<f32>(out_rgb, dst.a));
+    let out = vec4<f32>(out_rgb, dst.a);
+    if (source_params.blend_kind == 23u && strength > 0.0 && strength < 1.0) {
+        return floor_quantize_u8(out);
+    }
+    return quantize_u8(out);
 }
 "#;

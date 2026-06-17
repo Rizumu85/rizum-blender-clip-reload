@@ -53,6 +53,10 @@ fn quantize_rgb_u8(value: vec3<f32>) -> vec3<f32> {
     return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 + vec3<f32>(0.5)) / 255.0;
 }
 
+fn floor_quantize_u8(value: vec4<f32>) -> vec4<f32> {
+    return floor(clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0) / 255.0;
+}
+
 fn to_u8(value: f32) -> i32 {
     return i32(clamp(floor(value * 255.0 + 0.5), 0.0, 255.0));
 }
@@ -346,7 +350,11 @@ fn apply_standard(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> 
         (1.0 - dst.a) * src.rgb * src.a +
         (1.0 - src.a) * dst.rgb * dst.a +
         src.a * dst.a * blended;
-    return quantize_u8(vec4<f32>(out_pm / out_alpha, out_alpha));
+    let out = vec4<f32>(out_pm / out_alpha, out_alpha);
+    if (blend_kind == 23u && src.a > 0.0 && src.a < 1.0) {
+        return floor_quantize_u8(out);
+    }
+    return quantize_u8(out);
 }
 
 @fragment

@@ -1099,7 +1099,24 @@ fn hue_raster_source_uses_hsl_blend_formula() {
         .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
         .expect("draw Hue source");
 
-    assert_eq!(output.pixels, [52, 78, 177, 255]);
+    assert_eq!(output.pixels, [52, 77, 177, 255]);
+}
+
+#[test]
+fn hue_raster_source_floors_partial_alpha_writeback() {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Hue,
+            [84, 51, 250, 77],
+            Rgba8 {
+                r: 103,
+                g: 64,
+                b: 15,
+                a: 255,
+            },
+        ),
+        [93, 62, 54, 255]
+    );
 }
 
 #[test]
