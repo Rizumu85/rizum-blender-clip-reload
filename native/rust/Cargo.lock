@@ -146,6 +146,7 @@ dependencies = [
  "clip_model",
  "clip_runtime",
  "png",
+ "serde",
  "serde_json",
 ]
 

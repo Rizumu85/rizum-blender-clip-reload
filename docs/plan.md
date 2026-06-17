@@ -50,7 +50,9 @@ Current focus:
 - Keep reload updates manifest-driven where possible: the worker should compare
   the prior reload manifest with the current `.clip` graph/source chunks, return
   no-change or dirty-rect patch payloads for same-graph tile edits, and fall
-  back to full image updates for structural or broad changes.
+  back to full image updates for structural or broad changes. The packaged
+  worker process should stay alive across Blender requests so reloads reuse the
+  native process and wgpu renderer instead of paying startup cost each time.
 - Keep native render state visible in Blender: image metadata and the Image
   Editor panel should report ready, refreshing, stale, missing-source,
   render-error states, and elapsed/last render timing.
@@ -82,10 +84,13 @@ Current policy:
   panel, while successful renders clear old error metadata. The add-on records
   elapsed/last render timing for manual and background renders. Reloads store a
   native manifest on the generated image and pass it back to the packaged
-  worker; same-graph raster/mask compressed-tile edits can return dirty-rect
-  patch payloads or no-change metadata instead of forcing a full Blender
-  `foreach_set`, while canvas/root/node-order/container/filter/paper semantic
-  changes still use conservative full image updates. The C ABI exposes
+  worker; the default Python bridge uses `clip_cli --blender-render-server` so
+  repeated reloads keep one native process and one reusable wgpu renderer alive.
+  Same-graph raster/mask compressed-tile edits can return dirty-rect patch
+  payloads or no-change metadata instead of forcing a full Blender `foreach_set`,
+  while canvas/root/node-order/container/filter/paper semantic changes still use
+  conservative full image updates. The remaining next-level performance target
+  is cross-reload GPU texture/DAG cache reuse. The C ABI exposes
   metadata-only native support summaries, and the add-on stores native support
   metadata but displays only unsupported counts, expandable unsupported
   layer/node detail lines, compact unsupported layer/node/kind issue locators,

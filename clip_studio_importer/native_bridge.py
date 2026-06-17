@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import threading
 import time
 from typing import Any
 
@@ -78,6 +79,10 @@ _SUPPORT_DETAIL_LOCATION_RE = re.compile(
 
 
 class NativeBridgeError(RuntimeError):
+    pass
+
+
+class NativeWorkerTransportError(NativeBridgeError):
     pass
 
 
@@ -160,6 +165,10 @@ class NativeImageSourceState:
     current_sha256: str | None
     should_reload: bool
     status: str
+
+
+_PERSISTENT_WORKER_LOCK = threading.Lock()
+_PERSISTENT_WORKER: "PersistentNativeRendererWorker | None" = None
 
 
 class _ClipRendererImageInfo(ctypes.Structure):
@@ -395,11 +404,48 @@ def render_clip_rgba8(
         return renderer.render_rgba8(clip_path)
     worker_path = packaged_renderer_worker_path()
     if worker_path:
+        if _persistent_worker_enabled():
+            try:
+                return _shared_renderer_worker(worker_path).render_rgba8(
+                    clip_path,
+                    previous_manifest_json=previous_manifest_json,
+                )
+            except NativeWorkerTransportError:
+                shutdown_renderer_worker()
         return NativeRendererWorker(worker_path).render_rgba8(
             clip_path,
             previous_manifest_json=previous_manifest_json,
         )
     raise NativeBridgeError("packaged native renderer worker not found; rebuild the add-on package")
+
+
+def _persistent_worker_enabled() -> bool:
+    disabled = os.environ.get("RIZUM_CLIP_DISABLE_PERSISTENT_WORKER", "")
+    return disabled.lower() not in {"1", "true", "yes", "on"}
+
+
+def _shared_renderer_worker(executable_path: str) -> "PersistentNativeRendererWorker":
+    global _PERSISTENT_WORKER
+    resolved = str(Path(executable_path).resolve())
+    with _PERSISTENT_WORKER_LOCK:
+        if (
+            _PERSISTENT_WORKER is None
+            or _PERSISTENT_WORKER.executable_path != resolved
+            or not _PERSISTENT_WORKER.is_alive()
+        ):
+            if _PERSISTENT_WORKER is not None:
+                _PERSISTENT_WORKER.shutdown()
+            _PERSISTENT_WORKER = PersistentNativeRendererWorker(resolved)
+        return _PERSISTENT_WORKER
+
+
+def shutdown_renderer_worker() -> None:
+    global _PERSISTENT_WORKER
+    with _PERSISTENT_WORKER_LOCK:
+        worker = _PERSISTENT_WORKER
+        _PERSISTENT_WORKER = None
+    if worker is not None:
+        worker.shutdown()
 
 
 def import_clip_as_image(
@@ -728,79 +774,223 @@ class NativeRendererWorker:
             except json.JSONDecodeError as exc:
                 raise NativeBridgeError(f"native renderer worker returned invalid JSON: {exc}") from exc
 
-        width = int(metadata["width"])
-        height = int(metadata["height"])
-        reload_diff = metadata.get("reload_diff", {}) or {}
-        reload_mode = str(reload_diff.get("mode", "full") or "full")
-        reload_reason = str(reload_diff.get("reason", "") or "")
-        reload_manifest_json = _compact_json(reload_diff.get("manifest"))
-        patches = _worker_reload_patches(reload_diff.get("rects", []) or [])
-        if reload_mode == "patch":
-            expected_len = sum(patch.width * patch.height * 4 for patch in patches)
-        elif reload_mode == "no_change":
-            expected_len = 0
-        else:
-            expected_len = width * height * 4
-            reload_mode = "full"
-            patches = ()
-        if len(pixels) != expected_len:
-            raise NativeBridgeError("native renderer worker returned an invalid RGBA buffer length")
-
-        support = metadata.get("support", {})
-        resources = metadata.get("resources", {})
-        unsupported = support.get("unsupported", []) or []
-        details = tuple(_worker_unsupported_detail(item) for item in unsupported)
-        support_summary = NativeSupportSummary(
-            source_count=int(support.get("source_count", 0) or 0),
-            unsupported_count=int(support.get("unsupported_count", len(details)) or 0),
-            raster_count=int(resources.get("raster_count", 0) or 0),
-            raster_bytes=int(resources.get("raster_bytes", 0) or 0),
-            max_raster_layer_id=int(resources.get("max_raster_layer_id") or 0),
-            max_raster_width=int(resources.get("max_raster_width", 0) or 0),
-            max_raster_height=int(resources.get("max_raster_height", 0) or 0),
-            max_raster_bytes=int(resources.get("max_raster_bytes", 0) or 0),
-            mask_count=int(resources.get("mask_count", 0) or 0),
-            mask_bytes=int(resources.get("mask_bytes", 0) or 0),
-            max_mask_layer_id=int(resources.get("max_mask_layer_id") or 0),
-            max_mask_width=int(resources.get("max_mask_width", 0) or 0),
-            max_mask_height=int(resources.get("max_mask_height", 0) or 0),
-            max_mask_bytes=int(resources.get("max_mask_bytes", 0) or 0),
-            report=str(support.get("report", "") or ""),
-            details=details,
-        )
-        try:
-            source_mtime = os.path.getmtime(source)
-        except OSError:
-            source_mtime = None
-        try:
-            source_size = os.path.getsize(source)
-        except OSError:
-            source_size = None
-        try:
-            source_sha256 = source_file_sha256(source)
-        except OSError:
-            source_sha256 = ""
-        return NativeRenderResult(
-            clip_path=source,
-            width=width,
-            height=height,
-            root_layer_id=int(metadata["root_layer_id"]),
-            layer_count=int(metadata["layer_count"]),
-            external_data_count=int(metadata["external_data_count"]),
-            renderer_abi=EXPECTED_ABI_VERSION,
-            renderer_version=str(metadata.get("renderer_version", "") or ""),
-            source_mtime=source_mtime,
-            source_size=source_size,
-            source_sha256=source_sha256,
-            pixels_rgba8=pixels,
-            support_summary=support_summary,
+        return _render_result_from_worker_output(
+            source,
+            metadata,
+            pixels,
             worker_seconds=worker_seconds,
             output_read_seconds=output_read_seconds,
-            reload_manifest_json=reload_manifest_json,
-            reload_diff_mode=reload_mode,
-            reload_diff_reason=reload_reason,
-            patches=patches,
         )
+
+
+class PersistentNativeRendererWorker:
+    def __init__(self, executable_path: str | os.PathLike[str]):
+        self.executable_path = str(Path(executable_path).resolve())
+        self._process: subprocess.Popen[str] | None = None
+        self._lock = threading.Lock()
+
+    def is_alive(self) -> bool:
+        return self._process is not None and self._process.poll() is None
+
+    def render_rgba8(
+        self,
+        clip_path: str | os.PathLike[str],
+        *,
+        previous_manifest_json: str | None = None,
+    ) -> NativeRenderResult:
+        source = str(Path(clip_path).resolve())
+        with self._lock:
+            with tempfile.TemporaryDirectory(prefix="rizum_clip_render_") as temp_dir:
+                temp = Path(temp_dir)
+                rgba_path = temp / "render.rgba"
+                json_path = temp / "render.json"
+                request: dict[str, Any] = {
+                    "clip_path": source,
+                    "rgba_path": str(rgba_path),
+                    "json_path": str(json_path),
+                }
+                if previous_manifest_json:
+                    old_manifest_path = temp / "old_manifest.json"
+                    old_manifest_path.write_text(previous_manifest_json, encoding="utf-8")
+                    request["previous_manifest_path"] = str(old_manifest_path)
+
+                worker_started = time.perf_counter()
+                self._send_request_locked(request)
+                worker_seconds = time.perf_counter() - worker_started
+
+                try:
+                    read_started = time.perf_counter()
+                    metadata = json.loads(json_path.read_text(encoding="utf-8"))
+                    pixels = rgba_path.read_bytes()
+                    output_read_seconds = time.perf_counter() - read_started
+                except OSError as exc:
+                    raise NativeBridgeError(
+                        f"native renderer worker output missing: {exc}"
+                    ) from exc
+                except json.JSONDecodeError as exc:
+                    raise NativeBridgeError(
+                        f"native renderer worker returned invalid JSON: {exc}"
+                    ) from exc
+
+        return _render_result_from_worker_output(
+            source,
+            metadata,
+            pixels,
+            worker_seconds=worker_seconds,
+            output_read_seconds=output_read_seconds,
+        )
+
+    def shutdown(self) -> None:
+        with self._lock:
+            process = self._process
+            self._process = None
+            if process is None:
+                return
+            if process.poll() is None:
+                try:
+                    if process.stdin:
+                        process.stdin.write('{"shutdown":true}\n')
+                        process.stdin.flush()
+                    process.wait(timeout=2.0)
+                except Exception:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=2.0)
+                    except Exception:
+                        process.kill()
+
+    def _ensure_process_locked(self) -> subprocess.Popen[str]:
+        if self._process is not None and self._process.poll() is None:
+            return self._process
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        try:
+            self._process = subprocess.Popen(
+                [self.executable_path, "--blender-render-server"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                creationflags=creationflags,
+            )
+        except OSError as exc:
+            raise NativeWorkerTransportError(
+                f"failed to start persistent native renderer worker: {exc}"
+            ) from exc
+        return self._process
+
+    def _send_request_locked(self, request: dict[str, Any]) -> None:
+        process = self._ensure_process_locked()
+        if process.stdin is None or process.stdout is None:
+            raise NativeWorkerTransportError("persistent native renderer worker has no stdio")
+        try:
+            process.stdin.write(json.dumps(request, separators=(",", ":")) + "\n")
+            process.stdin.flush()
+            response_line = process.stdout.readline()
+        except OSError as exc:
+            self._process = None
+            raise NativeWorkerTransportError(
+                f"persistent native renderer worker pipe failed: {exc}"
+            ) from exc
+        if not response_line:
+            returncode = process.poll()
+            self._process = None
+            raise NativeWorkerTransportError(
+                f"persistent native renderer worker stopped unexpectedly"
+                f"{'' if returncode is None else f' with exit code {returncode}'}"
+            )
+        try:
+            response = json.loads(response_line)
+        except json.JSONDecodeError as exc:
+            self._process = None
+            raise NativeWorkerTransportError(
+                f"persistent native renderer worker returned invalid JSON: {exc}"
+            ) from exc
+        if not response.get("ok", False):
+            error = str(response.get("error", "") or "unknown native renderer worker error")
+            raise NativeBridgeError(error)
+
+
+def _render_result_from_worker_output(
+    source: str,
+    metadata: dict[str, Any],
+    pixels: bytes,
+    *,
+    worker_seconds: float,
+    output_read_seconds: float,
+) -> NativeRenderResult:
+    width = int(metadata["width"])
+    height = int(metadata["height"])
+    reload_diff = metadata.get("reload_diff", {}) or {}
+    reload_mode = str(reload_diff.get("mode", "full") or "full")
+    reload_reason = str(reload_diff.get("reason", "") or "")
+    reload_manifest_json = _compact_json(reload_diff.get("manifest"))
+    patches = _worker_reload_patches(reload_diff.get("rects", []) or [])
+    if reload_mode == "patch":
+        expected_len = sum(patch.width * patch.height * 4 for patch in patches)
+    elif reload_mode == "no_change":
+        expected_len = 0
+    else:
+        expected_len = width * height * 4
+        reload_mode = "full"
+        patches = ()
+    if len(pixels) != expected_len:
+        raise NativeBridgeError("native renderer worker returned an invalid RGBA buffer length")
+
+    support = metadata.get("support", {})
+    resources = metadata.get("resources", {})
+    unsupported = support.get("unsupported", []) or []
+    details = tuple(_worker_unsupported_detail(item) for item in unsupported)
+    support_summary = NativeSupportSummary(
+        source_count=int(support.get("source_count", 0) or 0),
+        unsupported_count=int(support.get("unsupported_count", len(details)) or 0),
+        raster_count=int(resources.get("raster_count", 0) or 0),
+        raster_bytes=int(resources.get("raster_bytes", 0) or 0),
+        max_raster_layer_id=int(resources.get("max_raster_layer_id") or 0),
+        max_raster_width=int(resources.get("max_raster_width", 0) or 0),
+        max_raster_height=int(resources.get("max_raster_height", 0) or 0),
+        max_raster_bytes=int(resources.get("max_raster_bytes", 0) or 0),
+        mask_count=int(resources.get("mask_count", 0) or 0),
+        mask_bytes=int(resources.get("mask_bytes", 0) or 0),
+        max_mask_layer_id=int(resources.get("max_mask_layer_id") or 0),
+        max_mask_width=int(resources.get("max_mask_width", 0) or 0),
+        max_mask_height=int(resources.get("max_mask_height", 0) or 0),
+        max_mask_bytes=int(resources.get("max_mask_bytes", 0) or 0),
+        report=str(support.get("report", "") or ""),
+        details=details,
+    )
+    try:
+        source_mtime = os.path.getmtime(source)
+    except OSError:
+        source_mtime = None
+    try:
+        source_size = os.path.getsize(source)
+    except OSError:
+        source_size = None
+    try:
+        source_sha256 = source_file_sha256(source)
+    except OSError:
+        source_sha256 = ""
+    return NativeRenderResult(
+        clip_path=source,
+        width=width,
+        height=height,
+        root_layer_id=int(metadata["root_layer_id"]),
+        layer_count=int(metadata["layer_count"]),
+        external_data_count=int(metadata["external_data_count"]),
+        renderer_abi=EXPECTED_ABI_VERSION,
+        renderer_version=str(metadata.get("renderer_version", "") or ""),
+        source_mtime=source_mtime,
+        source_size=source_size,
+        source_sha256=source_sha256,
+        pixels_rgba8=pixels,
+        support_summary=support_summary,
+        worker_seconds=worker_seconds,
+        output_read_seconds=output_read_seconds,
+        reload_manifest_json=reload_manifest_json,
+        reload_diff_mode=reload_mode,
+        reload_diff_reason=reload_reason,
+        patches=patches,
+    )
 
 
 def _worker_unsupported_detail(item: Any) -> str:

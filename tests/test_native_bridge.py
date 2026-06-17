@@ -151,6 +151,74 @@ class NativeBridgeTests(unittest.TestCase):
         finally:
             native_bridge.packaged_renderer_worker_path = original
 
+    def test_render_clip_uses_persistent_worker_by_default(self) -> None:
+        original_path = native_bridge.packaged_renderer_worker_path
+        original_shared = native_bridge._shared_renderer_worker
+        old_env = os.environ.pop("RIZUM_CLIP_DISABLE_PERSISTENT_WORKER", None)
+        calls = []
+
+        class FakePersistentWorker:
+            def render_rgba8(self, clip_path, *, previous_manifest_json=None):
+                calls.append((clip_path, previous_manifest_json))
+                return FakeRenderer().render_rgba8(clip_path)
+
+        native_bridge.packaged_renderer_worker_path = lambda: "C:/addon/clip_cli.exe"
+        native_bridge._shared_renderer_worker = lambda _path: FakePersistentWorker()
+        try:
+            result = native_bridge.render_clip_rgba8(
+                "sample.clip",
+                previous_manifest_json='{"abi":1}',
+            )
+        finally:
+            native_bridge.packaged_renderer_worker_path = original_path
+            native_bridge._shared_renderer_worker = original_shared
+            if old_env is not None:
+                os.environ["RIZUM_CLIP_DISABLE_PERSISTENT_WORKER"] = old_env
+
+        self.assertEqual(result.width, 1)
+        self.assertEqual(calls, [("sample.clip", '{"abi":1}')])
+
+    def test_render_clip_falls_back_to_one_shot_on_persistent_transport_error(self) -> None:
+        original_path = native_bridge.packaged_renderer_worker_path
+        original_shared = native_bridge._shared_renderer_worker
+        original_worker_class = native_bridge.NativeRendererWorker
+        original_shutdown = native_bridge.shutdown_renderer_worker
+        old_env = os.environ.pop("RIZUM_CLIP_DISABLE_PERSISTENT_WORKER", None)
+        calls = []
+        shutdown_calls = []
+
+        class FakeOneShotWorker:
+            def __init__(self, executable_path):
+                self.executable_path = executable_path
+
+            def render_rgba8(self, clip_path, *, previous_manifest_json=None):
+                calls.append((self.executable_path, clip_path, previous_manifest_json))
+                return FakeRenderer().render_rgba8(clip_path)
+
+        def broken_shared_worker(_path):
+            raise native_bridge.NativeWorkerTransportError("pipe failed")
+
+        native_bridge.packaged_renderer_worker_path = lambda: "C:/addon/clip_cli.exe"
+        native_bridge._shared_renderer_worker = broken_shared_worker
+        native_bridge.NativeRendererWorker = FakeOneShotWorker
+        native_bridge.shutdown_renderer_worker = lambda: shutdown_calls.append(True)
+        try:
+            result = native_bridge.render_clip_rgba8(
+                "sample.clip",
+                previous_manifest_json='{"abi":1}',
+            )
+        finally:
+            native_bridge.packaged_renderer_worker_path = original_path
+            native_bridge._shared_renderer_worker = original_shared
+            native_bridge.NativeRendererWorker = original_worker_class
+            native_bridge.shutdown_renderer_worker = original_shutdown
+            if old_env is not None:
+                os.environ["RIZUM_CLIP_DISABLE_PERSISTENT_WORKER"] = old_env
+
+        self.assertEqual(result.width, 1)
+        self.assertEqual(shutdown_calls, [True])
+        self.assertEqual(calls, [("C:/addon/clip_cli.exe", "sample.clip", '{"abi":1}')])
+
     def test_worker_unsupported_detail_formats_issue_locator(self) -> None:
         self.assertEqual(
             native_bridge._worker_unsupported_detail(

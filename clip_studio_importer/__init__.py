@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 53),
+    "version": (0, 8, 54),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -1140,6 +1140,7 @@ def unregister():
     _unregister_save_pre_handler()
     _unregister_load_post_handler()
     _unregister_watcher()
+    native_bridge.shutdown_renderer_worker()
     bpy.types.TOPBAR_MT_file_import.remove(_menu_func_import)
     for cls in reversed(_classes):
         bpy.utils.unregister_class(cls)

@@ -28,6 +28,7 @@ mod tile_silo_occupancy;
 mod tile_silo_options;
 
 pub use error::RuntimeError;
+pub use gpu_api::RuntimeGpuRenderer;
 pub use reload_diff::{
     ReloadDiffManifest, ReloadDiffMode, ReloadDiffNode, ReloadDiffPlan, ReloadDiffSource,
     ReloadDiffTile, ReloadPatchRect,

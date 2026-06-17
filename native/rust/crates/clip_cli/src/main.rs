@@ -8,6 +8,7 @@ use std::process;
 use clip_model::{LayerId, Rect, Rgba8};
 use clip_runtime::ClipSession;
 
+mod blender_server;
 mod blender_worker;
 mod layer_labels;
 mod support_json;
@@ -21,10 +22,13 @@ fn main() {
     let _program = args.next();
     let Some(path) = args.next() else {
         eprintln!(
-            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--tile-silo-estimate] [--tile-size <px>]"
+            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--tile-silo-estimate] [--tile-size <px>] | clip_cli --blender-render-server"
         );
         process::exit(2);
     };
+    if path == OsString::from("--blender-render-server") {
+        process::exit(blender_server::run_blender_render_server());
+    }
     let options = parse_options(args.collect());
     if options.blender_render_rgba_path.is_some() != options.blender_render_json_path.is_some() {
         eprintln!("--blender-render-rgba and --blender-render-json must be used together");

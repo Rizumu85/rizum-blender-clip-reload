@@ -401,11 +401,14 @@ Implemented diff-reload seam:
   Blender coordinates, avoiding full `foreach_set` for same-graph tile edits.
 - This milestone is intentionally conservative. Canvas/root changes, visible
   node-order changes, and non-raster semantic changes still promote to full
-  image updates. The current short-lived worker still renders through the
-  existing full native path before slicing patch bytes, so native GPU/DAG cache
-  reuse remains future work. The important accepted seam is now present:
-  future persistent worker or tile-DAG cache invalidation can replace patch
-  production without changing the Blender image-update protocol.
+  image updates. The worker now also has a persistent JSON-lines server mode
+  that keeps one native process and reusable `RuntimeGpuRenderer` alive across
+  Blender requests, avoiding repeated process startup and wgpu device
+  initialization on reload. It still renders through the existing native path
+  before slicing patch bytes, so cross-reload GPU texture/DAG cache reuse
+  remains future work. The important accepted seam is now present: future
+  tile-DAG cache invalidation can replace patch production without changing the
+  Blender image-update protocol.
 
 ## Non-Goals
 

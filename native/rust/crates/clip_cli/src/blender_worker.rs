@@ -3,6 +3,7 @@ use std::path::Path;
 
 use clip_runtime::{
     ClipSession, ReloadDiffManifest, ReloadDiffMode, ReloadPatchRect, RuntimeError,
+    RuntimeGpuRenderer,
 };
 use serde_json::json;
 
@@ -11,6 +12,16 @@ pub(crate) fn write_blender_render_files(
     rgba_path: &Path,
     json_path: &Path,
     previous_manifest: Option<&ReloadDiffManifest>,
+) -> Result<(), String> {
+    write_blender_render_files_with_renderer(session, rgba_path, json_path, previous_manifest, None)
+}
+
+pub(crate) fn write_blender_render_files_with_renderer(
+    session: &mut ClipSession,
+    rgba_path: &Path,
+    json_path: &Path,
+    previous_manifest: Option<&ReloadDiffManifest>,
+    renderer: Option<&RuntimeGpuRenderer>,
 ) -> Result<(), String> {
     let summary = session.summary();
     let root_layer_id = summary.root_layer_id.0;
@@ -39,9 +50,11 @@ pub(crate) fn write_blender_render_files(
         return Ok(());
     }
 
-    let render = session
-        .draw_normal_raster_stack_via_gpu()
-        .map_err(|err| err.to_string())?;
+    let render = match renderer {
+        Some(renderer) => renderer.draw_normal_raster_stack(session),
+        None => session.draw_normal_raster_stack_via_gpu(),
+    }
+    .map_err(|err| err.to_string())?;
     if !render.unsupported.is_empty() {
         return Err(RuntimeError::UnsupportedRenderPlan {
             unsupported: render.unsupported,

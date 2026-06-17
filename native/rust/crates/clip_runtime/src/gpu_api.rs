@@ -15,6 +15,25 @@ use crate::{
     SimpleRasterStackGpuResult,
 };
 
+pub struct RuntimeGpuRenderer {
+    renderer: clip_gpu::GpuRenderer,
+}
+
+impl RuntimeGpuRenderer {
+    pub fn new() -> Result<Self, RuntimeError> {
+        Ok(Self {
+            renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
+        })
+    }
+
+    pub fn draw_normal_raster_stack(
+        &self,
+        session: &ClipSession,
+    ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
+        session.draw_normal_raster_stack_with_renderer(&self.renderer)
+    }
+}
+
 impl ClipSession {
     pub fn read_raster_layer_rgba_via_gpu(
         &self,
@@ -204,6 +223,13 @@ impl ClipSession {
     pub fn draw_normal_raster_stack_via_gpu(
         &self,
     ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
+        RuntimeGpuRenderer::new()?.draw_normal_raster_stack(self)
+    }
+
+    fn draw_normal_raster_stack_with_renderer(
+        &self,
+        renderer: &clip_gpu::GpuRenderer,
+    ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
         let selection = self.select_gpu_normal_render_stack(StrictRasterStackOptions {
             allow_alpha_compositing: true,
             allow_paper: true,
@@ -245,7 +271,6 @@ impl ClipSession {
             });
         }
 
-        let renderer = clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?;
         let resource_stats = resource_plan.resource_stats();
         let mut provider =
             RuntimeGpuResourceProvider::new(&self.container, self.summary.canvas, resource_plan)?;
