@@ -42,6 +42,13 @@ where
     if matches!(known_source_bounds, Some(None)) {
         return Ok(RenderedStreamingCache::empty());
     }
+    if let Some(Some(bounds)) = known_source_bounds
+        && state
+            .clip_pass_bounds(pass_bounds_for_change(None, Some(bounds)))
+            .is_none()
+    {
+        return Ok(RenderedStreamingCache::empty());
+    }
     let (raster_cache, source_view, effective_base, uploaded_source_bounds) =
         raster_view_with_provider(renderer, provider, state, output_size, base)?;
     let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);

@@ -29,10 +29,16 @@ pub(crate) fn raster_view_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    let render_bounds = state
+        .render_bounds()
+        .map(|bounds| clip_model::Rect::new(bounds.x, bounds.y, bounds.width, bounds.height));
     let cache = state
         .retained_raster_cache(source.key)
         .map(Ok)
-        .unwrap_or_else(|| provider.raster_resource(renderer, source))?;
+        .unwrap_or_else(|| match render_bounds {
+            Some(bounds) => provider.raster_resource_region(renderer, source, bounds),
+            None => provider.raster_resource(renderer, source),
+        })?;
     let resource = cache
         .resource(source.key)
         .ok_or(GpuRenderError::MissingRasterResource {
@@ -43,15 +49,14 @@ where
     let info = resource.info();
     state.push_drawn_resource(info);
     let (offset_x, offset_y) = provider
-        .raster_resource_offset(source)
+        .uploaded_raster_resource_offset(source)
         .unwrap_or((source.offset_x, source.offset_y));
     let effective_source = GpuNormalRasterSource {
         offset_x,
         offset_y,
         ..source
     };
-    let bounds_size = provider.raster_resource_size(source).unwrap_or(info.size);
-    let bounds = CanvasRect::from_source(offset_x, offset_y, bounds_size, output_size);
+    let bounds = CanvasRect::from_source(offset_x, offset_y, info.size, output_size);
     let view = resource
         .texture()
         .create_view(&wgpu::TextureViewDescriptor::default());
@@ -260,10 +265,17 @@ where
     let Some(mask_key) = mask_key else {
         return Ok((None, MaskTextureBinding::fallback(fallback_view)));
     };
-    let cache = state
-        .retained_mask_cache(mask_key)
-        .map(Ok)
-        .unwrap_or_else(|| provider.mask_resource(renderer, mask_key))?;
+    let render_bounds = state
+        .render_bounds()
+        .map(|bounds| clip_model::Rect::new(bounds.x, bounds.y, bounds.width, bounds.height));
+    let cache =
+        state
+            .retained_mask_cache(mask_key)
+            .map(Ok)
+            .unwrap_or_else(|| match render_bounds {
+                Some(bounds) => provider.mask_resource_region(renderer, mask_key, bounds),
+                None => provider.mask_resource(renderer, mask_key),
+            })?;
     let resource = cache
         .resource(mask_key)
         .ok_or(GpuRenderError::MissingMaskResource {

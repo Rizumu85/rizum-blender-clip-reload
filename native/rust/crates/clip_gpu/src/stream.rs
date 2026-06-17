@@ -46,6 +46,17 @@ impl GpuRenderer {
         if sources.is_empty() {
             return Err(P::Error::from(GpuRenderError::EmptyRasterStack));
         }
+        if let Some(regions) =
+            split_limited_render_regions(output_size, self.max_texture_dimension_2d())
+                .map_err(P::Error::from)?
+        {
+            return self.draw_normal_stack_split_regions_with_provider_to_rgba8(
+                output_size,
+                &regions,
+                sources,
+                provider,
+            );
+        }
 
         let accum_usage = wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::TEXTURE_BINDING
@@ -178,6 +189,143 @@ impl GpuRenderer {
             pixels,
         })
     }
+
+    fn draw_normal_stack_split_regions_with_provider_to_rgba8<P>(
+        &self,
+        output_size: CanvasSize,
+        regions: &[Rect],
+        sources: &[GpuNormalStackSource],
+        provider: &mut P,
+    ) -> Result<GpuRasterStackOutput, P::Error>
+    where
+        P: GpuNormalStackResourceProvider,
+    {
+        let mut pixels = vec![0u8; rgba8_len(output_size).map_err(P::Error::from)?];
+        let output_stride = row_rgba8_len(output_size.width).map_err(P::Error::from)?;
+        let mut drawn_resources = Vec::new();
+
+        for region in regions {
+            let region_output = self.draw_normal_stack_region_with_provider_to_rgba8(
+                output_size,
+                *region,
+                sources,
+                provider,
+            )?;
+            let region_stride = row_rgba8_len(region.width).map_err(P::Error::from)?;
+            for row in 0..region.height {
+                let src_start = usize::try_from(row)
+                    .map_err(|_| GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?
+                    .checked_mul(region_stride)
+                    .ok_or(GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?;
+                let src_end = src_start
+                    .checked_add(region_stride)
+                    .ok_or(GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?;
+                let dst_row = region
+                    .y
+                    .checked_add(row)
+                    .ok_or(GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?;
+                let dst_start = usize::try_from(dst_row)
+                    .map_err(|_| GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?
+                    .checked_mul(output_stride)
+                    .and_then(|start| {
+                        start.checked_add(usize::try_from(region.x).ok()?.checked_mul(4)?)
+                    })
+                    .ok_or(GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?;
+                let dst_end = dst_start
+                    .checked_add(region_stride)
+                    .ok_or(GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?;
+                pixels[dst_start..dst_end]
+                    .copy_from_slice(&region_output.pixels[src_start..src_end]);
+            }
+            drawn_resources.extend(region_output.drawn_resources);
+        }
+
+        Ok(GpuRasterStackOutput {
+            drawn_resources,
+            size: output_size,
+            pixels,
+        })
+    }
+}
+
+fn split_limited_render_regions(
+    output_size: CanvasSize,
+    max_texture_dimension: u32,
+) -> Result<Option<Vec<Rect>>, GpuRenderError> {
+    if max_texture_dimension == 0 {
+        return Err(GpuRenderError::InvalidImageSize);
+    }
+    if output_size.width <= max_texture_dimension && output_size.height <= max_texture_dimension {
+        return Ok(None);
+    }
+
+    let mut regions = Vec::new();
+    let mut y = 0u32;
+    while y < output_size.height {
+        let height = max_texture_dimension.min(output_size.height - y);
+        let mut x = 0u32;
+        while x < output_size.width {
+            let width = max_texture_dimension.min(output_size.width - x);
+            regions.push(Rect::new(x, y, width, height));
+            x = x
+                .checked_add(width)
+                .ok_or(GpuRenderError::TextureSizeOverflow)?;
+        }
+        y = y
+            .checked_add(height)
+            .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    }
+    Ok(Some(regions))
+}
+
+fn rgba8_len(size: CanvasSize) -> Result<usize, GpuRenderError> {
+    let row = row_rgba8_len(size.width)?;
+    usize::try_from(size.height)
+        .map_err(|_| GpuRenderError::TextureSizeOverflow)?
+        .checked_mul(row)
+        .ok_or(GpuRenderError::TextureSizeOverflow)
+}
+
+fn row_rgba8_len(width: u32) -> Result<usize, GpuRenderError> {
+    usize::try_from(width)
+        .map_err(|_| GpuRenderError::TextureSizeOverflow)?
+        .checked_mul(4)
+        .ok_or(GpuRenderError::TextureSizeOverflow)
+}
+
+#[cfg(test)]
+mod tests {
+    use clip_model::{CanvasSize, Rect};
+
+    use super::split_limited_render_regions;
+
+    #[test]
+    fn split_regions_returns_none_when_canvas_fits_texture_limit() {
+        assert_eq!(
+            split_limited_render_regions(CanvasSize::new(5, 4), 8).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn split_regions_tiles_canvas_that_exceeds_texture_limit() {
+        assert_eq!(
+            split_limited_render_regions(CanvasSize::new(10, 9), 8).unwrap(),
+            Some(vec![
+                Rect::new(0, 0, 8, 8),
+                Rect::new(8, 0, 2, 8),
+                Rect::new(0, 8, 8, 1),
+                Rect::new(8, 8, 2, 1),
+            ])
+        );
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -256,6 +404,11 @@ where
         GpuNormalStackSource::Raster(raster) => {
             let known_source_bounds = known_raster_source_bounds(provider, *raster, output_size);
             if matches!(known_source_bounds, Some(None)) {
+                return Ok(false);
+            }
+            if let Some(Some(bounds)) = known_source_bounds
+                && state.clip_pass_bounds(Some(bounds)).is_none()
+            {
                 return Ok(false);
             }
             let (raster_cache, source_view, effective_raster, uploaded_source_bounds) =

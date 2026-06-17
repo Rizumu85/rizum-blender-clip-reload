@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use clip_graph::RenderNodeId;
-use clip_model::{CanvasSize, LayerId};
+use clip_model::{CanvasSize, LayerId, Rect};
 
 use crate::{NormalRasterStackResourceStats, RuntimeError, source_crop};
 
@@ -148,11 +148,69 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         self.raster_offsets.get(&source.key).copied()
     }
 
+    fn uploaded_raster_resource_offset(
+        &self,
+        source: clip_gpu::GpuNormalRasterSource,
+    ) -> Option<(i32, i32)> {
+        self.raster_offsets
+            .get(&source.key)
+            .copied()
+            .or_else(|| self.raster_resource_offset(source))
+    }
+
     fn raster_resource(
         &mut self,
         renderer: &clip_gpu::GpuRenderer,
         source: clip_gpu::GpuNormalRasterSource,
     ) -> Result<clip_gpu::GpuRasterResourceCache, Self::Error> {
+        self.raster_resource_for_bounds(renderer, source, None)
+    }
+
+    fn raster_resource_region(
+        &mut self,
+        renderer: &clip_gpu::GpuRenderer,
+        source: clip_gpu::GpuNormalRasterSource,
+        render_bounds: Rect,
+    ) -> Result<clip_gpu::GpuRasterResourceCache, Self::Error> {
+        self.raster_resource_for_bounds(renderer, source, Some(render_bounds))
+    }
+
+    fn raster_run_atlas_tile_pixels(
+        &mut self,
+        sources: &[clip_gpu::GpuRasterAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<clip_gpu::GpuRasterAtlasTilePixels>, Self::Error> {
+        if self.texture_cache.is_some() {
+            return Ok(None);
+        }
+        self.build_raster_run_atlas_tile_pixels(sources, atlas_size)
+    }
+
+    fn mask_resource(
+        &mut self,
+        renderer: &clip_gpu::GpuRenderer,
+        key: clip_gpu::GpuMaskResourceKey,
+    ) -> Result<clip_gpu::GpuMaskResourceCache, Self::Error> {
+        self.mask_resource_for_bounds(renderer, key, None)
+    }
+
+    fn mask_resource_region(
+        &mut self,
+        renderer: &clip_gpu::GpuRenderer,
+        key: clip_gpu::GpuMaskResourceKey,
+        render_bounds: Rect,
+    ) -> Result<clip_gpu::GpuMaskResourceCache, Self::Error> {
+        self.mask_resource_for_bounds(renderer, key, Some(render_bounds))
+    }
+}
+
+impl RuntimeGpuResourceProvider<'_> {
+    fn raster_resource_for_bounds(
+        &mut self,
+        renderer: &clip_gpu::GpuRenderer,
+        source: clip_gpu::GpuNormalRasterSource,
+        render_bounds: Option<Rect>,
+    ) -> Result<clip_gpu::GpuRasterResourceCache, RuntimeError> {
         let meta = self.plan.rasters.get(&source.key).cloned().ok_or_else(|| {
             RuntimeError::Gpu(clip_gpu::GpuRenderError::MissingRasterResource {
                 layer_id: source.key.layer_id,
@@ -160,7 +218,7 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             })
         })?;
         let visible = self
-            .decode_region_for_source(source, &meta.source)?
+            .decode_region_for_source(source, &meta.source, render_bounds)?
             .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
         let cache_key = cache::raster_texture_cache_key(self.container, &meta.source, visible)?;
         if let Some(texture_cache) = self.texture_cache.as_mut() {
@@ -191,29 +249,20 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         Ok(cache)
     }
 
-    fn raster_run_atlas_tile_pixels(
-        &mut self,
-        sources: &[clip_gpu::GpuRasterAtlasSource],
-        atlas_size: CanvasSize,
-    ) -> Result<Option<clip_gpu::GpuRasterAtlasTilePixels>, Self::Error> {
-        if self.texture_cache.is_some() {
-            return Ok(None);
-        }
-        self.build_raster_run_atlas_tile_pixels(sources, atlas_size)
-    }
-
-    fn mask_resource(
+    fn mask_resource_for_bounds(
         &mut self,
         renderer: &clip_gpu::GpuRenderer,
         key: clip_gpu::GpuMaskResourceKey,
-    ) -> Result<clip_gpu::GpuMaskResourceCache, Self::Error> {
+        render_bounds: Option<Rect>,
+    ) -> Result<clip_gpu::GpuMaskResourceCache, RuntimeError> {
         let meta = self.plan.masks.get(&key).cloned().ok_or_else(|| {
             RuntimeError::Gpu(clip_gpu::GpuRenderError::MissingMaskResource {
                 layer_id: key.layer_id,
                 mask_mipmap_id: key.mask_mipmap_id,
             })
         })?;
-        let mask_payload = read_mask_payload_for_upload(self.container, self.canvas, &meta.source)?;
+        let mask_payload =
+            read_mask_payload_for_upload(self.container, self.canvas, &meta.source, render_bounds)?;
         let cache_key = cache::mask_texture_cache_key(self.container, &meta.source, &mask_payload)?;
         if let Some(texture_cache) = self.texture_cache.as_mut() {
             if let Some(cache) = texture_cache.mask_cache(&cache_key) {
@@ -241,9 +290,7 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         }
         Ok(cache)
     }
-}
 
-impl RuntimeGpuResourceProvider<'_> {
     fn sparse_region_for_source(
         &self,
         source: clip_gpu::GpuNormalRasterSource,
@@ -255,19 +302,21 @@ impl RuntimeGpuResourceProvider<'_> {
         &self,
         source: clip_gpu::GpuNormalRasterSource,
         metadata: &clip_file::metadata::RasterLayerSource,
+        render_bounds: Option<Rect>,
     ) -> Result<Option<source_crop::RasterSourceDecodeRegion>, RuntimeError> {
-        if let Some(Some(region)) = self.sparse_region_for_source(source) {
-            return Ok(Some(region));
-        }
-        if matches!(self.sparse_region_for_source(source), Some(None)) {
-            return Ok(None);
-        }
-        Ok(source_crop::visible_raster_source_decode_region(
-            metadata.pixel_size,
-            metadata.offset_x,
-            metadata.offset_y,
-            self.canvas,
-        )?)
+        let region = if let Some(Some(region)) = self.sparse_region_for_source(source) {
+            Some(region)
+        } else if matches!(self.sparse_region_for_source(source), Some(None)) {
+            None
+        } else {
+            source_crop::visible_raster_source_decode_region(
+                metadata.pixel_size,
+                metadata.offset_x,
+                metadata.offset_y,
+                self.canvas,
+            )?
+        };
+        clip_region_to_render_bounds(region, render_bounds)
     }
 
     fn build_raster_run_atlas_tile_pixels(
@@ -294,7 +343,7 @@ impl RuntimeGpuResourceProvider<'_> {
                     })
                 })?;
             let visible = self
-                .decode_region_for_source(request.source, &meta.source)?
+                .decode_region_for_source(request.source, &meta.source, None)?
                 .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
             if request.size
                 != CanvasSize::new(visible.source_rect.width, visible.source_rect.height)
@@ -446,8 +495,10 @@ fn read_mask_payload_for_upload(
     container: &clip_file::container::ClipContainer,
     canvas: CanvasSize,
     source: &clip_file::metadata::MaskLayerSource,
+    render_bounds: Option<Rect>,
 ) -> Result<MaskUploadPayload, RuntimeError> {
-    let Some(visible) = sparse::sparse_mask_source_decode_region(container, canvas, source)? else {
+    let visible = sparse::sparse_mask_source_decode_region(container, canvas, source)?;
+    let Some(visible) = clip_region_to_render_bounds(visible, render_bounds)? else {
         return Ok(MaskUploadPayload {
             image: clip_file::tiles::AlphaTileImage {
                 width: 1,
@@ -475,4 +526,20 @@ fn read_mask_payload_for_upload(
         upload_origin_x: 0,
         upload_origin_y: 0,
     })
+}
+
+fn clip_region_to_render_bounds(
+    region: Option<source_crop::RasterSourceDecodeRegion>,
+    render_bounds: Option<Rect>,
+) -> Result<Option<source_crop::RasterSourceDecodeRegion>, RuntimeError> {
+    let Some(region) = region else {
+        return Ok(None);
+    };
+    let Some(render_bounds) = render_bounds else {
+        return Ok(Some(region));
+    };
+    Ok(source_crop::clip_decode_region_to_canvas_rect(
+        region,
+        render_bounds,
+    )?)
 }

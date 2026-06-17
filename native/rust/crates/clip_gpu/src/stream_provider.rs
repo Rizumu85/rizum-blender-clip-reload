@@ -1,4 +1,4 @@
-use clip_model::CanvasSize;
+use clip_model::{CanvasSize, Rect};
 
 use crate::{
     GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterResourceCache,
@@ -49,6 +49,16 @@ pub trait GpuNormalStackResourceProvider {
         source: GpuNormalRasterSource,
     ) -> Result<GpuRasterResourceCache, Self::Error>;
 
+    fn raster_resource_region(
+        &mut self,
+        renderer: &GpuRenderer,
+        source: GpuNormalRasterSource,
+        render_bounds: Rect,
+    ) -> Result<GpuRasterResourceCache, Self::Error> {
+        let _ = render_bounds;
+        self.raster_resource(renderer, source)
+    }
+
     fn raster_resource_size(&self, source: GpuNormalRasterSource) -> Option<CanvasSize> {
         let _ = source;
         None
@@ -57,6 +67,10 @@ pub trait GpuNormalStackResourceProvider {
     fn raster_resource_offset(&self, source: GpuNormalRasterSource) -> Option<(i32, i32)> {
         let _ = source;
         None
+    }
+
+    fn uploaded_raster_resource_offset(&self, source: GpuNormalRasterSource) -> Option<(i32, i32)> {
+        self.raster_resource_offset(source)
     }
 
     fn raster_run_atlas_pixels(
@@ -84,4 +98,14 @@ pub trait GpuNormalStackResourceProvider {
         renderer: &GpuRenderer,
         key: GpuMaskResourceKey,
     ) -> Result<GpuMaskResourceCache, Self::Error>;
+
+    fn mask_resource_region(
+        &mut self,
+        renderer: &GpuRenderer,
+        key: GpuMaskResourceKey,
+        render_bounds: Rect,
+    ) -> Result<GpuMaskResourceCache, Self::Error> {
+        let _ = render_bounds;
+        self.mask_resource(renderer, key)
+    }
 }

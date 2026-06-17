@@ -189,6 +189,10 @@ impl GpuRenderer {
         })
     }
 
+    pub fn max_texture_dimension_2d(&self) -> u32 {
+        self.context.device.limits().max_texture_dimension_2d
+    }
+
     pub fn roundtrip_rgba8(
         &self,
         width: u32,
