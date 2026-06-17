@@ -145,7 +145,7 @@ fn hsl_params(payload: &[u8]) -> Option<(f32, f32, f32)> {
     // SQLite filter payload is only partly pre-scaled by the caller.
     Some((
         read_be_i32(payload, 0)? as f32 / 360.0,
-        read_be_i32(payload, 4)? as f32 / 32_768.0,
+        read_be_i32(payload, 4)? as f32 / 100.0,
         read_be_i32(payload, 8)? as f32 / 100.0,
     ))
 }

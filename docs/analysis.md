@@ -3585,3 +3585,20 @@ Therefore the current ordinary Master Hue mapping (`payload_hue / 360.0`, same
 rotation direction) is sample-backed. Do not replace hue with `/196608` in the
 SQLite payload path; that divisor belongs to CSP's internal fixed-point routine
 after caller-side normalization, not to this saved payload.
+
+2026-06-17 HSL saturation/luminosity fixture follow-up: new isolated fixtures
+supersede the earlier saturation-scale rejection, which only tested `/100`
+without CSP's value-overshoot rescale and neutral-pixel guard. Payloads are
+`Test_HSL3` `[0, 19, 0]`, `Test_HSL4` `[0, 0, 20]`, and `Test_HSL5`
+`[-47, 37, -19]`. The saturation-only reference proves the saved SQLite
+saturation payload is UI percent for these files: `/32768` leaves the output
+almost unchanged (`Test_HSL3 raw_max=20`, `visible_px=118233`), while `/100`
+with the native positive-saturation value coupling matches non-neutral colours.
+Two native rules are required to make that general instead of a local fix:
+ordinary saturation must not colorize neutral grayscale pixels (`S == 0`), and
+when `V + V*inc` exceeds 1.0 the saturation increment is rescaled by the
+available value headroom before clamping `V` to 1.0. With those rules, native
+strict GPU compares at `Test_HSL3 raw_max=1`, `Test_HSL4 raw_max=1`,
+`Test_HSL5 raw_max=1`, and the older combined `Test_HSL` improves from
+`raw_max=59` / `premul_visible_px=47638` to `raw_max=3` /
+`premul_visible_px=12696`.

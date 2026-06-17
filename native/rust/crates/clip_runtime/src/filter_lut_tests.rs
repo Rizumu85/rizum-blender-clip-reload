@@ -103,7 +103,7 @@ fn threshold_lut_matches_python_formula_anchors() {
 
 #[test]
 fn hsl_filter_parses_sqlite_payload_scaling() {
-    let payload = hsl_payload(30, -8_192, 25);
+    let payload = hsl_payload(30, -25, 25);
     let (name, mode, lut) = lut_filter_rgba(FILTER_TYPE_HSL, &payload).expect("build HSL filter");
 
     assert_eq!(name, "HueSaturationLuminosity");

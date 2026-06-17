@@ -124,10 +124,16 @@ fn apply_hsl_adjust(value: vec3<f32>) -> vec3<f32> {
         luminosity = luminosity + filter_params.hsl_luminosity_delta * luminosity;
     }
 
-    if (filter_params.hsl_saturation_delta > 0.0) {
-        let inc = filter_params.hsl_saturation_delta * (1.0 - saturation);
+    if (filter_params.hsl_saturation_delta > 0.0 && saturation > 0.0) {
+        var inc = filter_params.hsl_saturation_delta * (1.0 - saturation);
+        let value_delta = luminosity * inc;
+        if (luminosity + value_delta > 1.0 && value_delta > 0.0) {
+            inc = inc * (1.0 - luminosity) / value_delta;
+            luminosity = 1.0;
+        } else {
+            luminosity = luminosity + value_delta;
+        }
         saturation = saturation + inc;
-        luminosity = luminosity + luminosity * inc;
     } else if (filter_params.hsl_saturation_delta < 0.0) {
         let dec = -filter_params.hsl_saturation_delta * saturation;
         saturation = saturation - dec;

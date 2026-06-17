@@ -1041,11 +1041,19 @@ def _apply_hsl_adjust(rgb_u8: np.ndarray, hue: int, saturation: int, luminosity:
     elif lum_delta < 0.0:
         v = v + lum_delta * v
 
-    sat_delta = saturation / 32768.0
+    sat_delta = saturation / 100.0
     if sat_delta > 0.0:
-        inc = sat_delta * (1.0 - s)
+        inc = np.where(s > 0.0, sat_delta * (1.0 - s), 0.0)
+        value_delta = v * inc
+        overshoot = (v + value_delta) > 1.0
+        safe_delta = value_delta > 0.0
+        inc = np.where(
+            overshoot & safe_delta,
+            inc * (1.0 - v) / np.maximum(value_delta, np.finfo(np.float32).eps),
+            inc,
+        )
         s = s + inc
-        v = v + v * inc
+        v = np.where(overshoot, 1.0, v + value_delta)
     elif sat_delta < 0.0:
         dec = -sat_delta * s
         s = s - dec
