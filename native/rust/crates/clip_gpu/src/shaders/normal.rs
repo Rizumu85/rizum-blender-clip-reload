@@ -476,7 +476,12 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     if (dst.a <= 0.0) {
         strength = 0.0;
     }
-    let blended = quantize_rgb_u8(blend_rgb(src.rgb, dst.rgb));
+    let blended_raw = blend_rgb(src.rgb, dst.rgb);
+    let blended = select(
+        quantize_rgb_u8(blended_raw),
+        clamp(blended_raw, vec3<f32>(0.0), vec3<f32>(1.0)),
+        source_params.blend_kind == 2u,
+    );
     let out_rgb = blended * strength + dst.rgb * (1.0 - strength);
     return quantize_u8(vec4<f32>(out_rgb, dst.a));
 }

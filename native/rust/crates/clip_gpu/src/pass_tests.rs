@@ -255,6 +255,51 @@ fn add_glow_raster_source_uses_byte_domain_formula() {
 }
 
 #[test]
+fn add_glow_raster_source_rounds_partial_tail_like_csp() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = GpuRasterResourceKey {
+        layer_id: LayerId(11),
+        render_mipmap_id: 21,
+    };
+    let pixels = [66u8, 251, 182, 2];
+    let uploads = [GpuRasterUpload {
+        layer_id: key.layer_id,
+        render_node_id: RenderNodeId(2),
+        render_mipmap_id: key.render_mipmap_id,
+        size: CanvasSize::new(1, 1),
+        pixels: &pixels,
+    }];
+    let cache = renderer
+        .upload_raster_resources(&uploads)
+        .expect("upload partial AddGlow source");
+    let sources = [
+        GpuNormalStackSource::SolidColor {
+            color: Rgba8 {
+                r: 169,
+                g: 32,
+                b: 253,
+                a: 53,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            key,
+            opacity: 1.0,
+            mask_key: None,
+            offset_x: 0,
+            offset_y: 0,
+            blend_mode: GpuRasterBlendMode::AddGlow,
+        }),
+    ];
+
+    let output = renderer
+        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .expect("draw partial AddGlow source");
+
+    assert_eq!(output.pixels, [167, 49, 252, 55]);
+}
+
+#[test]
 fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let base_key = GpuRasterResourceKey {
@@ -320,7 +365,7 @@ fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
         .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
         .expect("draw clipping run");
 
-    assert_eq!(output.pixels, [57, 58, 60, 255]);
+    assert_eq!(output.pixels, [58, 59, 60, 255]);
 }
 
 #[test]
@@ -412,7 +457,7 @@ fn container_clipping_run_matches_equivalent_raster_base_run() {
         .expect("draw container-base clipping run");
 
     assert_eq!(container_base.pixels, raster_base.pixels);
-    assert_eq!(container_base.pixels, [57, 58, 60, 255]);
+    assert_eq!(container_base.pixels, [58, 59, 60, 255]);
 }
 
 #[test]

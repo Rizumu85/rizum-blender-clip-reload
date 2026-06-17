@@ -57,18 +57,18 @@ fn add_glow_channel(dst: i32, src: i32, src_a: i32, dst_a: i32) -> i32 {
     if (src_a < 255) {
         let b = div255(dst_a * (255 - src_a));
         let denom = max(b + src_a, 1);
-        rgb = (b * dst + rgb * src_a) / denom;
+        rgb = (b * dst + rgb * src_a + denom / 2) / denom;
     }
     rgb = min(rgb, 255);
 
     if (dst_a <= 254) {
         let inv_dst_a = 255 - dst_a;
         if (src_a == 255) {
-            rgb = div255(inv_dst_a * src + rgb * dst_a);
+            rgb = div_round_255(inv_dst_a * src + rgb * dst_a);
         } else {
-            let b = div255(inv_dst_a * src_a);
+            let b = div_round_255(inv_dst_a * src_a);
             let denom = max(dst_a + b, 1);
-            rgb = (b * src + rgb * dst_a) / denom;
+            rgb = (b * src + rgb * dst_a + denom / 2) / denom;
         }
     }
 

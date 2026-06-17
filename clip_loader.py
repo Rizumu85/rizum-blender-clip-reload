@@ -726,14 +726,14 @@ def _blend_add_glow_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int =
         denom = np.maximum(b + sa, 1)
         rgb = np.where(
             partial_src[..., None],
-            (b[..., None] * dst[..., :3] + summed * sa[..., None]) // denom[..., None],
+            (b[..., None] * dst[..., :3] + summed * sa[..., None] + (denom[..., None] // 2)) // denom[..., None],
             rgb,
         )
     rgb = np.minimum(rgb, 255)
 
     out_a = dst[..., 3].copy()
     if param3 == 0:
-        b = ((255 - sa) * work_da) // 255
+        b = ((255 - sa) * work_da + 127) // 255
         out_a = np.minimum(b + sa, 255)
 
     tail = active & (work_da <= 254)
@@ -743,16 +743,16 @@ def _blend_add_glow_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int =
         if np.any(src_opaque):
             rgb = np.where(
                 src_opaque[..., None],
-                (inv_da[..., None] * src[..., :3] + rgb * work_da[..., None]) // 255,
+                (inv_da[..., None] * src[..., :3] + rgb * work_da[..., None] + 127) // 255,
                 rgb,
             )
         src_partial = tail & (sa < 255)
         if np.any(src_partial):
-            b = (inv_da * sa) // 255
+            b = (inv_da * sa + 127) // 255
             denom = np.maximum(work_da + b, 1)
             rgb = np.where(
                 src_partial[..., None],
-                (b[..., None] * src[..., :3] + rgb * work_da[..., None]) // denom[..., None],
+                (b[..., None] * src[..., :3] + rgb * work_da[..., None] + (denom[..., None] // 2)) // denom[..., None],
                 rgb,
             )
 
