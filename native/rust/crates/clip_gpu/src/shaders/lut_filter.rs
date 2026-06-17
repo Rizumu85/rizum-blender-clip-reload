@@ -12,11 +12,11 @@ struct FilterParams {
     opacity: f32,
     has_mask: u32,
     mode: u32,
-    hsl_hue_degrees: f32,
+    hsl_hue_turns: f32,
     target_origin_x: i32,
     target_origin_y: i32,
-    hsl_saturation: f32,
-    hsl_luminosity: f32,
+    hsl_saturation_delta: f32,
+    hsl_luminosity_delta: f32,
     mask_origin_x: i32,
     mask_origin_y: i32,
     mask_fill: f32,
@@ -113,20 +113,25 @@ fn hsv_to_rgb_u8(hue: f32, saturation: f32, value: f32) -> vec3<f32> {
 
 fn apply_hsl_adjust(value: vec3<f32>) -> vec3<f32> {
     let hsv = rgb_to_hsv_u8(value);
-    var hue = hsv.x + filter_params.hsl_hue_degrees / 360.0;
+    var hue = hsv.x + filter_params.hsl_hue_turns;
     var saturation = hsv.y;
     var luminosity = hsv.z;
 
-    if (filter_params.hsl_saturation >= 0.0) {
-        saturation = saturation + (1.0 - saturation) * min(filter_params.hsl_saturation, 100.0) / 100.0;
-    } else {
-        saturation = saturation * (1.0 + max(filter_params.hsl_saturation, -100.0) / 100.0);
+    if (filter_params.hsl_luminosity_delta > 0.0) {
+        luminosity = luminosity + filter_params.hsl_luminosity_delta * (1.0 - luminosity);
+        saturation = saturation - filter_params.hsl_luminosity_delta * saturation;
+    } else if (filter_params.hsl_luminosity_delta < 0.0) {
+        luminosity = luminosity + filter_params.hsl_luminosity_delta * luminosity;
     }
 
-    if (filter_params.hsl_luminosity >= 0.0) {
-        luminosity = luminosity + (1.0 - luminosity) * min(filter_params.hsl_luminosity, 100.0) / 100.0;
-    } else {
-        luminosity = luminosity * (1.0 + max(filter_params.hsl_luminosity, -100.0) / 100.0);
+    if (filter_params.hsl_saturation_delta > 0.0) {
+        let inc = filter_params.hsl_saturation_delta * (1.0 - saturation);
+        saturation = saturation + inc;
+        luminosity = luminosity + luminosity * inc;
+    } else if (filter_params.hsl_saturation_delta < 0.0) {
+        let dec = -filter_params.hsl_saturation_delta * saturation;
+        saturation = saturation - dec;
+        luminosity = luminosity - luminosity * dec * 0.5;
     }
 
     return hsv_to_rgb_u8(hue, clamp(saturation, 0.0, 1.0), clamp(luminosity, 0.0, 1.0));

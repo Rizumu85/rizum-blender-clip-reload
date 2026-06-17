@@ -1034,14 +1034,22 @@ def _hsv_to_rgb_u8(h: np.ndarray, s: np.ndarray, v: np.ndarray) -> np.ndarray:
 def _apply_hsl_adjust(rgb_u8: np.ndarray, hue: int, saturation: int, luminosity: int) -> np.ndarray:
     h, s, v = _rgb_to_hsv_u8(rgb_u8)
     h = h + hue / 360.0
-    if saturation >= 0:
-        s = s + (1.0 - s) * min(saturation, 100) / 100.0
-    else:
-        s = s * (1.0 + max(saturation, -100) / 100.0)
-    if luminosity >= 0:
-        v = v + (1.0 - v) * min(luminosity, 100) / 100.0
-    else:
-        v = v * (1.0 + max(luminosity, -100) / 100.0)
+    lum_delta = luminosity / 100.0
+    if lum_delta > 0.0:
+        v = v + lum_delta * (1.0 - v)
+        s = s - lum_delta * s
+    elif lum_delta < 0.0:
+        v = v + lum_delta * v
+
+    sat_delta = saturation / 32768.0
+    if sat_delta > 0.0:
+        inc = sat_delta * (1.0 - s)
+        s = s + inc
+        v = v + v * inc
+    elif sat_delta < 0.0:
+        dec = -sat_delta * s
+        s = s - dec
+        v = v - v * dec * 0.5
     return _hsv_to_rgb_u8(h, np.clip(s, 0.0, 1.0), np.clip(v, 0.0, 1.0))
 
 

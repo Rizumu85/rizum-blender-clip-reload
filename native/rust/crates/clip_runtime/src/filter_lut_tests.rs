@@ -102,22 +102,22 @@ fn threshold_lut_matches_python_formula_anchors() {
 }
 
 #[test]
-fn hsl_filter_parses_python_hsv_adjust_parameters() {
-    let payload = hsl_payload(30, -25, 40);
+fn hsl_filter_parses_sqlite_payload_scaling() {
+    let payload = hsl_payload(30, -8_192, 25);
     let (name, mode, lut) = lut_filter_rgba(FILTER_TYPE_HSL, &payload).expect("build HSL filter");
 
     assert_eq!(name, "HueSaturationLuminosity");
     let PlannedLutFilterMode::Hsl {
-        hue_degrees,
-        saturation,
-        luminosity,
+        hue_turns,
+        saturation_delta,
+        luminosity_delta,
     } = mode
     else {
         panic!("HSL filter should use the HSL GPU mode");
     };
-    assert_eq!(hue_degrees, 30.0);
-    assert_eq!(saturation, -25.0);
-    assert_eq!(luminosity, 40.0);
+    assert_eq!(hue_turns, 1.0 / 12.0);
+    assert_eq!(saturation_delta, -0.25);
+    assert_eq!(luminosity_delta, 0.25);
     for input in [0usize, 64, 128, 255] {
         assert_eq!(
             &lut[input * 4..input * 4 + 4],

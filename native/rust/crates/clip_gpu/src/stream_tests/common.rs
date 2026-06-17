@@ -208,10 +208,14 @@ pub(super) fn lut_mode() -> GpuLutFilterMode {
     GpuLutFilterMode::ToneCurveRgb
 }
 
-pub(super) fn hsl_mode(hue_degrees: f32, saturation: f32, luminosity: f32) -> GpuLutFilterMode {
+pub(super) fn hsl_mode(
+    hue_turns: f32,
+    saturation_delta: f32,
+    luminosity_delta: f32,
+) -> GpuLutFilterMode {
     GpuLutFilterMode::Hsl(GpuHslFilterParams {
-        hue_degrees,
-        saturation,
-        luminosity,
+        hue_turns,
+        saturation_delta,
+        luminosity_delta,
     })
 }

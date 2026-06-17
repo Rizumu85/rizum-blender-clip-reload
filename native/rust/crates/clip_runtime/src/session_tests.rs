@@ -308,9 +308,9 @@ fn gpu_selector_accepts_python_backed_lut_and_luminosity_filters() {
             128usize,
             [128, 128, 128],
             clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
-                hue_degrees: 30.0,
-                saturation: -25.0,
-                luminosity: 40.0,
+                hue_turns: 30.0 / 360.0,
+                saturation_delta: -25.0 / 32_768.0,
+                luminosity_delta: 40.0 / 100.0,
             }),
         ),
     ]) {

@@ -330,13 +330,13 @@ pub(super) fn gpu_normal_stack_source(
                 PlannedLutFilterMode::GradientMapLum => clip_gpu::GpuLutFilterMode::GradientMapLum,
                 PlannedLutFilterMode::ThresholdLum => clip_gpu::GpuLutFilterMode::ThresholdLum,
                 PlannedLutFilterMode::Hsl {
-                    hue_degrees,
-                    saturation,
-                    luminosity,
+                    hue_turns,
+                    saturation_delta,
+                    luminosity_delta,
                 } => clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
-                    hue_degrees,
-                    saturation,
-                    luminosity,
+                    hue_turns,
+                    saturation_delta,
+                    luminosity_delta,
                 }),
             },
         },
@@ -371,13 +371,13 @@ pub(super) fn gpu_lut_filter_mode(mode: PlannedLutFilterMode) -> clip_gpu::GpuLu
         PlannedLutFilterMode::GradientMapLum => clip_gpu::GpuLutFilterMode::GradientMapLum,
         PlannedLutFilterMode::ThresholdLum => clip_gpu::GpuLutFilterMode::ThresholdLum,
         PlannedLutFilterMode::Hsl {
-            hue_degrees,
-            saturation,
-            luminosity,
+            hue_turns,
+            saturation_delta,
+            luminosity_delta,
         } => clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
-            hue_degrees,
-            saturation,
-            luminosity,
+            hue_turns,
+            saturation_delta,
+            luminosity_delta,
         }),
     }
 }

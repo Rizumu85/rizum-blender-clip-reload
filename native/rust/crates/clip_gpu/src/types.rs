@@ -90,9 +90,9 @@ pub enum GpuLutFilterMode {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuHslFilterParams {
-    pub hue_degrees: f32,
-    pub saturation: f32,
-    pub luminosity: f32,
+    pub hue_turns: f32,
+    pub saturation_delta: f32,
+    pub luminosity_delta: f32,
 }
 
 #[derive(Clone, Debug)]

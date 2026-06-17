@@ -410,7 +410,7 @@ fn streamed_threshold_lut_filter_uses_threshold_luminance_weights() {
 }
 
 #[test]
-fn streamed_hsl_filter_matches_python_hsv_adjust_formula() {
+fn streamed_hsl_filter_matches_csp_fixed_point_hsv_adjust_formula() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = raster_key(29);
     let mut provider = InlineProvider::new(vec![(
@@ -428,7 +428,7 @@ fn streamed_hsl_filter_matches_python_hsv_adjust_formula() {
             lut_rgba: identity_lut(),
             opacity: 1.0,
             mask_key: None,
-            filter_mode: hsl_mode(30.0, -25.0, 40.0),
+            filter_mode: hsl_mode(1.0 / 12.0, -0.25, 0.25),
         },
     ];
 
@@ -437,7 +437,7 @@ fn streamed_hsl_filter_matches_python_hsv_adjust_formula() {
         .expect("draw streamed HSL filter");
 
     let mut expected = [255, 255, 255, 0].repeat(9);
-    expected[((4 * 4) as usize)..((4 * 4 + 4) as usize)].copy_from_slice(&[205, 122, 222, 255]);
+    expected[((4 * 4) as usize)..((4 * 4 + 4) as usize)].copy_from_slice(&[190, 134, 202, 255]);
     assert_eq!(output.pixels, expected);
 }
 

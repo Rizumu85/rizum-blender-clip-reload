@@ -3522,3 +3522,25 @@ Verification after the visibility fix:
 - `Test_SoftLight`: premultiplied max `1`, visible `0`.
 - `Test_ColorDodge`: exact.
 - `Test_AddGlowMultiply`: unchanged known residual, premultiplied max `3`.
+
+### HSL Filter Payload Scaling Follow-up
+
+The reverse workspace evidence for `sub_123FC180 @ 0x123FC180` identifies CSP's
+per-pixel HSL routine as a fixed-point HSV adjuster with luminosity/saturation
+coupling: positive luminosity desaturates, positive saturation brightens by the
+saturation increment, and negative saturation darkens at half rate. Applying
+that routine's fixed-point divisors directly to the SQLite `FilterLayerInfo`
+payload did not match `Test_HSL.clip`: the payload is `(-24, 35, 26)`, and
+treating all three values as native fixed-point arguments left the image almost
+unadjusted (`raw_mean=11.288223`, `raw_max=100` against the CSP PNG).
+
+The sample-backed mapping for the SQLite payload is instead mixed: hue is stored
+as UI degrees (`/360`), luminosity is stored as UI percent (`/100`), and
+saturation remains on the native fixed-point scale (`/32768`) for this sample.
+Keeping CSP's per-pixel lum/sat coupling with that payload mapping reduces
+`Test_HSL` from the old all-pixel drift (`raw_mean=36.277059`, `raw_max=86`) to
+`raw_mean=0.557394`, `raw_max=59`, with `premul_visible_px=47638`. The remaining
+max is localized around a semi-transparent gray-over-base region such as
+`(161,253)`, where the pre-filter composite is `[174,161,144]` but CSP is closer
+to `[254,162,144]`; treat that as a separate compositing/filter-scope or alpha
+quantization investigation, not as evidence to restore the old HSL formula.

@@ -154,9 +154,9 @@ pub(crate) fn lut_filter_uniform_bytes_with_target_origin_and_mask(
     bytes[4..8].copy_from_slice(&(u32::from(has_mask)).to_ne_bytes());
     bytes[8..12].copy_from_slice(&lut_filter_mode_kind(filter_mode).to_ne_bytes());
     if let GpuLutFilterMode::Hsl(params) = filter_mode {
-        bytes[12..16].copy_from_slice(&params.hue_degrees.to_ne_bytes());
-        bytes[24..28].copy_from_slice(&params.saturation.to_ne_bytes());
-        bytes[28..32].copy_from_slice(&params.luminosity.to_ne_bytes());
+        bytes[12..16].copy_from_slice(&params.hue_turns.to_ne_bytes());
+        bytes[24..28].copy_from_slice(&params.saturation_delta.to_ne_bytes());
+        bytes[28..32].copy_from_slice(&params.luminosity_delta.to_ne_bytes());
     }
     bytes[16..20].copy_from_slice(&target_origin.0.to_ne_bytes());
     bytes[20..24].copy_from_slice(&target_origin.1.to_ne_bytes());
@@ -305,16 +305,16 @@ mod tests {
             1.0,
             false,
             GpuLutFilterMode::Hsl(GpuHslFilterParams {
-                hue_degrees: 30.0,
-                saturation: -25.0,
-                luminosity: 40.0,
+                hue_turns: 1.0 / 12.0,
+                saturation_delta: -0.25,
+                luminosity_delta: 0.25,
             }),
             (0, 0),
         );
 
         assert_eq!(&bytes[8..12], &3u32.to_ne_bytes());
-        assert_eq!(&bytes[12..16], &30.0f32.to_ne_bytes());
-        assert_eq!(&bytes[24..28], &(-25.0f32).to_ne_bytes());
-        assert_eq!(&bytes[28..32], &40.0f32.to_ne_bytes());
+        assert_eq!(&bytes[12..16], &(1.0f32 / 12.0).to_ne_bytes());
+        assert_eq!(&bytes[24..28], &(-0.25f32).to_ne_bytes());
+        assert_eq!(&bytes[28..32], &0.25f32.to_ne_bytes());
     }
 }

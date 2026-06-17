@@ -441,7 +441,8 @@ semantics are in the strict supported subset, uploads any layer mask through
 the existing mask cache, and passes a filter mode to `clip_gpu`: RGB channel
 indexing for channel-wise LUT filters, Python-matching threshold luminosity
 indexing for Threshold, byte-domain luminosity indexing for Gradient Map, and
-HSL hue/saturation/value adjustment matching the Python formula. `clip_gpu`
+HSL hue/saturation/value adjustment using the sample-backed SQLite payload
+mapping plus CSP native luminosity/saturation coupling. `clip_gpu`
 applies the filter in one dedicated wgpu pass against the accumulated straight
 RGBA image while preserving alpha.
 `Test_ToneCurve.clip --gpu-normal-stack` and

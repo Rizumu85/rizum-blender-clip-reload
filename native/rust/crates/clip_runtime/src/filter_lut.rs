@@ -4,9 +4,9 @@ pub(crate) enum PlannedLutFilterMode {
     GradientMapLum,
     ThresholdLum,
     Hsl {
-        hue_degrees: f32,
-        saturation: f32,
-        luminosity: f32,
+        hue_turns: f32,
+        saturation_delta: f32,
+        luminosity_delta: f32,
     },
 }
 
@@ -42,13 +42,13 @@ pub(crate) fn lut_filter_rgba(
             tone_curve_lut_rgba(payload)?,
         )),
         FILTER_TYPE_HSL => {
-            let (hue_degrees, saturation, luminosity) = hsl_params(payload)?;
+            let (hue_turns, saturation_delta, luminosity_delta) = hsl_params(payload)?;
             Some((
                 "HueSaturationLuminosity",
                 PlannedLutFilterMode::Hsl {
-                    hue_degrees,
-                    saturation,
-                    luminosity,
+                    hue_turns,
+                    saturation_delta,
+                    luminosity_delta,
                 },
                 identity_lut_rgba(),
             ))
@@ -141,10 +141,12 @@ fn invert_lut_rgba() -> Vec<u8> {
 }
 
 fn hsl_params(payload: &[u8]) -> Option<(f32, f32, f32)> {
+    // The native per-pixel routine consumes fixed-point arguments, but the
+    // SQLite filter payload is only partly pre-scaled by the caller.
     Some((
-        read_be_i32(payload, 0)? as f32,
-        read_be_i32(payload, 4)? as f32,
-        read_be_i32(payload, 8)? as f32,
+        read_be_i32(payload, 0)? as f32 / 360.0,
+        read_be_i32(payload, 4)? as f32 / 32_768.0,
+        read_be_i32(payload, 8)? as f32 / 100.0,
     ))
 }
 
