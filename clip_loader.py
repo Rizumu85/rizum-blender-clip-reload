@@ -761,6 +761,32 @@ def _blend_add_glow_u8(dst_rgba: np.ndarray, src_rgba: np.ndarray, param3: int =
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
+def _blend_normal_u8(dst_rgba: np.ndarray, src_rgb_u8: np.ndarray, src_a_u8: np.ndarray) -> np.ndarray:
+    """CSP-like byte-domain Normal alpha-over for straight RGBA buffers."""
+    dst = dst_rgba.astype(np.int32, copy=True)
+    src_rgb = src_rgb_u8.astype(np.int32, copy=False)
+    src_a = src_a_u8.astype(np.int32, copy=False)
+    dst_a = dst[..., 3]
+    out = dst.copy()
+
+    active = src_a > 0
+    if not np.any(active):
+        return out.astype(np.uint8)
+
+    carry = (dst_a * (255 - src_a)) // 255
+    out_a = np.minimum(carry + src_a, 255)
+    denom = np.maximum(out_a, 1)
+    rgb = (
+        src_rgb * src_a[..., None]
+        + dst[..., :3] * carry[..., None]
+        + ((denom[..., None] - 1) // 2)
+    ) // denom[..., None]
+
+    out[..., :3] = np.where(active[..., None], np.clip(rgb, 0, 255), out[..., :3])
+    out[..., 3] = np.where(active, out_a, out[..., 3])
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
 def _alpha_bbox(alpha: np.ndarray):
     """Return (y0, y1, x0, x1) tightly enclosing all alpha>0 pixels, else None.
 
@@ -1738,15 +1764,17 @@ class ClipFile:
             dst[...] = blended_u8
             return True
 
+        if mode == "NORMAL":
+            dst[...] = _blend_normal_u8(dst, src_rgb_u8, src_a_u8)
+            return True
+
         sa = (src_a_u8.astype(np.float32) / 255.0)[..., None]
         da = (dst_a_u8.astype(np.float32) / 255.0)[..., None]
         src_rgb = src_rgb_u8.astype(np.float32) / 255.0
         dst_rgb = dst[..., :3].astype(np.float32) / 255.0
         out_a = sa + da * (1.0 - sa)
 
-        if mode == "NORMAL":
-            out_pm = src_rgb * sa + dst_rgb * da * (1.0 - sa)
-        elif mode == "GLOW_DODGE":
+        if mode == "GLOW_DODGE":
             strength_u8 = np.clip(np.floor(src_rgb * sa * 255.0 + 0.5), 0, 255).astype(np.int32)
             dst_u8 = dst[..., :3].astype(np.int32)
             dodge_u8 = np.where(

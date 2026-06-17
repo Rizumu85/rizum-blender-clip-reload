@@ -48,6 +48,18 @@ fn quantize_rgb_u8(value: vec3<f32>) -> vec3<f32> {
     return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 + vec3<f32>(0.5)) / 255.0;
 }
 
+fn to_u8(value: f32) -> i32 {
+    return i32(clamp(floor(value * 255.0 + 0.5), 0.0, 255.0));
+}
+
+fn opacity_to_u8(value: f32) -> i32 {
+    return i32(clamp(floor(value * 256.0 + 0.5), 0.0, 256.0));
+}
+
+fn normal_alpha_over_channel(dst: i32, src: i32, src_a: i32, carry: i32, out_a: i32) -> i32 {
+    return clamp((src * src_a + dst * carry + (out_a - 1) / 2) / out_a, 0, 255);
+}
+
 fn min3(value: vec3<f32>) -> f32 {
     return min(value.r, min(value.g, value.b));
 }
@@ -139,16 +151,27 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         src = source_params.color;
     }
     let dst = textureLoad(dest_texture, texel, 0);
-    src.a = clamp(src.a * source_params.opacity, 0.0, 1.0);
+    var src_a = to_u8(src.a);
     if (source_params.has_mask == 1u) {
-        src.a = src.a * load_mask(texel + source_params.target_origin);
+        src_a = (src_a * to_u8(load_mask(texel + source_params.target_origin))) / 255;
     }
-    let out_alpha = src.a + dst.a * (1.0 - src.a);
-    var out_rgb = dst.rgb;
-    if (out_alpha > 0.0) {
-        out_rgb = (src.rgb * src.a + dst.rgb * dst.a * (1.0 - src.a)) / out_alpha;
+    src_a = (src_a * opacity_to_u8(source_params.opacity)) / 256;
+    if (src_a <= 0) {
+        return dst;
     }
-    return quantize_u8(vec4<f32>(out_rgb, out_alpha));
+
+    let dst_a = to_u8(dst.a);
+    let carry = (dst_a * (255 - src_a)) / 255;
+    let out_a = min(carry + src_a, 255);
+    let out_r = normal_alpha_over_channel(to_u8(dst.r), to_u8(src.r), src_a, carry, out_a);
+    let out_g = normal_alpha_over_channel(to_u8(dst.g), to_u8(src.g), src_a, carry, out_a);
+    let out_b = normal_alpha_over_channel(to_u8(dst.b), to_u8(src.b), src_a, carry, out_a);
+    return vec4<f32>(
+        f32(out_r) / 255.0,
+        f32(out_g) / 255.0,
+        f32(out_b) / 255.0,
+        f32(out_a) / 255.0,
+    );
 }
 "#;
 

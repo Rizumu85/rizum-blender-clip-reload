@@ -119,6 +119,62 @@ fn container_source_resolves_child_cache_with_blend_mode() {
 }
 
 #[test]
+fn normal_raster_source_uses_byte_domain_alpha_over() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let base_key = GpuRasterResourceKey {
+        layer_id: LayerId(7),
+        render_mipmap_id: 17,
+    };
+    let top_key = GpuRasterResourceKey {
+        layer_id: LayerId(8),
+        render_mipmap_id: 18,
+    };
+    let uploads = [
+        GpuRasterUpload {
+            layer_id: base_key.layer_id,
+            render_node_id: RenderNodeId(7),
+            render_mipmap_id: base_key.render_mipmap_id,
+            size: CanvasSize::new(1, 1),
+            pixels: &[0, 0, 0, 26],
+        },
+        GpuRasterUpload {
+            layer_id: top_key.layer_id,
+            render_node_id: RenderNodeId(8),
+            render_mipmap_id: top_key.render_mipmap_id,
+            size: CanvasSize::new(1, 1),
+            pixels: &[197, 182, 252, 91],
+        },
+    ];
+    let cache = renderer
+        .upload_raster_resources(&uploads)
+        .expect("upload normal alpha-over sources");
+    let sources = [
+        GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            key: base_key,
+            opacity: 1.0,
+            mask_key: None,
+            offset_x: 0,
+            offset_y: 0,
+            blend_mode: GpuRasterBlendMode::Normal,
+        }),
+        GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            key: top_key,
+            opacity: 1.0,
+            mask_key: None,
+            offset_x: 0,
+            offset_y: 0,
+            blend_mode: GpuRasterBlendMode::Normal,
+        }),
+    ];
+
+    let output = renderer
+        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .expect("draw normal alpha-over sources");
+
+    assert_eq!(output.pixels, [168, 155, 214, 107]);
+}
+
+#[test]
 fn through_group_resolves_before_after_delta_with_opacity() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let sources = [
