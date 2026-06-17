@@ -3572,3 +3572,16 @@ samples after the all-`img` comparison pass:
   alternatives can reduce mean/visible drift but increase max, or keep max while
   providing no meaningful improvement. Keep the current weights unless a native
   luminosity-index formula is found.
+
+2026-06-17 hue-only follow-up: public Photoshop documentation describes the
+Hue/Saturation sliders semantically and documents `Colorize`, but does not
+publish the ordinary Master Hue pixel formula. The commonly cited public
+reverse-engineered Photoshop formula covers the `Colorize` checkbox path rather
+than normal hue rotation, and general HSL/HSB definitions only establish that
+hue is a 0..360-degree angle. The new `Test_HSL2.clip` fixture isolates hue:
+the HSL payload is `[-26, 0, 0]`, and native strict GPU compares to CSP at
+`raw_max=1`, `raw_visible_px=0`, `premul_max=1`, `premul_visible_px=0`.
+Therefore the current ordinary Master Hue mapping (`payload_hue / 360.0`, same
+rotation direction) is sample-backed. Do not replace hue with `/196608` in the
+SQLite payload path; that divisor belongs to CSP's internal fixed-point routine
+after caller-side normalization, not to this saved payload.
