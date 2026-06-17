@@ -39,11 +39,14 @@ Goal: keep the Blender importer usable on the native renderer path while the rem
 
 Current focus:
 
-- Keep manual reload and non-blocking auto-reload behavior stable.
+- Keep initial import, manual reload, and auto-reload behavior non-blocking.
 - Keep the native renderer bridge as the add-on's only import/reload path:
   native imports render through the packaged out-of-process native worker,
-  create generated/packed Blender images, store source-tracking properties, and
-  update through the add-on's reload/watch path without writing sidecar PNGs.
+  create generated Blender images, store source-tracking properties, and update
+  through the add-on's reload/watch path without writing sidecar PNGs.
+- Keep persistence explicit and cheap during reload: successful renders mark the
+  image as needing pack, `Pack Now` packs immediately on user request, and
+  Blender `save_pre` packs dirty native images before saving the `.blend`.
 - Keep native render state visible in Blender: image metadata and the Image
   Editor panel should report ready, refreshing, stale, missing-source,
   render-error states, and elapsed/last render timing.
@@ -65,11 +68,13 @@ Current policy:
 - External OpenImageIO plugin loading alone is not enough for stock Blender `bpy.data.images.load(".clip")`; true file-backed support requires a Blender ImBuf/source bridge or upstream source patch. The C ABI has a byte-buffer session entry point (`clip_renderer_session_open_memory`), and the C++ OIIO adapter now supports `IOProxy` memory opens by reading `oiio:ioproxy` bytes into Rust memory sessions without temp files. This is host-integration plumbing for OIIO/ImBuf callers, not a replacement for the accepted generated-image Blender add-on path.
 - Current native milestone: the stock Blender image-datablock bridge is the
   add-on runtime path. The add-on calls the packaged `clip_cli` worker so native
-  GPU rendering runs outside Blender's UI process, creates generated/packed
-  Blender images, records source metadata (mtime, size, SHA-256), and updates
-  those images through manual reload, the background watcher, and Blender
-  `load_post` freshness scans without writing sidecar PNGs. The watcher uses
-  lightweight mtime/size checks, while `load_post` can also compare SHA-256.
+  GPU rendering runs outside Blender's UI process, creates generated Blender
+  images, records source metadata (mtime, size, SHA-256), and updates those
+  images through initial import, manual reload, the background watcher, and
+  Blender `load_post` freshness scans without writing sidecar PNGs. The watcher
+  uses lightweight mtime/size checks, while `load_post` can also compare
+  SHA-256. Successful renders do not pack immediately; they mark the image as
+  needing pack, with `Pack Now` and a `save_pre` handler providing persistence.
   Render failures are stored as image metadata and shown in the Image Editor
   panel, while successful renders clear old error metadata. The add-on records
   elapsed/last render timing for manual and background renders. The C ABI
@@ -117,9 +122,9 @@ Current policy:
   staging-buffer atlas tile upload attempt was measured and rejected because it
   slowed RealArt on this machine; keep `Queue::write_texture` until profiling
   proves a no-extra-copy upload design is worthwhile. The likely Blender
-  product lever is optional/deferred packing of generated images; this changes
-  persistence timing, not pixel semantics, and should be exposed deliberately if
-  implemented. See `docs/native-performance-investigation.md`.
+  product lever of deferred packing is now implemented in the Blender add-on:
+  reload avoids immediate `image.pack()`, while manual `Pack Now` and save-time
+  packing preserve `.blend` persistence. See `docs/native-performance-investigation.md`.
 - Native raster extraction now applies render offscreen placement through `LayerRenderOffscrOffsetX/Y`, matching the existing mask placement model and the known `Ref_Terra404_Live2D` negative-X render sources. This removes a structural decode gap before further large-reference GPU work.
 - Native raster extraction now decodes full-color, grayscale, and monochrome raster tile streams. `Test_ Grayscale.clip` and `Test_Monochrome.clip` route through the strict GPU path and compare exactly against CSP PNGs.
 - Native support diagnostics use a metadata-only strict selector. `clip_cli --gpu-support-check` validates graph, raster source, mask source, and LUT-filter support without tile decode, GPU initialization, or rendering, and labels resource/unsupported layer ids with layer names when available. `clip_cli --gpu-support-json` emits the same support/resource/unsupported-node data as pure JSON for automation and issue capture, also carrying layer names when available. Other CLI plan, resource, stack, unsupported, and trace diagnostics should use the same layer-label helper so layer ids are easy to map back to Blender support reports. These commands must remain diagnostics only, not fallback renderers.

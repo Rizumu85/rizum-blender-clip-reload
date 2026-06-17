@@ -2,8 +2,8 @@
 Clip Studio Paint (.clip) Importer for Blender.
 
 The default importer path calls the Rust C ABI, uploads RGBA pixels into a
-generated Blender Image, packs the latest render into the .blend, and stores
-.clip source-tracking properties for reload/watch updates.
+generated Blender Image, packs rendered pixels on save or explicit user
+request, and stores .clip source-tracking properties for reload/watch updates.
 
 No external auto-reload add-on is required.
 """
@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 48),
+    "version": (0, 8, 49),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -39,6 +39,14 @@ CLIP_SIZE_KEY = native_bridge.CLIP_SIZE_KEY
 CLIP_SHA256_KEY = native_bridge.CLIP_SHA256_KEY
 CLIP_NATIVE_KEY = native_bridge.CLIP_NATIVE_KEY
 CLIP_SUPPORT_DETAILS_EXPANDED_KEY = "clip_support_details_expanded"
+CLIP_PACK_STATUS_KEY = "clip_pack_status"
+CLIP_PACK_LAST_SECONDS_KEY = "clip_pack_last_seconds"
+CLIP_PACK_ERROR_KEY = "clip_pack_error"
+PACK_STATUS_PACKED = "packed"
+PACK_STATUS_NEEDS_PACK = "needs_pack"
+PACK_STATUS_RENDERING = "rendering"
+PACK_STATUS_PACKING = "packing"
+PACK_STATUS_ERROR = "error"
 SUPPORT_DETAIL_PREVIEW_LINES = 4
 ADDON_PKG = __package__
 
@@ -58,9 +66,94 @@ def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
     image = native_bridge.import_clip_as_image(
         clip_path,
         bpy_module=bpy,
-        pack=True,
+        pack=False,
     )
     image[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
+    _mark_image_needs_pack(image)
+    return image
+
+
+def _delete_image_key(image, key: str) -> None:
+    try:
+        del image[key]
+    except (KeyError, TypeError):
+        pass
+
+
+def _set_pack_status(image, status: str, *, error: str = "") -> None:
+    image[CLIP_PACK_STATUS_KEY] = status
+    if error:
+        image[CLIP_PACK_ERROR_KEY] = error
+    elif status != PACK_STATUS_ERROR:
+        _delete_image_key(image, CLIP_PACK_ERROR_KEY)
+
+
+def _mark_image_needs_pack(image) -> None:
+    _set_pack_status(image, PACK_STATUS_NEEDS_PACK)
+
+
+def _pack_status_label(status: str) -> str:
+    return {
+        PACK_STATUS_PACKED: "Packed in .blend",
+        PACK_STATUS_NEEDS_PACK: "Needs pack",
+        PACK_STATUS_RENDERING: "Waiting for render",
+        PACK_STATUS_PACKING: "Packing",
+        PACK_STATUS_ERROR: "Pack needs attention",
+    }.get(status, "Unknown")
+
+
+def _pack_status_icon(status: str) -> str:
+    return {
+        PACK_STATUS_PACKED: "CHECKMARK",
+        PACK_STATUS_NEEDS_PACK: "INFO",
+        PACK_STATUS_RENDERING: "SORTTIME",
+        PACK_STATUS_PACKING: "SORTTIME",
+        PACK_STATUS_ERROR: "ERROR",
+    }.get(status, "INFO")
+
+
+def _pack_image_now(image) -> float:
+    if not hasattr(image, "pack"):
+        raise RuntimeError("Blender image does not support packing")
+    _set_pack_status(image, PACK_STATUS_PACKING)
+    started_at = time.perf_counter()
+    try:
+        image.pack()
+    except Exception as exc:
+        _set_pack_status(image, PACK_STATUS_ERROR, error=str(exc))
+        raise
+    seconds = time.perf_counter() - started_at
+    image[CLIP_PACK_LAST_SECONDS_KEY] = float(seconds)
+    _set_pack_status(image, PACK_STATUS_PACKED)
+    return seconds
+
+
+def _create_pending_clip_image(clip_path: str):
+    source = os.path.abspath(clip_path)
+    name = os.path.basename(source) or "Clip Studio Image"
+    image = bpy.data.images.new(
+        name,
+        width=1,
+        height=1,
+        alpha=True,
+        float_buffer=False,
+    )
+    image.source = "GENERATED"
+    if hasattr(image, "colorspace_settings"):
+        image.colorspace_settings.name = "sRGB"
+    image[CLIP_SOURCE_KEY] = source
+    image[CLIP_NATIVE_KEY] = True
+    try:
+        image[CLIP_MTIME_KEY] = str(os.path.getmtime(source))
+        image[CLIP_SIZE_KEY] = str(os.path.getsize(source))
+    except OSError:
+        pass
+    image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
+    native_bridge.write_reload_status(
+        image,
+        native_bridge.RELOAD_STATUS_REFRESHING,
+    )
+    _set_pack_status(image, PACK_STATUS_RENDERING)
     return image
 
 
@@ -278,6 +371,15 @@ def _support_diagnostic_text(img) -> str:
     if phase_lines:
         lines.append("Timing phases:")
         lines.extend(f"- {line}" for line in phase_lines)
+    pack_status = str(img.get(CLIP_PACK_STATUS_KEY, "") or "")
+    if pack_status:
+        lines.append(f"Pack status: {_pack_status_label(pack_status)}")
+    pack_seconds = _image_float_property(img, CLIP_PACK_LAST_SECONDS_KEY)
+    if pack_seconds:
+        lines.append(f"Last pack duration: {_format_seconds(pack_seconds)}")
+    pack_error = str(img.get(CLIP_PACK_ERROR_KEY, "") or "")
+    if pack_error:
+        lines.append(f"Pack error: {pack_error}")
     if width and height:
         lines.append(f"Canvas: {width}x{height}")
     renderer_abi = _image_int_property(img, native_bridge.CLIP_RENDERER_ABI_KEY)
@@ -403,6 +505,7 @@ def _schedule_async_decode(
             img,
             native_bridge.RELOAD_STATUS_REFRESHING,
         )
+        _set_pack_status(img, PACK_STATUS_RENDERING)
 
     threading.Thread(
         target=_async_decode,
@@ -428,14 +531,19 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
     def execute(self, context):
         clip_path = self.filepath
         try:
-            img = _import_clip_as_image(clip_path)
+            img = _create_pending_clip_image(clip_path)
         except Exception as exc:
-            self.report({"ERROR"}, f"Failed to read .clip: {exc}")
+            self.report({"ERROR"}, f"Failed to start .clip import: {exc}")
             return {"CANCELLED"}
 
         _show_image_in_open_image_editors(context, img)
+        if not _schedule_async_decode(img.get(CLIP_SOURCE_KEY), img.name):
+            native_bridge.write_reload_error(img, "Render is already in progress for this source")
+            _set_pack_status(img, PACK_STATUS_ERROR, error="Render did not start")
+            self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
+            return {"CANCELLED"}
         self.report({"INFO"},
-                    f"Imported {img.name} ({img.size[0]}x{img.size[1]})")
+                    f"Rendering {img.name} in the background")
         return {"FINISHED"}
 
 
@@ -461,29 +569,39 @@ class IMAGE_OT_reload_clip_studio(Operator):
             )
             self.report({"ERROR"}, f"Source .clip not found: {clip_path!r}")
             return {"CANCELLED"}
-        started_at = time.time()
-        img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = started_at
-        native_bridge.write_reload_status(
-            img,
-            native_bridge.RELOAD_STATUS_REFRESHING,
-        )
-        try:
-            result = native_bridge.render_clip_rgba8(
-                clip_path,
-            )
-            native_bridge.create_or_update_image(
-                bpy,
-                result,
-                image=img,
-                pack=True,
-            )
-            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
-        except Exception as exc:
-            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
-            native_bridge.write_reload_error(img, str(exc))
-            self.report({"ERROR"}, f"Reload failed: {exc}")
+        if not _schedule_async_decode(clip_path, img.name):
+            self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
             return {"CANCELLED"}
-        self.report({"INFO"}, f"Reloaded {os.path.basename(clip_path)}")
+        self.report({"INFO"}, f"Reloading {os.path.basename(clip_path)} in the background")
+        return {"FINISHED"}
+
+
+class IMAGE_OT_pack_clip_studio(Operator):
+    """Pack the selected .clip image's current pixels into the .blend."""
+    bl_idname = "image.pack_clip_studio"
+    bl_label = "Pack Clip Studio Image"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        space = getattr(context, "space_data", None)
+        img = getattr(space, "image", None) if space else None
+        return img is not None and CLIP_SOURCE_KEY in img.keys()
+
+    def execute(self, context):
+        img = context.space_data.image
+        clip_path = img.get(CLIP_SOURCE_KEY, "")
+        with _state_lock:
+            running = bool(clip_path and clip_path in _in_flight)
+        if running:
+            self.report({"WARNING"}, "Wait for the current render before packing")
+            return {"CANCELLED"}
+        try:
+            seconds = _pack_image_now(img)
+        except Exception as exc:
+            self.report({"ERROR"}, f"Pack failed: {exc}")
+            return {"CANCELLED"}
+        self.report({"INFO"}, f"Packed {img.name} in {_format_seconds(seconds)}")
         return {"FINISHED"}
 
 
@@ -621,6 +739,12 @@ def _async_decode(
             if img is not None and img.get(CLIP_SOURCE_KEY) == clip_path:
                 img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
                 native_bridge.write_reload_error(img, error_message)
+                if img.get(CLIP_PACK_STATUS_KEY) == PACK_STATUS_RENDERING:
+                    _set_pack_status(
+                        img,
+                        PACK_STATUS_ERROR,
+                        error="Render failed before pixels were updated",
+                    )
             return None
 
         bpy.app.timers.register(_on_error, first_interval=0.0)
@@ -638,9 +762,11 @@ def _async_decode(
                     bpy,
                     native_result,
                     image=img,
-                    pack=True,
+                    pack=False,
+                    allow_resize=True,
                 )
                 img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
+                _mark_image_needs_pack(img)
             try:
                 if _addon_prefs().debug:
                     print(f"[clip_studio_importer] reloaded {clip_path}")
@@ -764,6 +890,35 @@ def _unregister_load_post_handler():
         bpy.app.handlers.load_post.remove(_load_post_refresh_native_images)
 
 
+@persistent
+def _save_pre_pack_native_images(_dummy):
+    """Pack dirty native images before saving the .blend."""
+    for img in bpy.data.images:
+        if not img.get(CLIP_NATIVE_KEY):
+            continue
+        if img.get(CLIP_PACK_STATUS_KEY) != PACK_STATUS_NEEDS_PACK:
+            continue
+        clip_path = img.get(CLIP_SOURCE_KEY, "")
+        with _state_lock:
+            running = bool(clip_path and clip_path in _in_flight)
+        if running:
+            continue
+        try:
+            _pack_image_now(img)
+        except Exception:
+            continue
+
+
+def _register_save_pre_handler():
+    if _save_pre_pack_native_images not in bpy.app.handlers.save_pre:
+        bpy.app.handlers.save_pre.append(_save_pre_pack_native_images)
+
+
+def _unregister_save_pre_handler():
+    if _save_pre_pack_native_images in bpy.app.handlers.save_pre:
+        bpy.app.handlers.save_pre.remove(_save_pre_pack_native_images)
+
+
 # --------------------------------------------------------------------------- #
 # Preferences + UI
 # --------------------------------------------------------------------------- #
@@ -838,6 +993,23 @@ class IMAGE_PT_clip_studio(Panel):
             text=f"Status: {_reload_status_label(status)}",
             icon=_reload_status_icon(status),
         )
+        pack_status = str(img.get(CLIP_PACK_STATUS_KEY, "") or "")
+        if pack_status:
+            layout.label(
+                text=f"Pack: {_pack_status_label(pack_status)}",
+                icon=_pack_status_icon(pack_status),
+            )
+            if pack_status == PACK_STATUS_NEEDS_PACK:
+                layout.label(
+                    text="Will pack before saving the .blend.",
+                    icon="INFO",
+                )
+            pack_error = img.get(CLIP_PACK_ERROR_KEY, "")
+            if pack_error:
+                layout.label(
+                    text=f"Pack error: {_short_diagnostic(pack_error)}",
+                    icon="ERROR",
+                )
         support_status = img.get(native_bridge.CLIP_SUPPORT_STATUS_KEY, "")
         if support_status:
             layout.label(
@@ -925,6 +1097,7 @@ class IMAGE_PT_clip_studio(Panel):
                     icon="ERROR",
                 )
         layout.operator(IMAGE_OT_reload_clip_studio.bl_idname, icon="FILE_REFRESH")
+        layout.operator(IMAGE_OT_pack_clip_studio.bl_idname, text="Pack Now", icon="CHECKMARK")
         if status == native_bridge.RELOAD_STATUS_REFRESHING:
             started_at = _image_float_property(
                 img,
@@ -970,6 +1143,7 @@ _classes = (
     CSI_AddonPreferences,
     IMPORT_OT_clip_studio,
     IMAGE_OT_reload_clip_studio,
+    IMAGE_OT_pack_clip_studio,
     IMAGE_OT_toggle_clip_support_details,
     IMAGE_OT_copy_clip_support_diagnostics,
     IMAGE_OT_copy_clip_support_locations,
@@ -983,10 +1157,12 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_import.append(_menu_func_import)
     _register_load_post_handler()
+    _register_save_pre_handler()
     _register_watcher()
 
 
 def unregister():
+    _unregister_save_pre_handler()
     _unregister_load_post_handler()
     _unregister_watcher()
     bpy.types.TOPBAR_MT_file_import.remove(_menu_func_import)

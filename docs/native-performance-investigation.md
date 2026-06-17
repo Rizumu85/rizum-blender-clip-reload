@@ -372,14 +372,11 @@ Blender conclusions:
   imports with 2-3s native worker times are consistent with this post-render
   bridge being a large share of the remaining delay, but the exact phase split
   should be measured in the add-on UI before changing persistence semantics.
-- The main product-level speed lever is packing policy. Packing every rendered
-  image preserves the current "latest pixels survive in the .blend" behavior,
-  but it also makes import/reload wait for a large image to be serialized into
-  Blender. A faithful faster mode would keep the generated image visible and
-  source-tracked immediately, then pack on save or on explicit user command.
-  This is not a renderer fallback and does not change pixel semantics, but it
-  changes persistence timing and therefore should be surfaced as a Blender UI
-  preference if implemented.
+- The main product-level speed lever is packing policy. The add-on now keeps
+  generated images visible and source-tracked immediately, marks successful
+  renders as needing pack, and persists them through explicit `Pack Now` or a
+  Blender `save_pre` handler. This is not a renderer fallback and does not
+  change pixel semantics; it moves `image.pack()` cost out of the reload path.
 - Smaller Blender bridge optimizations are still worth measuring after phase
   timing: avoid extra NumPy temporaries by writing directly into one
   bottom-row-first `float32` output array, optionally have the worker emit

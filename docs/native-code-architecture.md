@@ -39,8 +39,9 @@ Completed second milestone: Blender image-datablock bridge.
 Result: the bridge works in stock Blender 5.0.1 without sidecar PNG output. It
 is not a true file-backed image format; reload must be owned by the add-on unless
 Blender gains an ImBuf/filetype bridge. The accepted persistence model is to
-pack the latest rendered pixels into the `.blend` and store `.clip` source
-tracking metadata on the image.
+store `.clip` source tracking metadata immediately, keep rendered pixels in a
+generated image datablock, and pack dirty native images through `Pack Now` or
+Blender `save_pre`.
 
 Completed third milestone foundation: native `.clip` data path.
 
@@ -647,7 +648,8 @@ Owns:
 - Creating and updating `bpy.types.Image` datablocks.
 - Passing file paths and reload events to the native runtime.
 - Uploading final RGBA bytes returned by the native runtime.
-- Packing the latest rendered pixels into the `.blend` by default.
+- Deferring pixel persistence until explicit `Pack Now` or Blender `save_pre`
+  packing.
 - Storing and reading `.clip` source-tracking custom properties on images.
 - User-facing import/reload UI.
 - Discovering the packaged native C ABI library from
@@ -663,9 +665,9 @@ Does not own:
 
 Persistence rules:
 
-- The image datablock is generated/packed, not file-backed to a sidecar PNG.
-- The packed pixels are the last known rendered result and must remain visible
-  after reopening the `.blend`, even if the `.clip` source is missing.
+- The image datablock is generated, not file-backed to a sidecar PNG.
+- Packed pixels are the last saved rendered result and must remain visible after
+  reopening the `.blend`, even if the `.clip` source is missing.
 - Custom properties must identify the source `.clip` and render freshness. Use
   stable project-prefixed names such as:
   - `rizum_clip_source`
@@ -691,9 +693,10 @@ Persistence rules:
   newer/different, it asks the native runtime to render and updates the image
   pixels. If the source is missing, it keeps the packed pixels visible and
   records `clip_reload_status = "missing_source"`.
-- Repacking after successful reload is the default so the `.blend` remains
-  self-contained. A future user option may disable packing to reduce `.blend`
-  size, but the default path is packed.
+- Successful renders mark the image as needing pack instead of calling
+  `image.pack()` immediately. Users can pack the current pixels with `Pack Now`,
+  and the add-on's persistent `save_pre` handler packs dirty native images
+  before saving the `.blend`.
 
 ## Dependency Direction
 
@@ -742,8 +745,9 @@ Target stock Blender add-on flow:
 4. Runtime returns final RGBA bytes and image metadata.
 5. Add-on creates or updates a generated `bpy.types.Image`.
 6. Add-on uploads the RGBA bytes with Blender's bulk pixel API.
-7. Add-on packs the updated rendered pixels into the `.blend` and records source
-   freshness custom properties.
+7. Add-on records source freshness custom properties and marks the image as
+   needing pack. `Pack Now` or Blender `save_pre` later packs the current pixels
+   into the `.blend`.
 
 This flow is still a native renderer path. Python only owns Blender UI and
 datablock wiring.

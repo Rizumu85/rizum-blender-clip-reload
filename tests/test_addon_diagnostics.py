@@ -57,10 +57,70 @@ def _load_addon_module():
             self[name] = text
             return text
 
+    class FakePixels:
+        def __init__(self) -> None:
+            self.values = None
+
+        def foreach_set(self, values) -> None:
+            self.values = list(values)
+
+    class FakeColorSettings:
+        def __init__(self) -> None:
+            self.name = ""
+
+    class FakeImage(dict):
+        def __init__(self, name: str, width: int, height: int) -> None:
+            super().__init__()
+            self.name = name
+            self.size = (width, height)
+            self.source = ""
+            self.colorspace_settings = FakeColorSettings()
+            self.pixels = FakePixels()
+            self.updated = False
+            self.packed = False
+
+        def update(self) -> None:
+            self.updated = True
+
+        def pack(self) -> None:
+            self.packed = True
+
+        def scale(self, width: int, height: int) -> None:
+            self.size = (width, height)
+
+    class FakeImages(list):
+        def new(self, name: str, *, width: int, height: int, alpha: bool, float_buffer: bool):
+            image = FakeImage(name, width, height)
+            image.alpha = alpha
+            image.float_buffer = float_buffer
+            self.append(image)
+            return image
+
+        def get(self, name: str):
+            for image in self:
+                if image.name == name:
+                    return image
+            return None
+
+    class FakeTimers:
+        def __init__(self) -> None:
+            self.callbacks = []
+
+        def register(self, callback, **_kwargs):
+            self.callbacks.append(callback)
+            return None
+
+        def is_registered(self, callback) -> bool:
+            return callback in self.callbacks
+
+        def unregister(self, callback) -> None:
+            self.callbacks.remove(callback)
+
     bpy_app_handlers.persistent = persistent
     bpy_app_handlers.load_post = []
+    bpy_app_handlers.save_pre = []
     bpy_app.handlers = bpy_app_handlers
-    bpy_app.timers = types.SimpleNamespace()
+    bpy_app.timers = FakeTimers()
     bpy.app = bpy_app
     bpy.props = bpy_props
     bpy_types.AddonPreferences = AddonPreferences
@@ -69,7 +129,7 @@ def _load_addon_module():
     bpy_types.TOPBAR_MT_file_import = types.SimpleNamespace()
     bpy.types = bpy_types
     bpy.utils = types.SimpleNamespace()
-    bpy.data = types.SimpleNamespace(images=[], texts=FakeTexts())
+    bpy.data = types.SimpleNamespace(images=FakeImages(), texts=FakeTexts())
     bpy.context = types.SimpleNamespace(
         preferences=types.SimpleNamespace(
             addons={
@@ -488,7 +548,6 @@ class AddonDiagnosticsTests(unittest.TestCase):
 
     def test_import_operator_shows_image_in_open_image_editors(self) -> None:
         addon = _load_addon_module()
-        imported_image = types.SimpleNamespace(name="sample.clip", size=(16, 8))
         original_image = types.SimpleNamespace(name="already-open")
         image_space = types.SimpleNamespace(type="IMAGE_EDITOR", image=original_image)
         uv_space = types.SimpleNamespace(type="IMAGE_EDITOR", ui_type="UV", image=original_image)
@@ -510,19 +569,136 @@ class AddonDiagnosticsTests(unittest.TestCase):
                 ]
             )
         )
-        original_import = addon._import_clip_as_image
-        addon._import_clip_as_image = lambda _path: imported_image
+        scheduled = []
+        original_schedule = addon._schedule_async_decode
+        addon._schedule_async_decode = (
+            lambda path, name: scheduled.append((path, name)) or True
+        )
         try:
             operator = addon.IMPORT_OT_clip_studio()
             operator.filepath = "C:/art/sample.clip"
 
             self.assertEqual(operator.execute(context), {"FINISHED"})
         finally:
-            addon._import_clip_as_image = original_import
+            addon._schedule_async_decode = original_schedule
 
+        imported_image = addon.bpy.data.images.get("sample.clip")
+        self.assertIsNotNone(imported_image)
         self.assertIs(image_space.image, imported_image)
         self.assertIs(uv_space.image, imported_image)
+        self.assertEqual(imported_image[addon.native_bridge.CLIP_RELOAD_STATUS_KEY], "refreshing")
+        self.assertEqual(imported_image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_RENDERING)
+        self.assertEqual(scheduled, [(imported_image[addon.CLIP_SOURCE_KEY], imported_image.name)])
         self.assertEqual(operator.reported[0], {"INFO"})
+
+    def test_reload_operator_schedules_background_render(self) -> None:
+        addon = _load_addon_module()
+        image = addon.bpy.data.images.new(
+            "sample.clip",
+            width=1,
+            height=1,
+            alpha=True,
+            float_buffer=False,
+        )
+        image[addon.CLIP_SOURCE_KEY] = "C:/art/sample.clip"
+        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+        scheduled = []
+        original_exists = addon.os.path.exists
+        original_schedule = addon._schedule_async_decode
+        addon.os.path.exists = lambda _path: True
+        addon._schedule_async_decode = (
+            lambda path, name: scheduled.append((path, name)) or True
+        )
+        try:
+            operator = addon.IMAGE_OT_reload_clip_studio()
+
+            self.assertEqual(operator.execute(context), {"FINISHED"})
+        finally:
+            addon.os.path.exists = original_exists
+            addon._schedule_async_decode = original_schedule
+
+        self.assertEqual(scheduled, [("C:/art/sample.clip", "sample.clip")])
+        self.assertEqual(operator.reported[0], {"INFO"})
+
+    def test_async_decode_updates_without_packing_and_marks_dirty(self) -> None:
+        addon = _load_addon_module()
+        image = addon.bpy.data.images.new(
+            "sample.clip",
+            width=1,
+            height=1,
+            alpha=True,
+            float_buffer=False,
+        )
+        image[addon.CLIP_SOURCE_KEY] = "C:/art/sample.clip"
+        result = addon.native_bridge.NativeRenderResult(
+            clip_path="C:/art/sample.clip",
+            width=1,
+            height=1,
+            root_layer_id=2,
+            layer_count=3,
+            external_data_count=4,
+            renderer_abi=addon.native_bridge.EXPECTED_ABI_VERSION,
+            renderer_version="0.1.0-test",
+            source_mtime=10.0,
+            source_size=4,
+            source_sha256="abcd",
+            pixels_rgba8=bytes([255, 0, 0, 255]),
+            support_summary=None,
+            worker_seconds=1.2,
+            output_read_seconds=0.1,
+        )
+        original_render = addon.native_bridge.render_clip_rgba8
+        original_register = addon.bpy.app.timers.register
+        addon.native_bridge.render_clip_rgba8 = lambda _path: result
+        addon.bpy.app.timers.register = lambda callback, **_kwargs: callback()
+        try:
+            addon._async_decode("C:/art/sample.clip", "sample.clip")
+        finally:
+            addon.native_bridge.render_clip_rgba8 = original_render
+            addon.bpy.app.timers.register = original_register
+
+        self.assertFalse(image.packed)
+        self.assertTrue(image.updated)
+        self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_NEEDS_PACK)
+        self.assertEqual(image[addon.native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
+
+    def test_pack_now_operator_packs_current_pixels(self) -> None:
+        addon = _load_addon_module()
+        image = addon.bpy.data.images.new(
+            "sample.clip",
+            width=1,
+            height=1,
+            alpha=True,
+            float_buffer=False,
+        )
+        image[addon.CLIP_SOURCE_KEY] = "C:/art/sample.clip"
+        image[addon.CLIP_PACK_STATUS_KEY] = addon.PACK_STATUS_NEEDS_PACK
+        context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
+        operator = addon.IMAGE_OT_pack_clip_studio()
+
+        self.assertEqual(operator.execute(context), {"FINISHED"})
+
+        self.assertTrue(image.packed)
+        self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_PACKED)
+        self.assertIn(addon.CLIP_PACK_LAST_SECONDS_KEY, image)
+
+    def test_save_pre_packs_dirty_native_images(self) -> None:
+        addon = _load_addon_module()
+        image = addon.bpy.data.images.new(
+            "sample.clip",
+            width=1,
+            height=1,
+            alpha=True,
+            float_buffer=False,
+        )
+        image[addon.CLIP_SOURCE_KEY] = "C:/art/sample.clip"
+        image[addon.CLIP_NATIVE_KEY] = True
+        image[addon.CLIP_PACK_STATUS_KEY] = addon.PACK_STATUS_NEEDS_PACK
+
+        addon._save_pre_pack_native_images(None)
+
+        self.assertTrue(image.packed)
+        self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_PACKED)
 
     def test_status_label_shortens_unknown_values(self) -> None:
         addon = _load_addon_module()

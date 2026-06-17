@@ -406,12 +406,19 @@ def create_or_update_image(
     image: Any | None = None,
     image_name: str | None = None,
     pack: bool = True,
+    allow_resize: bool = False,
 ) -> Any:
     if len(result.pixels_rgba8) != result.width * result.height * 4:
         raise NativeBridgeError("native renderer returned an invalid RGBA buffer length")
 
     upload_started = time.perf_counter()
-    image = _ensure_image(bpy_module, result, image=image, image_name=image_name)
+    image = _ensure_image(
+        bpy_module,
+        result,
+        image=image,
+        image_name=image_name,
+        allow_resize=allow_resize,
+    )
     image.source = "GENERATED"
     if hasattr(image, "colorspace_settings"):
         image.colorspace_settings.name = "sRGB"
@@ -758,10 +765,14 @@ def _ensure_image(
     *,
     image: Any | None,
     image_name: str | None,
+    allow_resize: bool,
 ) -> Any:
     if image is not None:
         size = tuple(getattr(image, "size", (0, 0)))
         if size != (result.width, result.height):
+            if allow_resize and hasattr(image, "scale"):
+                image.scale(result.width, result.height)
+                return image
             raise NativeBridgeError(
                 f"existing image size {size} does not match native render {result.width}x{result.height}"
             )

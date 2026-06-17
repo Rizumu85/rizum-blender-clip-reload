@@ -17,9 +17,10 @@ Chosen stack:
   possible Blender ImBuf/source bridge.
 - Blender image-datablock bridge for stock Blender if no public runtime
   filetype registration exists.
-- Stock Blender image-datablock bridge stores the latest rendered pixels inside
-  the `.blend` as packed image data and stores the `.clip` source path plus
-  freshness metadata as custom image properties.
+- Stock Blender image-datablock bridge stores the `.clip` source path plus
+  freshness metadata as custom image properties, keeps rendered pixels in a
+  generated image datablock, and packs dirty native images on explicit `Pack
+  Now` or Blender `save_pre`.
 
 When native direct-load is accepted, remove the Python compositor/loader and
 sidecar PNG workflow. Do not keep compatibility paths or runtime fallbacks. A
@@ -31,15 +32,15 @@ For the stock Blender bridge, the accepted persistence model is:
 
 - Create or update a generated `bpy.types.Image`.
 - Upload native-rendered RGBA pixels into that image.
-- Pack the current rendered pixels into the `.blend` by default so reopening the
-  file immediately shows the last known result even before the `.clip` source is
-  found or re-rendered.
+- Mark successful renders as needing pack. `Pack Now` packs the current pixels
+  immediately, and Blender `save_pre` packs dirty native images before the file
+  is saved.
 - Store source tracking properties on the image, including the original `.clip`
   path, source mtime, source size, source SHA-256, canvas dimensions, renderer
   version, and reload status.
 - On `load_post`, scan images with these properties. If the source `.clip`
-  exists and is newer/different, call the native renderer and replace the image
-  pixels, then repack the updated rendered pixels.
+  exists and is newer/different, queue the native renderer and replace the image
+  pixels when the background render finishes.
 - If the source `.clip` is missing, keep the packed pixels visible and report the
   missing source instead of clearing the image.
 
@@ -132,8 +133,8 @@ Scope:
   runtime.
 - Add a thin Python bridge that calls the Rust C ABI and uploads final RGBA8
   pixels into Blender.
-- Create or update generated `bpy.types.Image` datablocks and pack the latest
-  rendered pixels into the `.blend`.
+- Create or update generated `bpy.types.Image` datablocks and mark successful
+  renders as needing pack.
 - Store `.clip` source/render metadata on native images so manual reload and the
   background watcher can update the same datablock.
 - Remove the installable add-on's Python compositor/sidecar path once the native
@@ -146,21 +147,26 @@ Result:
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
 - Native imports render through the packaged out-of-process `clip_cli` worker,
-  create generated images without sidecar PNGs, pack them by default, and store
-  source path, source mtime, source size, source SHA-256, canvas metadata,
-  renderer ABI, renderer version, and reload status custom properties. The
-  installable add-on zip includes the local release `clip_cli` worker plus
-  `clip_capi` library under `clip_studio_importer/native/`; preferences report
-  whether that packaged worker is present instead of exposing a user renderer
-  override. The direct `clip_capi` path remains internal development/test
-  plumbing because in-process wgpu rendering can crash Blender's UI redraw path
-  on Blender 5.0.1/NVIDIA.
-- `Reload from .clip` and the non-blocking watcher update images through the C
-  ABI/generated-image path only.
-- Blender `load_post` now scans packed native images, checks the stored source
+  create generated images without sidecar PNGs, mark successful renders as
+  needing pack, and store source path, source mtime, source size, source
+  SHA-256, canvas metadata, renderer ABI, renderer version, reload status, and
+  pack status custom properties. The installable add-on zip includes the local
+  release `clip_cli` worker plus `clip_capi` library under
+  `clip_studio_importer/native/`; preferences report whether that packaged
+  worker is present instead of exposing a user renderer override. The direct
+  `clip_capi` path remains internal development/test plumbing because
+  in-process wgpu rendering can crash Blender's UI redraw path on Blender
+  5.0.1/NVIDIA.
+- Initial import, `Reload from .clip`, and the non-blocking watcher update
+  images through the C ABI/generated-image path only. Import first creates a
+  generated placeholder image so Blender can stay responsive while the worker
+  renders.
+- Blender `load_post` now scans native images, checks the stored source
   mtime/size/hash against the current `.clip`, queues a native refresh when the
   source changed or stored freshness metadata is missing, and records
   `missing_source` while keeping packed pixels visible if the source is gone.
+  A persistent `save_pre` handler packs dirty native images before saving the
+  `.blend`, and the Image Editor panel exposes `Pack Now`.
 - `clip_studio_importer/__init__.py` no longer imports `clip_loader`, no longer
   exposes a `Use native renderer` off switch, and no longer writes or reloads
   sidecar PNGs. `tools/build_blender_addon.py` packages only `__init__.py`,
@@ -168,12 +174,13 @@ Result:
   The duplicate `clip_studio_importer/clip_loader.py` package copy has been
   removed; the project-root `clip_loader.py` remains reference verification
   tooling outside the add-on runtime.
-- Native reload diagnostics are image-level metadata. Background and manual
-  renders track elapsed/last render duration metadata. Render failures store
-  `clip_reload_status=error` plus `clip_reload_error`, successful renders clear
-  old errors, missing sources store `missing_source`, and the Image Editor panel
-  displays readable status/error/timing messages plus the renderer version that
-  produced the stored pixels.
+- Native reload diagnostics are image-level metadata. Background, import, and
+  manual renders track elapsed/last render duration metadata. Render failures
+  store `clip_reload_status=error` plus `clip_reload_error`, successful renders
+  clear old errors, missing sources store `missing_source`, pack state is stored
+  as `clip_pack_status`, and the Image Editor panel displays readable
+  status/error/timing/pack messages plus the renderer version that produced the
+  stored pixels.
 - `clip_renderer_session_support_info` exposes the runtime metadata-only support
   selector through the C ABI. The C report includes a summary line plus the
   unsupported layer/node list. The Python bridge stores support status, source

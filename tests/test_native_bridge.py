@@ -59,6 +59,11 @@ class BlenderIntBoundedFakeImage(FakeImage):
         super().__setitem__(key, value)
 
 
+class ScalableFakeImage(FakeImage):
+    def scale(self, width: int, height: int) -> None:
+        self.size = (width, height)
+
+
 class FakeImages(dict):
     def new(self, name: str, *, width: int, height: int, alpha: bool, float_buffer: bool):
         image = FakeImage(name, width, height)
@@ -498,6 +503,22 @@ class NativeBridgeTests(unittest.TestCase):
 
         with self.assertRaises(native_bridge.NativeBridgeError):
             native_bridge.create_or_update_image(bpy, result, image=image)
+
+    def test_update_existing_image_can_resize_when_explicitly_allowed(self) -> None:
+        bpy = FakeBpy()
+        result = FakeRenderer().render_rgba8("sample.clip")
+        image = ScalableFakeImage("sample", 2, 2)
+
+        native_bridge.create_or_update_image(
+            bpy,
+            result,
+            image=image,
+            allow_resize=True,
+            pack=False,
+        )
+
+        self.assertEqual(image.size, (1, 1))
+        self.assertTrue(image.updated)
 
     def test_inspect_native_image_source_marks_fresh_source_ok(self) -> None:
         image = FakeImage("sample", 1, 1)
