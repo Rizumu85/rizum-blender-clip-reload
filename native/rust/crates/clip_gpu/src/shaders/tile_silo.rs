@@ -81,6 +81,10 @@ fn lum(value: vec3<f32>) -> f32 {
     return 0.3 * value.r + 0.6 * value.g + 0.1 * value.b;
 }
 
+fn lum_rec601(value: vec3<f32>) -> f32 {
+    return 0.299 * value.r + 0.587 * value.g + 0.114 * value.b;
+}
+
 fn color_compare_lum(value: vec3<f32>) -> f32 {
     return 0.2126 * value.r + 0.7152 * value.g + 0.0722 * value.b;
 }
@@ -92,6 +96,22 @@ fn sat(value: vec3<f32>) -> f32 {
 fn set_lum(value: vec3<f32>, target_lum: f32) -> vec3<f32> {
     var out = value + vec3<f32>(target_lum - lum(value));
     let out_lum = lum(out);
+    let out_min = min3(out);
+    let out_max = max3(out);
+    if (out_min < 0.0) {
+        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
+            (out_lum / max(out_lum - out_min, 0.000001));
+    }
+    if (out_max > 1.0) {
+        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
+            ((1.0 - out_lum) / max(out_max - out_lum, 0.000001));
+    }
+    return out;
+}
+
+fn set_lum_rec601(value: vec3<f32>, target_lum: f32) -> vec3<f32> {
+    var out = value + vec3<f32>(target_lum - lum_rec601(value));
+    let out_lum = lum_rec601(out);
     let out_min = min3(out);
     let out_max = max3(out);
     if (out_min < 0.0) {
@@ -193,7 +213,7 @@ fn hsl_blend(src: vec3<f32>, dst: vec3<f32>, blend_kind: u32) -> vec3<f32> {
     if (blend_kind == 26u) {
         let src_q = quantize_rgb_u8(src);
         let dst_q = quantize_rgb_u8(dst);
-        return set_lum(dst_q, lum(src_q));
+        return set_lum_rec601(dst_q, lum_rec601(src_q));
     }
     return set_lum(src, lum(dst));
 }

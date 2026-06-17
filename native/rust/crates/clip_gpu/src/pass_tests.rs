@@ -1045,7 +1045,7 @@ fn exclusion_raster_source_uses_standard_blend_formula() {
 fn brightness_raster_source_uses_hsl_blend_formula() {
     assert_eq!(
         draw_one_pixel_standard_blend(GpuRasterBlendMode::Brightness),
-        [144, 103, 228, 255]
+        [144, 102, 228, 255]
     );
 }
 
