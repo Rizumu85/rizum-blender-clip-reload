@@ -3780,3 +3780,26 @@ probe on `IllustrationBlendModes2` showed the scoped rule is not the cause of
 its current `raw_max=9`: disabling the new ceil branch entirely gave
 `raw_mean=0.247104`, `visible_px=38187`, while the scoped rule gives
 `raw_mean=0.246172`, `visible_px=38164`.
+
+2026-06-17 IllustrationBlendModes Subtract boundary follow-up: the former
+native max pixel `(266,244)` was not a Color Dodge or Color Burn formula error.
+The stack reaches `Subtract before=[218,203,252,255]` with
+`src=[197,182,252,253]`; only the blue channel has quantized `src == dst`.
+Current Photoshop-style Color Dodge amplifies a pre-dodge blue value of `2` to
+about `143`, while a pre-dodge blue value of `3` becomes about `214`, matching
+the CSP export after the following Color Burn. Broad probes remained rejected:
+global standard-pass `256-srcA` and Subtract-only `256-srcA` both introduce new
+large residuals, and changing near-white Color Dodge thresholds would break
+already-exact counterexamples. The accepted native rule is narrower: for
+Subtract only, when the effective source alpha is partial (`0 < a < 255`) and
+the quantized source and destination channel values are equal, keep a one-LSB
+blend target (`1/255`) instead of zero for that channel. Fully opaque equal
+channels still subtract to zero; source-greater-than-destination channels still
+clip to zero. This changes `(266,244)` to
+`Subtract after=[23,22,3,255]`, `ColorDodge after=[88,67,214,255]`, and final
+`[42,4,214,255]`, matching CSP at that pixel. Full native comparison improves
+`IllustrationBlendModes.png` from `raw_max=72` / `premul_max=72` to
+`raw_max=7` / `premul_max=7`; blend guards `Test_ColorDodge`,
+`Test_ColorBurn`, `Test_SoftLight`, `Test_Mask`, `Test_Clipping`, and
+`Test_ToneCurve` remain exact, and `Test_AddGlowMultiply` remains
+`raw_max=2` / `premul_max=2`.

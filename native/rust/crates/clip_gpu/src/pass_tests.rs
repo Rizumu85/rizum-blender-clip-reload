@@ -964,6 +964,23 @@ fn subtract_raster_source_uses_standard_blend_formula() {
 }
 
 #[test]
+fn subtract_raster_source_keeps_partial_equal_channel_residue() {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Subtract,
+            [252, 50, 252, 253],
+            Rgba8 {
+                r: 252,
+                g: 80,
+                b: 252,
+                a: 255,
+            },
+        ),
+        [3, 30, 3, 255]
+    );
+}
+
+#[test]
 fn difference_raster_source_uses_standard_blend_formula() {
     assert_eq!(
         draw_one_pixel_standard_blend(GpuRasterBlendMode::Difference),

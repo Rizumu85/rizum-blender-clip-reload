@@ -328,11 +328,16 @@ fn apply_normal(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
 
 fn apply_standard(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> {
     let blended_raw = blend_rgb(src.rgb, dst.rgb, blend_kind);
-    let blended = select(
+    var blended = select(
         quantize_rgb_u8(blended_raw),
         clamp(blended_raw, vec3<f32>(0.0), vec3<f32>(1.0)),
         blend_kind == 2u,
     );
+    if (blend_kind == 5u && src.a > 0.0 && src.a < 1.0) {
+        let src_q = quantize_rgb_u8(src.rgb);
+        let dst_q = quantize_rgb_u8(dst.rgb);
+        blended = select(blended, vec3<f32>(1.0 / 255.0), src_q == dst_q);
+    }
     let out_alpha = src.a + dst.a * (1.0 - src.a);
     if (out_alpha <= 0.0) {
         return vec4<f32>(1.0, 1.0, 1.0, 0.0);
