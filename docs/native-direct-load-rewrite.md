@@ -32,9 +32,9 @@ For the stock Blender bridge, the accepted persistence model is:
 
 - Create or update a generated `bpy.types.Image`.
 - Upload native-rendered RGBA pixels into that image.
-- Mark successful renders as needing pack. `Pack Now` packs the current pixels
-  immediately, and Blender `save_pre` packs dirty native images before the file
-  is saved.
+- Initial import packs after the completed image is shown. Reload renders mark
+  the image as needing pack; `Pack Now` packs the current pixels immediately,
+  and Blender `save_pre` packs dirty native images before the file is saved.
 - Store source tracking properties on the image, including the original `.clip`
   path, source mtime, source size, source SHA-256, canvas dimensions, renderer
   version, and reload status.
@@ -147,10 +147,11 @@ Result:
   full-canvas RGBA8 pixels through `clip_renderer_session_read_rgba8`, and
   converts those bytes to Blender float pixels for `foreach_set`.
 - Native imports render through the packaged out-of-process `clip_cli` worker,
-  create generated images without sidecar PNGs, mark successful renders as
-  needing pack, and store source path, source mtime, source size, source
-  SHA-256, canvas metadata, renderer ABI, renderer version, reload status, and
-  pack status custom properties. The installable add-on zip includes the local
+  create generated images without sidecar PNGs, auto-pack the first completed
+  import after it is shown, mark reload renders as needing pack, and store
+  source path, source mtime, source size, source SHA-256, canvas metadata,
+  renderer ABI, renderer version, reload status, and pack status custom
+  properties. The installable add-on zip includes the local
   release `clip_cli` worker plus `clip_capi` library under
   `clip_studio_importer/native/`; preferences report whether that packaged
   worker is present instead of exposing a user renderer override. The direct
@@ -160,8 +161,9 @@ Result:
 - Initial import, `Reload from .clip`, and the non-blocking watcher update
   images through the C ABI/generated-image path only. Initial import waits for
   the worker to return real canvas pixels before creating and showing the
-  generated Blender image, avoiding a confusing temporary placeholder while
-  Blender remains responsive.
+  generated Blender image, then schedules initial pack as a separate main-thread
+  timer, avoiding a confusing temporary placeholder while Blender remains
+  responsive.
 - Blender `load_post` now scans native images, checks the stored source
   mtime/size/hash against the current `.clip`, queues a native refresh when the
   source changed or stored freshness metadata is missing, and records

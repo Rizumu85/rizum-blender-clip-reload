@@ -11,10 +11,10 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 3. By default, the add-on starts the packaged out-of-process `clip_cli` worker
    in the background without creating a temporary placeholder image. When the
    worker returns RGBA pixels, the add-on creates the generated Blender image,
-   uploads the pixels, marks the image as needing pack, and then switches any
-   already-open Image Editor or UV Editor areas to that completed image. The
-   worker keeps native GPU rendering out of Blender's UI process; it is not a
-   Python compositor or sidecar PNG cache.
+   uploads the pixels, switches any already-open Image Editor or UV Editor
+   areas to that completed image, and then runs the initial pack as a deferred
+   main-thread timer. The worker keeps native GPU rendering out of Blender's UI
+   process; it is not a Python compositor or sidecar PNG cache.
 4. When the source `.clip` is saved again, auto-reload watches lightweight file
    freshness metadata and refreshes the Blender image after the background
    render finishes. Reload does not pack immediately.
@@ -40,12 +40,13 @@ sidecar PNG cache and not a Python compositor:
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
 3. The add-on calls the packaged native Rust/wgpu worker in the background.
    Initial import creates the generated Blender `Image` only after the worker
-   returns real canvas pixels; reload updates the existing generated image on
-   the main thread.
-4. The add-on records `.clip` source metadata on the image and marks successful
-   renders as needing pack. Dirty images are packed either by the `Pack Now`
-   button or automatically from Blender's `save_pre` handler before saving the
-   `.blend`.
+   returns real canvas pixels, shows it in open image editors, and then packs
+   the first render. Reload updates the existing generated image on the main
+   thread without packing immediately.
+4. The add-on records `.clip` source metadata on the image. Initial imports
+   auto-pack after the completed image is shown; reloads mark images as needing
+   pack. Dirty reloads are packed either by the `Pack Now` button or
+   automatically from Blender's `save_pre` handler before saving the `.blend`.
 5. When the `.blend` is reopened, Blender immediately shows the packed last
    render. The add-on then checks the source `.clip`; if it changed, the add-on
    re-renders through the native renderer and updates the image datablock.
@@ -77,10 +78,10 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 ## Interaction Principles
 
 - Keep the Blender UI responsive while reloading large `.clip` files.
-- Keep generated images source-tracked once real pixels exist, but defer
-  persistence cost: reload marks images as needing pack, `Pack Now` packs the
-  current pixels on demand, and `save_pre` packs dirty native images before the
-  `.blend` is saved.
+- Keep generated images source-tracked once real pixels exist. Initial import
+  packs after the completed image is shown; reload defers persistence cost by
+  marking images as needing pack, `Pack Now` packs the current pixels on demand,
+  and `save_pre` packs dirty native images before the `.blend` is saved.
 - Make failures visible through Blender reports for direct actions and through
   image-level status/error metadata for background work.
 - Avoid adding CSP-editing concepts to Blender. The add-on is read-only and only presents the flattened canvas.

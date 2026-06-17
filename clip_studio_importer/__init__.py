@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Clip Studio Paint (.clip) Importer",
     "author": "Rizum",
-    "version": (0, 8, 50),
+    "version": (0, 8, 51),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -126,6 +126,31 @@ def _pack_image_now(image) -> float:
     image[CLIP_PACK_LAST_SECONDS_KEY] = float(seconds)
     _set_pack_status(image, PACK_STATUS_PACKED)
     return seconds
+
+
+def _schedule_pack_after_initial_import(image_name: str, clip_path: str) -> None:
+    def _on_pack():
+        img = bpy.data.images.get(image_name)
+        if img is None or img.get(CLIP_SOURCE_KEY) != clip_path:
+            return None
+        with _state_lock:
+            running = bool(clip_path and clip_path in _in_flight)
+        if running or img.get(CLIP_PACK_STATUS_KEY) != PACK_STATUS_NEEDS_PACK:
+            return None
+        try:
+            _pack_image_now(img)
+        except Exception as exc:
+            try:
+                if _addon_prefs().debug:
+                    print(
+                        "[clip_studio_importer] "
+                        f"initial pack failed for {clip_path}: {exc}"
+                    )
+            except Exception:
+                pass
+        return None
+
+    bpy.app.timers.register(_on_pack, first_interval=0.1)
 
 
 def _unique_image_name(name: str) -> str:
@@ -478,6 +503,7 @@ def _schedule_async_decode(
     *,
     create_on_success: bool = False,
     show_on_success: bool = False,
+    auto_pack_on_success: bool = False,
 ) -> bool:
     with _state_lock:
         if clip_path in _in_flight:
@@ -495,7 +521,13 @@ def _schedule_async_decode(
 
     threading.Thread(
         target=_async_decode,
-        args=(clip_path, image_name, create_on_success, show_on_success),
+        args=(
+            clip_path,
+            image_name,
+            create_on_success,
+            show_on_success,
+            auto_pack_on_success,
+        ),
         daemon=True,
     ).start()
     return True
@@ -522,6 +554,7 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
             image_name,
             create_on_success=True,
             show_on_success=True,
+            auto_pack_on_success=True,
         ):
             self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
             return {"CANCELLED"}
@@ -696,6 +729,7 @@ def _async_decode(
     image_name: str | None,
     create_on_success: bool = False,
     show_on_success: bool = False,
+    auto_pack_on_success: bool = False,
 ):
     """Worker-thread entry point for native render.
 
@@ -758,6 +792,8 @@ def _async_decode(
             _mark_image_needs_pack(img)
             if show_on_success:
                 _show_image_in_open_image_editors(bpy.context, img)
+            if auto_pack_on_success:
+                _schedule_pack_after_initial_import(img.name, clip_path)
         if img is not None:
             try:
                 if _addon_prefs().debug:

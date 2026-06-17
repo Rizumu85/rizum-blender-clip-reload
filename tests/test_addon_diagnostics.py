@@ -578,8 +578,17 @@ class AddonDiagnosticsTests(unittest.TestCase):
             *,
             create_on_success=False,
             show_on_success=False,
+            auto_pack_on_success=False,
         ):
-            scheduled.append((path, name, create_on_success, show_on_success))
+            scheduled.append(
+                (
+                    path,
+                    name,
+                    create_on_success,
+                    show_on_success,
+                    auto_pack_on_success,
+                )
+            )
             return True
 
         addon._schedule_async_decode = fake_schedule
@@ -596,7 +605,15 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIs(uv_space.image, original_image)
         self.assertEqual(
             scheduled,
-            [(addon.os.path.abspath("C:/art/sample.clip"), "sample.clip", True, True)],
+            [
+                (
+                    addon.os.path.abspath("C:/art/sample.clip"),
+                    "sample.clip",
+                    True,
+                    True,
+                    True,
+                )
+            ],
         )
         self.assertEqual(operator.reported[0], {"INFO"})
 
@@ -618,8 +635,17 @@ class AddonDiagnosticsTests(unittest.TestCase):
             *,
             create_on_success=False,
             show_on_success=False,
+            auto_pack_on_success=False,
         ):
-            scheduled.append((path, name, create_on_success, show_on_success))
+            scheduled.append(
+                (
+                    path,
+                    name,
+                    create_on_success,
+                    show_on_success,
+                    auto_pack_on_success,
+                )
+            )
             return True
 
         addon._schedule_async_decode = fake_schedule
@@ -635,10 +661,18 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIsNone(addon.bpy.data.images.get("sample.clip.001"))
         self.assertEqual(
             scheduled,
-            [(addon.os.path.abspath("C:/art/sample.clip"), "sample.clip.001", True, True)],
+            [
+                (
+                    addon.os.path.abspath("C:/art/sample.clip"),
+                    "sample.clip.001",
+                    True,
+                    True,
+                    True,
+                )
+            ],
         )
 
-    def test_initial_async_decode_creates_image_and_shows_it_on_success(self) -> None:
+    def test_initial_async_decode_shows_image_then_auto_packs(self) -> None:
         addon = _load_addon_module()
         original_image = types.SimpleNamespace(name="already-open")
         image_space = types.SimpleNamespace(type="IMAGE_EDITOR", image=original_image)
@@ -669,15 +703,22 @@ class AddonDiagnosticsTests(unittest.TestCase):
         )
         original_render = addon.native_bridge.render_clip_rgba8
         original_register = addon.bpy.app.timers.register
+        timer_callbacks = []
         addon.native_bridge.render_clip_rgba8 = lambda _path: result
-        addon.bpy.app.timers.register = lambda callback, **_kwargs: callback()
+        addon.bpy.app.timers.register = (
+            lambda callback, **kwargs: timer_callbacks.append((callback, kwargs))
+        )
         try:
             addon._async_decode(
                 "C:/art/sample.clip",
                 "sample.clip",
                 create_on_success=True,
                 show_on_success=True,
+                auto_pack_on_success=True,
             )
+            self.assertEqual(len(timer_callbacks), 1)
+            self.assertEqual(timer_callbacks[0][1].get("first_interval"), 0.0)
+            timer_callbacks.pop(0)[0]()
         finally:
             addon.native_bridge.render_clip_rgba8 = original_render
             addon.bpy.app.timers.register = original_register
@@ -690,6 +731,14 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertEqual(image[addon.CLIP_SOURCE_KEY], "C:/art/sample.clip")
         self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_NEEDS_PACK)
         self.assertEqual(image[addon.native_bridge.CLIP_RELOAD_STATUS_KEY], "ok")
+        self.assertEqual(len(timer_callbacks), 1)
+        self.assertEqual(timer_callbacks[0][1].get("first_interval"), 0.1)
+
+        timer_callbacks.pop(0)[0]()
+
+        self.assertTrue(image.packed)
+        self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_PACKED)
+        self.assertIn(addon.CLIP_PACK_LAST_SECONDS_KEY, image)
 
     def test_reload_operator_schedules_background_render(self) -> None:
         addon = _load_addon_module()
