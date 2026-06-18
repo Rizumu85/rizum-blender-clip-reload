@@ -16,8 +16,8 @@ use crate::stream_groups::{
     render_container_with_provider,
 };
 pub use crate::stream_provider::{
-    GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider, GpuRasterAtlasPixels,
-    GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
+    GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider,
+    GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
 };
 use crate::stream_resources::{
     known_clipped_sibling_activity, known_raster_source_bounds, mask_view_with_provider,

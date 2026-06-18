@@ -96,7 +96,7 @@ mod tests {
             serde_json::from_str(&report).expect("performance report should be valid JSON");
 
         assert_eq!(parsed["canvas"][0], 512);
-        assert_eq!(parsed["tile_event_abi_version"], 5);
+        assert_eq!(parsed["tile_event_abi_version"], 6);
         assert!(parsed["planned_passes"].as_u64().unwrap() > 0);
         assert!(
             parsed["planner"]["point_filter_run_segments"]

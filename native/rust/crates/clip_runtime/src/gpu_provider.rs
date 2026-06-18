@@ -167,6 +167,10 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         self.planned_mask_is_fully_opaque(key)
     }
 
+    fn mask_atlas_tiles_supported(&self) -> bool {
+        true
+    }
+
     fn raster_resource(
         &mut self,
         renderer: &clip_gpu::GpuRenderer,
@@ -193,6 +197,14 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             return Ok(None);
         }
         self.build_raster_run_atlas_tile_pixels(sources, atlas_size)
+    }
+
+    fn mask_atlas_tile_pixels(
+        &mut self,
+        sources: &[clip_gpu::GpuMaskAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<Vec<clip_gpu::GpuMaskAtlasTileChunk>>, Self::Error> {
+        self.build_mask_atlas_tile_pixels(sources, atlas_size)
     }
 
     fn mask_resource(

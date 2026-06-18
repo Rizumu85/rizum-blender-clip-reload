@@ -6,11 +6,11 @@ use clip_model::CanvasSize;
 use super::common::*;
 use crate::stream_tile_silo::raster_silo_run_len;
 use crate::{
-    GpuDeviceConfig, GpuMaskAtlasTileChunk, GpuMaskResourceCache, GpuMaskResourceKey,
-    GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuNormalStackSource,
-    GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
-    GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey,
-    GpuRenderError, GpuRenderer,
+    GpuDeviceConfig, GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuMaskResourceCache,
+    GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackResourceProvider,
+    GpuNormalStackSource, GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk,
+    GpuRasterAtlasTilePixels, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo,
+    GpuRasterResourceKey, GpuRenderError, GpuRenderer,
 };
 
 #[test]
@@ -299,6 +299,85 @@ fn streamed_tile_silo_resolves_container_opacity_like_legacy_pass() {
     let output = renderer
         .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
         .expect("draw provider-backed opacity container scope");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
+fn streamed_tile_silo_resolves_masked_container_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let child_key = raster_key(157);
+    let container_mask_key = mask_key(157);
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 20,
+                g: 40,
+                b: 80,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Container {
+            children: vec![GpuNormalStackSource::Raster(raster_source_at(
+                child_key, 1, 1,
+            ))],
+            opacity: 1.0,
+            mask_key: Some(container_mask_key),
+            blend_mode: GpuRasterBlendMode::Normal,
+        },
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![(
+        child_key,
+        InlineRaster {
+            render_node_id: RenderNodeId(157),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![220, 100, 40, 255],
+        },
+    )])
+    .with_masks(vec![(
+        container_mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(257),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy masked container reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![(
+        child_key,
+        AtlasInlineRaster {
+            render_node_id: RenderNodeId(157),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![220, 100, 40, 255],
+        },
+    )])
+    .with_masks(vec![(
+        container_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed masked container scope");
 
     assert_eq!(output.pixels, reference.pixels);
     assert_eq!(provider.atlas_requests, 1);
@@ -746,6 +825,84 @@ fn streamed_tile_silo_lowers_opaque_masked_through_scope_like_legacy_pass() {
     let output = renderer
         .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
         .expect("draw provider-backed opaque masked through scope");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
+fn streamed_tile_silo_resolves_masked_through_scope_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let child_key = raster_key(158);
+    let through_mask_key = mask_key(158);
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 0,
+                g: 0,
+                b: 255,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::ThroughGroup {
+            children: vec![GpuNormalStackSource::Raster(raster_source_at(
+                child_key, 1, 1,
+            ))],
+            opacity: 0.75,
+            mask_key: Some(through_mask_key),
+        },
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![(
+        child_key,
+        InlineRaster {
+            render_node_id: RenderNodeId(158),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![255, 0, 0, 255],
+        },
+    )])
+    .with_masks(vec![(
+        through_mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(258),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy masked through reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![(
+        child_key,
+        AtlasInlineRaster {
+            render_node_id: RenderNodeId(158),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![255, 0, 0, 255],
+        },
+    )])
+    .with_masks(vec![(
+        through_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed masked through scope");
 
     assert_eq!(output.pixels, reference.pixels);
     assert_eq!(provider.atlas_requests, 1);
@@ -1455,6 +1612,10 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
         Some(mask.fill_value == 255 && mask.pixels.iter().all(|value| *value == 255))
     }
 
+    fn mask_atlas_tiles_supported(&self) -> bool {
+        !self.masks.is_empty()
+    }
+
     fn raster_run_atlas_pixels(
         &mut self,
         sources: &[GpuRasterAtlasSource],
@@ -1577,6 +1738,63 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
             mask_chunks,
             resources,
         }))
+    }
+
+    fn mask_atlas_tile_pixels(
+        &mut self,
+        sources: &[GpuMaskAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<Vec<GpuMaskAtlasTileChunk>>, Self::Error> {
+        let mut chunks = Vec::with_capacity(sources.len());
+        for request in sources {
+            let right = request
+                .atlas_x
+                .checked_add(request.canvas_bounds.width)
+                .ok_or(GpuRenderError::TextureSizeOverflow)?;
+            let bottom = request
+                .atlas_y
+                .checked_add(request.canvas_bounds.height)
+                .ok_or(GpuRenderError::TextureSizeOverflow)?;
+            if right > atlas_size.width || bottom > atlas_size.height {
+                return Ok(None);
+            }
+            let mask = self
+                .masks
+                .get(&request.key)
+                .ok_or(GpuRenderError::MissingMaskResource {
+                    layer_id: request.key.layer_id,
+                    mask_mipmap_id: request.key.mask_mipmap_id,
+                })?;
+            let mut pixels = Vec::with_capacity(
+                (request.canvas_bounds.width * request.canvas_bounds.height) as usize,
+            );
+            for y in 0..request.canvas_bounds.height {
+                for x in 0..request.canvas_bounds.width {
+                    let global_x = request
+                        .canvas_bounds
+                        .x
+                        .checked_add(x)
+                        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+                    let global_y = request
+                        .canvas_bounds
+                        .y
+                        .checked_add(y)
+                        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+                    pixels.push(atlas_mask_value(
+                        mask,
+                        i32::try_from(global_x).map_err(|_| GpuRenderError::TextureSizeOverflow)?,
+                        i32::try_from(global_y).map_err(|_| GpuRenderError::TextureSizeOverflow)?,
+                    ));
+                }
+            }
+            chunks.push(GpuMaskAtlasTileChunk {
+                atlas_x: request.atlas_x,
+                atlas_y: request.atlas_y,
+                size: CanvasSize::new(request.canvas_bounds.width, request.canvas_bounds.height),
+                pixels,
+            });
+        }
+        Ok(Some(chunks))
     }
 
     fn mask_resource(

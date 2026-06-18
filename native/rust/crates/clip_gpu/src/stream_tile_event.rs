@@ -4,7 +4,7 @@ use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 5;
+pub const TILE_EVENT_ABI_VERSION: u32 = 6;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const POINT_FILTER_PAYLOAD_WORDS: usize = 10;
@@ -65,6 +65,7 @@ pub(crate) struct ScopeTileEventPayload {
     pub(crate) opacity: f32,
     pub(crate) blend_mode: GpuRasterBlendMode,
     pub(crate) local_bounds: CanvasRect,
+    pub(crate) mask_atlas_origin: Option<(u32, u32)>,
 }
 
 impl RasterTileEventPayload {
@@ -133,8 +134,10 @@ impl ScopeTileEventPayload {
             self.local_bounds.y,
             self.local_bounds.width,
             self.local_bounds.height,
-            0,
-            0,
+            self.mask_atlas_origin
+                .map_or(NO_MASK_ATLAS_COORD, |mask| mask.0),
+            self.mask_atlas_origin
+                .map_or(NO_MASK_ATLAS_COORD, |mask| mask.1),
         ]
     }
 }
@@ -394,6 +397,7 @@ mod tests {
                 width: 6,
                 height: 7,
             },
+            mask_atlas_origin: Some((8, 9)),
         };
         let program = TileEventProgram::from_payloads([
             TileEventPayload::BeginContainer(scope),
@@ -422,16 +426,16 @@ mod tests {
                 5,
                 6,
                 7,
-                0,
-                0,
+                8,
+                9,
                 1.0f32.to_bits(),
                 0,
                 4,
                 5,
                 6,
                 7,
-                0,
-                0,
+                8,
+                9,
             ]
         );
     }
@@ -447,6 +451,7 @@ mod tests {
                 width: 6,
                 height: 7,
             },
+            mask_atlas_origin: None,
         };
         let program = TileEventProgram::from_payloads([
             TileEventPayload::BeginThrough(scope),

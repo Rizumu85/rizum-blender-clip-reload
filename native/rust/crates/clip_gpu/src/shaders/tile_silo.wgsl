@@ -255,6 +255,22 @@ fn scope_contains(event_index: u32, local_texel: vec2<i32>) -> bool {
     );
 }
 
+fn load_scope_mask(event_index: u32, local_texel: vec2<i32>) -> f32 {
+    let mask_atlas_x = scope_word(event_index, 6u);
+    if (mask_atlas_x == NO_MASK_ATLAS_COORD) {
+        return 1.0;
+    }
+    let scope_origin = vec2<i32>(
+        i32(scope_word(event_index, 2u)),
+        i32(scope_word(event_index, 3u)),
+    );
+    let mask_atlas_origin = vec2<i32>(
+        i32(mask_atlas_x),
+        i32(scope_word(event_index, 7u)),
+    );
+    return textureLoad(mask_atlas_texture, mask_atlas_origin + local_texel - scope_origin, 0).r;
+}
+
 fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
     let lut_row = i32(filter_word(event_index, 0u));
     let mode = filter_word(event_index, 2u);
@@ -275,18 +291,20 @@ fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
     return quantize_u8(vec4<f32>(rgb, before.a));
 }
 
-fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32>, mask_value: f32) -> vec4<f32> {
     let blend_kind = scope_word(event_index, 1u);
     let opacity = clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0);
     if (blend_kind == 0u) {
-        let src_a = (to_u8(scope_dst.a) * opacity_to_u8(opacity)) / 256;
+        var src_a = (to_u8(scope_dst.a) * opacity_to_u8(opacity)) / 256;
+        src_a = (src_a * to_u8(mask_value)) / 255;
         if (src_a <= 0) {
             return dst;
         }
         return apply_normal_alpha(scope_dst, dst, src_a);
     }
     if (is_byte_domain_special_blend(blend_kind)) {
-        let src_a = (to_u8(scope_dst.a) * opacity_to_u8(opacity)) / 256;
+        var src_a = (to_u8(scope_dst.a) * opacity_to_u8(opacity)) / 256;
+        src_a = div255(src_a * to_u8(mask_value));
         if (src_a <= 0) {
             return dst;
         }
@@ -294,14 +312,15 @@ fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32
     }
     var src = scope_dst;
     src.a = clamp(src.a * opacity, 0.0, 1.0);
+    src.a = src.a * mask_value;
     if (src.a <= 0.0) {
         return dst;
     }
     return apply_standard(src, dst, blend_kind);
 }
 
-fn resolve_through_scope(event_index: u32, before: vec4<f32>, after: vec4<f32>) -> vec4<f32> {
-    let strength = clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0);
+fn resolve_through_scope(event_index: u32, before: vec4<f32>, after: vec4<f32>, mask_value: f32) -> vec4<f32> {
+    let strength = clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0) * mask_value;
     let before_pm = before.rgb * before.a;
     let after_pm = after.rgb * after.a;
     let out_alpha = before.a * (1.0 - strength) + after.a * strength;
@@ -1063,11 +1082,12 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
         if (kind == TILE_EVENT_KIND_END_THROUGH) {
             if (scope_contains(event_index, local_texel)) {
+                let scope_mask = load_scope_mask(event_index, local_texel);
                 if (through_depth == 2u) {
-                    through0_after = resolve_through_scope(event_index, through1_before, through1_after);
+                    through0_after = resolve_through_scope(event_index, through1_before, through1_after, scope_mask);
                     through_depth = 1u;
                 } else if (through_depth == 1u) {
-                    dst = resolve_through_scope(event_index, through0_before, through0_after);
+                    dst = resolve_through_scope(event_index, through0_before, through0_after, scope_mask);
                     through_depth = 0u;
                 }
             }
@@ -1090,19 +1110,20 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
         if (kind == TILE_EVENT_KIND_END_CONTAINER) {
             if (scope_contains(event_index, local_texel)) {
+                let scope_mask = load_scope_mask(event_index, local_texel);
                 if (scope_depth == 3u) {
-                    scope1_dst = resolve_container_scope(event_index, scope2_dst, scope1_dst);
+                    scope1_dst = resolve_container_scope(event_index, scope2_dst, scope1_dst, scope_mask);
                     scope_depth = 2u;
                 } else if (scope_depth == 2u) {
-                    scope0_dst = resolve_container_scope(event_index, scope1_dst, scope0_dst);
+                    scope0_dst = resolve_container_scope(event_index, scope1_dst, scope0_dst, scope_mask);
                     scope_depth = 1u;
                 } else if (scope_depth == 1u) {
                     if (through_depth == 2u) {
-                        through1_after = resolve_container_scope(event_index, scope0_dst, through1_after);
+                        through1_after = resolve_container_scope(event_index, scope0_dst, through1_after, scope_mask);
                     } else if (through_depth == 1u) {
-                        through0_after = resolve_container_scope(event_index, scope0_dst, through0_after);
+                        through0_after = resolve_container_scope(event_index, scope0_dst, through0_after, scope_mask);
                     } else {
-                        dst = resolve_container_scope(event_index, scope0_dst, dst);
+                        dst = resolve_container_scope(event_index, scope0_dst, dst, scope_mask);
                     }
                     scope_depth = 0u;
                 }

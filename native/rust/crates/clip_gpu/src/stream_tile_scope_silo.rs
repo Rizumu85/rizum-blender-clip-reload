@@ -17,9 +17,11 @@ use crate::stream_tile_silo_buffers::{
     create_params_buffer, create_tile_event_storage_buffers, create_u32_storage_buffer,
 };
 use crate::stream_tile_silo_plan::{TILE_SIZE, plan_atlas_layout, tile_work_lists_for_bounds};
-use crate::stream_tile_silo_upload::{rgba8_texture_byte_len, upload_lut_atlas_texture};
+use crate::stream_tile_silo_upload::{
+    rgba8_texture_byte_len, upload_lut_atlas_texture, upload_mask_atlas_tile_texture,
+};
 use crate::stream_utils::local_pass_bounds;
-use crate::{GpuNormalStackSource, GpuRenderError};
+use crate::{GpuMaskAtlasTileChunk, GpuNormalStackSource, GpuRenderError};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_simple_container_scope_silo_with_provider<P>(
@@ -37,8 +39,8 @@ where
     let GpuNormalStackSource::Container {
         children,
         opacity,
+        mask_key,
         blend_mode,
-        ..
     } = source
     else {
         return Ok(false);
@@ -101,9 +103,12 @@ where
         ScopeProgramKind::Container {
             opacity: *opacity,
             blend_mode: *blend_mode,
+            mask_key: *mask_key,
         },
         children,
         upload.prepared,
+        upload.mask_atlas_size,
+        context.renderer.max_texture_dimension_2d(),
         *dirty_bounds,
     )?
     else {
@@ -128,13 +133,25 @@ where
         return Ok(false);
     }
 
+    let Some((mask_atlas, mask_atlas_bytes)) = scope_mask_atlas(
+        context,
+        upload.mask_atlas,
+        upload.mask_atlas_bytes,
+        upload.mask_atlas_size,
+        upload.mask_chunks,
+        &program_inputs,
+    )?
+    else {
+        return Ok(false);
+    };
+
     encode_scope_tile_program(
         context,
         target_origin,
         layout.size,
         upload.atlas,
-        upload.mask_atlas,
-        upload.mask_atlas_bytes,
+        mask_atlas,
+        mask_atlas_bytes,
         &program_inputs,
         &work_indices,
         &tile_spans,
@@ -164,7 +181,9 @@ where
     P: GpuNormalStackResourceProvider,
 {
     let GpuNormalStackSource::ThroughGroup {
-        children, opacity, ..
+        children,
+        opacity,
+        mask_key,
     } = source
     else {
         return Ok(false);
@@ -224,9 +243,14 @@ where
         context,
         target_origin,
         target_size,
-        ScopeProgramKind::Through { opacity: *opacity },
+        ScopeProgramKind::Through {
+            opacity: *opacity,
+            mask_key: *mask_key,
+        },
         children,
         upload.prepared,
+        upload.mask_atlas_size,
+        context.renderer.max_texture_dimension_2d(),
         *dirty_bounds,
     )?
     else {
@@ -251,13 +275,25 @@ where
         return Ok(false);
     }
 
+    let Some((mask_atlas, mask_atlas_bytes)) = scope_mask_atlas(
+        context,
+        upload.mask_atlas,
+        upload.mask_atlas_bytes,
+        upload.mask_atlas_size,
+        upload.mask_chunks,
+        &program_inputs,
+    )?
+    else {
+        return Ok(false);
+    };
+
     encode_scope_tile_program(
         context,
         target_origin,
         layout.size,
         upload.atlas,
-        upload.mask_atlas,
-        upload.mask_atlas_bytes,
+        mask_atlas,
+        mask_atlas_bytes,
         &program_inputs,
         &work_indices,
         &tile_spans,
@@ -271,6 +307,41 @@ where
     }
     *dirty_bounds = Some(pass_bounds);
     Ok(true)
+}
+
+fn scope_mask_atlas<P>(
+    context: &mut StreamingExecutionContext<'_, '_, P>,
+    existing_mask_atlas: wgpu::Texture,
+    existing_mask_atlas_bytes: usize,
+    existing_mask_atlas_size: CanvasSize,
+    mut mask_chunks: Vec<GpuMaskAtlasTileChunk>,
+    program_inputs: &ScopeProgramInputs<'_>,
+) -> Result<Option<(wgpu::Texture, usize)>, P::Error>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    if program_inputs.scope_mask_sources.is_empty() {
+        return Ok(Some((existing_mask_atlas, existing_mask_atlas_bytes)));
+    }
+    let Some(scope_chunks) = context.provider.mask_atlas_tile_pixels(
+        &program_inputs.scope_mask_sources,
+        program_inputs.mask_atlas_size,
+    )?
+    else {
+        return Ok(None);
+    };
+    mask_chunks.extend(scope_chunks);
+    let mask_atlas_size = CanvasSize::new(
+        existing_mask_atlas_size
+            .width
+            .max(program_inputs.mask_atlas_size.width),
+        existing_mask_atlas_size
+            .height
+            .max(program_inputs.mask_atlas_size.height),
+    );
+    upload_mask_atlas_tile_texture(context.renderer, mask_atlas_size, &mask_chunks)
+        .map(Some)
+        .map_err(P::Error::from)
 }
 
 #[allow(clippy::too_many_arguments)]

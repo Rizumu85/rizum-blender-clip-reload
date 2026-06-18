@@ -55,8 +55,8 @@ pub use resource::{
     GpuRasterUpload,
 };
 pub use stream::{
-    GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider, GpuRasterAtlasPixels,
-    GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
+    GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider,
+    GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
 };
 pub use stream_program::RenderProgramStats;
 pub use stream_program_barriers::{RenderProgramBarrierCounts, RenderProgramBarrierReason};

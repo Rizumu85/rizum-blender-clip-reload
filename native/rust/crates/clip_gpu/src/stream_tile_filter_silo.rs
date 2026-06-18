@@ -17,8 +17,8 @@ use crate::stream_tile_silo_upload::{
 };
 use crate::stream_utils::local_pass_bounds;
 use crate::{
-    GpuMaskResourceKey, GpuNormalStackSource, GpuRasterAtlasPixels, GpuRasterAtlasSource,
-    GpuRasterResourceInfo, GpuRenderError,
+    GpuMaskAtlasTileChunk, GpuMaskResourceKey, GpuNormalStackSource, GpuRasterAtlasPixels,
+    GpuRasterAtlasSource, GpuRasterResourceInfo, GpuRenderError,
 };
 
 pub(crate) fn raster_filter_silo_run_len<P>(
@@ -275,6 +275,8 @@ pub(crate) struct RasterUploadBundle {
     pub(crate) atlas: wgpu::Texture,
     pub(crate) mask_atlas: wgpu::Texture,
     pub(crate) mask_atlas_bytes: usize,
+    pub(crate) mask_atlas_size: CanvasSize,
+    pub(crate) mask_chunks: Vec<GpuMaskAtlasTileChunk>,
     pub(crate) drawn_resources: Vec<GpuRasterResourceInfo>,
 }
 
@@ -301,6 +303,7 @@ where
                 actual: upload.size,
             }));
         }
+        let mask_chunks = upload.mask_chunks.clone();
         let atlas = upload_atlas_tile_texture(context.renderer, &upload).map_err(P::Error::from)?;
         let (mask_atlas, mask_atlas_bytes) =
             upload_mask_atlas_tile_texture(context.renderer, upload.size, &upload.mask_chunks)
@@ -321,6 +324,8 @@ where
             atlas,
             mask_atlas,
             mask_atlas_bytes,
+            mask_atlas_size: upload.size,
+            mask_chunks,
             drawn_resources: upload.resources,
         }));
     }
@@ -361,6 +366,8 @@ where
         atlas,
         mask_atlas,
         mask_atlas_bytes,
+        mask_atlas_size: upload.size,
+        mask_chunks: Vec::new(),
         drawn_resources: upload.resources,
     }))
 }

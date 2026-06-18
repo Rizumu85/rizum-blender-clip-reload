@@ -130,6 +130,60 @@ impl RuntimeGpuResourceProvider<'_> {
         }))
     }
 
+    pub(super) fn build_mask_atlas_tile_pixels(
+        &mut self,
+        sources: &[clip_gpu::GpuMaskAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<Vec<clip_gpu::GpuMaskAtlasTileChunk>>, RuntimeError> {
+        let mut chunks = Vec::with_capacity(sources.len());
+        for request in sources {
+            if request.canvas_bounds.is_empty() {
+                return Ok(None);
+            }
+            let Some(right) = request.atlas_x.checked_add(request.canvas_bounds.width) else {
+                return Ok(None);
+            };
+            let Some(bottom) = request.atlas_y.checked_add(request.canvas_bounds.height) else {
+                return Ok(None);
+            };
+            if right > atlas_size.width || bottom > atlas_size.height {
+                return Ok(None);
+            }
+
+            let mask_meta = self.plan.masks.get(&request.key).cloned().ok_or_else(|| {
+                RuntimeError::Gpu(clip_gpu::GpuRenderError::MissingMaskResource {
+                    layer_id: request.key.layer_id,
+                    mask_mipmap_id: request.key.mask_mipmap_id,
+                })
+            })?;
+            let payload = read_mask_payload_for_upload(
+                self.container,
+                self.canvas,
+                &mask_meta.source,
+                Some(request.canvas_bounds),
+            )?;
+            self.report_mask_payload_info(request.key, &mask_meta, &payload);
+            let size = CanvasSize::new(request.canvas_bounds.width, request.canvas_bounds.height);
+            let pixels = mask_pixels_for_chunk(
+                size,
+                (
+                    i32::try_from(request.canvas_bounds.x)
+                        .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?,
+                    i32::try_from(request.canvas_bounds.y)
+                        .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?,
+                ),
+                &payload,
+            )?;
+            chunks.push(clip_gpu::GpuMaskAtlasTileChunk {
+                atlas_x: request.atlas_x,
+                atlas_y: request.atlas_y,
+                size,
+                pixels,
+            });
+        }
+        Ok(Some(chunks))
+    }
+
     fn report_mask_payload_info(
         &mut self,
         key: clip_gpu::GpuMaskResourceKey,

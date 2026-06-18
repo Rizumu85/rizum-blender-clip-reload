@@ -35,12 +35,20 @@ pub struct GpuRasterAtlasTileChunk {
     pub pixels: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GpuMaskAtlasTileChunk {
     pub atlas_x: u32,
     pub atlas_y: u32,
     pub size: CanvasSize,
     pub pixels: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct GpuMaskAtlasSource {
+    pub key: GpuMaskResourceKey,
+    pub atlas_x: u32,
+    pub atlas_y: u32,
+    pub canvas_bounds: Rect,
 }
 
 #[derive(Debug)]
@@ -93,6 +101,10 @@ pub trait GpuNormalStackResourceProvider {
         None
     }
 
+    fn mask_atlas_tiles_supported(&self) -> bool {
+        false
+    }
+
     fn raster_run_atlas_pixels(
         &mut self,
         sources: &[GpuRasterAtlasSource],
@@ -108,6 +120,16 @@ pub trait GpuNormalStackResourceProvider {
         sources: &[GpuRasterAtlasSource],
         atlas_size: CanvasSize,
     ) -> Result<Option<GpuRasterAtlasTilePixels>, Self::Error> {
+        let _ = sources;
+        let _ = atlas_size;
+        Ok(None)
+    }
+
+    fn mask_atlas_tile_pixels(
+        &mut self,
+        sources: &[GpuMaskAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<Vec<GpuMaskAtlasTileChunk>>, Self::Error> {
         let _ = sources;
         let _ = atlas_size;
         Ok(None)

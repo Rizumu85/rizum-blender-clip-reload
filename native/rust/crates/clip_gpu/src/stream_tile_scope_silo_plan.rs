@@ -3,7 +3,6 @@ use clip_model::CanvasSize;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::target_canvas_bounds;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
-use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
 
@@ -314,7 +313,7 @@ where
             } => {
                 if !saw_raster
                     || *opacity <= 0.0
-                    || !filter_mask_can_lower(provider, *mask_key)
+                    || !scope_mask_can_lower(provider, *mask_key)
                     || lut_rgba.len() != 256 * 4
                 {
                     return Err(SimpleScopeReject::NotSimple);
@@ -375,7 +374,7 @@ where
     P: GpuNormalStackResourceProvider,
 {
     if opacity <= 0.0
-        || !filter_mask_can_lower(provider, mask_key)
+        || !scope_mask_can_lower(provider, mask_key)
         || children.is_empty()
         || !container_resolve_is_scope_eligible(blend_mode)
     {
@@ -393,7 +392,7 @@ fn ensure_through_scope_header<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if opacity <= 0.0 || !filter_mask_can_lower(provider, mask_key) || children.is_empty() {
+    if opacity <= 0.0 || !scope_mask_can_lower(provider, mask_key) || children.is_empty() {
         return Err(SimpleScopeReject::NotSimple);
     }
     Ok(())
@@ -408,7 +407,7 @@ fn ensure_nested_through_scope_header<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if opacity != 1.0 || !filter_mask_can_lower(provider, mask_key) || children.is_empty() {
+    if opacity != 1.0 || !scope_mask_can_lower(provider, mask_key) || children.is_empty() {
         return Err(SimpleScopeReject::NotSimple);
     }
     Ok(())
@@ -426,4 +425,20 @@ fn add_scope_events(count: usize, additional: usize) -> Result<usize, SimpleScop
         return Err(SimpleScopeReject::TileEventLimitExceeded);
     }
     Ok(count)
+}
+
+pub(crate) fn scope_mask_can_lower<P>(
+    provider: &P,
+    mask_key: Option<crate::GpuMaskResourceKey>,
+) -> bool
+where
+    P: GpuNormalStackResourceProvider,
+{
+    match mask_key {
+        Some(key) => {
+            provider.mask_is_fully_opaque(key) == Some(true)
+                || provider.mask_atlas_tiles_supported()
+        }
+        None => true,
+    }
 }

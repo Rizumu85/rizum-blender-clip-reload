@@ -2,7 +2,9 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_effects::raster_can_affect_output;
-use crate::stream_tile_scope_silo_plan::{SimpleScopeBarrierHint, simple_scope_barrier_hint};
+use crate::stream_tile_scope_silo_plan::{
+    SimpleScopeBarrierHint, scope_mask_can_lower, simple_scope_barrier_hint,
+};
 use crate::stream_tile_silo_plan::{source_bounds, source_local_bounds};
 use crate::{
     GpuClippedStackSource, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
@@ -333,9 +335,7 @@ fn scope_mask_not_lowered<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if let Some(key) = mask_key
-        && provider.mask_is_fully_opaque(key) != Some(true)
-    {
+    if !scope_mask_can_lower(provider, mask_key) {
         return true;
     }
     children.iter().any(|child| match child {
