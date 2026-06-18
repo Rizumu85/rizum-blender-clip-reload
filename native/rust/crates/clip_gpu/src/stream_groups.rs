@@ -7,6 +7,9 @@ use crate::source_params::{
 };
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::CanvasRect;
+use crate::stream_clipped_tile_silo::{
+    clipped_raster_silo_run_len, encode_clipped_raster_silo_run_with_provider,
+};
 use crate::stream_clipping::encode_clipped_stack_source_with_provider;
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
@@ -118,19 +121,17 @@ where
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
-    for clipped_source in clipped {
-        encode_clipped_stack_source_with_provider(
-            context,
-            clipped_source,
-            fallback_texture,
-            &clipping_pair,
-            &mut previous_index,
-            &mut next_index,
-            &mut dirty_bounds,
-            cache_origin,
-            local_cache_bounds,
-        )?;
-    }
+    encode_clipped_stack_sources_with_provider(
+        context,
+        clipped,
+        fallback_texture,
+        &clipping_pair,
+        &mut previous_index,
+        &mut next_index,
+        &mut dirty_bounds,
+        cache_origin,
+        local_cache_bounds,
+    )?;
 
     Ok(RenderedStreamingCache::new_with_origin(
         clipping_pair,
@@ -223,19 +224,17 @@ where
         std::mem::swap(&mut previous_index, &mut next_index);
     }
 
-    for clipped_source in clipped {
-        encode_clipped_stack_source_with_provider(
-            context,
-            clipped_source,
-            fallback_texture,
-            &clipping_pair,
-            &mut previous_index,
-            &mut next_index,
-            &mut dirty_bounds,
-            cache_origin,
-            local_cache_bounds,
-        )?;
-    }
+    encode_clipped_stack_sources_with_provider(
+        context,
+        clipped,
+        fallback_texture,
+        &clipping_pair,
+        &mut previous_index,
+        &mut next_index,
+        &mut dirty_bounds,
+        cache_origin,
+        local_cache_bounds,
+    )?;
 
     Ok(RenderedStreamingCache::new_with_origin(
         clipping_pair,
@@ -328,4 +327,61 @@ fn clipped_known_stack_bounds(
             .map(KnownStackBounds::Bounded)
             .unwrap_or(KnownStackBounds::Empty),
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode_clipped_stack_sources_with_provider<P>(
+    context: &mut StreamingExecutionContext<'_, '_, P>,
+    clipped: &[GpuClippedStackSource],
+    fallback_texture: &wgpu::Texture,
+    clipping_pair: &crate::stream_state::StreamingTexturePair,
+    previous_index: &mut usize,
+    next_index: &mut usize,
+    dirty_bounds: &mut Option<CanvasRect>,
+    cache_origin: (i32, i32),
+    local_cache_bounds: CanvasRect,
+) -> Result<(), P::Error>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    let mut clipped_index = 0usize;
+    while clipped_index < clipped.len() {
+        let run_len = clipped_raster_silo_run_len(
+            &*context.provider,
+            context.output_size,
+            cache_origin,
+            clipping_pair.size(),
+            &clipped[clipped_index..],
+        );
+        if run_len >= 2 {
+            let wrote_silo = encode_clipped_raster_silo_run_with_provider(
+                context,
+                cache_origin,
+                clipping_pair.size(),
+                &clipped[clipped_index..clipped_index + run_len],
+                clipping_pair.view(*previous_index),
+                clipping_pair.view(*next_index),
+                dirty_bounds,
+            )?;
+            if wrote_silo {
+                std::mem::swap(previous_index, next_index);
+                clipped_index += run_len;
+                continue;
+            }
+        }
+
+        encode_clipped_stack_source_with_provider(
+            context,
+            &clipped[clipped_index],
+            fallback_texture,
+            clipping_pair,
+            previous_index,
+            next_index,
+            dirty_bounds,
+            cache_origin,
+            local_cache_bounds,
+        )?;
+        clipped_index += 1;
+    }
+    Ok(())
 }

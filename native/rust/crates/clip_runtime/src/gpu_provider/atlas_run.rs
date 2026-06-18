@@ -30,9 +30,11 @@ impl RuntimeGpuResourceProvider<'_> {
                         render_mipmap_id: request.source.key.render_mipmap_id,
                     })
                 })?;
-            let visible = self
-                .decode_region_for_source(request.source, &meta.source, None)?
-                .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
+            let Some(visible) =
+                self.decode_region_for_source(request.source, &meta.source, None)?
+            else {
+                return Ok(None);
+            };
             if request.size
                 != CanvasSize::new(visible.source_rect.width, visible.source_rect.height)
                 || request.offset_x != visible.offset_x

@@ -10,6 +10,7 @@ mod shaders;
 mod source_params;
 pub mod stream;
 mod stream_bounds;
+mod stream_clipped_tile_silo;
 mod stream_clipping;
 mod stream_context;
 mod stream_effects;

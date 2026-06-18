@@ -338,7 +338,7 @@ where
     Ok(prepared)
 }
 
-fn atlas_requests<P>(
+pub(crate) fn atlas_requests<P>(
     provider: &P,
     output_size: CanvasSize,
     target_origin: (i32, i32),
@@ -373,7 +373,7 @@ where
     Some(requests)
 }
 
-fn prepared_sources_from_atlas_upload(
+pub(crate) fn prepared_sources_from_atlas_upload(
     requests: &[GpuRasterAtlasSource],
     output_size: CanvasSize,
     target_origin: (i32, i32),
@@ -426,7 +426,7 @@ fn prepared_sources_from_atlas_upload(
         .collect()
 }
 
-fn prepared_sources_from_atlas_tiles(
+pub(crate) fn prepared_sources_from_atlas_tiles(
     chunks: &[GpuRasterAtlasTileChunk],
     resources: &[GpuRasterResourceInfo],
     output_size: CanvasSize,
@@ -436,19 +436,19 @@ fn prepared_sources_from_atlas_tiles(
     let resources_by_key: HashMap<_, _> = resources.iter().map(|info| (info.key, *info)).collect();
     chunks
         .iter()
-        .map(|chunk| {
-            let resource_info = resources_by_key.get(&chunk.source.key).ok_or(
-                GpuRenderError::MissingRasterResource {
+        .filter_map(|chunk| {
+            let Some(resource_info) = resources_by_key.get(&chunk.source.key) else {
+                return Some(Err(GpuRenderError::MissingRasterResource {
                     layer_id: chunk.source.key.layer_id,
                     render_mipmap_id: chunk.source.key.render_mipmap_id,
-                },
-            )?;
+                }));
+            };
             let offset = (chunk.offset_x, chunk.offset_y);
-            let bounds = source_bounds(offset, chunk.size, output_size)
-                .ok_or(GpuRenderError::InvalidImageSize)?;
-            let local_bounds = source_local_bounds(offset, chunk.size, target_origin, target_size)
-                .ok_or(GpuRenderError::InvalidImageSize)?;
-            Ok(PreparedSiloSource {
+            let Some(bounds) = source_bounds(offset, chunk.size, output_size) else {
+                return Some(Err(GpuRenderError::InvalidImageSize));
+            };
+            let local_bounds = source_local_bounds(offset, chunk.size, target_origin, target_size)?;
+            Some(Ok(PreparedSiloSource {
                 source: chunk.source,
                 cache: None,
                 info: GpuRasterResourceInfo {
@@ -468,7 +468,7 @@ fn prepared_sources_from_atlas_tiles(
                     .mask_atlas_x
                     .zip(chunk.mask_atlas_y)
                     .map(|(x, y)| crate::stream_tile_silo_plan::AtlasSourcePlacement { x, y }),
-            })
+            }))
         })
         .collect()
 }

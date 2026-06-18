@@ -1,6 +1,6 @@
 # Native Performance Investigation
 
-Last updated: 2026-06-16
+Last updated: 2026-06-18
 
 ## Purpose
 
@@ -318,9 +318,53 @@ Verification after this milestone:
 Performance note: this is a structural stepping stone, not the full Silicate
 clipping model. RealArt/Terra direct timings remain in the same broad range on
 this machine because their largest remaining barriers are clipping/container
-relationships and byte-domain special blends. The next quantity-level step is
-tile-local clipping/base events and larger faithful raster/clipping segments,
-not more CPU pre-application of isolated mask cases.
+relationships and byte-domain special blends. The next implemented step below
+starts collapsing the raster-clipped-sibling part of clipping caches, but the
+base/clipping relationship itself is still not fully tile-local.
+
+## Clipped Raster Sibling Atlas Events
+
+The streaming provider path now has a conservative clipping-cache tile-silo
+subset:
+
+- When a clipping run has already rendered its base into the owned clipping
+  cache, consecutive clipped siblings that are plain eligible raster sources can
+  be collapsed into one tile-silo pass instead of one preserve-alpha pass per
+  sibling.
+- The tile-silo shader has an explicit preserve-alpha mode. It samples the
+  current clipping-cache destination, skips pixels where the base alpha is zero,
+  applies the clipped source opacity/mask, blends Normal or standard RGB, and
+  writes the original destination alpha back. This mirrors the existing
+  clipped-raster preserve-alpha path; it is not a fallback compositor.
+- The same provider-backed compressed-tile atlas path is used. Runtime atlas
+  chunks that do not intersect the cropped clipping cache are filtered out when
+  event records are prepared, so source tiles outside the base cache do not
+  become errors or shader work.
+- Byte-domain special blends (`AddGlow`, `ColorDodge`, `ColorBurn`,
+  `GlowDodge`), clipped container/folder siblings, filters, THROUGH groups, and
+  the base-cache creation/resolution relationship remain semantic barriers on
+  the existing faithful path.
+- The large tile-silo WGSL moved to `clip_gpu/src/shaders/tile_silo.wgsl`; the
+  Rust module is now include wiring, keeping production Rust files below the
+  project file-size budget.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
+- New GPU unit coverage locks clipped raster sibling atlas collapse and the
+  cropped-cache edge case where the provider returns chunks outside the
+  clipping base bounds.
+- Release guard comparisons remain stable: `Test_Clipping` exact,
+  `Test_ClippingEdge` exact, `Test_FolderNested` exact,
+  `Test_AddGlowMultiply` `raw_max=1` / `premul_max=1` / visible `0`,
+  `Test_RealArt` `raw_max=5` / `premul_max=1`, and
+  `Ref_Terra404_Live2D` `premul_max=3` / `premul_visible_px=13501`.
+
+The remaining order-of-magnitude native renderer target is still broader
+tile-local clipping/base modelling: represent the base relationship and larger
+faithful raster/clipping stretches as tile events rather than allocating and
+resolving many cropped intermediate caches. This milestone only removes a
+subset of per-sibling preserve passes after the clipping cache already exists.
 
 ## Compressed Occupancy Planner
 
