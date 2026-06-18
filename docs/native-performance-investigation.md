@@ -616,8 +616,8 @@ Verification after this milestone:
   existing legacy source path and locks fractional-opacity/deeper nested
   THROUGH groups as planner barriers.
 - Planner and GPU unit coverage prove explicitly fully opaque masks do not
-  block simple container/THROUGH tile-local lowering, while unknown masks still
-  stay barriers.
+  block simple container/THROUGH tile-local lowering, while unknown masks now
+  report the explicit `ScopeMaskNotLowered` barrier reason.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - Guard comparisons remain stable: `Test_Clipping` exact,

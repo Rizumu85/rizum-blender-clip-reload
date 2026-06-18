@@ -427,8 +427,15 @@ fn planner_keeps_unknown_masked_simple_scopes_as_barriers() {
     assert_eq!(
         container_program.segments()[0].kind,
         RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+            RenderProgramBarrierReason::ScopeMaskNotLowered,
         ))
+    );
+    assert_eq!(
+        container_program
+            .stats()
+            .barrier_reasons
+            .scope_mask_not_lowered,
+        1
     );
 
     let through_sources = vec![GpuNormalStackSource::ThroughGroup {
@@ -447,8 +454,15 @@ fn planner_keeps_unknown_masked_simple_scopes_as_barriers() {
     assert_eq!(
         through_program.segments()[0].kind,
         RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::ThroughGroupNotLowered,
+            RenderProgramBarrierReason::ScopeMaskNotLowered,
         ))
+    );
+    assert_eq!(
+        through_program
+            .stats()
+            .barrier_reasons
+            .scope_mask_not_lowered,
+        1
     );
 }
 

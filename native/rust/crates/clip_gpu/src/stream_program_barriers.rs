@@ -4,7 +4,8 @@ use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_effects::raster_can_affect_output;
 use crate::stream_tile_silo_plan::{source_bounds, source_local_bounds};
 use crate::{
-    GpuClippedStackSource, GpuNormalRasterSource, GpuNormalStackSource, GpuRasterBlendMode,
+    GpuClippedStackSource, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
+    GpuRasterBlendMode,
 };
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -18,6 +19,7 @@ pub struct RenderProgramBarrierCounts {
     pub filter_not_lowered: u32,
     pub clipping_run_not_lowered: u32,
     pub clipped_container_sibling_not_lowered: u32,
+    pub scope_mask_not_lowered: u32,
     pub isolated_container_requires_intermediate: u32,
     pub through_group_not_lowered: u32,
 }
@@ -45,6 +47,9 @@ impl RenderProgramBarrierCounts {
             }
             RenderProgramBarrierReason::ClippedContainerSiblingNotLowered => {
                 self.clipped_container_sibling_not_lowered += 1;
+            }
+            RenderProgramBarrierReason::ScopeMaskNotLowered => {
+                self.scope_mask_not_lowered += 1;
             }
             RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate => {
                 self.isolated_container_requires_intermediate += 1;
@@ -83,6 +88,9 @@ impl RenderProgramBarrierCounts {
         self.clipped_container_sibling_not_lowered = self
             .clipped_container_sibling_not_lowered
             .saturating_add(other.clipped_container_sibling_not_lowered);
+        self.scope_mask_not_lowered = self
+            .scope_mask_not_lowered
+            .saturating_add(other.scope_mask_not_lowered);
         self.isolated_container_requires_intermediate = self
             .isolated_container_requires_intermediate
             .saturating_add(other.isolated_container_requires_intermediate);
@@ -130,6 +138,10 @@ impl RenderProgramBarrierCounts {
                 self.clipped_container_sibling_not_lowered,
             ),
             (
+                RenderProgramBarrierReason::ScopeMaskNotLowered,
+                self.scope_mask_not_lowered,
+            ),
+            (
                 RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
                 self.isolated_container_requires_intermediate,
             ),
@@ -155,6 +167,7 @@ pub enum RenderProgramBarrierReason {
     FilterNotLowered,
     ClippingRunNotLowered,
     ClippedContainerSiblingNotLowered,
+    ScopeMaskNotLowered,
     IsolatedContainerRequiresIntermediate,
     ThroughGroupNotLowered,
 }
@@ -171,6 +184,7 @@ impl RenderProgramBarrierReason {
             Self::FilterNotLowered => "FilterNotLowered",
             Self::ClippingRunNotLowered => "ClippingRunNotLowered",
             Self::ClippedContainerSiblingNotLowered => "ClippedContainerSiblingNotLowered",
+            Self::ScopeMaskNotLowered => "ScopeMaskNotLowered",
             Self::IsolatedContainerRequiresIntermediate => "IsolatedContainerRequiresIntermediate",
             Self::ThroughGroupNotLowered => "ThroughGroupNotLowered",
         }
@@ -194,12 +208,26 @@ where
         GpuNormalStackSource::ClippingRun { base, clipped } => {
             clipping_run_barrier_reason(*base, clipped)
         }
-        GpuNormalStackSource::ContainerClippingRun { .. }
-        | GpuNormalStackSource::Container { .. } => {
+        GpuNormalStackSource::ContainerClippingRun { .. } => {
             RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate
         }
-        GpuNormalStackSource::ThroughGroup { .. } => {
-            RenderProgramBarrierReason::ThroughGroupNotLowered
+        GpuNormalStackSource::Container {
+            children, mask_key, ..
+        } => {
+            if scope_mask_not_lowered(provider, *mask_key, children) {
+                RenderProgramBarrierReason::ScopeMaskNotLowered
+            } else {
+                RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate
+            }
+        }
+        GpuNormalStackSource::ThroughGroup {
+            children, mask_key, ..
+        } => {
+            if scope_mask_not_lowered(provider, *mask_key, children) {
+                RenderProgramBarrierReason::ScopeMaskNotLowered
+            } else {
+                RenderProgramBarrierReason::ThroughGroupNotLowered
+            }
         }
         GpuNormalStackSource::SolidColor { .. } => RenderProgramBarrierReason::SolidColorNotLowered,
         GpuNormalStackSource::LutFilter { .. } => RenderProgramBarrierReason::FilterNotLowered,
@@ -240,6 +268,30 @@ where
         return RenderProgramBarrierReason::RasterBoundsOrResourceNotLowered;
     }
     RenderProgramBarrierReason::RasterRunTooShort
+}
+
+fn scope_mask_not_lowered<P>(
+    provider: &P,
+    mask_key: Option<GpuMaskResourceKey>,
+    children: &[GpuNormalStackSource],
+) -> bool
+where
+    P: GpuNormalStackResourceProvider,
+{
+    if let Some(key) = mask_key
+        && provider.mask_is_fully_opaque(key) != Some(true)
+    {
+        return true;
+    }
+    children.iter().any(|child| match child {
+        GpuNormalStackSource::Container {
+            children, mask_key, ..
+        }
+        | GpuNormalStackSource::ThroughGroup {
+            children, mask_key, ..
+        } => scope_mask_not_lowered(provider, *mask_key, children),
+        _ => false,
+    })
 }
 
 fn clipping_run_barrier_reason(

@@ -106,6 +106,7 @@ enum BarrierReason {
     UnsupportedTileLocalFilter(FilterKind),
     ThroughGroupNotLowered,
     IsolatedContainerRequiresIntermediate,
+    ScopeMaskNotLowered,
     ByteDomainBlendNotLowered(GpuRasterBlendMode),
     ClippedContainerSiblingNotLowered,
     ScopeDepthLimitExceeded,
@@ -325,6 +326,7 @@ Expected output shape:
   "barrier_reasons": {
     "ByteDomainBlendNotLowered": 31,
     "IsolatedContainerRequiresIntermediate": 40,
+    "ScopeMaskNotLowered": 6,
     "ThroughGroupNotLowered": 8,
     "FilterNotLowered": 15
   },
@@ -567,7 +569,7 @@ Verification:
   nesting beyond the fixed limit remain barriers.
 - Planner and GPU unit tests prove masks that are explicitly known to be fully
   opaque do not block simple container/THROUGH lowering, while unknown masks
-  remain barriers.
+  remain `ScopeMaskNotLowered` barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
