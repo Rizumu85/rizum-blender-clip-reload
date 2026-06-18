@@ -5,24 +5,26 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::process;
 
-use clip_model::{LayerId, Rect, Rgba8};
+use clip_model::{LayerId, Rect};
 use clip_runtime::ClipSession;
 
 mod blender_server;
 mod blender_worker;
 mod layer_labels;
+mod pixel_trace_text;
 mod support_json;
 mod support_text;
 mod tile_silo_text;
 
-use layer_labels::{layer_label, optional_raw_layer_label};
+use layer_labels::layer_label;
+use pixel_trace_text::print_pixel_trace_result;
 
 fn main() {
     let mut args = env::args_os();
     let _program = args.next();
     let Some(path) = args.next() else {
         eprintln!(
-            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--tile-silo-estimate] [--tile-size <px>] | clip_cli --blender-render-server"
+            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--gpu-trace-layer-pixel <layer> <x> <y>] [--tile-silo-estimate] [--tile-size <px>] | clip_cli --blender-render-server"
         );
         process::exit(2);
     };
@@ -415,46 +417,29 @@ fn main() {
                 process::exit(1);
             }
         };
-        println!(
-            "gpu trace pixel x={} y={} sources={} unsupported={}",
-            x,
-            y,
-            result.source_count,
-            result.unsupported.len(),
-        );
-        for sample in result.samples {
-            println!(
-                "  prefix={} before={} rgba=[{},{},{},{}] source={}",
-                sample.source_index,
-                format_optional_rgba(sample.before_rgba),
-                sample.rgba.r,
-                sample.rgba.g,
-                sample.rgba.b,
-                sample.rgba.a,
-                sample.source,
-            );
-            for input in sample.inputs {
-                println!(
-                    "    input role={} node={} layer={} blend={} opacity={} rgba={} mask_alpha={}",
-                    input.role,
-                    format_optional_u32(input.render_node_id),
-                    optional_raw_layer_label(&session, input.layer_id),
-                    input.blend_mode.as_deref().unwrap_or("-"),
-                    format_optional_f32(input.opacity),
-                    format_optional_rgba(input.rgba),
-                    format_optional_u8(input.mask_alpha),
+        print_pixel_trace_result(&session, &format!("gpu trace pixel x={x} y={y}"), result);
+    }
+
+    if let Some((layer_id, x, y)) = options.gpu_trace_layer_pixel {
+        let result = match session.trace_layer_stack_pixel_via_gpu(layer_id, x, y) {
+            Ok(result) => result,
+            Err(err) => {
+                eprintln!(
+                    "failed to GPU-trace layer {} pixel ({x},{y}) from {:?}: {err}",
+                    layer_label(&session, layer_id),
+                    path
                 );
+                process::exit(1);
             }
-        }
-        for unsupported in result.unsupported {
-            println!(
-                "  unsupported node={} layer={} kind={:?} reason={}",
-                unsupported.render_node_id.0,
-                layer_label(&session, unsupported.layer_id),
-                unsupported.kind,
-                unsupported.reason,
-            );
-        }
+        };
+        print_pixel_trace_result(
+            &session,
+            &format!(
+                "gpu trace layer={} x={x} y={y}",
+                layer_label(&session, layer_id)
+            ),
+            result,
+        );
     }
 }
 
@@ -469,6 +454,7 @@ struct CliOptions {
     gpu_support_json: bool,
     gpu_normal_stack: bool,
     gpu_trace_pixel: Option<(u32, u32)>,
+    gpu_trace_layer_pixel: Option<(LayerId, u32, u32)>,
     tile_silo_estimate: bool,
     tile_size: u32,
     dump_layer_window: Option<(LayerId, u32, u32, u32)>,
@@ -523,6 +509,11 @@ fn parse_options(args: Vec<OsString>) -> CliOptions {
             let x = parse_next_u32(&mut iter, "--gpu-trace-pixel x");
             let y = parse_next_u32(&mut iter, "--gpu-trace-pixel y");
             options.gpu_trace_pixel = Some((x, y));
+        } else if arg == "--gpu-trace-layer-pixel" {
+            let layer_id = parse_next_u32(&mut iter, "--gpu-trace-layer-pixel layer id");
+            let x = parse_next_u32(&mut iter, "--gpu-trace-layer-pixel x");
+            let y = parse_next_u32(&mut iter, "--gpu-trace-layer-pixel y");
+            options.gpu_trace_layer_pixel = Some((LayerId(layer_id), x, y));
         } else if arg == "--tile-silo-estimate" {
             options.tile_silo_estimate = true;
         } else if arg == "--tile-size" {
@@ -587,30 +578,6 @@ fn parse_next_u32(iter: &mut impl Iterator<Item = OsString>, label: &str) -> u32
         process::exit(2);
     };
     value
-}
-
-fn format_optional_u32(value: Option<u32>) -> String {
-    value
-        .map(|value| value.to_string())
-        .unwrap_or_else(|| "-".to_string())
-}
-
-fn format_optional_u8(value: Option<u8>) -> String {
-    value
-        .map(|value| value.to_string())
-        .unwrap_or_else(|| "-".to_string())
-}
-
-fn format_optional_f32(value: Option<f32>) -> String {
-    value
-        .map(|value| format!("{value:.6}"))
-        .unwrap_or_else(|| "-".to_string())
-}
-
-fn format_optional_rgba(value: Option<Rgba8>) -> String {
-    value
-        .map(|rgba| format!("[{},{},{},{}]", rgba.r, rgba.g, rgba.b, rgba.a))
-        .unwrap_or_else(|| "-".to_string())
 }
 
 #[derive(Debug, Eq, PartialEq)]

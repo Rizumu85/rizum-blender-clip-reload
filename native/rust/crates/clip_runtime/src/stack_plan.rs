@@ -1,6 +1,8 @@
+#![allow(dead_code)] // Retained for the legacy decoded selector/debug entry points.
+
 mod trace;
 
-pub(super) use trace::{sample_rgba8, stack_draw_trace_inputs, stack_draw_trace_label};
+pub(super) use trace::sample_rgba8;
 
 use clip_graph::RenderNodeId;
 use clip_model::{LayerId, LayerOpacity, Rgba8};

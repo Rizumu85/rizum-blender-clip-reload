@@ -4076,3 +4076,47 @@ Rejected probes during this audit:
 - Alpha-thresholded partial-Hue min-channel-ceil probes can locally flip
   `(374,108)` to `[93,61,56]`, but the useful threshold is magic
   (`alpha ~= 81`) and is not a faithful general rule without native evidence.
+
+2026-06-18 Kabi/MXL reference residual audit:
+
+`Ref_Kabi_Live2D` was rechecked after the saved `.clip` update and still
+reports `raw_max=32`, `premul_max=32`, and `premul_visible_px=341`. Provider
+GPU tracing localizes the max pixel `(1454,1104)` to the body folder's
+`layer 232 [蝴蝶结]`, specifically `layer 263 [发光2]` Glow Dodge over
+`layer 258 [黑蝴蝶结上1]`. The relevant source state is:
+
+- before `layer 263`: `[0,0,0,101]`
+- source `layer 263`: `[165,116,255,140]`
+- current native bow cache after `layer 263`: `[57,40,88,186]`
+- body/background before the bow group: `[252,247,247,255]`
+- final native/reference at the max pixel: `[110,96,131,255]` vs
+  `[85,64,124,255]`
+
+IDA `RenderRGB100_32bit @ 0x12401a60` confirms nonzero internal blend modes
+build a temporary RGBA source with effective alpha at `0x12402126` before
+calling `RenderBlendModeCall_0`; the decompiler omitted that alpha write in
+the local variable display. `RenderBlendModeCall_0` case `516` applied as an
+`a3==0` Color Dodge-style path locally produces `[75,53,116,241]`, which would
+resolve over `[252,247,247]` to `[85,64,123]`, matching the max pixel
+almost exactly. However, applying that partial-destination rule broadly to
+Glow Dodge is rejected:
+
+- all `0 < dst_a < 255` routed through case 516 regressed Kabi to
+  `premul_max=163` around `(1396,1141)`, where `layer 264 [发光1]` over
+  near-opaque `[8,5,7,254]` exploded to `[198,17,23,255]`;
+- a `dst_a >= 254` opaque guard still regressed Kabi to `premul_max=158`
+  around the same region;
+- a `dst_a >= src_a` guard regressed Kabi to `premul_max=245`, with a
+  low-alpha black destination `[0,0,0,5]` becoming opaque black after
+  `layer 264`.
+
+Keep the current Glow Dodge shader until native evidence explains the missing
+dispatch/resolve condition. The local case-516 match is useful evidence, but it
+is not a retainable general algorithm by itself.
+
+`Ref_MXL_Idol1` was also rechecked and remains `raw_max=80` in transparent
+RGB, `premul_max=5`, and `premul_visible_px=473627`. The premultiplied
+threshold shape is low-value for further semantic work: `>2` has only `181`
+pixels, `>4` has `3` pixels, and `>5` has `0`; the broad stocking-area residual
+is predominantly 1-2/255. Treat this sample as visually low-level unless a new
+reference exposes a structural hotspot.

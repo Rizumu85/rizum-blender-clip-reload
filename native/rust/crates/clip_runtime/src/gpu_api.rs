@@ -1,20 +1,21 @@
 use std::cell::RefCell;
 
 use clip_graph::RenderNodeKind;
-use clip_model::LayerId;
+use clip_model::{LayerId, Rect, Rgba8};
 
 use crate::blend::StrictRasterBlendMode;
-use crate::gpu_provider::{RuntimeGpuResourceProvider, cache::PersistentGpuTextureCache};
+use crate::gpu_provider::{
+    GpuResourcePlan, RuntimeGpuResourceProvider, cache::PersistentGpuTextureCache,
+};
 use crate::stack_plan::{
     GpuRenderStackSelection, PlannedDecodedRaster, StrictRasterStackDraw, StrictRasterStackOptions,
-    byte_diff_count, decoded_containers_in_draws, decoded_lut_filters_in_draws,
-    decoded_rasters_in_draws, decoded_through_groups_in_draws, gpu_normal_stack_source,
-    sample_rgba8, stack_draw_trace_inputs, stack_draw_trace_label,
+    byte_diff_count, sample_rgba8,
 };
 use crate::{
     ClipSession, DrawRasterLayerGpuResult, GpuTextureCacheStats, NormalRasterStackGpuPatchResult,
     NormalRasterStackGpuResult, NormalRasterStackPixelTraceResult,
     NormalRasterStackPixelTraceSample, ReloadPatchRect, RuntimeError, SimpleRasterStackGpuResult,
+    SimpleRasterStackUnsupported,
 };
 
 pub struct RuntimeGpuRenderer {
@@ -447,32 +448,62 @@ impl ClipSession {
             return Err(RuntimeError::InvalidRegion);
         }
 
-        let selection = self.select_strict_normal_raster_stack(StrictRasterStackOptions {
-            allow_alpha_compositing: true,
-            allow_paper: true,
-            allow_layer_opacity: true,
-            allow_masks: true,
-            allow_clipping_runs: true,
-            allow_container_isolation: true,
-            allow_through_groups: true,
-            allow_add_blend: true,
-            allow_add_glow_blend: true,
-            allow_color_burn_blend: true,
-            allow_color_dodge_blend: true,
-            allow_extended_blends: true,
-            allow_glow_dodge_blend: true,
-            allow_hard_mix_blend: true,
-            allow_hsl_blends: true,
-            allow_simple_blends: true,
-            allow_soft_light_blend: true,
-            allow_lut_filters: true,
-            allow_vivid_light_blend: true,
-            allow_w3c_blends: true,
-            allow_initial_terminal_container_elision: false,
-        })?;
-        let source_count = selection.draws.len();
-        let unsupported = selection.unsupported;
-        if selection.draws.is_empty() {
+        let selection = self.select_gpu_normal_render_stack(gpu_trace_options())?;
+        let GpuRenderStackSelection {
+            sources,
+            resource_plan,
+            unsupported,
+        } = selection;
+        self.trace_gpu_sources_pixel(sources, resource_plan, unsupported, x, y)
+    }
+
+    pub fn trace_layer_stack_pixel_via_gpu(
+        &self,
+        layer_id: LayerId,
+        x: u32,
+        y: u32,
+    ) -> Result<NormalRasterStackPixelTraceResult, RuntimeError> {
+        if x >= self.summary.canvas.width || y >= self.summary.canvas.height {
+            return Err(RuntimeError::InvalidRegion);
+        }
+        let index = self
+            .render_plan
+            .nodes
+            .iter()
+            .position(|node| node.layer_id == layer_id)
+            .ok_or(RuntimeError::MissingPlannedRasterLayer { layer_id })?;
+        let node = &self.render_plan.nodes[index];
+        let subtree_end = self.subtree_end(index);
+        let (start, end, depth) = if node.kind == RenderNodeKind::Container {
+            (index + 1, subtree_end, node.depth + 1)
+        } else {
+            (index, subtree_end, node.depth)
+        };
+
+        let mut unsupported = Vec::new();
+        let mut resource_plan = GpuResourcePlan::default();
+        let sources = self.collect_gpu_sources_in_range(
+            start,
+            end,
+            depth,
+            gpu_trace_options(),
+            &mut unsupported,
+            &mut resource_plan,
+        )?;
+
+        self.trace_gpu_sources_pixel(sources, resource_plan, unsupported, x, y)
+    }
+
+    fn trace_gpu_sources_pixel(
+        &self,
+        sources: Vec<clip_gpu::GpuNormalStackSource>,
+        resource_plan: GpuResourcePlan,
+        unsupported: Vec<SimpleRasterStackUnsupported>,
+        x: u32,
+        y: u32,
+    ) -> Result<NormalRasterStackPixelTraceResult, RuntimeError> {
+        let source_count = sources.len();
+        if sources.is_empty() {
             return Ok(NormalRasterStackPixelTraceResult {
                 source_count,
                 samples: Vec::new(),
@@ -480,89 +511,34 @@ impl ClipSession {
             });
         }
 
-        let decoded_rasters = decoded_rasters_in_draws(&selection.draws);
-        let uploads: Vec<_> = decoded_rasters
-            .iter()
-            .map(|decoded| clip_gpu::GpuRasterUpload {
-                layer_id: decoded.layer_id,
-                render_node_id: decoded.render_node_id,
-                render_mipmap_id: decoded.render_mipmap_id,
-                size: clip_model::CanvasSize::new(decoded.image.width, decoded.image.height),
-                pixels: &decoded.image.pixels,
-            })
-            .collect();
-        let decoded_containers = decoded_containers_in_draws(&selection.draws);
-        let decoded_through_groups = decoded_through_groups_in_draws(&selection.draws);
-        let decoded_lut_filters = decoded_lut_filters_in_draws(&selection.draws);
-        let mask_uploads: Vec<_> = decoded_rasters
-            .iter()
-            .filter_map(|decoded| {
-                decoded
-                    .mask
-                    .as_ref()
-                    .map(|mask| (decoded.render_node_id, decoded.layer_id, mask))
-            })
-            .chain(decoded_containers.iter().filter_map(|container| {
-                container
-                    .mask
-                    .as_ref()
-                    .map(|mask| (container.render_node_id, container.layer_id, mask))
-            }))
-            .chain(decoded_through_groups.iter().filter_map(|through_group| {
-                through_group
-                    .mask
-                    .as_ref()
-                    .map(|mask| (through_group.render_node_id, through_group.layer_id, mask))
-            }))
-            .chain(decoded_lut_filters.iter().filter_map(|filter| {
-                filter
-                    .mask
-                    .as_ref()
-                    .map(|mask| (filter.render_node_id, filter.layer_id, mask))
-            }))
-            .map(|(render_node_id, layer_id, mask)| clip_gpu::GpuMaskUpload {
-                layer_id,
-                render_node_id,
-                mask_mipmap_id: mask.mask_mipmap_id,
-                size: clip_model::CanvasSize::new(mask.image.width, mask.image.height),
-                origin_x: 0,
-                origin_y: 0,
-                fill_value: 0,
-                upload_origin_x: 0,
-                upload_origin_y: 0,
-                upload_size: clip_model::CanvasSize::new(mask.image.width, mask.image.height),
-                pixels: &mask.image.pixels,
-            })
-            .collect();
-        let sources: Vec<_> = selection
-            .draws
-            .iter()
-            .map(gpu_normal_stack_source)
-            .collect();
         let renderer = clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?;
-        let cache = renderer.upload_raster_resources(&uploads)?;
-        let mask_cache = if mask_uploads.is_empty() {
-            None
-        } else {
-            Some(renderer.upload_mask_resources(&mask_uploads)?)
-        };
+        let mut provider =
+            RuntimeGpuResourceProvider::new(&self.container, self.summary.canvas, resource_plan)?;
 
+        let trace_region = trace_region_for_pixel(self.summary.canvas, x, y);
+        let local_x = x - trace_region.x;
+        let local_y = y - trace_region.y;
         let mut samples = Vec::with_capacity(sources.len());
         let mut previous_sample = None;
         for index in 0..sources.len() {
-            let output = renderer.draw_normal_stack_to_rgba8(
-                &cache,
-                mask_cache.as_ref(),
+            let sample = match renderer.draw_normal_stack_region_with_provider_to_rgba8(
                 self.summary.canvas,
+                trace_region,
                 &sources[..=index],
-            )?;
-            let sample = sample_rgba8(&output.pixels, output.size, x, y)?;
+                &mut provider,
+            ) {
+                Ok(output) => sample_rgba8(&output.pixels, output.size, local_x, local_y)?,
+                Err(RuntimeError::Gpu(clip_gpu::GpuRenderError::InvalidImageSize)) => {
+                    previous_sample.unwrap_or(Rgba8::TRANSPARENT_WHITE)
+                }
+                Err(err) => return Err(err),
+            };
             samples.push(NormalRasterStackPixelTraceSample {
                 source_index: index,
-                source: stack_draw_trace_label(&selection.draws[index]),
+                source: gpu_source_trace_label(&sources[index]),
                 before_rgba: previous_sample,
                 rgba: sample,
-                inputs: stack_draw_trace_inputs(&selection.draws[index], x, y)?,
+                inputs: Vec::new(),
             });
             previous_sample = Some(sample);
         }
@@ -572,5 +548,131 @@ impl ClipSession {
             samples,
             unsupported,
         })
+    }
+}
+
+fn gpu_trace_options() -> StrictRasterStackOptions {
+    StrictRasterStackOptions {
+        allow_alpha_compositing: true,
+        allow_paper: true,
+        allow_layer_opacity: true,
+        allow_masks: true,
+        allow_clipping_runs: true,
+        allow_container_isolation: true,
+        allow_through_groups: true,
+        allow_add_blend: true,
+        allow_add_glow_blend: true,
+        allow_color_burn_blend: true,
+        allow_color_dodge_blend: true,
+        allow_extended_blends: true,
+        allow_glow_dodge_blend: true,
+        allow_hard_mix_blend: true,
+        allow_hsl_blends: true,
+        allow_simple_blends: true,
+        allow_soft_light_blend: true,
+        allow_lut_filters: true,
+        allow_vivid_light_blend: true,
+        allow_w3c_blends: true,
+        allow_initial_terminal_container_elision: true,
+    }
+}
+
+fn trace_region_for_pixel(canvas: clip_model::CanvasSize, x: u32, y: u32) -> Rect {
+    const TRACE_FULL_CANVAS_LIMIT: u32 = 8192;
+    const TRACE_REGION_SIZE: u32 = 512;
+
+    if canvas.width <= TRACE_FULL_CANVAS_LIMIT && canvas.height <= TRACE_FULL_CANVAS_LIMIT {
+        return Rect::new(0, 0, canvas.width, canvas.height);
+    }
+
+    let width = canvas.width.min(TRACE_REGION_SIZE);
+    let height = canvas.height.min(TRACE_REGION_SIZE);
+    let half_width = width / 2;
+    let half_height = height / 2;
+    let mut x0 = x.saturating_sub(half_width);
+    let mut y0 = y.saturating_sub(half_height);
+    if x0 + width > canvas.width {
+        x0 = canvas.width - width;
+    }
+    if y0 + height > canvas.height {
+        y0 = canvas.height - height;
+    }
+    Rect::new(x0, y0, width, height)
+}
+
+fn gpu_source_trace_label(source: &clip_gpu::GpuNormalStackSource) -> String {
+    match source {
+        clip_gpu::GpuNormalStackSource::Raster(raster) => {
+            format!("raster {}", gpu_raster_trace_label(raster))
+        }
+        clip_gpu::GpuNormalStackSource::ClippingRun { base, clipped } => format!(
+            "clipping-run base={} clipped={}",
+            gpu_raster_trace_label(base),
+            clipped.len()
+        ),
+        clip_gpu::GpuNormalStackSource::ContainerClippingRun {
+            children,
+            opacity,
+            mask_key,
+            blend_mode,
+            clipped,
+        } => format!(
+            "container-clipping-run children={} opacity={opacity:.3} blend={blend_mode:?} mask={} clipped={}",
+            children.len(),
+            gpu_mask_trace_label(*mask_key),
+            clipped.len()
+        ),
+        clip_gpu::GpuNormalStackSource::Container {
+            children,
+            opacity,
+            mask_key,
+            blend_mode,
+        } => format!(
+            "container children={} opacity={opacity:.3} blend={blend_mode:?} mask={}",
+            children.len(),
+            gpu_mask_trace_label(*mask_key)
+        ),
+        clip_gpu::GpuNormalStackSource::ThroughGroup {
+            children,
+            opacity,
+            mask_key,
+        } => format!(
+            "through-group children={} opacity={opacity:.3} mask={}",
+            children.len(),
+            gpu_mask_trace_label(*mask_key)
+        ),
+        clip_gpu::GpuNormalStackSource::SolidColor { color, opacity } => format!(
+            "solid rgba=[{},{},{},{}] opacity={opacity:.3}",
+            color.r, color.g, color.b, color.a
+        ),
+        clip_gpu::GpuNormalStackSource::LutFilter {
+            opacity,
+            mask_key,
+            filter_mode,
+            ..
+        } => format!(
+            "lut-filter mode={filter_mode:?} opacity={opacity:.3} mask={}",
+            gpu_mask_trace_label(*mask_key)
+        ),
+    }
+}
+
+fn gpu_raster_trace_label(raster: &clip_gpu::GpuNormalRasterSource) -> String {
+    format!(
+        "layer={} mip={} blend={:?} opacity={:.3} mask={} offset=({}, {})",
+        raster.key.layer_id.0,
+        raster.key.render_mipmap_id,
+        raster.blend_mode,
+        raster.opacity,
+        gpu_mask_trace_label(raster.mask_key),
+        raster.offset_x,
+        raster.offset_y
+    )
+}
+
+fn gpu_mask_trace_label(mask_key: Option<clip_gpu::GpuMaskResourceKey>) -> String {
+    match mask_key {
+        Some(key) => format!("layer:{} mip:{}", key.layer_id.0, key.mask_mipmap_id),
+        None => "-".to_string(),
     }
 }
