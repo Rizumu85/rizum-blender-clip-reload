@@ -5,19 +5,21 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::process;
 
-use clip_model::{LayerId, Rect};
+use clip_model::Rect;
 use clip_runtime::ClipSession;
 
 mod blender_server;
 mod blender_worker;
 mod layer_labels;
 mod layer_window;
+mod options;
 mod pixel_trace_text;
 mod support_json;
 mod support_text;
 mod tile_silo_text;
 
 use layer_labels::layer_label;
+use options::parse_options;
 use pixel_trace_text::print_pixel_trace_result;
 
 fn main() {
@@ -33,7 +35,13 @@ fn main() {
         process::exit(blender_server::run_blender_render_server());
     }
     let path = PathBuf::from(path);
-    let options = parse_options(args.collect());
+    let options = match parse_options(args.collect()) {
+        Ok(options) => options,
+        Err(err) => {
+            eprintln!("{err}");
+            process::exit(2);
+        }
+    };
     if options.blender_render_rgba_path.is_some() != options.blender_render_json_path.is_some() {
         eprintln!("--blender-render-rgba and --blender-render-json must be used together");
         process::exit(2);
@@ -451,149 +459,9 @@ fn main() {
     }
 }
 
-#[derive(Debug, Default)]
-struct CliOptions {
-    plan_only: bool,
-    gpu_roundtrip_layer_id: Option<LayerId>,
-    gpu_upload_planned_rasters: bool,
-    gpu_draw_layer_id: Option<LayerId>,
-    gpu_simple_stack: bool,
-    gpu_support_check: bool,
-    gpu_support_json: bool,
-    gpu_normal_stack: bool,
-    gpu_trace_pixel: Option<(u32, u32)>,
-    gpu_trace_layer_pixel: Option<(LayerId, u32, u32)>,
-    tile_silo_estimate: bool,
-    tile_size: u32,
-    dump_layer_window: Option<(LayerId, u32, u32, u32)>,
-    dump_layer_rgba: Option<(LayerId, PathBuf)>,
-    compare_png_path: Option<PathBuf>,
-    blender_render_rgba_path: Option<PathBuf>,
-    blender_render_json_path: Option<PathBuf>,
-    blender_reload_old_json_path: Option<PathBuf>,
-}
-
-fn parse_options(args: Vec<OsString>) -> CliOptions {
-    let mut options = CliOptions::default();
-    options.tile_size = 256;
-    let mut iter = args.into_iter();
-    while let Some(arg) = iter.next() {
-        if arg == "--gpu-roundtrip-layer" {
-            let Some(layer_id) = iter.next() else {
-                eprintln!("missing value after --gpu-roundtrip-layer");
-                process::exit(2);
-            };
-            let Some(layer_id) = layer_id
-                .to_str()
-                .and_then(|value| value.parse::<u32>().ok())
-            else {
-                eprintln!("invalid layer id for --gpu-roundtrip-layer");
-                process::exit(2);
-            };
-            options.gpu_roundtrip_layer_id = Some(LayerId(layer_id));
-        } else if arg == "--gpu-upload-planned-rasters" {
-            options.gpu_upload_planned_rasters = true;
-        } else if arg == "--gpu-draw-layer" {
-            let Some(layer_id) = iter.next() else {
-                eprintln!("missing value after --gpu-draw-layer");
-                process::exit(2);
-            };
-            let Some(layer_id) = layer_id
-                .to_str()
-                .and_then(|value| value.parse::<u32>().ok())
-            else {
-                eprintln!("invalid layer id for --gpu-draw-layer");
-                process::exit(2);
-            };
-            options.gpu_draw_layer_id = Some(LayerId(layer_id));
-        } else if arg == "--gpu-simple-stack" {
-            options.gpu_simple_stack = true;
-        } else if arg == "--gpu-support-check" {
-            options.gpu_support_check = true;
-        } else if arg == "--gpu-support-json" {
-            options.gpu_support_json = true;
-        } else if arg == "--gpu-normal-stack" {
-            options.gpu_normal_stack = true;
-        } else if arg == "--gpu-trace-pixel" {
-            let x = parse_next_u32(&mut iter, "--gpu-trace-pixel x");
-            let y = parse_next_u32(&mut iter, "--gpu-trace-pixel y");
-            options.gpu_trace_pixel = Some((x, y));
-        } else if arg == "--gpu-trace-layer-pixel" {
-            let layer_id = parse_next_u32(&mut iter, "--gpu-trace-layer-pixel layer id");
-            let x = parse_next_u32(&mut iter, "--gpu-trace-layer-pixel x");
-            let y = parse_next_u32(&mut iter, "--gpu-trace-layer-pixel y");
-            options.gpu_trace_layer_pixel = Some((LayerId(layer_id), x, y));
-        } else if arg == "--tile-silo-estimate" {
-            options.tile_silo_estimate = true;
-        } else if arg == "--tile-size" {
-            let tile_size = parse_next_u32(&mut iter, "--tile-size");
-            if tile_size == 0 {
-                eprintln!("--tile-size must be greater than zero");
-                process::exit(2);
-            }
-            options.tile_size = tile_size;
-        } else if arg == "--dump-layer-window" {
-            let layer_id = parse_next_u32(&mut iter, "--dump-layer-window layer id");
-            let x = parse_next_u32(&mut iter, "--dump-layer-window x");
-            let y = parse_next_u32(&mut iter, "--dump-layer-window y");
-            let radius = parse_next_u32(&mut iter, "--dump-layer-window radius");
-            options.dump_layer_window = Some((LayerId(layer_id), x, y, radius));
-        } else if arg == "--dump-layer-rgba" {
-            let layer_id = parse_next_u32(&mut iter, "--dump-layer-rgba layer id");
-            let Some(path) = iter.next() else {
-                eprintln!("missing value after --dump-layer-rgba layer id");
-                process::exit(2);
-            };
-            options.dump_layer_rgba = Some((LayerId(layer_id), PathBuf::from(path)));
-        } else if arg == "--compare-png" {
-            let Some(path) = iter.next() else {
-                eprintln!("missing value after --compare-png");
-                process::exit(2);
-            };
-            options.compare_png_path = Some(PathBuf::from(path));
-        } else if arg == "--blender-render-rgba" {
-            let Some(path) = iter.next() else {
-                eprintln!("missing value after --blender-render-rgba");
-                process::exit(2);
-            };
-            options.blender_render_rgba_path = Some(PathBuf::from(path));
-        } else if arg == "--blender-render-json" {
-            let Some(path) = iter.next() else {
-                eprintln!("missing value after --blender-render-json");
-                process::exit(2);
-            };
-            options.blender_render_json_path = Some(PathBuf::from(path));
-        } else if arg == "--blender-reload-old-json" {
-            let Some(path) = iter.next() else {
-                eprintln!("missing value after --blender-reload-old-json");
-                process::exit(2);
-            };
-            options.blender_reload_old_json_path = Some(PathBuf::from(path));
-        } else if arg == "--plan-only" {
-            options.plan_only = true;
-        } else {
-            eprintln!("unknown argument {:?}", arg);
-            process::exit(2);
-        }
-    }
-    options
-}
-
 fn read_reload_manifest(path: &PathBuf) -> Result<clip_runtime::ReloadDiffManifest, String> {
     let bytes = std::fs::read(path).map_err(|err| err.to_string())?;
     serde_json::from_slice(&bytes).map_err(|err| err.to_string())
-}
-
-fn parse_next_u32(iter: &mut impl Iterator<Item = OsString>, label: &str) -> u32 {
-    let Some(value) = iter.next() else {
-        eprintln!("missing value for {label}");
-        process::exit(2);
-    };
-    let Some(value) = value.to_str().and_then(|value| value.parse::<u32>().ok()) else {
-        eprintln!("invalid integer for {label}");
-        process::exit(2);
-    };
-    value
 }
 
 #[derive(Debug, Eq, PartialEq)]

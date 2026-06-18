@@ -226,10 +226,15 @@ Deepening milestones:
 2. CLI command runner.
    - Split `clip_cli/src/main.rs` into command parsing, command execution, and
      output formatting modules.
+     Current progress: `clip_cli/src/options.rs` owns command-option parsing and
+     returns `Result<CliOptions, String>` instead of exiting the process inside
+     the parser. `main.rs` now prints parser errors and exits with code 2.
    - Existing diagnostics such as support text/json, pixel trace text,
      layer-window dumps, PNG compare, tile-silo estimates, and Blender worker
      commands should become command implementations behind a small runner
      Interface.
+     Remaining work: extract command execution and PNG/diagnostic output
+     formatting out of `main.rs`.
    - Expected benefit: adding diagnostics no longer expands the entry point, and
      command behavior can be tested without going through process-level `main`.
 
