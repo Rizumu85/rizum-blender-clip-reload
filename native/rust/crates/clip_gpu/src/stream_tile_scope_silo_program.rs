@@ -7,6 +7,7 @@ use crate::stream_tile_event::{
     PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
 };
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
+use crate::stream_tile_scope_silo_plan::SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT;
 use crate::stream_tile_silo_plan::PreparedSiloSource;
 use crate::stream_utils::local_pass_bounds;
 use crate::{GpuNormalStackSource, GpuRasterBlendMode, GpuRenderError};
@@ -38,7 +39,7 @@ where
     if !append_scope_child_events(
         context,
         target_origin,
-        kind.allows_container_children(),
+        kind.container_depth_remaining(),
         children,
         &prepared,
         &mut child_payloads,
@@ -78,7 +79,7 @@ where
 fn append_scope_child_events<'a, P>(
     context: &StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
-    allow_container_child: bool,
+    container_depth_remaining: usize,
     children: &'a [GpuNormalStackSource],
     prepared: &[PreparedSiloSource],
     payloads: &mut Vec<TileEventPayload>,
@@ -103,7 +104,7 @@ where
                 opacity,
                 mask_key,
                 blend_mode,
-            } if allow_container_child => {
+            } if container_depth_remaining > 0 => {
                 if *opacity <= 0.0 || mask_key.is_some() || children.is_empty() {
                     return Ok(false);
                 }
@@ -113,7 +114,7 @@ where
                 if !append_scope_child_events(
                     context,
                     target_origin,
-                    false,
+                    container_depth_remaining - 1,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -187,8 +188,11 @@ pub(crate) enum ScopeProgramKind {
 }
 
 impl ScopeProgramKind {
-    fn allows_container_children(self) -> bool {
-        matches!(self, Self::Container { .. } | Self::Through { .. })
+    fn container_depth_remaining(self) -> usize {
+        match self {
+            Self::Container { .. } => SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
+            Self::Through { .. } => SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
+        }
     }
 
     fn payloads(self, local_bounds: CanvasRect) -> (TileEventPayload, TileEventPayload) {

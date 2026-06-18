@@ -395,8 +395,8 @@ payloads and LUT rows.
 
 Fifth form: `TileEventKind::BeginContainer` and
 `TileEventKind::EndContainer` now have a separate `scope_payloads` storage
-buffer. `TILE_EVENT_ABI_VERSION` is `4`. The tile VM can maintain one
-transparent-white local scope accumulator and resolve it back to the parent
+buffer. `TILE_EVENT_ABI_VERSION` is `4`. The tile VM can maintain a bounded
+transparent-white local scope stack and resolve it back to the parent
 accumulator for the simple unmasked isolated-container subset, including
 positive container opacity and modeled resolve blend modes.
 
@@ -502,18 +502,18 @@ Implemented subset:
 - `TileProgramKind::SimpleContainerScope` lowers a `Container` source only when
   container opacity is positive, there is no container mask, the resolve blend
   mode is modeled by the tile VM, bounds are known and intersect the current
-  target, and children are limited to eligible raster events, one direct simple
-  unmasked container scope, plus pointwise filters whose masks are absent or
-  proven fully opaque.
+  target, and children are limited to eligible raster events, simple unmasked
+  container scopes up to `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise
+  filters whose masks are absent or proven fully opaque.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
   byte-domain special-blend, or standard blend helpers used by existing raster
   events.
-- A direct nested simple container uses a second transparent-white local
-  accumulator and resolves into the outer container accumulator before the outer
-  container resolves to its parent. Deeper container nesting still remains a
-  barrier.
+- Nested simple containers use a fixed three-level transparent-white local
+  accumulator stack. Each inner container resolves into its parent accumulator
+  before the outer container resolves to its parent. Container depth beyond the
+  fixed limit remains a barrier.
 - THROUGH groups, clipping runs, solid colors, masked containers, and masked or
   unknown filter masks still remain explicit legacy barriers.
 
@@ -528,12 +528,12 @@ Implemented THROUGH subset:
   parent accumulator into a local `before` and `after`, rendering child events
   into `after`, then resolving `before` and `after` with the same premultiplied
   opacity interpolation used by the existing THROUGH pass.
-- A simple container directly inside a THROUGH scope can lower as nested
-  `BeginContainer` / `EndContainer` events, and resolves into the THROUGH
-  `after` accumulator.
-- Container-in-container, nested THROUGH groups, clipping runs, solid colors,
-  masked THROUGH groups, and real or unknown filter masks still remain explicit
-  legacy barriers.
+- Simple containers inside a THROUGH scope can lower as nested
+  `BeginContainer` / `EndContainer` events up to the same fixed depth limit,
+  and the outermost container resolves into the THROUGH `after` accumulator.
+- Nested THROUGH groups, clipping runs, solid colors, masked THROUGH groups,
+  container depth beyond the fixed limit, and real or unknown filter masks still
+  remain explicit legacy barriers.
 
 Verification:
 
@@ -544,8 +544,9 @@ Verification:
 - GPU unit tests compare the tile-scope path against the existing legacy
   source path for Normal container opacity, Multiply container resolve, and
   Multiply container resolve with non-1 opacity.
-- GPU unit tests compare a direct nested container against the existing legacy
-  source path and assert deeper nesting remains a barrier.
+- GPU unit tests compare direct and three-deep nested containers against the
+  existing legacy source path and assert nesting beyond the fixed limit remains
+  a barrier.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
   existing legacy source path for THROUGH opacity and child blend execution.
 - GPU unit tests compare a simple container inside a THROUGH scope against the
@@ -558,10 +559,8 @@ Verification:
 
 Next scope-stack work:
 
-- scope depth within limit
 - event count within limit
 - nested THROUGH
-- deeper container nesting
 - masked container/THROUGH scopes
 - unsupported or masked filters inside scope stacks
 

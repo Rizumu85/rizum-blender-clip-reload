@@ -1006,6 +1006,24 @@ fn apply_clipping_run_resolve(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
     return apply_standard(src, dst, params.resolve_blend_kind);
 }
 
+fn apply_raster_event_to_accumulator(src_input: vec4<f32>, accumulator: vec4<f32>, event_index: u32, mask_value: f32, blend_kind: u32) -> vec4<f32> {
+    var src = src_input;
+    if (blend_kind == 0u) {
+        return apply_normal(src, accumulator, event_index, mask_value);
+    }
+    if (is_byte_domain_special_blend(blend_kind)) {
+        return apply_byte_standard(src, accumulator, event_index, mask_value, blend_kind);
+    }
+    src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+    if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+        src.a = src.a * mask_value;
+    }
+    if (src.a <= 0.0) {
+        return accumulator;
+    }
+    return apply_standard(src, accumulator, blend_kind);
+}
+
 @fragment
 fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let local_texel = vec2<i32>(position.xy);
@@ -1016,10 +1034,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let span_count = tile_spans[span_base + 1u];
     var dst = textureLoad(dest_texture, local_texel, 0);
     var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-    var scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-    var scope_active = false;
-    var nested_scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-    var nested_scope_active = false;
+    var scope0_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var scope1_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var scope_depth = 0u;
     var through_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var through_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var through_active = false;
@@ -1044,27 +1062,35 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
         if (kind == TILE_EVENT_KIND_BEGIN_CONTAINER) {
             if (scope_contains(event_index, local_texel)) {
-                if (scope_active) {
-                    nested_scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-                    nested_scope_active = true;
-                } else {
-                    scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-                    scope_active = true;
+                if (scope_depth == 0u) {
+                    scope0_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    scope_depth = 1u;
+                } else if (scope_depth == 1u) {
+                    scope1_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    scope_depth = 2u;
+                } else if (scope_depth == 2u) {
+                    scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    scope_depth = 3u;
                 }
             }
             continue;
         }
         if (kind == TILE_EVENT_KIND_END_CONTAINER) {
-            if (nested_scope_active && scope_contains(event_index, local_texel)) {
-                scope_dst = resolve_container_scope(event_index, nested_scope_dst, scope_dst);
-                nested_scope_active = false;
-            } else if (scope_active && scope_contains(event_index, local_texel)) {
-                if (through_active) {
-                    through_after = resolve_container_scope(event_index, scope_dst, through_after);
-                } else {
-                    dst = resolve_container_scope(event_index, scope_dst, dst);
+            if (scope_contains(event_index, local_texel)) {
+                if (scope_depth == 3u) {
+                    scope1_dst = resolve_container_scope(event_index, scope2_dst, scope1_dst);
+                    scope_depth = 2u;
+                } else if (scope_depth == 2u) {
+                    scope0_dst = resolve_container_scope(event_index, scope1_dst, scope0_dst);
+                    scope_depth = 1u;
+                } else if (scope_depth == 1u) {
+                    if (through_active) {
+                        through_after = resolve_container_scope(event_index, scope0_dst, through_after);
+                    } else {
+                        dst = resolve_container_scope(event_index, scope0_dst, dst);
+                    }
+                    scope_depth = 0u;
                 }
-                scope_active = false;
             }
             continue;
         }
@@ -1072,10 +1098,12 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             if (filter_contains(event_index, local_texel)) {
                 if (params.mode == MODE_CLIPPING_RUN) {
                     clip_dst = apply_point_filter_event(event_index, clip_dst);
-                } else if (nested_scope_active) {
-                    nested_scope_dst = apply_point_filter_event(event_index, nested_scope_dst);
-                } else if (scope_active) {
-                    scope_dst = apply_point_filter_event(event_index, scope_dst);
+                } else if (scope_depth == 3u) {
+                    scope2_dst = apply_point_filter_event(event_index, scope2_dst);
+                } else if (scope_depth == 2u) {
+                    scope1_dst = apply_point_filter_event(event_index, scope1_dst);
+                } else if (scope_depth == 1u) {
+                    scope0_dst = apply_point_filter_event(event_index, scope0_dst);
                 } else if (through_active) {
                     through_after = apply_point_filter_event(event_index, through_after);
                 } else {
@@ -1117,64 +1145,16 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             }
             if (src.a <= 0.0 || dst.a <= 0.0) { continue; }
             dst = apply_preserve(src, dst, blend_kind);
-        } else if (nested_scope_active) {
-            if (blend_kind == 0u) {
-                nested_scope_dst = apply_normal(src, nested_scope_dst, event_index, mask_value);
-            } else if (is_byte_domain_special_blend(blend_kind)) {
-                nested_scope_dst = apply_byte_standard(src, nested_scope_dst, event_index, mask_value, blend_kind);
-            } else {
-                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
-                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
-                    src.a = src.a * mask_value;
-                }
-                if (src.a <= 0.0) {
-                    continue;
-                }
-                nested_scope_dst = apply_standard(src, nested_scope_dst, blend_kind);
-            }
-        } else if (scope_active) {
-            if (blend_kind == 0u) {
-                scope_dst = apply_normal(src, scope_dst, event_index, mask_value);
-            } else if (is_byte_domain_special_blend(blend_kind)) {
-                scope_dst = apply_byte_standard(src, scope_dst, event_index, mask_value, blend_kind);
-            } else {
-                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
-                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
-                    src.a = src.a * mask_value;
-                }
-                if (src.a <= 0.0) {
-                    continue;
-                }
-                scope_dst = apply_standard(src, scope_dst, blend_kind);
-            }
+        } else if (scope_depth == 3u) {
+            scope2_dst = apply_raster_event_to_accumulator(src, scope2_dst, event_index, mask_value, blend_kind);
+        } else if (scope_depth == 2u) {
+            scope1_dst = apply_raster_event_to_accumulator(src, scope1_dst, event_index, mask_value, blend_kind);
+        } else if (scope_depth == 1u) {
+            scope0_dst = apply_raster_event_to_accumulator(src, scope0_dst, event_index, mask_value, blend_kind);
         } else if (through_active) {
-            if (blend_kind == 0u) {
-                through_after = apply_normal(src, through_after, event_index, mask_value);
-            } else if (is_byte_domain_special_blend(blend_kind)) {
-                through_after = apply_byte_standard(src, through_after, event_index, mask_value, blend_kind);
-            } else {
-                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
-                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
-                    src.a = src.a * mask_value;
-                }
-                if (src.a <= 0.0) {
-                    continue;
-                }
-                through_after = apply_standard(src, through_after, blend_kind);
-            }
-        } else if (blend_kind == 0u) {
-            dst = apply_normal(src, dst, event_index, mask_value);
-        } else if (is_byte_domain_special_blend(blend_kind)) {
-            dst = apply_byte_standard(src, dst, event_index, mask_value, blend_kind);
+            through_after = apply_raster_event_to_accumulator(src, through_after, event_index, mask_value, blend_kind);
         } else {
-            src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
-            if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
-                src.a = src.a * mask_value;
-            }
-            if (src.a <= 0.0) {
-                continue;
-            }
-            dst = apply_standard(src, dst, blend_kind);
+            dst = apply_raster_event_to_accumulator(src, dst, event_index, mask_value, blend_kind);
         }
     }
 

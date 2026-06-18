@@ -7,6 +7,8 @@ use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
 
+pub(crate) const SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT: usize = 3;
+
 pub(crate) fn simple_container_scope_event_count<P>(
     provider: &P,
     output_size: CanvasSize,
@@ -45,7 +47,7 @@ where
         target_origin,
         target_size,
         children,
-        true,
+        SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
     )?;
     2usize
         .checked_add(child_count)
@@ -85,7 +87,7 @@ where
         target_origin,
         target_size,
         children,
-        true,
+        SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
     )?;
     2usize
         .checked_add(child_count)
@@ -98,7 +100,7 @@ fn simple_scope_children_event_count<P>(
     target_origin: (i32, i32),
     target_size: CanvasSize,
     children: &[GpuNormalStackSource],
-    allow_container_child: bool,
+    container_depth_remaining: usize,
 ) -> Option<usize>
 where
     P: GpuNormalStackResourceProvider,
@@ -125,7 +127,7 @@ where
                 opacity,
                 mask_key,
                 blend_mode,
-            } if allow_container_child => {
+            } if container_depth_remaining > 0 => {
                 if *opacity <= 0.0
                     || mask_key.is_some()
                     || children.is_empty()
@@ -145,7 +147,7 @@ where
                     target_origin,
                     target_size,
                     children,
-                    false,
+                    container_depth_remaining - 1,
                 )?;
                 count = count.saturating_add(2).saturating_add(child_count);
                 saw_raster = true;

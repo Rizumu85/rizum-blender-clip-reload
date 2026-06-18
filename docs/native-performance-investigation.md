@@ -541,12 +541,13 @@ The tile-event renderer now lowers a simple unmasked isolated-container subset:
   then `EndContainer` resolves it into the parent accumulator through the
   existing Normal alpha-over, byte-domain special-blend, or standard blend
   helper.
-- One direct nested simple container can lower as nested `BeginContainer` /
-  `EndContainer` events. The inner accumulator resolves into the outer
-  container accumulator before the outer container resolves to its parent.
-- Unsupported scope shapes remain barriers: deeper nested containers, THROUGH
-  groups, clipping runs, solid colors, masked containers, and filters with real
-  or unknown non-opaque masks.
+- Nested simple containers can lower as nested `BeginContainer` /
+  `EndContainer` events up to `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT == 3`. Inner
+  accumulators resolve into their parent accumulator before the outer container
+  resolves to its parent.
+- Unsupported scope shapes remain barriers: container depth beyond the fixed
+  limit, THROUGH groups, clipping runs, solid colors, masked containers, and
+  filters with real or unknown non-opaque masks.
 
 Verification after this milestone:
 
@@ -558,8 +559,9 @@ Verification after this milestone:
 - New GPU unit coverage also compares tile-scope execution against the existing
   legacy source path for Normal container opacity, Multiply container resolve,
   and Multiply container resolve with non-1 opacity.
-- New GPU unit coverage compares a direct nested container against the existing
-  legacy source path and locks deeper nested containers as barriers.
+- New GPU unit coverage compares direct and three-deep nested containers
+  against the existing legacy source path and locks container depth beyond the
+  fixed limit as a barrier.
 - Guard comparisons remain stable: `Test_Clipping` exact,
   `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
   and `Test_AddGlowMultiply` remains at the existing one-LSB invisible
@@ -586,12 +588,12 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   renders child events into THROUGH `after`, and resolves `before`/`after`
   through the same premultiplied opacity interpolation as the existing THROUGH
   pass.
-- A simple container directly inside the THROUGH scope lowers as nested
-  `BeginContainer` / `EndContainer` events and resolves into the THROUGH
-  `after` accumulator.
-- Unsupported THROUGH shapes remain barriers: container-in-container, nested
-  THROUGH groups, clipping runs, solid colors, masked THROUGH groups, and
-  filters with real or unknown non-opaque masks.
+- Simple containers inside the THROUGH scope lower as nested `BeginContainer` /
+  `EndContainer` events up to the same fixed depth limit and resolve into the
+  THROUGH `after` accumulator.
+- Unsupported THROUGH shapes remain barriers: nested THROUGH groups, clipping
+  runs, solid colors, masked THROUGH groups, container depth beyond the fixed
+  limit, and filters with real or unknown non-opaque masks.
 
 Verification after this milestone:
 
