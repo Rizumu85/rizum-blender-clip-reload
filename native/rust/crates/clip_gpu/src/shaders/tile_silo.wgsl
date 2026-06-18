@@ -21,7 +21,10 @@ struct TileSiloParams {
     target_origin: vec2<i32>,
     tile_size: u32,
     tile_cols: u32,
-    preserve_alpha: u32,
+    mode: u32,
+    resolve_blend_kind: u32,
+    base_event_count: u32,
+    _padding0: u32,
     _padding: vec3<u32>,
 };
 
@@ -30,6 +33,9 @@ var<uniform> params: TileSiloParams;
 
 const EVENT_WORDS: u32 = 10u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
+const MODE_NORMAL: u32 = 0u;
+const MODE_PRESERVE_ALPHA: u32 = 1u;
+const MODE_CLIPPING_RUN: u32 = 2u;
 
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
@@ -431,12 +437,8 @@ fn load_event_mask(event_index: u32, source_texel: vec2<i32>) -> f32 {
     return textureLoad(mask_atlas_texture, mask_atlas_origin + source_texel, 0).r;
 }
 
-fn apply_normal(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32) -> vec4<f32> {
-    var src_a = to_u8(src.a);
-    if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
-        src_a = (src_a * to_u8(mask_value)) / 255;
-    }
-    src_a = to_u8(f32(src_a) / 255.0 * bitcast<f32>(event_word(event_index, 6u)));
+fn apply_normal_alpha(src: vec4<f32>, dst: vec4<f32>, src_alpha: i32) -> vec4<f32> {
+    let src_a = src_alpha;
     if (src_a <= 0) {
         return dst;
     }
@@ -452,6 +454,18 @@ fn apply_normal(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f3
         f32(out_b) / 255.0,
         f32(out_a) / 255.0,
     );
+}
+
+fn event_source_alpha(src: vec4<f32>, event_index: u32, mask_value: f32) -> i32 {
+    var src_a = to_u8(src.a);
+    if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+        src_a = (src_a * to_u8(mask_value)) / 255;
+    }
+    return to_u8(f32(src_a) / 255.0 * bitcast<f32>(event_word(event_index, 6u)));
+}
+
+fn apply_normal(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32) -> vec4<f32> {
+    return apply_normal_alpha(src, dst, event_source_alpha(src, event_index, mask_value));
 }
 
 fn apply_standard(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> {
@@ -505,6 +519,16 @@ fn apply_preserve(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> 
     return quantize_u8(out);
 }
 
+fn apply_clipping_run_resolve(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+    if (src.a <= 0.0) {
+        return dst;
+    }
+    if (params.resolve_blend_kind == 0u) {
+        return apply_normal_alpha(src, dst, to_u8(src.a));
+    }
+    return apply_standard(src, dst, params.resolve_blend_kind);
+}
+
 @fragment
 fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let local_texel = vec2<i32>(position.xy);
@@ -514,6 +538,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let span_start = tile_spans[span_base];
     let span_count = tile_spans[span_base + 1u];
     var dst = textureLoad(dest_texture, local_texel, 0);
+    var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
 
     for (var index = 0u; index < span_count; index = index + 1u) {
         let event_index = work_indices[span_start + index];
@@ -524,7 +549,18 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         var src = load_source_at(event_index, source_texel);
         let blend_kind = event_word(event_index, 7u);
         let mask_value = load_event_mask(event_index, source_texel);
-        if (params.preserve_alpha == 1u) {
+        if (params.mode == MODE_CLIPPING_RUN) {
+            if (event_index < params.base_event_count) {
+                clip_dst = apply_normal(src, clip_dst, event_index, mask_value);
+                continue;
+            }
+            src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+            if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+                src.a = src.a * mask_value;
+            }
+            if (src.a <= 0.0 || clip_dst.a <= 0.0) { continue; }
+            clip_dst = apply_preserve(src, clip_dst, blend_kind);
+        } else if (params.mode == MODE_PRESERVE_ALPHA) {
             src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
             if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
                 src.a = src.a * mask_value;
@@ -545,5 +581,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
     }
 
+    if (params.mode == MODE_CLIPPING_RUN) {
+        return apply_clipping_run_resolve(clip_dst, dst);
+    }
     return dst;
 }

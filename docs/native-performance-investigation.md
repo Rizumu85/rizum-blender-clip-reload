@@ -366,6 +366,48 @@ faithful raster/clipping stretches as tile events rather than allocating and
 resolving many cropped intermediate caches. This milestone only removes a
 subset of per-sibling preserve passes after the clipping cache already exists.
 
+## Raster Clipping-Run Tile-Local Events
+
+The streaming provider path now has a direct raster-only clipping-run tile-silo
+subset:
+
+- `clip_gpu::stream_sequence` detects a `GpuNormalStackSource::ClippingRun`
+  whose base and clipped siblings are all plain raster sources and whose whole
+  `[base, clipped...]` sequence is eligible for the same tile-silo event model.
+- `clip_gpu::stream_clipping_tile_silo` plans one atlas/work-list from the base
+  plus clipped sources, keeps event order deterministic, and encodes the pass
+  directly into the parent target instead of allocating the owned clipping
+  cache for that subset.
+- The tile-silo shader has an explicit clipping-run mode. For each output
+  pixel, it composites base events into a tile-local transparent clip
+  destination, applies clipped events with preserve-alpha semantics against
+  that local destination, then resolves the local result into the parent
+  destination through the base blend mode.
+- The same compressed-tile atlas and optional R8 mask atlas event paths are
+  used, so empty compressed tiles are not uploaded or sampled.
+- Clipped container/folder siblings, filters, THROUGH groups, isolated
+  containers, and byte-domain special blends (`AddGlow`, `ColorDodge`,
+  `ColorBurn`, `GlowDodge`) remain barriers on the existing faithful path. This
+  milestone is a raster-only subset, not a CPU fallback or a semantic
+  approximation.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
+- GPU unit coverage locks direct base-plus-clipped raster event collapse,
+  base-blend resolve through the parent stack, and the earlier clipped-sibling
+  cache-collapse cases.
+- Release guard comparisons remain stable: `Test_Clipping` exact,
+  `Test_ClippingEdge` exact, `Test_FolderNested` exact,
+  `Test_AddGlowMultiply` `raw_max=1` / `premul_max=1` / visible `0`,
+  `Test_RealArt` `raw_max=5` / `premul_max=1`, and
+  `Ref_Terra404_Live2D` `premul_max=3` / `premul_visible_px=13619`.
+
+The remaining order-of-magnitude native renderer target is broader tile-local
+semantic modelling across the barriers above. The raster-only base/clipped
+relationship is now represented as events; the hard cases are container and
+filter/THROUGH semantics plus byte-domain special blends.
+
 ## Compressed Occupancy Planner
 
 The tile-silo diagnostic now has the first Silicate-shaped planner input:
@@ -404,7 +446,8 @@ Release worker timings on this machine:
 This is a real fixed-cost reduction, but it is not the next order-of-magnitude
 lever. The same runs still draw hundreds of raster resources (`343` for
 RealArt, `715` for Terra). The next large step remains a Silicate-style
-tile-silo renderer that makes masks and clipping relationships tile-local.
+tile-silo renderer that expands beyond the current raster-run, mask-event, and
+raster-only clipping-run subsets.
 
 ## External wgpu and Blender API Follow-Up
 
@@ -443,10 +486,10 @@ wgpu conclusions:
 - The separate instancing/atlas references point in the same direction as
   Silicate: group per-source data into buffers/atlases and draw many logical
   items with one pass/draw instead of repeatedly updating uniforms or issuing
-  small passes. The current raster-run tile-silo pass already follows this for
-  ordinary unmasked raster runs. The next large native milestone should extend
-  the event model to masks and clipping relationships, not spend time on more
-  local pass tuning.
+  small passes. The current tile-silo path follows this for eligible raster
+  runs, mask-bearing raster runs, clipped-raster sibling runs, and raster-only
+  clipping runs. The next large native milestone should extend the event model
+  across remaining semantic barriers, not spend time on more local pass tuning.
 - wgpu pipeline caches can reduce pipeline creation cost between program
   executions, but the current docs and feature support make this a secondary
   worker-startup probe, not the main Windows/Blender speed lever. The renderer

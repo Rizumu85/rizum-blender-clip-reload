@@ -1,6 +1,9 @@
 use crate::GpuNormalStackSource;
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::CanvasRect;
+use crate::stream_clipping_tile_silo::{
+    clipping_run_silo_is_eligible, encode_clipping_run_silo_with_provider,
+};
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_state::StreamingTexturePair;
 use crate::stream_tile_silo::{encode_raster_silo_run_with_provider, raster_silo_run_len};
@@ -20,6 +23,33 @@ where
 {
     let mut source_index = 0usize;
     while source_index < sources.len() {
+        if let GpuNormalStackSource::ClippingRun { base, clipped } = &sources[source_index]
+            && clipping_run_silo_is_eligible(
+                &*context.provider,
+                context.output_size,
+                target_origin,
+                texture_pair.size(),
+                *base,
+                clipped,
+            )
+        {
+            let wrote_silo = encode_clipping_run_silo_with_provider(
+                context,
+                target_origin,
+                texture_pair.size(),
+                *base,
+                clipped,
+                texture_pair.view(previous_index),
+                texture_pair.view(next_index),
+                dirty_bounds,
+            )?;
+            if wrote_silo {
+                std::mem::swap(&mut previous_index, &mut next_index);
+                source_index += 1;
+                continue;
+            }
+        }
+
         let run_len = raster_silo_run_len(
             &*context.provider,
             context.output_size,

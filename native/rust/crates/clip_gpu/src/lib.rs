@@ -12,6 +12,7 @@ pub mod stream;
 mod stream_bounds;
 mod stream_clipped_tile_silo;
 mod stream_clipping;
+mod stream_clipping_tile_silo;
 mod stream_context;
 mod stream_effects;
 mod stream_extents;

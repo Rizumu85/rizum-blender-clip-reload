@@ -118,7 +118,7 @@ fn streamed_clipping_run_collapses_clipped_raster_siblings_with_atlas_tiles() {
     }
     assert_eq!(output.pixels, expected);
     assert_eq!(provider.atlas_requests, 1);
-    assert_eq!(provider.raster_request_count(base_key), 1);
+    assert_eq!(provider.raster_request_count(base_key), 0);
     assert_eq!(provider.raster_request_count(clipped_key), 0);
     assert_eq!(provider.raster_request_count(multiply_key), 0);
 }
@@ -184,6 +184,132 @@ fn streamed_clipped_tile_silo_skips_chunks_outside_cropped_base() {
     assert_eq!(provider.atlas_requests, 1);
     assert_eq!(provider.raster_request_count(clipped_key), 0);
     assert_eq!(provider.raster_request_count(multiply_key), 0);
+}
+
+#[test]
+fn streamed_clipping_run_collapses_base_and_clipped_rasters_with_atlas_tiles() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let base_key = raster_key(121);
+    let clipped_key = raster_key(122);
+    let multiply_key = raster_key(123);
+    let mut multiply = raster_source(multiply_key);
+    multiply.blend_mode = GpuRasterBlendMode::Multiply;
+    let mut provider = ClippedAtlasProvider::new(vec![
+        (
+            base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(121),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [255, 0, 0, 255].repeat(4),
+            },
+        ),
+        (
+            clipped_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(122),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [0, 0, 255, 255].repeat(4),
+            },
+        ),
+        (
+            multiply_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(123),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [128, 128, 128, 255].repeat(4),
+            },
+        ),
+    ]);
+    let sources = [GpuNormalStackSource::ClippingRun {
+        base: raster_source(base_key),
+        clipped: vec![
+            GpuClippedStackSource::Raster(raster_source(clipped_key)),
+            GpuClippedStackSource::Raster(multiply),
+        ],
+    }];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw tile-local raster clipping run");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 4 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 0, 128, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_request_count(base_key), 0);
+    assert_eq!(provider.raster_request_count(clipped_key), 0);
+    assert_eq!(provider.raster_request_count(multiply_key), 0);
+}
+
+#[test]
+fn streamed_clipping_run_tile_silo_resolves_base_blend_to_parent() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let background_key = raster_key(131);
+    let base_key = raster_key(132);
+    let clipped_key = raster_key(133);
+    let mut base = raster_source(base_key);
+    base.blend_mode = GpuRasterBlendMode::Multiply;
+    let mut provider = ClippedAtlasProvider::new(vec![
+        (
+            background_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(131),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [128, 128, 128, 255].repeat(4),
+            },
+        ),
+        (
+            base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(132),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [255, 0, 0, 255].repeat(4),
+            },
+        ),
+        (
+            clipped_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(133),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [0, 0, 255, 255].repeat(4),
+            },
+        ),
+    ]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source(background_key)),
+        GpuNormalStackSource::ClippingRun {
+            base,
+            clipped: vec![GpuClippedStackSource::Raster(raster_source(clipped_key))],
+        },
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw tile-local clipping run with base blend resolve");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    for y in 1..=2 {
+        for x in 1..=2 {
+            let offset = ((y * 4 + x) * 4) as usize;
+            expected[offset..offset + 4].copy_from_slice(&[0, 0, 128, 255]);
+        }
+    }
+    assert_eq!(output.pixels, expected);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_request_count(background_key), 1);
+    assert_eq!(provider.raster_request_count(base_key), 0);
+    assert_eq!(provider.raster_request_count(clipped_key), 0);
 }
 
 #[test]
@@ -685,7 +811,12 @@ impl GpuNormalStackResourceProvider for ClippedAtlasProvider {
                     render_mipmap_id: request.source.key.render_mipmap_id,
                 },
             )?;
-            if self.outside_chunks && raster.size.width > 1 && raster.size.height > 1 {
+            if self.outside_chunks
+                && request.offset_x == 0
+                && request.offset_y == 0
+                && raster.size.width > 1
+                && raster.size.height > 1
+            {
                 chunks.push(GpuRasterAtlasTileChunk {
                     source: request.source,
                     atlas_x: request.atlas_x,

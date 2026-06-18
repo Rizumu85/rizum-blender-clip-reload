@@ -18,22 +18,35 @@ pub(crate) fn create_params_buffer(
     target_origin: (i32, i32),
     tile_cols: u32,
 ) -> wgpu::Buffer {
-    create_params_buffer_with_mode(device, target_origin, tile_cols, 0)
+    create_params_buffer_with_mode_and_resolve(device, target_origin, tile_cols, 0, 0, 0)
 }
 
 pub(crate) fn create_params_buffer_with_mode(
     device: &wgpu::Device,
     target_origin: (i32, i32),
     tile_cols: u32,
-    preserve_alpha: u32,
+    mode: u32,
+) -> wgpu::Buffer {
+    create_params_buffer_with_mode_and_resolve(device, target_origin, tile_cols, mode, 0, 0)
+}
+
+pub(crate) fn create_params_buffer_with_mode_and_resolve(
+    device: &wgpu::Device,
+    target_origin: (i32, i32),
+    tile_cols: u32,
+    mode: u32,
+    resolve_blend_kind: u32,
+    base_event_count: u32,
 ) -> wgpu::Buffer {
     let mut bytes = Vec::with_capacity(48);
     bytes.extend_from_slice(&target_origin.0.to_ne_bytes());
     bytes.extend_from_slice(&target_origin.1.to_ne_bytes());
     bytes.extend_from_slice(&TILE_SIZE.to_ne_bytes());
     bytes.extend_from_slice(&tile_cols.to_ne_bytes());
-    bytes.extend_from_slice(&preserve_alpha.to_ne_bytes());
-    for _ in 0..7 {
+    bytes.extend_from_slice(&mode.to_ne_bytes());
+    bytes.extend_from_slice(&resolve_blend_kind.to_ne_bytes());
+    bytes.extend_from_slice(&base_event_count.to_ne_bytes());
+    for _ in 0..5 {
         bytes.extend_from_slice(&0u32.to_ne_bytes());
     }
     create_buffer_with_bytes(
