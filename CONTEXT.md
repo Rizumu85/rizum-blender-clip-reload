@@ -73,3 +73,20 @@ inside `clip_file`.
 The `clip_gpu` render-execution state that owns encoder lifecycle, ping-pong
 texture selection, dirty bounds, region/split-region rendering, flush policy,
 and provider resource retention for recursive streaming renders.
+
+**Render program**
+
+The native renderer's planned execution IR for a flattened raster texture. It
+compiles a strict `GpuNormalStackSource` sequence into ordered render segments
+before GPU encoding. A render program separates CSP semantic selection from
+tile-local execution decisions, and carries planning statistics such as
+tile-local segment count, barrier count, planned tile events, and planned pass
+count.
+
+**Render segment**
+
+One ordered unit inside a render program. A segment is either tile-local, such
+as an atlas-backed raster run or raster-only clipping run, or a barrier that
+must currently execute through the faithful legacy source path. Future native
+performance work should add new segment kinds instead of adding opportunistic
+branches directly to streaming traversal code.

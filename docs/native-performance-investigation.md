@@ -408,6 +408,27 @@ semantic modelling across the barriers above. The raster-only base/clipped
 relationship is now represented as events; the hard cases are container and
 filter/THROUGH semantics plus byte-domain special blends.
 
+## Render Program Planner Seam
+
+The native streaming renderer now has a first explicit render-program IR seam:
+
+- `clip_gpu::stream_program` plans a strict `GpuNormalStackSource` sequence into
+  ordered render segments before GPU encoding.
+- Current tile-local segment kinds cover atlas-backed raster runs and
+  raster-only clipping runs. Current barrier segments use the existing faithful
+  source encoder.
+- `clip_gpu::stream_sequence` is now a segment executor. It invokes tile-silo
+  encoders for tile-local segments and falls back to legacy source execution if
+  a provider cannot fulfill a planned tile-local segment.
+- The render-program stats record segment count, tile-local/barrier count,
+  planned tile events, and planned passes. These are the first stable planning
+  counters for future CLI/runtime diagnostics.
+
+This does not make containers, THROUGH groups, filters, clipped container
+siblings, or byte-domain special blends tile-local yet. Its purpose is to stop
+growing opportunistic traversal branches and give future work a single planner
+Module to deepen.
+
 ## Compressed Occupancy Planner
 
 The tile-silo diagnostic now has the first Silicate-shaped planner input:

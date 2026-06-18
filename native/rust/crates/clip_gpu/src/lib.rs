@@ -17,6 +17,7 @@ mod stream_context;
 mod stream_effects;
 mod stream_extents;
 mod stream_groups;
+mod stream_program;
 mod stream_provider;
 mod stream_resources;
 #[cfg(test)]
