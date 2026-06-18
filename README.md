@@ -6,7 +6,7 @@ The importer calls the Rust C ABI, uploads RGBA pixels into a generated Blender 
 
 ## Status
 
-Package version: `0.8.64`.
+Package version: `0.8.65`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.

@@ -10,19 +10,19 @@ No external auto-reload add-on is required.
 
 from __future__ import annotations
 
-ADDON_NAME = "Rizum Clip Reload"
-ADDON_VERSION = (0, 8, 64)
-ADDON_URL = "https://github.com/Rizumu85/rizum-blender-clip-reload"
-
 bl_info = {
-    "name": ADDON_NAME,
+    "name": "Rizum Clip Reload",
     "author": "Rizum",
-    "version": ADDON_VERSION,
+    "version": (0, 8, 65),
     "blender": (3, 0, 0),
     "location": "File > Import > Rizum Clip Reload (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
     "category": "Import-Export",
 }
+
+ADDON_NAME = "Rizum Clip Reload"
+ADDON_VERSION = (0, 8, 65)
+ADDON_URL = "https://github.com/Rizumu85/rizum-blender-clip-reload"
 
 import os
 import threading
