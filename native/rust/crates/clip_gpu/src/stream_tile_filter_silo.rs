@@ -5,6 +5,7 @@ use crate::stream_bounds::{CanvasRect, target_canvas_bounds, union_optional};
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_tile_event::{PointFilterTileEventPayload, TileEventPayload};
 use crate::stream_tile_filter_program::{FilterTileProgramInputs, encode_filter_tile_program};
+use crate::stream_tile_mask_atlas_plan::{MaskAtlasPlan, mask_can_lower_as_atlas};
 use crate::stream_tile_silo::{
     atlas_requests, prepared_sources_from_atlas_tiles, prepared_sources_from_atlas_upload,
 };
@@ -183,7 +184,20 @@ where
         target_size,
         sources,
         upload.prepared,
+        upload.mask_atlas_size,
+        context.renderer.max_texture_dimension_2d(),
         *dirty_bounds,
+    )?
+    else {
+        return Ok(false);
+    };
+    let Some((mask_atlas, mask_atlas_bytes)) = filter_mask_atlas(
+        context,
+        upload.mask_atlas,
+        upload.mask_atlas_bytes,
+        upload.mask_atlas_size,
+        upload.mask_chunks,
+        &program_inputs,
     )?
     else {
         return Ok(false);
@@ -195,8 +209,8 @@ where
         target_size,
         layout.size,
         upload.atlas,
-        upload.mask_atlas,
-        upload.mask_atlas_bytes,
+        mask_atlas,
+        mask_atlas_bytes,
         program_inputs,
         previous_view,
         output_view,
@@ -233,6 +247,8 @@ where
         target_size,
         sources,
         Vec::new(),
+        CanvasSize::new(1, 1),
+        context.renderer.max_texture_dimension_2d(),
         *dirty_bounds,
     )?
     else {
@@ -248,9 +264,20 @@ where
         },
     )
     .map_err(P::Error::from)?;
-    let (mask_atlas, mask_atlas_bytes) =
+    let (base_mask_atlas, base_mask_atlas_bytes) =
         upload_mask_atlas_tile_texture(context.renderer, atlas_size, &[])
             .map_err(P::Error::from)?;
+    let Some((mask_atlas, mask_atlas_bytes)) = filter_mask_atlas(
+        context,
+        base_mask_atlas,
+        base_mask_atlas_bytes,
+        CanvasSize::new(1, 1),
+        Vec::new(),
+        &program_inputs,
+    )?
+    else {
+        return Ok(false);
+    };
     let Some(pass_bounds) = encode_filter_tile_program(
         context,
         target_origin,
@@ -378,6 +405,8 @@ fn build_filter_event_program_inputs<'a, P>(
     target_size: CanvasSize,
     sources: &'a [GpuNormalStackSource],
     prepared: Vec<PreparedSiloSource>,
+    base_mask_atlas_size: CanvasSize,
+    max_mask_atlas_size: u32,
     initial_dirty_bounds: Option<CanvasRect>,
 ) -> Result<Option<FilterTileProgramInputs<'a>>, P::Error>
 where
@@ -387,6 +416,7 @@ where
     let mut event_bounds = Vec::new();
     let mut lut_rows = Vec::new();
     let mut current_dirty = initial_dirty_bounds;
+    let mut mask_plan = MaskAtlasPlan::new(base_mask_atlas_size, max_mask_atlas_size);
     let mut saw_filter = false;
 
     for source in sources {
@@ -416,6 +446,18 @@ where
                     return Ok(None);
                 };
                 let local_bounds = local_pass_bounds(filter_bounds, target_origin);
+                let Some(mask_atlas_origin) = mask_plan.append_mask(
+                    context.provider,
+                    *mask_key,
+                    clip_model::Rect::new(
+                        filter_bounds.x,
+                        filter_bounds.y,
+                        filter_bounds.width,
+                        filter_bounds.height,
+                    ),
+                ) else {
+                    return Ok(None);
+                };
                 let lut_row = u32::try_from(lut_rows.len())
                     .map_err(|_| GpuRenderError::TextureSizeOverflow)?;
                 payloads.push(TileEventPayload::PointFilter(PointFilterTileEventPayload {
@@ -423,6 +465,7 @@ where
                     opacity: *opacity,
                     filter_mode: *filter_mode,
                     local_bounds,
+                    mask_atlas_origin,
                 }));
                 event_bounds.push(local_bounds);
                 lut_rows.push(lut_rgba.as_slice());
@@ -439,12 +482,50 @@ where
     if !event_bounds_fit_target(&event_bounds, target_size) {
         return Ok(None);
     }
+    let mask_atlas_size = mask_plan.size();
     Ok(Some(FilterTileProgramInputs {
         payloads,
         event_bounds,
         lut_rows,
+        mask_atlas_sources: mask_plan.into_sources(),
+        mask_atlas_size,
         final_dirty_bounds: current_dirty,
     }))
+}
+
+fn filter_mask_atlas<P>(
+    context: &mut StreamingExecutionContext<'_, '_, P>,
+    existing_mask_atlas: wgpu::Texture,
+    existing_mask_atlas_bytes: usize,
+    existing_mask_atlas_size: CanvasSize,
+    mut mask_chunks: Vec<GpuMaskAtlasTileChunk>,
+    program_inputs: &FilterTileProgramInputs<'_>,
+) -> Result<Option<(wgpu::Texture, usize)>, P::Error>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    if program_inputs.mask_atlas_sources.is_empty() {
+        return Ok(Some((existing_mask_atlas, existing_mask_atlas_bytes)));
+    }
+    let Some(filter_chunks) = context.provider.mask_atlas_tile_pixels(
+        &program_inputs.mask_atlas_sources,
+        program_inputs.mask_atlas_size,
+    )?
+    else {
+        return Ok(None);
+    };
+    mask_chunks.extend(filter_chunks);
+    let mask_atlas_size = CanvasSize::new(
+        existing_mask_atlas_size
+            .width
+            .max(program_inputs.mask_atlas_size.width),
+        existing_mask_atlas_size
+            .height
+            .max(program_inputs.mask_atlas_size.height),
+    );
+    upload_mask_atlas_tile_texture(context.renderer, mask_atlas_size, &mask_chunks)
+        .map(Some)
+        .map_err(P::Error::from)
 }
 
 pub(crate) fn raster_payload(
@@ -490,8 +571,5 @@ pub(crate) fn filter_mask_can_lower<P>(provider: &P, mask_key: Option<GpuMaskRes
 where
     P: GpuNormalStackResourceProvider,
 {
-    match mask_key {
-        Some(key) => provider.mask_is_fully_opaque(key) == Some(true),
-        None => true,
-    }
+    mask_can_lower_as_atlas(provider, mask_key)
 }

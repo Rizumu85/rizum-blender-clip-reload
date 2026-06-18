@@ -202,6 +202,64 @@ fn streamed_tile_silo_applies_filter_only_run_after_legacy_source() {
 }
 
 #[test]
+fn streamed_tile_silo_applies_masked_filter_only_run_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let filter_mask_key = mask_key(168);
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 64,
+                g: 128,
+                b: 192,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::LutFilter {
+            lut_rgba: inverted_tone_curve_lut(),
+            opacity: 1.0,
+            mask_key: Some(filter_mask_key),
+            filter_mode: lut_mode(),
+        },
+    ];
+
+    let mut reference_provider = InlineProvider::new(Vec::new()).with_masks(vec![(
+        filter_mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(268),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy masked filter-only reference");
+
+    let mut provider = AtlasInlineProvider::new(Vec::new()).with_masks(vec![(
+        filter_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed masked filter-only tile event");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 0);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_lowers_simple_container_as_isolated_scope() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let multiply_key = raster_key(142);
@@ -378,6 +436,91 @@ fn streamed_tile_silo_resolves_masked_container_like_legacy_pass() {
     let output = renderer
         .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
         .expect("draw provider-backed masked container scope");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
+fn streamed_tile_silo_resolves_masked_filter_inside_container_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let child_key = raster_key(167);
+    let filter_mask_key = mask_key(167);
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 20,
+                g: 40,
+                b: 80,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Container {
+            children: vec![
+                GpuNormalStackSource::Raster(raster_source_at(child_key, 1, 1)),
+                GpuNormalStackSource::LutFilter {
+                    lut_rgba: inverted_tone_curve_lut(),
+                    opacity: 1.0,
+                    mask_key: Some(filter_mask_key),
+                    filter_mode: lut_mode(),
+                },
+            ],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        },
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![(
+        child_key,
+        InlineRaster {
+            render_node_id: RenderNodeId(167),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![64, 128, 192, 255],
+        },
+    )])
+    .with_masks(vec![(
+        filter_mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(267),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy masked filter in container reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![(
+        child_key,
+        AtlasInlineRaster {
+            render_node_id: RenderNodeId(167),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![64, 128, 192, 255],
+        },
+    )])
+    .with_masks(vec![(
+        filter_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed masked filter in container scope");
 
     assert_eq!(output.pixels, reference.pixels);
     assert_eq!(provider.atlas_requests, 1);

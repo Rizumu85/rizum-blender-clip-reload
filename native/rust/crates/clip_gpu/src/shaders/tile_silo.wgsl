@@ -45,7 +45,7 @@ var<storage, read> scope_payloads: array<u32>;
 
 const EVENT_HEADER_WORDS: u32 = 4u;
 const RASTER_PAYLOAD_WORDS: u32 = 10u;
-const POINT_FILTER_PAYLOAD_WORDS: u32 = 10u;
+const POINT_FILTER_PAYLOAD_WORDS: u32 = 12u;
 const SCOPE_PAYLOAD_WORDS: u32 = 8u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
 const TILE_EVENT_KIND_RASTER: u32 = 1u;
@@ -271,7 +271,23 @@ fn load_scope_mask(event_index: u32, local_texel: vec2<i32>) -> f32 {
     return textureLoad(mask_atlas_texture, mask_atlas_origin + local_texel - scope_origin, 0).r;
 }
 
-fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
+fn load_filter_mask(event_index: u32, local_texel: vec2<i32>) -> f32 {
+    let mask_atlas_x = filter_word(event_index, 10u);
+    if (mask_atlas_x == NO_MASK_ATLAS_COORD) {
+        return 1.0;
+    }
+    let filter_origin = vec2<i32>(
+        i32(filter_word(event_index, 6u)),
+        i32(filter_word(event_index, 7u)),
+    );
+    let mask_atlas_origin = vec2<i32>(
+        i32(mask_atlas_x),
+        i32(filter_word(event_index, 11u)),
+    );
+    return textureLoad(mask_atlas_texture, mask_atlas_origin + local_texel - filter_origin, 0).r;
+}
+
+fn apply_point_filter_event(event_index: u32, before: vec4<f32>, local_texel: vec2<i32>) -> vec4<f32> {
     let lut_row = i32(filter_word(event_index, 0u));
     let mode = filter_word(event_index, 2u);
     var mapped = vec3<f32>(
@@ -286,7 +302,7 @@ fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
     } else if (mode == 3u) {
         mapped = apply_hsl_adjust_filter(before.rgb, event_index);
     }
-    let strength = clamp(bitcast<f32>(filter_word(event_index, 1u)), 0.0, 1.0);
+    let strength = clamp(bitcast<f32>(filter_word(event_index, 1u)), 0.0, 1.0) * load_filter_mask(event_index, local_texel);
     let rgb = before.rgb * (1.0 - strength) + mapped * strength;
     return quantize_u8(vec4<f32>(rgb, before.a));
 }
@@ -1133,19 +1149,19 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         if (kind == TILE_EVENT_KIND_POINT_FILTER) {
             if (filter_contains(event_index, local_texel)) {
                 if (params.mode == MODE_CLIPPING_RUN) {
-                    clip_dst = apply_point_filter_event(event_index, clip_dst);
+                    clip_dst = apply_point_filter_event(event_index, clip_dst, local_texel);
                 } else if (scope_depth == 3u) {
-                    scope2_dst = apply_point_filter_event(event_index, scope2_dst);
+                    scope2_dst = apply_point_filter_event(event_index, scope2_dst, local_texel);
                 } else if (scope_depth == 2u) {
-                    scope1_dst = apply_point_filter_event(event_index, scope1_dst);
+                    scope1_dst = apply_point_filter_event(event_index, scope1_dst, local_texel);
                 } else if (scope_depth == 1u) {
-                    scope0_dst = apply_point_filter_event(event_index, scope0_dst);
+                    scope0_dst = apply_point_filter_event(event_index, scope0_dst, local_texel);
                 } else if (through_depth == 2u) {
-                    through1_after = apply_point_filter_event(event_index, through1_after);
+                    through1_after = apply_point_filter_event(event_index, through1_after, local_texel);
                 } else if (through_depth == 1u) {
-                    through0_after = apply_point_filter_event(event_index, through0_after);
+                    through0_after = apply_point_filter_event(event_index, through0_after, local_texel);
                 } else {
-                    dst = apply_point_filter_event(event_index, dst);
+                    dst = apply_point_filter_event(event_index, dst, local_texel);
                 }
             }
             continue;

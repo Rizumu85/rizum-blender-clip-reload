@@ -4,10 +4,10 @@ use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 6;
+pub const TILE_EVENT_ABI_VERSION: u32 = 7;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
-const POINT_FILTER_PAYLOAD_WORDS: usize = 10;
+const POINT_FILTER_PAYLOAD_WORDS: usize = 12;
 const SCOPE_PAYLOAD_WORDS: usize = 8;
 const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 
@@ -58,6 +58,7 @@ pub(crate) struct PointFilterTileEventPayload {
     pub(crate) opacity: f32,
     pub(crate) filter_mode: GpuLutFilterMode,
     pub(crate) local_bounds: CanvasRect,
+    pub(crate) mask_atlas_origin: Option<(u32, u32)>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -121,6 +122,10 @@ impl PointFilterTileEventPayload {
             self.local_bounds.y,
             self.local_bounds.width,
             self.local_bounds.height,
+            self.mask_atlas_origin
+                .map_or(NO_MASK_ATLAS_COORD, |mask| mask.0),
+            self.mask_atlas_origin
+                .map_or(NO_MASK_ATLAS_COORD, |mask| mask.1),
         ]
     }
 }
@@ -362,6 +367,7 @@ mod tests {
                     width: 31,
                     height: 32,
                 },
+                mask_atlas_origin: Some((41, 42)),
             },
         )]);
 
@@ -382,6 +388,8 @@ mod tests {
                 2,
                 31,
                 32,
+                41,
+                42,
             ]
         );
     }

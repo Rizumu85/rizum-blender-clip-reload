@@ -451,9 +451,10 @@ segment plus the Paper/SolidColor barrier.
 Lower supported pointwise adjustment/filter layers into tile events. Keep
 non-local filters as explicit barriers.
 
-Status: implemented in first form for raster/filter mixed runs and
-filter-only runs whose filter mask is absent or is proven fully opaque from
-`.clip` mask metadata and compressed tile inspection.
+Status: implemented for raster/filter mixed runs and filter-only runs whose
+filter mask is absent, proven fully opaque from `.clip` mask metadata and
+compressed tile inspection, or available through provider-backed R8 mask atlas
+chunks.
 
 Implemented shape:
 
@@ -464,15 +465,18 @@ Implemented shape:
   ranges into one tile-local segment, applying them to the current dirty
   parent accumulator without requiring a raster event in the same segment.
 - `TileEventKind::PointFilter` carries LUT row, opacity, filter mode, HSL
-  parameters, and local dirty bounds in `filter_payloads`.
+  parameters, local dirty bounds, and optional R8 mask atlas coordinates in
+  `filter_payloads`.
 - The tile VM applies Tone Curve, HSL, Threshold, and Gradient Map filter modes
   to the per-pixel accumulator in event order, using the same formulas as the
   existing LUT filter pass.
 - Leading filters in a mixed run operate on the parent accumulator over the
   current target bounds before later raster events in the same segment.
-- Runtime providers expose `mask_is_fully_opaque()`. A filter with a default
-  all-opaque mask can lower without sampling a mask. Any filter mask that cannot
-  be proven fully opaque remains `FilterNotLowered`.
+- Runtime providers expose `mask_is_fully_opaque()` and provider-backed R8 mask
+  atlas chunks. A filter with a default all-opaque mask can lower without
+  sampling a mask; a real non-opaque filter mask lowers by sampling the shared
+  tile mask atlas. Unknown or provider-unavailable filter masks remain
+  `FilterNotLowered`.
 
 Current diagnostics:
 
@@ -495,12 +499,15 @@ Verification:
 - GPU unit coverage also locks a filter-only tile segment after a legacy
   source, proving a standalone pointwise filter run can consume the previous
   segment's dirty accumulator.
+- GPU unit coverage compares provider-backed masked filter-only and
+  masked-filter-inside-container tile events against the existing legacy source
+  path.
 - `Test_AddGlowMultiply` and `Test_ClippingEdge` guards remain stable.
 
 Remaining Phase 4 work:
 
-- masked filters whose masks are not provably fully opaque
-- filters inside complex tile-local container/THROUGH scope stacks
+- non-local or future unsupported filters whose faithful tile-local model is
+  not defined
 
 ### Phase 5: Container and THROUGH Scope Stack
 
@@ -516,7 +523,8 @@ Implemented subset:
   the current target, and children are limited to eligible raster events,
   simple container scopes with the same scope-mask support up to
   `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise filters whose masks are
-  absent or proven fully opaque.
+  absent, proven fully opaque, or available through provider-backed R8 mask
+  atlas chunks.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
@@ -527,8 +535,8 @@ Implemented subset:
   before the outer container resolves to its parent. Container depth beyond the
   fixed limit remains a barrier.
 - THROUGH groups inside container scopes, clipping runs, solid colors,
-  unavailable container masks, and masked or unknown filter masks still remain
-  explicit legacy barriers.
+  unavailable container masks, and provider-unavailable or unknown filter masks
+  still remain explicit legacy barriers.
 
 Implemented THROUGH subset:
 
@@ -537,7 +545,8 @@ Implemented THROUGH subset:
   opaque, or available through provider-backed R8 mask atlas chunks, bounds are
   known and intersect the current target, and children are limited to eligible
   raster events, simple container scopes with the same scope-mask support, plus
-  pointwise filters whose masks are absent or proven fully opaque.
+  pointwise filters whose masks are absent, proven fully opaque, or available
+  through provider-backed R8 mask atlas chunks.
 - The shader handles `BeginThrough` / `EndThrough` events by copying the current
   parent accumulator into a local `before` and `after`, rendering child events
   into `after`, then resolving `before` and `after` with the same premultiplied
@@ -553,8 +562,9 @@ Implemented THROUGH subset:
   accumulator, and floor-quantizes the inner resolve to match the intermediate
   RGBA8 writeback of the existing pass-heavy path.
 - Deeper nested THROUGH groups, clipping runs, solid colors, unavailable
-  THROUGH masks, container depth beyond the fixed limit, and real or unknown
-  filter masks still remain explicit legacy barriers.
+  THROUGH masks, container depth beyond the fixed limit, and
+  provider-unavailable or unknown filter masks still remain explicit legacy
+  barriers.
 
 Verification:
 
@@ -581,20 +591,25 @@ Verification:
   compare non-opaque masked container and THROUGH scope resolves against the
   existing legacy source path. Unknown or provider-unavailable scope masks
   remain `ScopeMaskNotLowered` barriers.
+- Planner and GPU unit tests prove provider-backed non-opaque pointwise filter
+  masks can lower inside scope stacks, while provider-unavailable filter masks
+  remain `FilterNotLowered`.
 - Planner unit tests classify scope stacks beyond the fixed accumulator depth
   as `ScopeDepthLimitExceeded`, and scope programs whose event count exceeds
   `MAX_SILO_EVENTS` as `TileEventLimitExceeded`.
 - `Test_FolderNested.clip --performance-plan-json` reports
-  `simple_through_scope_segments: 1` and `tile_event_abi_version: 6`.
+  `simple_through_scope_segments: 1` and `tile_event_abi_version: 7`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
   and `Test_AddGlowMultiply` remain stable.
 
 Next scope-stack work:
 
-- unsupported or masked filters inside scope stacks
+- nested/complex container and THROUGH subtrees that still hit depth or shape
+  barriers
+- clipping runs and clipped container/folder siblings inside scope stacks
 
-Then extend the same scope-stack model to nested/complex container and THROUGH
-subtrees once each shape has focused parity tests.
+Then extend the same scope-stack model to each remaining scope shape once it
+has focused parity tests.
 
 ### Phase 6: Session Atlas Cache and Dirty Segment Reload
 

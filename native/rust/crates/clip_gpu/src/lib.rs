@@ -35,6 +35,7 @@ mod stream_through;
 mod stream_tile_event;
 mod stream_tile_filter_program;
 mod stream_tile_filter_silo;
+mod stream_tile_mask_atlas_plan;
 mod stream_tile_scope_silo;
 mod stream_tile_scope_silo_plan;
 mod stream_tile_scope_silo_program;

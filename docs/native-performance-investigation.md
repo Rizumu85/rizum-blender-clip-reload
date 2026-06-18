@@ -481,19 +481,20 @@ same tile-local execution model:
 - It can also plan a `PointFilterRun` segment for consecutive filter-only
   ranges, applying those filters to the current dirty accumulator from previous
   segments.
-- `stream_tile_event.rs` bumps the tile event ABI to `3` and adds
-  `TileEventKind::PointFilter` plus a separate `filter_payloads` storage
-  buffer.
+- `stream_tile_event.rs` adds `TileEventKind::PointFilter` plus a separate
+  `filter_payloads` storage buffer; the current tile event ABI is `7`.
 - `tile_silo.wgsl` applies Tone Curve, HSL, Threshold, and Gradient Map filter
   modes to the local accumulator in event order, using the same math as the
   existing LUT filter pass.
 - Leading filters in a mixed run now apply to the parent accumulator over the
   current target bounds before later raster events execute in the same tile
   program.
-- Filter masks are only bypassed when the provider can prove they are fully
-  opaque. The runtime provider proves this from mask `empty_fill=255` plus zero
-  compressed mask tiles. Any non-opaque or unknown filter mask remains an
-  explicit `FilterNotLowered` barrier.
+- Filter masks are bypassed when the provider can prove they are fully opaque,
+  and real non-opaque filter masks lower when the provider can emit R8 mask
+  atlas chunks. The runtime provider proves opaque masks from mask
+  `empty_fill=255` plus zero compressed mask tiles. Unknown or
+  provider-unavailable filter masks remain an explicit `FilterNotLowered`
+  barrier.
 
 Performance-plan evidence:
 
@@ -511,6 +512,9 @@ Verification after this milestone:
 - GPU unit coverage compares a leading filter followed by a raster against the
   existing legacy source path.
 - GPU unit coverage also checks a filter-only segment after a legacy source.
+- GPU unit coverage compares provider-backed masked filter-only and
+  masked-filter-inside-container tile events against the existing legacy source
+  path.
 - `Test_ToneCurve` exact.
 - `Test_HSL2` exact.
 - `Test_HSL3`, `Test_HSL4`, and `Test_HSL5` keep the existing one-LSB
@@ -520,9 +524,10 @@ Verification after this milestone:
 - `Test_AddGlowMultiply` remains at the existing one-LSB invisible residual,
   and `Test_ClippingEdge` remains exact.
 
-This is a real semantic-barrier reduction, not a full filter/mask solution.
-Masked filters with real non-opaque mask pixels still need independent mask
-tile resources before they can be lowered faithfully.
+This is a real semantic-barrier reduction. Masked pointwise filters now use the
+same provider-backed R8 mask atlas model as raster and scope masks; future
+unknown or non-local filters still need explicit faithful tile-local models
+before they can lower.
 
 ## Simple Container Scope Tile Events
 
@@ -534,11 +539,12 @@ including provider-backed non-opaque scope masks:
   container mask, or a provider-backed non-opaque R8 scope mask, a resolve
   blend mode modeled by the tile VM, known finite bounds, and children limited
   to eligible raster events, one direct simple container scope with the same
-  scope-mask support, plus pointwise filters whose masks are absent or proven
-  fully opaque.
-- `stream_tile_event.rs` now uses tile event ABI `6`; `BeginContainer` /
+  scope-mask support, plus pointwise filters whose masks are absent, proven
+  fully opaque, or available through provider-backed R8 mask atlas chunks.
+- `stream_tile_event.rs` now uses tile event ABI `7`; `BeginContainer` /
   `EndContainer` scope payloads carry optional R8 mask atlas coordinates in
-  payload words 6/7.
+  payload words 6/7, and `PointFilter` payloads carry optional filter mask
+  atlas coordinates in payload words 10/11.
 - `tile_silo.wgsl` keeps local transparent-white scope accumulators. Raster
   and pointwise-filter events inside the scope modify the active accumulator,
   then `EndContainer` resolves it into the parent accumulator through the
@@ -550,7 +556,7 @@ including provider-backed non-opaque scope masks:
   resolves to its parent.
 - Unsupported scope shapes remain barriers: container depth beyond the fixed
   limit, THROUGH groups inside container scopes, clipping runs, solid colors,
-  unavailable masked containers, and filters with real or unknown non-opaque
+  unavailable masked containers, and provider-unavailable or unknown filter
   masks.
 
 Verification after this milestone:
@@ -568,6 +574,8 @@ Verification after this milestone:
   fixed limit as a barrier.
 - New GPU unit coverage compares non-opaque masked container scope resolve
   against the existing legacy source path.
+- New GPU unit coverage compares a provider-backed non-opaque masked filter
+  inside a container scope against the existing legacy source path.
 - Guard comparisons remain stable: `Test_Clipping` exact,
   `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
   and `Test_AddGlowMultiply` remains at the existing one-LSB invisible
@@ -588,10 +596,12 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   THROUGH mask, or a provider-backed non-opaque R8 scope mask, known finite
   bounds, and children limited to eligible raster events, simple container
   scopes with the same scope-mask support, plus pointwise filters whose masks
-  are absent or proven fully opaque.
-- `stream_tile_event.rs` bumps the tile event ABI to `6` and uses scope payload
-  words 6/7 as optional R8 mask atlas coordinates for container and THROUGH
-  scope resolves.
+  are absent, proven fully opaque, or available through provider-backed R8 mask
+  atlas chunks.
+- `stream_tile_event.rs` uses tile event ABI `7`, with scope payload words 6/7
+  as optional R8 mask atlas coordinates for container and THROUGH scope
+  resolves, and point-filter payload words 10/11 as optional R8 mask atlas
+  coordinates for masked pointwise filters.
 - `tile_silo.wgsl` stores the current parent accumulator as THROUGH `before`,
   renders child events into THROUGH `after`, and resolves `before`/`after`
   through the same premultiplied opacity interpolation as the existing THROUGH
@@ -608,7 +618,7 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   of the existing pass-heavy path.
 - Unsupported THROUGH shapes remain barriers: deeper nested THROUGH groups,
   clipping runs, solid colors, unavailable masked THROUGH groups, container
-  depth beyond the fixed limit, and filters with real or unknown non-opaque
+  depth beyond the fixed limit, and provider-unavailable or unknown filter
   masks.
 
 Verification after this milestone:
@@ -627,13 +637,16 @@ Verification after this milestone:
   compares non-opaque masked container and THROUGH scope resolves against the
   existing legacy source path. Unknown or provider-unavailable masks still
   report the explicit `ScopeMaskNotLowered` barrier reason.
+- Planner and GPU unit coverage prove provider-backed non-opaque pointwise
+  filter masks can lower inside scope stacks, while provider-unavailable
+  filter masks remain explicit `FilterNotLowered` barriers.
 - Planner unit coverage reports scope stacks beyond the fixed accumulator limit
   as `ScopeDepthLimitExceeded`, and simple scope programs above
   `MAX_SILO_EVENTS` as `TileEventLimitExceeded`, so large/complex scope
   barriers are measurable instead of collapsing into generic container or
   THROUGH barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
-  `simple_through_scope_segments: 1` and `tile_event_abi_version: 6`.
+  `simple_through_scope_segments: 1` and `tile_event_abi_version: 7`.
 - Guard comparisons remain stable: `Test_Clipping` exact,
   `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
   and `Test_AddGlowMultiply` remains at the existing one-LSB invisible

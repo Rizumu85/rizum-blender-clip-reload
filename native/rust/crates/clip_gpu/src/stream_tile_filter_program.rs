@@ -1,5 +1,6 @@
 use clip_model::CanvasSize;
 
+use crate::GpuMaskAtlasSource;
 use crate::GpuRenderError;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::CanvasRect;
@@ -16,6 +17,8 @@ pub(crate) struct FilterTileProgramInputs<'a> {
     pub(crate) payloads: Vec<TileEventPayload>,
     pub(crate) event_bounds: Vec<CanvasRect>,
     pub(crate) lut_rows: Vec<&'a [u8]>,
+    pub(crate) mask_atlas_sources: Vec<GpuMaskAtlasSource>,
+    pub(crate) mask_atlas_size: CanvasSize,
     pub(crate) final_dirty_bounds: Option<CanvasRect>,
 }
 

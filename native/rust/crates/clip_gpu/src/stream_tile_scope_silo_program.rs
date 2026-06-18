@@ -1,4 +1,4 @@
-use clip_model::{CanvasSize, Rect};
+use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
@@ -7,6 +7,7 @@ use crate::stream_tile_event::{
     PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
 };
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
+use crate::stream_tile_mask_atlas_plan::MaskAtlasPlan;
 use crate::stream_tile_scope_silo_plan::{
     SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT, scope_mask_can_lower,
 };
@@ -45,7 +46,7 @@ where
     let mut child_bounds = Vec::new();
     let mut lut_rows = Vec::new();
     let mut scope_dirty = None;
-    let mut mask_plan = ScopeMaskAtlasPlan::new(base_mask_atlas_size, max_mask_atlas_size);
+    let mut mask_plan = MaskAtlasPlan::new(base_mask_atlas_size, max_mask_atlas_size);
     if !append_scope_child_events(
         context,
         target_origin,
@@ -66,11 +67,15 @@ where
         return Ok(None);
     };
     let local_scope_bounds = local_pass_bounds(scope_bounds, target_origin);
-    let Some(mask_atlas_origin) = append_scope_mask(
+    let Some(mask_atlas_origin) = mask_plan.append_mask(
         context.provider,
         kind.mask_key(),
-        scope_bounds,
-        &mut mask_plan,
+        clip_model::Rect::new(
+            scope_bounds.x,
+            scope_bounds.y,
+            scope_bounds.width,
+            scope_bounds.height,
+        ),
     ) else {
         return Ok(None);
     };
@@ -92,7 +97,7 @@ where
         payloads,
         event_bounds,
         lut_rows,
-        scope_mask_sources: mask_plan.sources,
+        scope_mask_sources: mask_plan.into_sources(),
         mask_atlas_size,
         final_dirty_bounds: union_optional(initial_dirty_bounds, Some(scope_bounds)),
     }))
@@ -109,7 +114,7 @@ fn append_scope_child_events<'a, P>(
     payloads: &mut Vec<TileEventPayload>,
     event_bounds: &mut Vec<CanvasRect>,
     lut_rows: &mut Vec<&'a [u8]>,
-    mask_plan: &mut ScopeMaskAtlasPlan,
+    mask_plan: &mut MaskAtlasPlan,
     scope_dirty: &mut Option<CanvasRect>,
 ) -> Result<bool, P::Error>
 where
@@ -158,9 +163,16 @@ where
                     continue;
                 };
                 let local_scope_bounds = local_pass_bounds(nested_scope_bounds, target_origin);
-                let Some(mask_atlas_origin) =
-                    append_scope_mask(context.provider, *mask_key, nested_scope_bounds, mask_plan)
-                else {
+                let Some(mask_atlas_origin) = mask_plan.append_mask(
+                    context.provider,
+                    *mask_key,
+                    clip_model::Rect::new(
+                        nested_scope_bounds.x,
+                        nested_scope_bounds.y,
+                        nested_scope_bounds.width,
+                        nested_scope_bounds.height,
+                    ),
+                ) else {
                     return Ok(false);
                 };
                 let (begin_scope, end_scope) = ScopeProgramKind::Container {
@@ -210,9 +222,16 @@ where
                     continue;
                 };
                 let local_scope_bounds = local_pass_bounds(nested_scope_bounds, target_origin);
-                let Some(mask_atlas_origin) =
-                    append_scope_mask(context.provider, *mask_key, nested_scope_bounds, mask_plan)
-                else {
+                let Some(mask_atlas_origin) = mask_plan.append_mask(
+                    context.provider,
+                    *mask_key,
+                    clip_model::Rect::new(
+                        nested_scope_bounds.x,
+                        nested_scope_bounds.y,
+                        nested_scope_bounds.width,
+                        nested_scope_bounds.height,
+                    ),
+                ) else {
                     return Ok(false);
                 };
                 let (begin_scope, end_scope) = ScopeProgramKind::Through {
@@ -244,6 +263,18 @@ where
                     return Ok(false);
                 };
                 let local_bounds = local_pass_bounds(filter_bounds, target_origin);
+                let Some(mask_atlas_origin) = mask_plan.append_mask(
+                    context.provider,
+                    *mask_key,
+                    clip_model::Rect::new(
+                        filter_bounds.x,
+                        filter_bounds.y,
+                        filter_bounds.width,
+                        filter_bounds.height,
+                    ),
+                ) else {
+                    return Ok(false);
+                };
                 let lut_row = u32::try_from(lut_rows.len())
                     .map_err(|_| GpuRenderError::TextureSizeOverflow)
                     .map_err(P::Error::from)?;
@@ -252,6 +283,7 @@ where
                     opacity: *opacity,
                     filter_mode: *filter_mode,
                     local_bounds,
+                    mask_atlas_origin,
                 }));
                 event_bounds.push(local_bounds);
                 lut_rows.push(lut_rgba.as_slice());
@@ -333,63 +365,6 @@ impl ScopeProgramKind {
             }
         }
     }
-}
-
-struct ScopeMaskAtlasPlan {
-    width: u32,
-    next_y: u32,
-    max_size: u32,
-    sources: Vec<GpuMaskAtlasSource>,
-}
-
-impl ScopeMaskAtlasPlan {
-    fn new(base_size: CanvasSize, max_size: u32) -> Self {
-        Self {
-            width: base_size.width,
-            next_y: base_size.height,
-            max_size,
-            sources: Vec::new(),
-        }
-    }
-
-    fn size(&self) -> CanvasSize {
-        CanvasSize::new(self.width.max(1), self.next_y.max(1))
-    }
-}
-
-fn append_scope_mask<P>(
-    provider: &P,
-    mask_key: Option<GpuMaskResourceKey>,
-    bounds: CanvasRect,
-    plan: &mut ScopeMaskAtlasPlan,
-) -> Option<Option<(u32, u32)>>
-where
-    P: GpuNormalStackResourceProvider,
-{
-    let Some(key) = mask_key else {
-        return Some(None);
-    };
-    if provider.mask_is_fully_opaque(key) == Some(true) {
-        return Some(None);
-    }
-    if !provider.mask_atlas_tiles_supported() {
-        return None;
-    }
-    let next_y = plan.next_y;
-    let bottom = next_y.checked_add(bounds.height)?;
-    let width = plan.width.max(bounds.width);
-    if width > plan.max_size || bottom > plan.max_size {
-        return None;
-    }
-    plan.width = width;
-    plan.next_y = bottom;
-    plan.sources.push(GpuMaskAtlasSource {
-        key,
-        atlas_x: 0,
-        atlas_y: next_y,
-        canvas_bounds: Rect::new(bounds.x, bounds.y, bounds.width, bounds.height),
-    });
-    Some(Some((0, next_y)))
 }
 
 pub(crate) fn raster_sources_from_scope_children(

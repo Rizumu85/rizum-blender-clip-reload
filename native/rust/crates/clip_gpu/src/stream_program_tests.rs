@@ -467,11 +467,10 @@ fn planner_keeps_unknown_masked_simple_scopes_as_barriers() {
 }
 
 #[test]
-fn planner_keeps_masked_filter_inside_scope_as_filter_barrier() {
+fn planner_keeps_provider_unavailable_masked_filter_inside_scope_as_filter_barrier() {
     let filter_mask = mask_key(11);
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))])
-        .with_mask_opacity(filter_mask, false)
-        .with_mask_atlas_tiles_supported();
+        .with_mask_opacity(filter_mask, false);
     let sources = vec![GpuNormalStackSource::Container {
         children: vec![
             GpuNormalStackSource::Raster(raster_source(1)),
@@ -502,6 +501,43 @@ fn planner_keeps_masked_filter_inside_scope_as_filter_barrier() {
         ))
     );
     assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 1);
+}
+
+#[test]
+fn planner_lowers_provider_backed_masked_filter_inside_scope() {
+    let filter_mask = mask_key(11);
+    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))])
+        .with_mask_opacity(filter_mask, false)
+        .with_mask_atlas_tiles_supported();
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![
+            GpuNormalStackSource::Raster(raster_source(1)),
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: identity_lut(),
+                opacity: 1.0,
+                mask_key: Some(filter_mask),
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+        ],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope)
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 1);
+    assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 0);
 }
 
 #[test]
