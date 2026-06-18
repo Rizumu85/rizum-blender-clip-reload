@@ -57,6 +57,7 @@ where
     ) else {
         return Ok(false);
     };
+    let run_has_masks = sources_have_masks(sources);
     let (prepared, atlas, drawn_resources) = if let Some(upload) = context
         .provider
         .raster_run_atlas_tile_pixels(&requests, layout.size)?
@@ -99,6 +100,9 @@ where
         .map_err(P::Error::from)?;
         (prepared, atlas, drawn_resources)
     } else {
+        if run_has_masks {
+            return Ok(false);
+        }
         let prepared = prepare_sources_with_caches(
             context,
             output_size,
@@ -236,6 +240,13 @@ where
     context.state.finish_pass()?;
     *dirty_bounds = Some(pass_bounds);
     Ok(true)
+}
+
+fn sources_have_masks(sources: &[GpuNormalStackSource]) -> bool {
+    sources.iter().any(|source| match source {
+        GpuNormalStackSource::Raster(raster) => raster.mask_key.is_some(),
+        _ => false,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

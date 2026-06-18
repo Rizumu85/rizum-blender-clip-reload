@@ -238,10 +238,11 @@ eligible raster-run collapse on the runtime path:
   upload forms, keeping `stream_tile_silo.rs` focused on planning/encoding and
   below the production file-size guideline.
 
-This is still scoped to the same conservative raster-run eligibility: unmasked
-ordinary raster sources with supported Normal/standard blend modes. Masks,
-clipping-run nodes, filters, THROUGH groups, containers as source nodes, and
-byte-domain special blends remain semantic barriers.
+This was initially scoped to the same conservative raster-run eligibility:
+unmasked ordinary raster sources with supported Normal/standard blend modes.
+Masked Normal sources are now covered by the follow-up milestone below.
+Clipping-run nodes, filters, THROUGH groups, containers as source nodes, masked
+standard blends, and byte-domain special blends remain semantic barriers.
 
 Verification after this milestone:
 
@@ -259,10 +260,59 @@ Verification after this milestone:
   --blender-render-json` is about 3.322s.
 
 The next large lever is no longer ordinary raster-run source upload. It is
-making more source types tile-local: mask atlas events, clipping-base/clipped
-relationships, and eventually larger faithful raster/clipping segments. Filters,
-THROUGH groups, isolated containers, and byte-domain special blends should stay
-barriers until their tile-local semantics are explicitly modelled.
+making more source types tile-local: true mask atlas events, clipping-base and
+clipped relationships, and eventually larger faithful raster/clipping segments.
+Filters, THROUGH groups, isolated containers, and byte-domain special blends
+should stay barriers until their tile-local semantics are explicitly modelled.
+
+## Masked Normal Atlas Run
+
+The first mask-aware tile-silo step is implemented for the narrow faithful
+subset where the existing shader already applies masks with integer Normal
+alpha semantics:
+
+- `GpuNormalStackResourceProvider` exposes whether provider-backed atlas runs
+  apply masks. The default is false, so alternate/test providers keep masked
+  sources as barriers unless they explicitly opt in.
+- The tile-silo planner now allows masked raster sources only when the blend
+  mode is Normal and the provider promises to apply the mask into the atlas
+  payload. Masked standard blends remain on the old pass path because their
+  shader-side mask alpha arithmetic is different.
+- The runtime provider pre-applies layer-mask alpha to each decoded compressed
+  RGBA atlas chunk using the existing Normal path's integer rule,
+  `alpha = alpha * mask / 255`, sampled at canvas-global coordinates. This
+  keeps the tile-silo shader unchanged and avoids adding a new broad mask
+  formula.
+- The encoder refuses the old per-source texture-copy atlas fallback for masked
+  runs, because that fallback would skip mask application. If the provider
+  cannot return a masked atlas payload, the renderer falls back to the existing
+  faithful per-source path.
+- The runtime atlas-run code lives in `clip_runtime/src/gpu_provider/atlas_run.rs`
+  so `gpu_provider.rs` remains provider/resource wiring instead of growing a
+  monolithic performance path.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
+- New GPU unit coverage locks provider-backed masked Normal atlas collapse and
+  verifies that the run uses the atlas provider rather than per-source raster
+  upload.
+- `Test_Mask.clip --compare-png Test_Mask.png` is exact.
+- `Test_AddGlowMultiply.clip --compare-png Test_AddGlowMultiply.png` remains at
+  the existing one-LSB invisible residual (`raw_max=1`, `premul_max=1`,
+  visible `0`).
+- `Test_RealArt.clip --compare-png Test_RealArt.png` remains stable
+  (`raw_max=5`, `premul_max=1` in the direct release comparison run used here).
+- `Ref_Terra404_Live2D.clip --compare-png Ref_Terra404_Live2D.png` remains
+  stable (`premul_max=3`, `premul_visible_px=13501`), with raw differences still
+  dominated by transparent RGB.
+
+Performance note: this is a structural stepping stone, not the full Silicate
+mask model. RealArt showed small/same-range worker timing in direct release
+runs, while Terra remained in the same range because most of its remaining
+cost is behind clipping/container/standard-blend barriers. The next
+quantity-level step is shader-side mask/clipping tile events, not more CPU
+pre-application of isolated mask cases.
 
 ## Compressed Occupancy Planner
 

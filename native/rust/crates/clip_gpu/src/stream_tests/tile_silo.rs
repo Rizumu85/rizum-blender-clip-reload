@@ -123,6 +123,74 @@ fn streamed_tile_silo_accepts_provider_backed_atlas_pixels() {
 }
 
 #[test]
+fn streamed_tile_silo_accepts_provider_backed_masked_normal_atlas_pixels() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let red_key = raster_key(240);
+    let blue_key = raster_key(241);
+    let blue_mask_key = mask_key(241);
+    let mut provider = AtlasInlineProvider::new(vec![
+        (
+            red_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(240),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [255, 0, 0, 255].repeat(4),
+            },
+        ),
+        (
+            blue_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(241),
+                size: CanvasSize::new(2, 2),
+                offset: (1, 1),
+                pixels: [0, 0, 255, 255].repeat(4),
+            },
+        ),
+    ])
+    .with_masks(vec![(
+        blue_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(2, 2),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![255, 0, 128, 255],
+        },
+    )]);
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source_at(red_key, 1, 1)),
+        GpuNormalStackSource::Raster(raster_source_at_with_mask(blue_key, blue_mask_key, 1, 1)),
+    ];
+    assert_eq!(
+        raster_silo_run_len(
+            &provider,
+            CanvasSize::new(4, 4),
+            (0, 0),
+            CanvasSize::new(4, 4),
+            &sources,
+        ),
+        2
+    );
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(4, 4), &sources, &mut provider)
+        .expect("draw provider-backed masked atlas tile-silo run");
+
+    let mut expected = [255, 255, 255, 0].repeat(16);
+    expected[((1 * 4 + 1) * 4) as usize..((1 * 4 + 1) * 4 + 4) as usize]
+        .copy_from_slice(&[0, 0, 255, 255]);
+    expected[((1 * 4 + 2) * 4) as usize..((1 * 4 + 2) * 4 + 4) as usize]
+        .copy_from_slice(&[255, 0, 0, 255]);
+    expected[((2 * 4 + 1) * 4) as usize..((2 * 4 + 1) * 4 + 4) as usize]
+        .copy_from_slice(&[127, 0, 128, 255]);
+    expected[((2 * 4 + 2) * 4) as usize..((2 * 4 + 2) * 4 + 4) as usize]
+        .copy_from_slice(&[0, 0, 255, 255]);
+    assert_eq!(output.pixels, expected);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_accepts_nonzero_target_origin() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let red_key = raster_key(47);
@@ -297,6 +365,7 @@ fn tile_silo_planner_stops_at_masks_and_byte_domain_blends() {
 
 struct AtlasInlineProvider {
     rasters: HashMap<GpuRasterResourceKey, AtlasInlineRaster>,
+    masks: HashMap<GpuMaskResourceKey, AtlasInlineMask>,
     atlas_requests: usize,
     raster_requests: usize,
 }
@@ -308,13 +377,26 @@ struct AtlasInlineRaster {
     pixels: Vec<u8>,
 }
 
+struct AtlasInlineMask {
+    size: CanvasSize,
+    origin: (i32, i32),
+    fill_value: u8,
+    pixels: Vec<u8>,
+}
+
 impl AtlasInlineProvider {
     fn new(rasters: Vec<(GpuRasterResourceKey, AtlasInlineRaster)>) -> Self {
         Self {
             rasters: rasters.into_iter().collect(),
+            masks: HashMap::new(),
             atlas_requests: 0,
             raster_requests: 0,
         }
+    }
+
+    fn with_masks(mut self, masks: Vec<(GpuMaskResourceKey, AtlasInlineMask)>) -> Self {
+        self.masks = masks.into_iter().collect();
+        self
     }
 }
 
@@ -338,6 +420,10 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
         self.rasters.get(&source.key).map(|raster| raster.offset)
     }
 
+    fn raster_run_atlas_applies_masks(&self) -> bool {
+        !self.masks.is_empty()
+    }
+
     fn raster_run_atlas_pixels(
         &mut self,
         sources: &[GpuRasterAtlasSource],
@@ -354,11 +440,25 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
                 },
             )?;
             for y in 0..raster.size.height {
-                let src = (y * raster.size.width * 4) as usize;
-                let dst =
-                    (((request.atlas_y + y) * atlas_size.width + request.atlas_x) * 4) as usize;
-                let len = (raster.size.width * 4) as usize;
-                pixels[dst..dst + len].copy_from_slice(&raster.pixels[src..src + len]);
+                for x in 0..raster.size.width {
+                    let src = ((y * raster.size.width + x) * 4) as usize;
+                    let dst = (((request.atlas_y + y) * atlas_size.width + request.atlas_x + x) * 4)
+                        as usize;
+                    pixels[dst..dst + 4].copy_from_slice(&raster.pixels[src..src + 4]);
+                    if let Some(mask_key) = request.source.mask_key {
+                        let mask = self.masks.get(&mask_key).ok_or(
+                            GpuRenderError::MissingMaskResource {
+                                layer_id: mask_key.layer_id,
+                                mask_mipmap_id: mask_key.mask_mipmap_id,
+                            },
+                        )?;
+                        let global_x = request.offset_x + x as i32;
+                        let global_y = request.offset_y + y as i32;
+                        let mask_value = atlas_mask_value(mask, global_x, global_y);
+                        pixels[dst + 3] =
+                            ((u16::from(pixels[dst + 3]) * u16::from(mask_value)) / 255) as u8;
+                    }
+                }
             }
             resources.push(GpuRasterResourceInfo {
                 key: request.source.key,
@@ -384,4 +484,19 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
             mask_mipmap_id: key.mask_mipmap_id,
         })
     }
+}
+
+fn atlas_mask_value(mask: &AtlasInlineMask, global_x: i32, global_y: i32) -> u8 {
+    let local_x = global_x - mask.origin.0;
+    let local_y = global_y - mask.origin.1;
+    if local_x < 0 || local_y < 0 {
+        return mask.fill_value;
+    }
+    let (Ok(local_x), Ok(local_y)) = (u32::try_from(local_x), u32::try_from(local_y)) else {
+        return mask.fill_value;
+    };
+    if local_x >= mask.size.width || local_y >= mask.size.height {
+        return mask.fill_value;
+    }
+    mask.pixels[(local_y * mask.size.width + local_x) as usize]
 }

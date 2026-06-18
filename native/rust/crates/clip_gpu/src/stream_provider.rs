@@ -73,6 +73,10 @@ pub trait GpuNormalStackResourceProvider {
         self.raster_resource_offset(source)
     }
 
+    fn raster_run_atlas_applies_masks(&self) -> bool {
+        false
+    }
+
     fn raster_run_atlas_pixels(
         &mut self,
         sources: &[GpuRasterAtlasSource],

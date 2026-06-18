@@ -233,9 +233,12 @@ where
     let GpuNormalStackSource::Raster(raster) = source else {
         return false;
     };
-    if !raster_can_affect_output(*raster)
-        || raster.mask_key.is_some()
-        || !blend_is_silo_eligible(raster.blend_mode)
+    if !raster_can_affect_output(*raster) || !blend_is_silo_eligible(raster.blend_mode) {
+        return false;
+    }
+    if raster.mask_key.is_some()
+        && (raster.blend_mode != GpuRasterBlendMode::Normal
+            || !provider.raster_run_atlas_applies_masks())
     {
         return false;
     }
