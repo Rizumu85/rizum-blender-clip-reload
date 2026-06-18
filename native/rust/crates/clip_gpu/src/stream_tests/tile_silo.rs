@@ -395,6 +395,100 @@ fn streamed_tile_silo_resolves_standard_blend_container_opacity_like_legacy_pass
 }
 
 #[test]
+fn streamed_tile_silo_resolves_nested_container_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let outer_key = raster_key(150);
+    let inner_key = raster_key(151);
+    let mut inner_multiply = raster_source_at(inner_key, 1, 1);
+    inner_multiply.blend_mode = GpuRasterBlendMode::Multiply;
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 180,
+                g: 180,
+                b: 180,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Container {
+            children: vec![
+                GpuNormalStackSource::Raster(raster_source_at(outer_key, 1, 1)),
+                GpuNormalStackSource::Container {
+                    children: vec![GpuNormalStackSource::Raster(inner_multiply)],
+                    opacity: 1.0,
+                    mask_key: None,
+                    blend_mode: GpuRasterBlendMode::Normal,
+                },
+            ],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        },
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![
+        (
+            outer_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(150),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![0, 200, 0, 255],
+            },
+        ),
+        (
+            inner_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(151),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![128, 0, 0, 255],
+            },
+        ),
+    ]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy nested container reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![
+        (
+            outer_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(150),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![0, 200, 0, 255],
+            },
+        ),
+        (
+            inner_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(151),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![128, 0, 0, 255],
+            },
+        ),
+    ]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed nested container scope");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(
+        &output.pixels[((1 * 3 + 1) * 4) as usize..((1 * 3 + 1) * 4 + 4) as usize],
+        &[128, 0, 0, 255]
+    );
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_resolves_through_scope_opacity_like_legacy_pass() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let child_key = raster_key(146);

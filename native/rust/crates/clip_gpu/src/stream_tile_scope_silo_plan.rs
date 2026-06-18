@@ -45,7 +45,7 @@ where
         target_origin,
         target_size,
         children,
-        false,
+        true,
     )?;
     2usize
         .checked_add(child_count)

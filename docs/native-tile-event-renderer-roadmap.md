@@ -496,14 +496,19 @@ Implemented subset:
 - `TileProgramKind::SimpleContainerScope` lowers a `Container` source only when
   container opacity is positive, there is no container mask, the resolve blend
   mode is modeled by the tile VM, bounds are known and intersect the current
-  target, and children are limited to eligible raster events plus pointwise
-  filters whose masks are absent or proven fully opaque.
+  target, and children are limited to eligible raster events, one direct simple
+  unmasked container scope, plus pointwise filters whose masks are absent or
+  proven fully opaque.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
   byte-domain special-blend, or standard blend helpers used by existing raster
   events.
-- Nested containers, THROUGH groups, clipping runs, solid colors, masked or
+- A direct nested simple container uses a second transparent-white local
+  accumulator and resolves into the outer container accumulator before the outer
+  container resolves to its parent. Deeper container nesting still remains a
+  barrier.
+- THROUGH groups, clipping runs, solid colors, masked containers, and masked or
   unknown filter masks still remain explicit legacy barriers.
 
 Implemented THROUGH subset:
@@ -533,6 +538,8 @@ Verification:
 - GPU unit tests compare the tile-scope path against the existing legacy
   source path for Normal container opacity, Multiply container resolve, and
   Multiply container resolve with non-1 opacity.
+- GPU unit tests compare a direct nested container against the existing legacy
+  source path and assert deeper nesting remains a barrier.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
   existing legacy source path for THROUGH opacity and child blend execution.
 - GPU unit tests compare a simple container inside a THROUGH scope against the
@@ -548,7 +555,7 @@ Next scope-stack work:
 - scope depth within limit
 - event count within limit
 - nested THROUGH
-- container-in-container
+- deeper container nesting
 - masked container/THROUGH scopes
 - unsupported or masked filters inside scope stacks
 

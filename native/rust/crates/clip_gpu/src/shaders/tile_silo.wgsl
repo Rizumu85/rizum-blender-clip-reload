@@ -1018,6 +1018,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope_active = false;
+    var nested_scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var nested_scope_active = false;
     var through_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var through_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var through_active = false;
@@ -1042,13 +1044,21 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
         if (kind == TILE_EVENT_KIND_BEGIN_CONTAINER) {
             if (scope_contains(event_index, local_texel)) {
-                scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-                scope_active = true;
+                if (scope_active) {
+                    nested_scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    nested_scope_active = true;
+                } else {
+                    scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    scope_active = true;
+                }
             }
             continue;
         }
         if (kind == TILE_EVENT_KIND_END_CONTAINER) {
-            if (scope_active && scope_contains(event_index, local_texel)) {
+            if (nested_scope_active && scope_contains(event_index, local_texel)) {
+                scope_dst = resolve_container_scope(event_index, nested_scope_dst, scope_dst);
+                nested_scope_active = false;
+            } else if (scope_active && scope_contains(event_index, local_texel)) {
                 if (through_active) {
                     through_after = resolve_container_scope(event_index, scope_dst, through_after);
                 } else {
@@ -1062,6 +1072,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             if (filter_contains(event_index, local_texel)) {
                 if (params.mode == MODE_CLIPPING_RUN) {
                     clip_dst = apply_point_filter_event(event_index, clip_dst);
+                } else if (nested_scope_active) {
+                    nested_scope_dst = apply_point_filter_event(event_index, nested_scope_dst);
                 } else if (scope_active) {
                     scope_dst = apply_point_filter_event(event_index, scope_dst);
                 } else if (through_active) {
@@ -1105,6 +1117,21 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             }
             if (src.a <= 0.0 || dst.a <= 0.0) { continue; }
             dst = apply_preserve(src, dst, blend_kind);
+        } else if (nested_scope_active) {
+            if (blend_kind == 0u) {
+                nested_scope_dst = apply_normal(src, nested_scope_dst, event_index, mask_value);
+            } else if (is_byte_domain_special_blend(blend_kind)) {
+                nested_scope_dst = apply_byte_standard(src, nested_scope_dst, event_index, mask_value, blend_kind);
+            } else {
+                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+                    src.a = src.a * mask_value;
+                }
+                if (src.a <= 0.0) {
+                    continue;
+                }
+                nested_scope_dst = apply_standard(src, nested_scope_dst, blend_kind);
+            }
         } else if (scope_active) {
             if (blend_kind == 0u) {
                 scope_dst = apply_normal(src, scope_dst, event_index, mask_value);

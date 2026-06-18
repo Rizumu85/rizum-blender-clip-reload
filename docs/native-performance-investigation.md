@@ -528,18 +528,22 @@ The tile-event renderer now lowers a simple unmasked isolated-container subset:
 - `clip_gpu::stream_program` can plan a `SimpleContainerScope` segment for a
   folder with positive opacity, no container mask, a resolve blend mode modeled
   by the tile VM, known finite bounds, and children limited to eligible raster
-  events plus pointwise filters whose masks are absent or proven fully opaque.
+  events, one direct simple unmasked container scope, plus pointwise filters
+  whose masks are absent or proven fully opaque.
 - `stream_tile_event.rs` bumps the tile event ABI to `4` and adds
   `TileEventKind::BeginContainer` / `EndContainer` with a separate
   `scope_payloads` storage buffer.
-- `tile_silo.wgsl` keeps one local transparent-white scope accumulator. Raster
-  and pointwise-filter events inside the scope modify that local accumulator,
+- `tile_silo.wgsl` keeps local transparent-white scope accumulators. Raster
+  and pointwise-filter events inside the scope modify the active accumulator,
   then `EndContainer` resolves it into the parent accumulator through the
   existing Normal alpha-over, byte-domain special-blend, or standard blend
   helper.
-- Unsupported scope shapes remain barriers: nested containers, THROUGH groups,
-  clipping runs, solid colors, masked containers, and filters with real or
-  unknown non-opaque masks.
+- One direct nested simple container can lower as nested `BeginContainer` /
+  `EndContainer` events. The inner accumulator resolves into the outer
+  container accumulator before the outer container resolves to its parent.
+- Unsupported scope shapes remain barriers: deeper nested containers, THROUGH
+  groups, clipping runs, solid colors, masked containers, and filters with real
+  or unknown non-opaque masks.
 
 Verification after this milestone:
 
@@ -551,6 +555,8 @@ Verification after this milestone:
 - New GPU unit coverage also compares tile-scope execution against the existing
   legacy source path for Normal container opacity, Multiply container resolve,
   and Multiply container resolve with non-1 opacity.
+- New GPU unit coverage compares a direct nested container against the existing
+  legacy source path and locks deeper nested containers as barriers.
 - Guard comparisons remain stable: `Test_Clipping` exact,
   `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
   and `Test_AddGlowMultiply` remains at the existing one-LSB invisible

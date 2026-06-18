@@ -188,7 +188,7 @@ pub(crate) enum ScopeProgramKind {
 
 impl ScopeProgramKind {
     fn allows_container_children(self) -> bool {
-        matches!(self, Self::Through { .. })
+        matches!(self, Self::Container { .. } | Self::Through { .. })
     }
 
     fn payloads(self, local_bounds: CanvasRect) -> (TileEventPayload, TileEventPayload) {
