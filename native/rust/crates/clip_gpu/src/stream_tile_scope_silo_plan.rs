@@ -8,6 +8,7 @@ use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
 
 pub(crate) const SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT: usize = 3;
+pub(crate) const SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT: usize = 2;
 
 pub(crate) fn simple_container_scope_event_count<P>(
     provider: &P,
@@ -48,6 +49,7 @@ where
         target_size,
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
+        0,
     )?;
     2usize
         .checked_add(child_count)
@@ -88,6 +90,7 @@ where
         target_size,
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
+        SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT - 1,
     )?;
     2usize
         .checked_add(child_count)
@@ -101,6 +104,7 @@ fn simple_scope_children_event_count<P>(
     target_size: CanvasSize,
     children: &[GpuNormalStackSource],
     container_depth_remaining: usize,
+    through_depth_remaining: usize,
 ) -> Option<usize>
 where
     P: GpuNormalStackResourceProvider,
@@ -148,6 +152,33 @@ where
                     target_size,
                     children,
                     container_depth_remaining - 1,
+                    0,
+                )?;
+                count = count.saturating_add(2).saturating_add(child_count);
+                saw_raster = true;
+            }
+            GpuNormalStackSource::ThroughGroup {
+                children,
+                opacity,
+                mask_key,
+            } if through_depth_remaining > 0 => {
+                if *opacity != 1.0 || mask_key.is_some() || children.is_empty() {
+                    return None;
+                }
+                let KnownStackBounds::Bounded(bounds) =
+                    known_stack_bounds(provider, children, output_size)
+                else {
+                    return None;
+                };
+                let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
+                let child_count = simple_scope_children_event_count(
+                    provider,
+                    output_size,
+                    target_origin,
+                    target_size,
+                    children,
+                    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
+                    through_depth_remaining - 1,
                 )?;
                 count = count.saturating_add(2).saturating_add(child_count);
                 saw_raster = true;

@@ -1038,25 +1038,38 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     var scope1_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope_depth = 0u;
-    var through_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-    var through_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-    var through_active = false;
+    var through0_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var through0_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var through1_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var through1_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var through_depth = 0u;
 
     for (var index = 0u; index < span_count; index = index + 1u) {
         let event_index = work_indices[span_start + index];
         let kind = event_kind(event_index);
         if (kind == TILE_EVENT_KIND_BEGIN_THROUGH) {
             if (scope_contains(event_index, local_texel)) {
-                through_before = dst;
-                through_after = dst;
-                through_active = true;
+                if (through_depth == 0u) {
+                    through0_before = dst;
+                    through0_after = dst;
+                    through_depth = 1u;
+                } else if (through_depth == 1u) {
+                    through1_before = through0_after;
+                    through1_after = through0_after;
+                    through_depth = 2u;
+                }
             }
             continue;
         }
         if (kind == TILE_EVENT_KIND_END_THROUGH) {
-            if (through_active && scope_contains(event_index, local_texel)) {
-                dst = resolve_through_scope(event_index, through_before, through_after);
-                through_active = false;
+            if (scope_contains(event_index, local_texel)) {
+                if (through_depth == 2u) {
+                    through0_after = resolve_through_scope(event_index, through1_before, through1_after);
+                    through_depth = 1u;
+                } else if (through_depth == 1u) {
+                    dst = resolve_through_scope(event_index, through0_before, through0_after);
+                    through_depth = 0u;
+                }
             }
             continue;
         }
@@ -1084,8 +1097,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     scope0_dst = resolve_container_scope(event_index, scope1_dst, scope0_dst);
                     scope_depth = 1u;
                 } else if (scope_depth == 1u) {
-                    if (through_active) {
-                        through_after = resolve_container_scope(event_index, scope0_dst, through_after);
+                    if (through_depth == 2u) {
+                        through1_after = resolve_container_scope(event_index, scope0_dst, through1_after);
+                    } else if (through_depth == 1u) {
+                        through0_after = resolve_container_scope(event_index, scope0_dst, through0_after);
                     } else {
                         dst = resolve_container_scope(event_index, scope0_dst, dst);
                     }
@@ -1104,8 +1119,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     scope1_dst = apply_point_filter_event(event_index, scope1_dst);
                 } else if (scope_depth == 1u) {
                     scope0_dst = apply_point_filter_event(event_index, scope0_dst);
-                } else if (through_active) {
-                    through_after = apply_point_filter_event(event_index, through_after);
+                } else if (through_depth == 2u) {
+                    through1_after = apply_point_filter_event(event_index, through1_after);
+                } else if (through_depth == 1u) {
+                    through0_after = apply_point_filter_event(event_index, through0_after);
                 } else {
                     dst = apply_point_filter_event(event_index, dst);
                 }
@@ -1151,8 +1168,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             scope1_dst = apply_raster_event_to_accumulator(src, scope1_dst, event_index, mask_value, blend_kind);
         } else if (scope_depth == 1u) {
             scope0_dst = apply_raster_event_to_accumulator(src, scope0_dst, event_index, mask_value, blend_kind);
-        } else if (through_active) {
-            through_after = apply_raster_event_to_accumulator(src, through_after, event_index, mask_value, blend_kind);
+        } else if (through_depth == 2u) {
+            through1_after = apply_raster_event_to_accumulator(src, through1_after, event_index, mask_value, blend_kind);
+        } else if (through_depth == 1u) {
+            through0_after = apply_raster_event_to_accumulator(src, through0_after, event_index, mask_value, blend_kind);
         } else {
             dst = apply_raster_event_to_accumulator(src, dst, event_index, mask_value, blend_kind);
         }

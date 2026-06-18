@@ -7,7 +7,9 @@ use crate::stream_tile_event::{
     PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
 };
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
-use crate::stream_tile_scope_silo_plan::SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT;
+use crate::stream_tile_scope_silo_plan::{
+    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT,
+};
 use crate::stream_tile_silo_plan::PreparedSiloSource;
 use crate::stream_utils::local_pass_bounds;
 use crate::{GpuNormalStackSource, GpuRasterBlendMode, GpuRenderError};
@@ -40,6 +42,7 @@ where
         context,
         target_origin,
         kind.container_depth_remaining(),
+        kind.through_depth_remaining(),
         children,
         &prepared,
         &mut child_payloads,
@@ -80,6 +83,7 @@ fn append_scope_child_events<'a, P>(
     context: &StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     container_depth_remaining: usize,
+    through_depth_remaining: usize,
     children: &'a [GpuNormalStackSource],
     prepared: &[PreparedSiloSource],
     payloads: &mut Vec<TileEventPayload>,
@@ -115,6 +119,7 @@ where
                     context,
                     target_origin,
                     container_depth_remaining - 1,
+                    0,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -133,6 +138,45 @@ where
                     blend_mode: *blend_mode,
                 }
                 .payloads(local_scope_bounds);
+                payloads.push(begin_scope);
+                event_bounds.push(local_scope_bounds);
+                payloads.extend(nested_payloads);
+                event_bounds.extend(nested_bounds);
+                payloads.push(end_scope);
+                event_bounds.push(local_scope_bounds);
+                *scope_dirty = union_optional(*scope_dirty, Some(nested_scope_bounds));
+            }
+            GpuNormalStackSource::ThroughGroup {
+                children,
+                opacity,
+                mask_key,
+            } if through_depth_remaining > 0 => {
+                if *opacity != 1.0 || mask_key.is_some() || children.is_empty() {
+                    return Ok(false);
+                }
+                let mut nested_payloads = Vec::new();
+                let mut nested_bounds = Vec::new();
+                let mut nested_dirty = None;
+                if !append_scope_child_events(
+                    context,
+                    target_origin,
+                    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
+                    through_depth_remaining - 1,
+                    children,
+                    prepared,
+                    &mut nested_payloads,
+                    &mut nested_bounds,
+                    lut_rows,
+                    &mut nested_dirty,
+                )? {
+                    return Ok(false);
+                }
+                let Some(nested_scope_bounds) = context.state.clip_pass_bounds(nested_dirty) else {
+                    continue;
+                };
+                let local_scope_bounds = local_pass_bounds(nested_scope_bounds, target_origin);
+                let (begin_scope, end_scope) =
+                    ScopeProgramKind::Through { opacity: *opacity }.payloads(local_scope_bounds);
                 payloads.push(begin_scope);
                 event_bounds.push(local_scope_bounds);
                 payloads.extend(nested_payloads);
@@ -195,6 +239,13 @@ impl ScopeProgramKind {
         }
     }
 
+    fn through_depth_remaining(self) -> usize {
+        match self {
+            Self::Container { .. } => 0,
+            Self::Through { .. } => SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT - 1,
+        }
+    }
+
     fn payloads(self, local_bounds: CanvasRect) -> (TileEventPayload, TileEventPayload) {
         match self {
             Self::Container {
@@ -244,6 +295,9 @@ fn append_raster_sources(
                 sources.push(GpuNormalStackSource::Raster(*raster));
             }
             GpuNormalStackSource::Container { children, .. } => {
+                append_raster_sources(children, sources);
+            }
+            GpuNormalStackSource::ThroughGroup { children, .. } => {
                 append_raster_sources(children, sources);
             }
             _ => {}

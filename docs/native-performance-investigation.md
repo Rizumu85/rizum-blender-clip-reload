@@ -591,9 +591,15 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
 - Simple containers inside the THROUGH scope lower as nested `BeginContainer` /
   `EndContainer` events up to the same fixed depth limit and resolve into the
   THROUGH `after` accumulator.
-- Unsupported THROUGH shapes remain barriers: nested THROUGH groups, clipping
-  runs, solid colors, masked THROUGH groups, container depth beyond the fixed
-  limit, and filters with real or unknown non-opaque masks.
+- One level of nested THROUGH can lower when the nested THROUGH has opacity
+  `1.0`, has no mask, has known intersecting bounds, and its children fit the
+  same raster/container/pointwise-filter subset. The tile VM keeps two local
+  THROUGH `before`/`after` accumulators and resolves the inner THROUGH into the
+  outer THROUGH `after` accumulator.
+- Unsupported THROUGH shapes remain barriers: fractional-opacity nested THROUGH
+  groups, deeper nested THROUGH groups, clipping runs, solid colors, masked
+  THROUGH groups, container depth beyond the fixed limit, and filters with real
+  or unknown non-opaque masks.
 
 Verification after this milestone:
 
@@ -603,6 +609,9 @@ Verification after this milestone:
   THROUGH group.
 - GPU unit coverage also compares a simple container inside a THROUGH scope
   against the existing legacy source path.
+- GPU unit coverage compares an opacity-1 nested THROUGH scope against the
+  existing legacy source path and locks fractional-opacity/deeper nested
+  THROUGH groups as planner barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - Guard comparisons remain stable: `Test_Clipping` exact,

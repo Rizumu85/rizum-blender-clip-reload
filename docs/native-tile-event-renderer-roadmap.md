@@ -514,8 +514,9 @@ Implemented subset:
   accumulator stack. Each inner container resolves into its parent accumulator
   before the outer container resolves to its parent. Container depth beyond the
   fixed limit remains a barrier.
-- THROUGH groups, clipping runs, solid colors, masked containers, and masked or
-  unknown filter masks still remain explicit legacy barriers.
+- THROUGH groups inside container scopes, clipping runs, solid colors, masked
+  containers, and masked or unknown filter masks still remain explicit legacy
+  barriers.
 
 Implemented THROUGH subset:
 
@@ -531,9 +532,15 @@ Implemented THROUGH subset:
 - Simple containers inside a THROUGH scope can lower as nested
   `BeginContainer` / `EndContainer` events up to the same fixed depth limit,
   and the outermost container resolves into the THROUGH `after` accumulator.
-- Nested THROUGH groups, clipping runs, solid colors, masked THROUGH groups,
-  container depth beyond the fixed limit, and real or unknown filter masks still
-  remain explicit legacy barriers.
+- Nested THROUGH groups can lower one level deeper when the nested THROUGH has
+  opacity `1.0`, has no mask, has known intersecting bounds, and its children
+  fit the same raster/container/pointwise-filter subset. The shader keeps a
+  bounded two-level THROUGH `before`/`after` stack and resolves the inner
+  THROUGH into the outer `after` accumulator.
+- Fractional-opacity nested THROUGH groups, deeper nested THROUGH groups,
+  clipping runs, solid colors, masked THROUGH groups, container depth beyond the
+  fixed limit, and real or unknown filter masks still remain explicit legacy
+  barriers.
 
 Verification:
 
@@ -552,6 +559,9 @@ Verification:
 - GPU unit tests compare a simple container inside a THROUGH scope against the
   existing legacy source path, proving nested container resolve goes to the
   THROUGH `after` accumulator.
+- GPU unit tests compare an opacity-1 nested THROUGH scope against the existing
+  legacy source path and assert fractional-opacity nested THROUGH groups and
+  nesting beyond the fixed limit remain barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
@@ -560,7 +570,7 @@ Verification:
 Next scope-stack work:
 
 - event count within limit
-- nested THROUGH
+- broader nested THROUGH, especially fractional-opacity nested THROUGH
 - masked container/THROUGH scopes
 - unsupported or masked filters inside scope stacks
 
