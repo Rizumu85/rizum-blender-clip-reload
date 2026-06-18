@@ -28,9 +28,28 @@ Current focus:
 
 Open raster targets:
 
-- `Ref_Terra404_Live2D`: complex clipped/grouped highlight stacks and bottom-edge clipped blend residuals are now close; remaining differences are low-level rounding-scale pixels.
-- `Test_AddGlowMultiply`: Add Glow base plus clipped standard-preserve siblings now routes through the native GPU path; Add Glow byte-domain partial-alpha quantization and clipped Multiply preserve parity reduce the remaining CSP residual to `raw_max=1`, `premul_max=1`, with visible pixels at `0`.
-- `Ref_Kabi_Live2D`: the former large white-eye residual is fixed; the native clipped-folder sibling path now renders recursively and the remaining known max is a small low-level residual around `(1454,1104)`.
+- `Test_Gradiation`: highest public-fidelity target. Current release compare is
+  `raw_max=10`, `premul_max=10`, and `premul_visible_px=45528`, much larger
+  than the remaining HSL/blend-mode residuals. Treat this as the next clean
+  public sample to investigate before more blend-mode quantization nibbling.
+- `Ref_Kabi_Live2D`: strongest local-reference outlier by visible magnitude.
+  The former white-eye structural error is fixed, but the current release
+  compare still has `premul_max=32` at a small local green-channel residual.
+  This is more suspicious than local references whose raw max is dominated by
+  transparent RGB and whose premultiplied max is only 2-5.
+- `Test_HSL`: current release compare is `raw_max=3`, `premul_max=3`, and
+  `premul_visible_px=2668`. This remains worth tracking, but it should come
+  after Gradient Map because the guard samples `Test_HSL2` through `Test_HSL5`
+  are exact/one-LSB and prior fixed-point HSL shader probes regressed them.
+- `IllustrationBlendModesB` and `IllustrationBlendModes`: remaining public
+  blend-mode quantization targets (`raw_max=5` / visible `2718` and
+  `raw_max=7` / visible `1008`). Continue only with native mapping/evidence for
+  ordinary raster HSL/internal blend codes; avoid alpha-threshold or
+  channel-order branches inferred only from these samples.
+- Local large references such as MXL/Terra/Aya/Emuri should be treated as
+  smoke guards for structural regressions. Their broad low-level differences
+  are less actionable than the targets above unless a hotspot shows a coherent
+  visible artifact rather than transparent-RGB or edge quantization noise.
 - Non-zero render or mask offsets should stay sample-driven and guarded.
 
 ## Direction 2: Blender Add-on Workflow
