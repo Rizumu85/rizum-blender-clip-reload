@@ -52,9 +52,9 @@ fn read_layer_rgba(
     path: &Path,
     layer_id: LayerId,
 ) -> Result<clip_file::tiles::RgbaTileImage, String> {
-    clip_file::read_raster_layer_rgba(path, layer_id).map_err(|err| {
+    clip_file::read_layer_render_rgba(path, layer_id).map_err(|err| {
         format!(
-            "failed to read raster layer {} from {path:?}: {err}",
+            "failed to read layer render {} from {path:?}: {err}",
             layer_id.0
         )
     })

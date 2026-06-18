@@ -190,7 +190,19 @@ pub fn read_raster_layer_source_from_sqlite(
     let layer_columns = table_columns(&conn, "Layer")?;
     let query = raster_layer_source_query(&layer_columns);
     let mut stmt = conn.prepare(&query)?;
-    read_raster_layer_source_with_statement(&mut stmt, layer_id, canvas_size)
+    read_layer_render_source_with_statement(&mut stmt, layer_id, canvas_size, true)
+}
+
+pub fn read_layer_render_source_from_sqlite(
+    sqlite_bytes: &[u8],
+    layer_id: LayerId,
+    canvas_size: CanvasSize,
+) -> Result<RasterLayerSource, ClipFileError> {
+    let conn = connect_sqlite(sqlite_bytes)?;
+    let layer_columns = table_columns(&conn, "Layer")?;
+    let query = raster_layer_source_query(&layer_columns);
+    let mut stmt = conn.prepare(&query)?;
+    read_layer_render_source_with_statement(&mut stmt, layer_id, canvas_size, false)
 }
 
 pub fn read_raster_layer_sources_from_sqlite(
@@ -204,7 +216,8 @@ pub fn read_raster_layer_sources_from_sqlite(
     let mut stmt = conn.prepare(&query)?;
     let mut sources = HashMap::with_capacity(layer_ids.len());
     for layer_id in layer_ids {
-        let source = read_raster_layer_source_with_statement(&mut stmt, *layer_id, canvas_size)?;
+        let source =
+            read_layer_render_source_with_statement(&mut stmt, *layer_id, canvas_size, true)?;
         sources.insert(*layer_id, source);
     }
     Ok(sources)
@@ -243,10 +256,11 @@ fn raster_layer_source_query(layer_columns: &HashSet<String>) -> String {
     )
 }
 
-fn read_raster_layer_source_with_statement(
+fn read_layer_render_source_with_statement(
     stmt: &mut rusqlite::Statement<'_>,
     layer_id: LayerId,
     canvas_size: CanvasSize,
+    require_raster: bool,
 ) -> Result<RasterLayerSource, ClipFileError> {
     let row: RasterLayerSourceRow = match stmt.query_row([layer_id.0], |row| {
         let id: i64 = row.get(0)?;
@@ -304,7 +318,7 @@ fn read_raster_layer_source_with_statement(
 
     let layer_type = checked_i64_to_u32(layer_type, "Layer.LayerType")?;
     let kind = layer_kind(layer_type);
-    if !matches!(kind, LayerKind::Raster | LayerKind::MaskedRaster) {
+    if require_raster && !matches!(kind, LayerKind::Raster | LayerKind::MaskedRaster) {
         return Err(ClipFileError::LayerIsNotRaster {
             layer_id,
             layer_type,

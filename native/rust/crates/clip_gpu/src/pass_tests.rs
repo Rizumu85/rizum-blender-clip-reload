@@ -1366,3 +1366,48 @@ fn glow_dodge_raster_source_uses_byte_domain_formula() {
 
     assert_eq!(output.pixels, [124, 82, 255, 255]);
 }
+
+#[test]
+fn glow_dodge_uses_additive_alpha_over_translucent_black_target() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let key = GpuRasterResourceKey {
+        layer_id: LayerId(13),
+        render_mipmap_id: 23,
+    };
+    let pixels = [165u8, 116, 255, 140];
+    let uploads = [GpuRasterUpload {
+        layer_id: key.layer_id,
+        render_node_id: RenderNodeId(4),
+        render_mipmap_id: key.render_mipmap_id,
+        size: CanvasSize::new(1, 1),
+        pixels: &pixels,
+    }];
+    let cache = renderer
+        .upload_raster_resources(&uploads)
+        .expect("upload GlowDodge source");
+    let sources = [
+        GpuNormalStackSource::SolidColor {
+            color: Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 101,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            key,
+            opacity: 1.0,
+            mask_key: None,
+            offset_x: 0,
+            offset_y: 0,
+            blend_mode: GpuRasterBlendMode::GlowDodge,
+        }),
+    ];
+
+    let output = renderer
+        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .expect("draw GlowDodge source");
+
+    assert_eq!(output.pixels, [75, 53, 116, 241]);
+}

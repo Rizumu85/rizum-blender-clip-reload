@@ -330,6 +330,10 @@ fn div_round_255(value: i32) -> i32 {
     return (value + 127) / 255;
 }
 
+fn div_round(numerator: i32, denominator: i32) -> i32 {
+    return (numerator + denominator / 2) / denominator;
+}
+
 fn quantize_u8(value: vec4<f32>) -> vec4<f32> {
     return floor(clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0 + vec4<f32>(0.5)) / 255.0;
 }
@@ -402,6 +406,19 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let dst_b = to_u8(dst.b);
     let dst_a = to_u8(dst.a);
 
+    let alpha_num = src_a * 255 + dst_a * (255 - src_a);
+    if (dst_a > 0 && dst_r == 0 && dst_g == 0 && dst_b == 0) {
+        let out_a = min(src_a + dst_a, 255);
+        let out_r = clamp(div_round(src_r * src_a * (255 - dst_a), alpha_num), 0, 255);
+        let out_g = clamp(div_round(src_g * src_a * (255 - dst_a), alpha_num), 0, 255);
+        let out_b = clamp(div_round(src_b * src_a * (255 - dst_a), alpha_num), 0, 255);
+        return vec4<f32>(
+            f32(out_r) / 255.0,
+            f32(out_g) / 255.0,
+            f32(out_b) / 255.0,
+            f32(out_a) / 255.0,
+        );
+    }
     let strength_r = div_round_255(src_r * src_a);
     let strength_g = div_round_255(src_g * src_a);
     let strength_b = div_round_255(src_b * src_a);

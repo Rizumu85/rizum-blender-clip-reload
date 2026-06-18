@@ -4216,3 +4216,57 @@ pixels from `45528` to `1028499` and raised mean from roughly `0.31` to
 failure is local to Gradient Map. Rejected; keep the current rounded float LUT
 interpolation until a native path explains how the fixed-point runtime model
 maps back to the compact `.clip` payload without broad regression.
+
+2026-06-18 Kabi Glow Dodge follow-up:
+
+The remaining Kabi diff was rendered to raw RGBA and sorted by premultiplied
+byte-domain error. Before this follow-up it had `premul_max=32`,
+`premul_visible_px=341`, and every pixel above `2/255` was confined to the
+small bow region around `layer 232 [蝴蝶结]`. The max pixel still traced to
+`layer 263 [发光2]` over the child `layer 258 [黑蝴蝶结上1]` subtree:
+
+- before `layer 263`: `[0,0,0,101]`;
+- source `layer 263`: `[165,116,255,140]`;
+- previous native output: `[57,40,88,186]`;
+- CSP-compatible local target: `[75,53,116,241]`.
+
+The retained fix is deliberately narrow: the Glow Dodge shader now applies the
+case-516-style RGB denominator plus additive alpha only when the destination is
+translucent black (`dst.a > 0` and `dst.rgb == 0`). A GPU unit test locks this
+exact state as `[0,0,0,101] + [165,116,255,140] -> [75,53,116,241]`. This is
+not a coordinate, layer-name, or file-name condition; it represents the offscreen
+black-cache state that previous IDA and sample probes had isolated without
+spreading the rule to coloured or near-opaque destinations.
+
+The Kabi full-image result improves only modestly, from `premul_max=32` /
+`premul_visible_px=341` to `premul_max=29` / `premul_visible_px=327`. Guard
+checks stayed stable:
+
+- `Test_GlowDodge`: exact;
+- `Test_AddGlowMultiply`: `raw_max=1`, `premul_max=1`, visible `0`;
+- `IllustrationBlendModes`: `raw_max=7`, `premul_max=7`,
+  `premul_visible_px=1008`;
+- `IllustrationBlendModesB`: `raw_max=5`, `premul_max=5`,
+  `premul_visible_px=2718`;
+- `Ref_Terra404_Live2D`: `premul_max=3`, `premul_visible_px=13501`;
+- `Ref_MXL_Idol1`: `premul_max=5`, `premul_visible_px=473627`.
+
+The remaining Kabi max moved to `(1463,1160)`, with native/reference
+`[240,216,227,255]` versus `[255,245,245,255]`. Its trace is through
+`layer 264 [发光1]` over a coloured partial destination:
+
+- before `layer 263`: `[126,119,139,62]`;
+- after `layer 263`: `[180,113,231,176]`;
+- source `layer 264`: `[255,204,170,164]`;
+- current after `layer 264`: `[239,213,225,227]`.
+
+Simple formula spikes for this coloured-destination case remain rejected. A
+red-source additive spike (`dst + src * alpha`) preserved `Test_GlowDodge` but
+regressed Kabi to `premul_max=169` at `(1396,1141)`, the same neighbouring
+region that earlier broad partial-destination experiments damaged. The layer
+metadata for `232`, `258`, `261`, `262`, `263`, and `264` contains no hidden
+palette, filter, offset, colour-mode, opacity, or visibility flag that explains
+the coloured-destination difference; layers `263` and `264` are ordinary
+`LayerComposite=10` rasters at opacity `256`. The accepted black-destination
+fix should therefore remain, but further Kabi work needs native dispatch or
+resolve evidence for the coloured Glow Dodge path rather than threshold tuning.

@@ -7,7 +7,8 @@ use crate::atlas_chunks::{RgbaAtlasChunkCollector, RgbaAtlasChunkTarget, RgbaAtl
 use crate::container::ClipContainer;
 use crate::external::{decode_external_tile_blob, visit_external_non_empty_tile_block_selection};
 use crate::metadata::{
-    self, read_mask_layer_source_from_sqlite, read_raster_layer_source_from_sqlite,
+    self, read_layer_render_source_from_sqlite, read_mask_layer_source_from_sqlite,
+    read_raster_layer_source_from_sqlite,
 };
 use crate::placement::{place_alpha_on_canvas, place_rgba_on_canvas};
 use crate::tile_region::{
@@ -76,6 +77,24 @@ pub fn read_raster_layer_rgba(
     )
 }
 
+pub fn read_layer_render_rgba(
+    path: impl AsRef<Path>,
+    layer_id: LayerId,
+) -> Result<RgbaTileImage, ClipFileError> {
+    let container = ClipContainer::open(path)?;
+    let summary = metadata::read_summary_from_sqlite(
+        container.sqlite_bytes(),
+        container.external_data().len(),
+    )?;
+    let placed = read_layer_render_rgba_from_container(&container, summary.canvas, layer_id)?;
+    place_rgba_on_canvas(
+        placed.image,
+        summary.canvas,
+        placed.offset_x,
+        placed.offset_y,
+    )
+}
+
 pub fn read_raster_layer_source_rgba(
     path: impl AsRef<Path>,
     layer_id: LayerId,
@@ -125,6 +144,16 @@ pub fn read_raster_layer_source_info_from_container(
         offset_x: source.offset_x,
         offset_y: source.offset_y,
     })
+}
+
+pub fn read_layer_render_rgba_from_container(
+    container: &ClipContainer,
+    canvas_size: CanvasSize,
+    layer_id: LayerId,
+) -> Result<PlacedRgbaTileImage, ClipFileError> {
+    let source =
+        read_layer_render_source_from_sqlite(container.sqlite_bytes(), layer_id, canvas_size)?;
+    read_resolved_raster_layer_source_rgba_from_container(container, &source)
 }
 
 pub fn read_raster_layer_source_rgba_from_container(
