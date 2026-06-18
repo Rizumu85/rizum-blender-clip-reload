@@ -3999,3 +3999,24 @@ and `cargo test -q` pass. PNG comparisons: `IllustrationBlendModesB` is now
 `IllustrationBlendModes` remains `raw_max=7` / `visible_px=1008`; `Test_Hue`,
 `Test_Color`, and `Test_Saturation` remain `raw_max=1` / `visible_px=0`;
 `Test_AddGlowMultiply` remains `raw_max=1` / visible `0`.
+
+2026-06-18 follow-up rejection pass: several plausible low-residual fixes were
+tested after the opaque-Hue branch and should stay rejected until new native
+evidence explains a broader rule.
+
+- Saturation low-side `0.3/0.59/0.11` luminosity, gated only when the ordinary
+  Saturation luminosity shift would enter the low clamp, kept `raw_max=5` but
+  worsened B's aggregate error (`raw_mean=0.076236`,
+  `raw_diff_px=31779`) despite a small visible-pixel decrease
+  (`visible_px=2709`). It is not a general improvement.
+- Hue partial-alpha colour mixing with `alpha_byte / 256` preserved
+  `Test_Hue` (`raw_max=1` / `visible_px=0`) but regressed
+  `IllustrationBlendModesB` to `raw_max=8` at `(362,130)`.
+- Replacing the HSL filter shader with an integer/fixed-point HSV path matched
+  the old `Test_HSL` max pixel locally but regressed whole images badly
+  (`Test_HSL raw_max=136`, `Test_HSL2 raw_max=103`) and failed the existing
+  streamed HSL unit test.
+- Removing the HSL filter's saturation-positive overflow rescale also matched
+  the old `Test_HSL` max pixel locally, but over-saturated broad regions
+  (`Test_HSL raw_max=80`) and regressed the saturation-only guard
+  (`Test_HSL3 raw_max=9`). Keep the current rescale path.
