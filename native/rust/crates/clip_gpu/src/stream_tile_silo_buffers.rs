@@ -1,4 +1,28 @@
+use crate::stream_tile_event::TileEventProgram;
 use crate::stream_tile_silo_plan::TILE_SIZE;
+
+pub(crate) struct TileEventStorageBuffers {
+    pub(crate) headers: wgpu::Buffer,
+    pub(crate) raster_payloads: wgpu::Buffer,
+}
+
+pub(crate) fn create_tile_event_storage_buffers(
+    device: &wgpu::Device,
+    header_label: &'static str,
+    raster_payload_label: &'static str,
+    program: &TileEventProgram,
+) -> TileEventStorageBuffers {
+    let headers = create_u32_storage_buffer(device, header_label, &program.header_words());
+    let raster_payloads = create_u32_storage_buffer(
+        device,
+        raster_payload_label,
+        &program.raster_payload_words(),
+    );
+    TileEventStorageBuffers {
+        headers,
+        raster_payloads,
+    }
+}
 
 pub(crate) fn create_u32_storage_buffer(
     device: &wgpu::Device,

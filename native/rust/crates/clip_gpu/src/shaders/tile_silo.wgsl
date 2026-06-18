@@ -9,7 +9,7 @@ var dest_texture: texture_2d<f32>;
 var mask_atlas_texture: texture_2d<f32>;
 
 @group(0) @binding(2)
-var<storage, read> event_data: array<u32>;
+var<storage, read> event_headers: array<u32>;
 
 @group(0) @binding(3)
 var<storage, read> work_indices: array<u32>;
@@ -31,8 +31,13 @@ struct TileSiloParams {
 @group(0) @binding(5)
 var<uniform> params: TileSiloParams;
 
-const EVENT_WORDS: u32 = 10u;
+@group(0) @binding(7)
+var<storage, read> raster_payloads: array<u32>;
+
+const EVENT_HEADER_WORDS: u32 = 4u;
+const RASTER_PAYLOAD_WORDS: u32 = 10u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
+const TILE_EVENT_KIND_RASTER: u32 = 1u;
 const MODE_NORMAL: u32 = 0u;
 const MODE_PRESERVE_ALPHA: u32 = 1u;
 const MODE_CLIPPING_RUN: u32 = 2u;
@@ -54,7 +59,8 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOut {
 }
 
 fn event_word(event_index: u32, word_index: u32) -> u32 {
-    return event_data[event_index * EVENT_WORDS + word_index];
+    let payload_offset = event_headers[event_index * EVENT_HEADER_WORDS + 2u];
+    return raster_payloads[payload_offset * RASTER_PAYLOAD_WORDS + word_index];
 }
 
 fn quantize_u8(value: vec4<f32>) -> vec4<f32> {

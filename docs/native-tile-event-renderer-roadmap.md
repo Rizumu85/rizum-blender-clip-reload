@@ -369,13 +369,17 @@ buffer, but that buffer is now generated through the typed raster event adapter.
 `--performance-plan-json` reports the tile event ABI version so future workers
 and reload manifests can detect incompatible tile programs.
 
+Second form: the tile-silo shader now consumes separate event-header and
+raster-payload storage buffers. The current typed event VM still supports only
+`TileEventKind::Raster`, preserving existing raster-run, clipped-raster, and
+raster-only clipping-run semantics while removing direct shader dependence on
+the fixed event-index-to-10-word layout.
+
 Remaining Phase 2 work:
 
-- split shader storage into event headers and typed raster payloads
-- preserve the current raster/mask/clipping event semantics while swapping the
-  shader reader to typed payloads
-- then add clip/filter/scope event kinds only after the typed raster path is
-  stable
+- add explicit typed event readers for clipping/filter/scope payloads only when
+  those semantics are ready to lower
+- keep guard samples stable as new event kinds are added
 
 ### Phase 3: Byte-Domain Special Blend Events
 

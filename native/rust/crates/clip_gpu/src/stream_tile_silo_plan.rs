@@ -164,7 +164,7 @@ pub(crate) fn source_local_bounds(
     })
 }
 
-pub(crate) fn event_words(sources: &[PreparedSiloSource]) -> Vec<u32> {
+pub(crate) fn tile_event_program(sources: &[PreparedSiloSource]) -> TileEventProgram {
     let payloads = sources.iter().map(|source| RasterTileEventPayload {
         atlas_origin: (source.atlas.x, source.atlas.y),
         source_size: source.info.size,
@@ -173,7 +173,7 @@ pub(crate) fn event_words(sources: &[PreparedSiloSource]) -> Vec<u32> {
         blend_mode: source.source.blend_mode,
         mask_atlas_origin: source.mask_atlas.map(|mask| (mask.x, mask.y)),
     });
-    TileEventProgram::from_raster_payloads(payloads).legacy_raster_words()
+    TileEventProgram::from_raster_payloads(payloads)
 }
 
 pub(crate) fn tile_work_lists(

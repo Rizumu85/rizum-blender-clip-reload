@@ -5,11 +5,13 @@ use clip_model::CanvasSize;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_context::StreamingExecutionContext;
-use crate::stream_tile_silo_buffers::{create_params_buffer, create_u32_storage_buffer};
+use crate::stream_tile_silo_buffers::{
+    create_params_buffer, create_tile_event_storage_buffers, create_u32_storage_buffer,
+};
 pub(crate) use crate::stream_tile_silo_plan::raster_silo_run_len;
 use crate::stream_tile_silo_plan::{
-    MIN_SILO_RUN_LEN, PreparedSiloSource, TILE_SIZE, event_words, plan_atlas_layout, source_bounds,
-    source_local_bounds, tile_work_lists,
+    MIN_SILO_RUN_LEN, PreparedSiloSource, TILE_SIZE, plan_atlas_layout, source_bounds,
+    source_local_bounds, tile_event_program, tile_work_lists,
 };
 use crate::stream_tile_silo_upload::{
     copy_sources_to_atlas, create_atlas_texture, rgba8_texture_byte_len, upload_atlas_texture,
@@ -176,11 +178,12 @@ where
 
     let atlas_view = atlas.create_view(&wgpu::TextureViewDescriptor::default());
     let mask_atlas_view = mask_atlas.create_view(&wgpu::TextureViewDescriptor::default());
-    let event_words = event_words(&prepared);
-    let event_buffer = create_u32_storage_buffer(
+    let event_program = tile_event_program(&prepared);
+    let event_buffers = create_tile_event_storage_buffers(
         context.state.device(),
-        "rizum_clip_tile_silo_events",
-        &event_words,
+        "rizum_clip_tile_silo_event_headers",
+        "rizum_clip_tile_silo_raster_payloads",
+        &event_program,
     );
     let work_buffer = create_u32_storage_buffer(
         context.state.device(),
@@ -211,7 +214,7 @@ where
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: event_buffer.as_entire_binding(),
+                    resource: event_buffers.headers.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
@@ -228,6 +231,10 @@ where
                 wgpu::BindGroupEntry {
                     binding: 6,
                     resource: wgpu::BindingResource::TextureView(&mask_atlas_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: event_buffers.raster_payloads.as_entire_binding(),
                 },
             ],
         });

@@ -8,8 +8,12 @@ use crate::stream_tile_silo::{
     atlas_requests, prepared_sources_from_atlas_tiles, prepared_sources_from_atlas_upload,
     raster_silo_run_len,
 };
-use crate::stream_tile_silo_buffers::{create_params_buffer_with_mode, create_u32_storage_buffer};
-use crate::stream_tile_silo_plan::{TILE_SIZE, event_words, plan_atlas_layout, tile_work_lists};
+use crate::stream_tile_silo_buffers::{
+    create_params_buffer_with_mode, create_tile_event_storage_buffers, create_u32_storage_buffer,
+};
+use crate::stream_tile_silo_plan::{
+    TILE_SIZE, plan_atlas_layout, tile_event_program, tile_work_lists,
+};
 use crate::stream_tile_silo_upload::{
     rgba8_texture_byte_len, upload_atlas_texture, upload_atlas_tile_texture,
     upload_mask_atlas_tile_texture,
@@ -188,11 +192,12 @@ where
 
     let atlas_view = atlas.create_view(&wgpu::TextureViewDescriptor::default());
     let mask_atlas_view = mask_atlas.create_view(&wgpu::TextureViewDescriptor::default());
-    let event_words = event_words(&prepared);
-    let event_buffer = create_u32_storage_buffer(
+    let event_program = tile_event_program(&prepared);
+    let event_buffers = create_tile_event_storage_buffers(
         context.state.device(),
-        "rizum_clip_clipped_tile_silo_events",
-        &event_words,
+        "rizum_clip_clipped_tile_silo_event_headers",
+        "rizum_clip_clipped_tile_silo_raster_payloads",
+        &event_program,
     );
     let work_buffer = create_u32_storage_buffer(
         context.state.device(),
@@ -224,7 +229,7 @@ where
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: event_buffer.as_entire_binding(),
+                    resource: event_buffers.headers.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
@@ -241,6 +246,10 @@ where
                 wgpu::BindGroupEntry {
                     binding: 6,
                     resource: wgpu::BindingResource::TextureView(&mask_atlas_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: event_buffers.raster_payloads.as_entire_binding(),
                 },
             ],
         });

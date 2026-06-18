@@ -4,7 +4,8 @@ use crate::GpuRasterBlendMode;
 use crate::blend::blend_kind;
 
 pub const TILE_EVENT_ABI_VERSION: u32 = 1;
-const LEGACY_RASTER_EVENT_WORDS: usize = 10;
+const EVENT_HEADER_WORDS: usize = 4;
+const RASTER_PAYLOAD_WORDS: usize = 10;
 const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 
 #[repr(u32)]
@@ -21,6 +22,17 @@ pub(crate) struct TileEventHeader {
     pub(crate) payload_len: u32,
 }
 
+impl TileEventHeader {
+    fn words(self) -> [u32; EVENT_HEADER_WORDS] {
+        [
+            self.kind as u32,
+            self.flags,
+            self.payload_offset,
+            self.payload_len,
+        ]
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct RasterTileEventPayload {
     pub(crate) atlas_origin: (u32, u32),
@@ -32,7 +44,7 @@ pub(crate) struct RasterTileEventPayload {
 }
 
 impl RasterTileEventPayload {
-    fn legacy_words(self) -> [u32; LEGACY_RASTER_EVENT_WORDS] {
+    fn words(self) -> [u32; RASTER_PAYLOAD_WORDS] {
         [
             self.atlas_origin.0,
             self.atlas_origin.1,
@@ -79,10 +91,18 @@ impl TileEventProgram {
         }
     }
 
-    pub(crate) fn legacy_raster_words(&self) -> Vec<u32> {
-        let mut words = Vec::with_capacity(self.raster_payloads.len() * LEGACY_RASTER_EVENT_WORDS);
+    pub(crate) fn header_words(&self) -> Vec<u32> {
+        let mut words = Vec::with_capacity(self.headers.len() * EVENT_HEADER_WORDS);
+        for header in &self.headers {
+            words.extend_from_slice(&header.words());
+        }
+        words
+    }
+
+    pub(crate) fn raster_payload_words(&self) -> Vec<u32> {
+        let mut words = Vec::with_capacity(self.raster_payloads.len() * RASTER_PAYLOAD_WORDS);
         for payload in &self.raster_payloads {
-            words.extend_from_slice(&payload.legacy_words());
+            words.extend_from_slice(&payload.words());
         }
         words
     }
@@ -97,7 +117,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn builds_typed_raster_events_with_legacy_words() {
+    fn builds_typed_raster_events_with_shader_words() {
         let program = TileEventProgram::from_raster_payloads([RasterTileEventPayload {
             atlas_origin: (11, 12),
             source_size: CanvasSize::new(31, 32),
@@ -118,7 +138,11 @@ mod tests {
             }]
         );
         assert_eq!(
-            program.legacy_raster_words(),
+            program.header_words(),
+            vec![TileEventKind::Raster as u32, 0, 0, 1]
+        );
+        assert_eq!(
+            program.raster_payload_words(),
             vec![
                 11,
                 12,
