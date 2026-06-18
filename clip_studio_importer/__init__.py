@@ -13,15 +13,15 @@ from __future__ import annotations
 bl_info = {
     "name": "Rizum Clip Reload",
     "author": "Rizum",
-    "version": (0, 8, 65),
+    "version": (0, 8, 66),
     "blender": (3, 0, 0),
-    "location": "File > Import > Rizum Clip Reload (.clip)",
+    "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
     "category": "Import-Export",
 }
 
 ADDON_NAME = "Rizum Clip Reload"
-ADDON_VERSION = (0, 8, 65)
+ADDON_VERSION = (0, 8, 66)
 ADDON_URL = "https://github.com/Rizumu85/rizum-blender-clip-reload"
 
 import os
@@ -530,7 +530,7 @@ def _schedule_async_decode(
 class IMPORT_OT_clip_studio(Operator, ImportHelper):
     """Import a Clip Studio Paint (.clip) file as a flattened Image."""
     bl_idname = "import_image.clip_studio"
-    bl_label = "Import .clip as Rizum Clip Reload image"
+    bl_label = "Import Clip Studio (.clip)"
     bl_options = {"REGISTER", "UNDO"}
 
     filename_ext = ".clip"
@@ -1201,7 +1201,7 @@ class IMAGE_PT_clip_studio(Panel):
 
 
 def _menu_func_import(self, context):
-    self.layout.operator(IMPORT_OT_clip_studio.bl_idname, text=f"{ADDON_NAME} (.clip)")
+    self.layout.operator(IMPORT_OT_clip_studio.bl_idname, text="Clip Studio (.clip)")
 
 
 # --------------------------------------------------------------------------- #

@@ -7,7 +7,7 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 ## Current User Workflow
 
 1. Install the Blender add-on from `clip_studio_importer.zip`.
-2. Use `File > Import > Rizum Clip Reload (.clip)` to choose a `.clip` file.
+2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
 3. By default, the add-on starts the packaged out-of-process `clip_cli` worker
    in the background without creating a temporary placeholder image. When the
    worker returns RGBA pixels, the add-on creates the generated Blender image,
@@ -43,7 +43,7 @@ The accepted stock Blender native workflow is an image-datablock bridge, not a
 sidecar PNG cache and not a Python compositor:
 
 1. Install the native renderer plus the Blender add-on.
-2. Use `File > Import > Rizum Clip Reload (.clip)` to choose a `.clip` file.
+2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
 3. The add-on calls the packaged native Rust/wgpu worker in the background.
    Initial import creates the generated Blender `Image` only after the worker
    returns real canvas pixels, shows it in open image editors, and then packs
@@ -70,7 +70,7 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 ## Blender UI Surface
 
-- Import menu entry: `File > Import > Rizum Clip Reload (.clip)`.
+- Import menu entry: `File > Import > Clip Studio (.clip)`.
 - Import completion shows the new generated image in any Image Editor or UV
   Editor areas already open on the current screen. It does not create a
   placeholder image, create new editors, or change the user's workspace layout.

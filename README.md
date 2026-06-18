@@ -6,7 +6,7 @@ The importer calls the Rust C ABI, uploads RGBA pixels into a generated Blender 
 
 ## Status
 
-Package version: `0.8.65`.
+Package version: `0.8.66`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
@@ -31,7 +31,7 @@ Known fidelity gaps:
 
 ## Use
 
-1. In Blender, choose `File > Import > Rizum Clip Reload (.clip)`.
+1. In Blender, choose `File > Import > Clip Studio (.clip)`.
 2. Select a `.clip` file.
 3. Blender creates or updates a generated image from the packaged native renderer and packs the rendered pixels into the `.blend`.
 4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Manual Reload` in the Image Editor N-panel.
