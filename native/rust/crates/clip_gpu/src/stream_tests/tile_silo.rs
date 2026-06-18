@@ -298,6 +298,94 @@ fn streamed_tile_silo_applies_standard_blend_order() {
 }
 
 #[test]
+fn streamed_tile_silo_applies_byte_domain_special_blends() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let cases = [
+        (
+            GpuRasterBlendMode::AddGlow,
+            [0, 0, 200, 255],
+            [100, 50, 0, 128],
+            [50, 25, 200, 255],
+        ),
+        (
+            GpuRasterBlendMode::ColorDodge,
+            [100, 50, 200, 255],
+            [100, 200, 250, 128],
+            [132, 141, 228, 255],
+        ),
+        (
+            GpuRasterBlendMode::ColorBurn,
+            [100, 50, 200, 255],
+            [100, 200, 250, 128],
+            [50, 25, 199, 255],
+        ),
+        (
+            GpuRasterBlendMode::GlowDodge,
+            [100, 50, 200, 255],
+            [100, 200, 250, 128],
+            [124, 82, 255, 255],
+        ),
+    ];
+
+    for (index, (blend_mode, base_pixel, source_pixel, expected_pixel)) in
+        cases.into_iter().enumerate()
+    {
+        let base_key = raster_key(500 + index as u32 * 2);
+        let blend_key = raster_key(501 + index as u32 * 2);
+        let mut blend_source = raster_source_at(blend_key, 1, 1);
+        blend_source.blend_mode = blend_mode;
+        let sources = [
+            GpuNormalStackSource::Raster(raster_source_at(base_key, 1, 1)),
+            GpuNormalStackSource::Raster(blend_source),
+        ];
+        let mut provider = InlineProvider::new(vec![
+            (
+                base_key,
+                InlineRaster {
+                    render_node_id: RenderNodeId(base_key.render_mipmap_id),
+                    size: CanvasSize::new(1, 1),
+                    offset: (1, 1),
+                    pixels: base_pixel.to_vec(),
+                },
+            ),
+            (
+                blend_key,
+                InlineRaster {
+                    render_node_id: RenderNodeId(blend_key.render_mipmap_id),
+                    size: CanvasSize::new(1, 1),
+                    offset: (1, 1),
+                    pixels: source_pixel.to_vec(),
+                },
+            ),
+        ]);
+
+        assert_eq!(
+            raster_silo_run_len(
+                &provider,
+                CanvasSize::new(3, 3),
+                (0, 0),
+                CanvasSize::new(3, 3),
+                &sources,
+            ),
+            2
+        );
+
+        let output = renderer
+            .draw_normal_stack_with_provider_to_rgba8(
+                CanvasSize::new(3, 3),
+                &sources,
+                &mut provider,
+            )
+            .expect("draw tile-silo byte-domain special blend");
+
+        let mut expected = [255, 255, 255, 0].repeat(9);
+        expected[((1 * 3 + 1) * 4) as usize..((1 * 3 + 1) * 4 + 4) as usize]
+            .copy_from_slice(&expected_pixel);
+        assert_eq!(output.pixels, expected);
+    }
+}
+
+#[test]
 fn streamed_tile_silo_accepts_provider_backed_masked_multiply_atlas_tiles() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let base_key = raster_key(340);
@@ -397,7 +485,7 @@ fn streamed_tile_silo_accepts_provider_backed_masked_multiply_atlas_tiles() {
 }
 
 #[test]
-fn tile_silo_planner_stops_at_masks_and_byte_domain_blends() {
+fn tile_silo_planner_accepts_special_blends_but_stops_at_unsupported_masks() {
     let first_key = raster_key(44);
     let add_glow_key = raster_key(45);
     let masked_key = raster_key(46);
@@ -446,7 +534,7 @@ fn tile_silo_planner_stops_at_masks_and_byte_domain_blends() {
                 GpuNormalStackSource::Raster(add_glow),
             ],
         ),
-        1
+        2
     );
     assert_eq!(
         raster_silo_run_len(

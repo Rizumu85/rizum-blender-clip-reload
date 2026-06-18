@@ -3,7 +3,7 @@ use clip_model::CanvasSize;
 use crate::GpuRasterBlendMode;
 use crate::blend::blend_kind;
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 1;
+pub const TILE_EVENT_ABI_VERSION: u32 = 2;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
@@ -12,6 +12,7 @@ const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum TileEventKind {
     Raster = 1,
+    SpecialBlendRaster = 8,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -60,6 +61,16 @@ impl RasterTileEventPayload {
                 .map_or(NO_MASK_ATLAS_COORD, |mask| mask.1),
         ]
     }
+
+    fn event_kind(self) -> TileEventKind {
+        match self.blend_mode {
+            GpuRasterBlendMode::AddGlow
+            | GpuRasterBlendMode::ColorBurn
+            | GpuRasterBlendMode::ColorDodge
+            | GpuRasterBlendMode::GlowDodge => TileEventKind::SpecialBlendRaster,
+            _ => TileEventKind::Raster,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -77,8 +88,8 @@ impl TileEventProgram {
         let headers = raster_payloads
             .iter()
             .enumerate()
-            .map(|(index, _)| TileEventHeader {
-                kind: TileEventKind::Raster,
+            .map(|(index, payload)| TileEventHeader {
+                kind: payload.event_kind(),
                 flags: 0,
                 payload_offset: u32::try_from(index).unwrap_or(u32::MAX),
                 payload_len: 1,
@@ -155,6 +166,32 @@ mod tests {
                 41,
                 42,
             ]
+        );
+    }
+
+    #[test]
+    fn marks_byte_domain_rasters_as_special_blend_events() {
+        let program = TileEventProgram::from_raster_payloads([RasterTileEventPayload {
+            atlas_origin: (1, 2),
+            source_size: CanvasSize::new(3, 4),
+            source_offset: (0, 0),
+            opacity: 1.0,
+            blend_mode: GpuRasterBlendMode::AddGlow,
+            mask_atlas_origin: None,
+        }]);
+
+        assert_eq!(
+            program.headers,
+            [TileEventHeader {
+                kind: TileEventKind::SpecialBlendRaster,
+                flags: 0,
+                payload_offset: 0,
+                payload_len: 1,
+            }]
+        );
+        assert_eq!(
+            program.header_words(),
+            vec![TileEventKind::SpecialBlendRaster as u32, 0, 0, 1]
         );
     }
 }

@@ -38,6 +38,7 @@ const EVENT_HEADER_WORDS: u32 = 4u;
 const RASTER_PAYLOAD_WORDS: u32 = 10u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
 const TILE_EVENT_KIND_RASTER: u32 = 1u;
+const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
 const MODE_NORMAL: u32 = 0u;
 const MODE_PRESERVE_ALPHA: u32 = 1u;
 const MODE_CLIPPING_RUN: u32 = 2u;
@@ -77,6 +78,18 @@ fn floor_quantize_u8(value: vec4<f32>) -> vec4<f32> {
 
 fn to_u8(value: f32) -> i32 {
     return i32(clamp(floor(value * 255.0 + 0.5), 0.0, 255.0));
+}
+
+fn div255(value: i32) -> i32 {
+    return value / 255;
+}
+
+fn div_round_255(value: i32) -> i32 {
+    return (value + 127) / 255;
+}
+
+fn div_round(numerator: i32, denominator: i32) -> i32 {
+    return (numerator + denominator / 2) / denominator;
 }
 
 fn normal_alpha_over_channel(dst: i32, src: i32, src_a: i32, carry: i32, out_a: i32) -> i32 {
@@ -276,6 +289,71 @@ fn soft_light_channel(src: f32, dst: f32) -> f32 {
     return dst + (2.0 * src - 1.0) * (curve - dst);
 }
 
+fn is_byte_domain_special_blend(blend_kind: u32) -> bool {
+    return blend_kind == 3u || blend_kind == 9u || blend_kind == 10u || blend_kind == 12u;
+}
+
+fn color_dodge_channel(dst: i32, src: i32) -> i32 {
+    if (src >= 255) {
+        return 255;
+    }
+    return min(255, (dst * 255) / max(255 - src, 1));
+}
+
+fn color_burn_channel(dst: i32, src: i32) -> i32 {
+    if (src <= 0) {
+        return 0;
+    }
+    return 255 - min(255, ((255 - dst) * 255) / max(src, 1));
+}
+
+fn glow_dodge_channel(dst: i32, strength: i32) -> i32 {
+    if (strength >= 255) {
+        return 255;
+    }
+    return min(255, (dst * 255) / max(255 - strength, 1));
+}
+
+fn add_glow_channel(dst: i32, src: i32, src_a: i32, dst_a: i32) -> i32 {
+    var rgb = dst + src;
+    if (src_a < 255) {
+        let b = div_round_255(dst_a * (255 - src_a));
+        let denom = max(b + src_a, 1);
+        let numer = b * dst + rgb * src_a;
+        if (dst_a <= 254) {
+            rgb = numer / denom;
+        } else {
+            rgb = (numer + denom / 2) / denom;
+        }
+    }
+    rgb = min(rgb, 255);
+
+    if (dst_a <= 254) {
+        let inv_dst_a = 255 - dst_a;
+        if (src_a == 255) {
+            rgb = div_round_255(inv_dst_a * src + rgb * dst_a);
+        } else {
+            let b = div_round_255(inv_dst_a * src_a);
+            let denom = max(dst_a + b, 1);
+            rgb = (b * src + rgb * dst_a + denom / 2) / denom;
+        }
+    }
+
+    return clamp(rgb, 0, 255);
+}
+
+fn byte_composite_channel(src: i32, dst: i32, blended: i32, src_a: i32, dst_a: i32, alpha_num: i32) -> i32 {
+    let numerator =
+        src * src_a * (255 - dst_a) +
+        dst * dst_a * (255 - src_a) +
+        blended * src_a * dst_a;
+    return clamp(div_round(numerator, alpha_num), 0, 255);
+}
+
+fn preserve_channel(dst: i32, blended: i32, src_a: i32) -> i32 {
+    return clamp(div_round_255(dst * (255 - src_a) + blended * src_a), 0, 255);
+}
+
 fn hsl_blend(src: vec3<f32>, dst: vec3<f32>, src_alpha: f32, blend_kind: u32) -> vec3<f32> {
     if (blend_kind == 23u) {
         let src_q = quantize_rgb_u8(src);
@@ -470,8 +548,177 @@ fn event_source_alpha(src: vec4<f32>, event_index: u32, mask_value: f32) -> i32 
     return to_u8(f32(src_a) / 255.0 * bitcast<f32>(event_word(event_index, 6u)));
 }
 
+fn event_source_alpha_byte(src: vec4<f32>, event_index: u32, mask_value: f32) -> i32 {
+    var src_a = to_u8(src.a);
+    if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+        src_a = div255(src_a * to_u8(mask_value));
+    }
+    let opacity_u8 = i32(clamp(floor(bitcast<f32>(event_word(event_index, 6u)) * 256.0 + 0.5), 0.0, 256.0));
+    return (src_a * opacity_u8) / 256;
+}
+
 fn apply_normal(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32) -> vec4<f32> {
     return apply_normal_alpha(src, dst, event_source_alpha(src, event_index, mask_value));
+}
+
+fn apply_add_glow_standard_alpha(src: vec4<f32>, dst: vec4<f32>, src_a: i32) -> vec4<f32> {
+    if (src_a <= 0) {
+        return dst;
+    }
+    let dst_a = to_u8(dst.a);
+    let out_a = min(div_round_255((255 - src_a) * dst_a) + src_a, 255);
+    let out_r = add_glow_channel(to_u8(dst.r), to_u8(src.r), src_a, dst_a);
+    let out_g = add_glow_channel(to_u8(dst.g), to_u8(src.g), src_a, dst_a);
+    let out_b = add_glow_channel(to_u8(dst.b), to_u8(src.b), src_a, dst_a);
+    return vec4<f32>(
+        f32(out_r) / 255.0,
+        f32(out_g) / 255.0,
+        f32(out_b) / 255.0,
+        f32(out_a) / 255.0,
+    );
+}
+
+fn apply_glow_dodge_standard_alpha(src: vec4<f32>, dst: vec4<f32>, src_a: i32) -> vec4<f32> {
+    if (src_a <= 0) {
+        return dst;
+    }
+    let src_r = to_u8(src.r);
+    let src_g = to_u8(src.g);
+    let src_b = to_u8(src.b);
+    let dst_r = to_u8(dst.r);
+    let dst_g = to_u8(dst.g);
+    let dst_b = to_u8(dst.b);
+    let dst_a = to_u8(dst.a);
+
+    let alpha_num = src_a * 255 + dst_a * (255 - src_a);
+    if (dst_a > 0 && dst_r == 0 && dst_g == 0 && dst_b == 0) {
+        let out_a = min(src_a + dst_a, 255);
+        let out_r = clamp(div_round(src_r * src_a * (255 - dst_a), alpha_num), 0, 255);
+        let out_g = clamp(div_round(src_g * src_a * (255 - dst_a), alpha_num), 0, 255);
+        let out_b = clamp(div_round(src_b * src_a * (255 - dst_a), alpha_num), 0, 255);
+        return vec4<f32>(
+            f32(out_r) / 255.0,
+            f32(out_g) / 255.0,
+            f32(out_b) / 255.0,
+            f32(out_a) / 255.0,
+        );
+    }
+
+    let strength_r = div_round_255(src_r * src_a);
+    let strength_g = div_round_255(src_g * src_a);
+    let strength_b = div_round_255(src_b * src_a);
+    let dodge = vec3<f32>(
+        f32(glow_dodge_channel(dst_r, strength_r)) / 255.0,
+        f32(glow_dodge_channel(dst_g, strength_g)) / 255.0,
+        f32(glow_dodge_channel(dst_b, strength_b)) / 255.0,
+    );
+
+    let src_a_f = f32(src_a) / 255.0;
+    let dst_a_f = f32(dst_a) / 255.0;
+    let out_a = src_a_f + dst_a_f * (1.0 - src_a_f);
+    if (out_a <= 0.0) {
+        return vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    }
+    let dst_blend = min(dst_a_f / out_a, 1.0);
+    let src_rgb = vec3<f32>(f32(src_r), f32(src_g), f32(src_b)) / vec3<f32>(255.0);
+    let out_pm = dodge * out_a * dst_blend + src_rgb * src_a_f * (1.0 - dst_blend);
+    let out_rgb = out_pm / out_a;
+    return quantize_u8(vec4<f32>(out_rgb, out_a));
+}
+
+fn apply_dodge_burn_standard_alpha(src: vec4<f32>, dst: vec4<f32>, src_a: i32, blend_kind: u32) -> vec4<f32> {
+    if (src_a <= 0) {
+        return dst;
+    }
+    let dst_a = to_u8(dst.a);
+    let alpha_num = src_a * 255 + dst_a * (255 - src_a);
+    let out_a = min(div_round(alpha_num, 255), 255);
+
+    let src_r = to_u8(src.r);
+    let src_g = to_u8(src.g);
+    let src_b = to_u8(src.b);
+    let dst_r = to_u8(dst.r);
+    let dst_g = to_u8(dst.g);
+    let dst_b = to_u8(dst.b);
+
+    var blend_r = color_dodge_channel(dst_r, src_r);
+    var blend_g = color_dodge_channel(dst_g, src_g);
+    var blend_b = color_dodge_channel(dst_b, src_b);
+    if (blend_kind == 3u) {
+        blend_r = color_burn_channel(dst_r, src_r);
+        blend_g = color_burn_channel(dst_g, src_g);
+        blend_b = color_burn_channel(dst_b, src_b);
+    }
+
+    let out_r = byte_composite_channel(src_r, dst_r, blend_r, src_a, dst_a, alpha_num);
+    let out_g = byte_composite_channel(src_g, dst_g, blend_g, src_a, dst_a, alpha_num);
+    let out_b = byte_composite_channel(src_b, dst_b, blend_b, src_a, dst_a, alpha_num);
+    return vec4<f32>(
+        f32(out_r) / 255.0,
+        f32(out_g) / 255.0,
+        f32(out_b) / 255.0,
+        f32(out_a) / 255.0,
+    );
+}
+
+fn apply_byte_standard_alpha(src: vec4<f32>, dst: vec4<f32>, src_a: i32, blend_kind: u32) -> vec4<f32> {
+    if (blend_kind == 12u) {
+        return apply_add_glow_standard_alpha(src, dst, src_a);
+    }
+    if (blend_kind == 10u) {
+        return apply_glow_dodge_standard_alpha(src, dst, src_a);
+    }
+    return apply_dodge_burn_standard_alpha(src, dst, src_a, blend_kind);
+}
+
+fn apply_byte_standard(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32, blend_kind: u32) -> vec4<f32> {
+    return apply_byte_standard_alpha(src, dst, event_source_alpha_byte(src, event_index, mask_value), blend_kind);
+}
+
+fn apply_byte_preserve_alpha(src: vec4<f32>, dst: vec4<f32>, src_a: i32, blend_kind: u32) -> vec4<f32> {
+    let dst_a = to_u8(dst.a);
+    if (src_a <= 0 || dst_a == 0) {
+        return dst;
+    }
+
+    let src_r = to_u8(src.r);
+    let src_g = to_u8(src.g);
+    let src_b = to_u8(src.b);
+    let dst_r = to_u8(dst.r);
+    let dst_g = to_u8(dst.g);
+    let dst_b = to_u8(dst.b);
+
+    var out_r = dst_r;
+    var out_g = dst_g;
+    var out_b = dst_b;
+    if (blend_kind == 12u) {
+        out_r = add_glow_channel(dst_r, src_r, src_a, 255);
+        out_g = add_glow_channel(dst_g, src_g, src_a, 255);
+        out_b = add_glow_channel(dst_b, src_b, src_a, 255);
+    } else if (blend_kind == 9u) {
+        out_r = preserve_channel(dst_r, color_dodge_channel(dst_r, src_r), src_a);
+        out_g = preserve_channel(dst_g, color_dodge_channel(dst_g, src_g), src_a);
+        out_b = preserve_channel(dst_b, color_dodge_channel(dst_b, src_b), src_a);
+    } else if (blend_kind == 3u) {
+        out_r = preserve_channel(dst_r, color_burn_channel(dst_r, src_r), src_a);
+        out_g = preserve_channel(dst_g, color_burn_channel(dst_g, src_g), src_a);
+        out_b = preserve_channel(dst_b, color_burn_channel(dst_b, src_b), src_a);
+    } else if (blend_kind == 10u) {
+        out_r = glow_dodge_channel(dst_r, div_round_255(src_r * src_a));
+        out_g = glow_dodge_channel(dst_g, div_round_255(src_g * src_a));
+        out_b = glow_dodge_channel(dst_b, div_round_255(src_b * src_a));
+    }
+
+    return vec4<f32>(
+        f32(out_r) / 255.0,
+        f32(out_g) / 255.0,
+        f32(out_b) / 255.0,
+        f32(dst_a) / 255.0,
+    );
+}
+
+fn apply_byte_preserve(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32, blend_kind: u32) -> vec4<f32> {
+    return apply_byte_preserve_alpha(src, dst, event_source_alpha_byte(src, event_index, mask_value), blend_kind);
 }
 
 fn apply_standard(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> {
@@ -532,6 +779,9 @@ fn apply_clipping_run_resolve(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
     if (params.resolve_blend_kind == 0u) {
         return apply_normal_alpha(src, dst, to_u8(src.a));
     }
+    if (is_byte_domain_special_blend(params.resolve_blend_kind)) {
+        return apply_byte_standard_alpha(src, dst, to_u8(src.a), params.resolve_blend_kind);
+    }
     return apply_standard(src, dst, params.resolve_blend_kind);
 }
 
@@ -560,6 +810,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                 clip_dst = apply_normal(src, clip_dst, event_index, mask_value);
                 continue;
             }
+            if (is_byte_domain_special_blend(blend_kind)) {
+                clip_dst = apply_byte_preserve(src, clip_dst, event_index, mask_value, blend_kind);
+                continue;
+            }
             src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
             if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
                 src.a = src.a * mask_value;
@@ -567,6 +821,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             if (src.a <= 0.0 || clip_dst.a <= 0.0) { continue; }
             clip_dst = apply_preserve(src, clip_dst, blend_kind);
         } else if (params.mode == MODE_PRESERVE_ALPHA) {
+            if (is_byte_domain_special_blend(blend_kind)) {
+                dst = apply_byte_preserve(src, dst, event_index, mask_value, blend_kind);
+                continue;
+            }
             src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
             if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
                 src.a = src.a * mask_value;
@@ -575,6 +833,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             dst = apply_preserve(src, dst, blend_kind);
         } else if (blend_kind == 0u) {
             dst = apply_normal(src, dst, event_index, mask_value);
+        } else if (is_byte_domain_special_blend(blend_kind)) {
+            dst = apply_byte_standard(src, dst, event_index, mask_value, blend_kind);
         } else {
             src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
             if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {

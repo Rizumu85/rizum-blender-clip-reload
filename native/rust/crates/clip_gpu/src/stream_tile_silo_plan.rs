@@ -248,13 +248,36 @@ where
 }
 
 fn blend_is_silo_eligible(blend_mode: GpuRasterBlendMode) -> bool {
-    !matches!(
-        blend_mode,
-        GpuRasterBlendMode::AddGlow
-            | GpuRasterBlendMode::ColorBurn
-            | GpuRasterBlendMode::ColorDodge
-            | GpuRasterBlendMode::GlowDodge
-    )
+    match blend_mode {
+        GpuRasterBlendMode::Normal
+        | GpuRasterBlendMode::Add
+        | GpuRasterBlendMode::AddGlow
+        | GpuRasterBlendMode::ColorDodge
+        | GpuRasterBlendMode::ColorBurn
+        | GpuRasterBlendMode::Darken
+        | GpuRasterBlendMode::DarkerColor
+        | GpuRasterBlendMode::Difference
+        | GpuRasterBlendMode::Divide
+        | GpuRasterBlendMode::Exclusion
+        | GpuRasterBlendMode::GlowDodge
+        | GpuRasterBlendMode::HardMix
+        | GpuRasterBlendMode::HardLight
+        | GpuRasterBlendMode::Hue
+        | GpuRasterBlendMode::Lighten
+        | GpuRasterBlendMode::LighterColor
+        | GpuRasterBlendMode::LinearBurn
+        | GpuRasterBlendMode::LinearLight
+        | GpuRasterBlendMode::Multiply
+        | GpuRasterBlendMode::Overlay
+        | GpuRasterBlendMode::PinLight
+        | GpuRasterBlendMode::Saturation
+        | GpuRasterBlendMode::Brightness
+        | GpuRasterBlendMode::Color
+        | GpuRasterBlendMode::SoftLight
+        | GpuRasterBlendMode::Screen
+        | GpuRasterBlendMode::Subtract
+        | GpuRasterBlendMode::VividLight => true,
+    }
 }
 
 fn ceil_sqrt_u64(value: u64) -> u64 {

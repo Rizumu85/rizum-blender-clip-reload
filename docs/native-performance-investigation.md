@@ -191,11 +191,12 @@ path. It is deliberately narrower than a complete long-lived atlas renderer:
   and render pipeline cached per streaming render through `StreamingEncoder`,
   avoiding a WGSL/pipeline rebuild for every collapsed run.
 
-Current eligibility is conservative and faithful: only unmasked raster sources
-with nonzero opacity and supported Normal/standard blend modes are collapsed.
-Masks, clipping-run nodes, filters, THROUGH groups, containers as source nodes,
-and byte-domain special blends (`AddGlow`, `ColorDodge`, `ColorBurn`,
-`GlowDodge`) remain explicit barriers and use the existing pass path.
+At that milestone, eligibility was conservative and faithful: only unmasked
+raster sources with nonzero opacity and supported Normal/standard blend modes
+were collapsed. Masks, clipping-run nodes, filters, THROUGH groups, containers
+as source nodes, and byte-domain special blends (`AddGlow`, `ColorDodge`,
+`ColorBurn`, `GlowDodge`) remained explicit barriers and used the existing pass
+path.
 
 Verification after this milestone:
 
@@ -409,8 +410,8 @@ Verification after this milestone:
 
 The remaining order-of-magnitude native renderer target is broader tile-local
 semantic modelling across the barriers above. The raster-only base/clipped
-relationship is now represented as events; the hard cases are container and
-filter/THROUGH semantics plus byte-domain special blends.
+relationship is now represented as events; the hard cases are container,
+filter/THROUGH, and clipped container/folder sibling semantics.
 
 ## Render Program Planner Seam
 
@@ -428,10 +429,46 @@ The native streaming renderer now has a first explicit render-program IR seam:
   planned tile events, and planned passes. These are the first stable planning
   counters for future CLI/runtime diagnostics.
 
-This does not make containers, THROUGH groups, filters, clipped container
-siblings, or byte-domain special blends tile-local yet. Its purpose is to stop
-growing opportunistic traversal branches and give future work a single planner
-Module to deepen.
+This does not make containers, THROUGH groups, filters, or clipped container
+siblings tile-local yet. Its purpose is to stop growing opportunistic traversal
+branches and give future work a single planner Module to deepen.
+
+## Byte-Domain Special Blend Tile Events
+
+The tile-event renderer now lowers the four current byte-domain raster blends
+instead of treating them as `ByteDomainBlendNotLowered` barriers:
+
+- Add Glow
+- Color Burn
+- Color Dodge
+- Glow Dodge
+
+Implementation shape:
+
+- `stream_tile_event.rs` bumps `TILE_EVENT_ABI_VERSION` to `2` and marks these
+  raster payloads as `TileEventKind::SpecialBlendRaster`.
+- The shader still reads the same raster payload storage; the semantic event
+  kind is carried in the header so later event/payload splits do not need to
+  recover it from blend-mode values.
+- `tile_silo.wgsl` now contains the existing verified byte-domain formulas from
+  the pass shaders for normal compositing, clipped preserve-alpha compositing,
+  and raster-only clipping-run resolve through a special-blend base.
+- The planner no longer counts these modes under
+  `ByteDomainBlendNotLowered`. For example, `IllustrationBlendModesB.clip`
+  plans one raster-run tile-local segment plus the Paper/SolidColor barrier.
+
+Verification after this milestone:
+
+- Rust: `cargo check -q` and `cargo test -q`.
+- GPU unit coverage locks tile-silo output for Add Glow, Color Burn, Color
+  Dodge, and Glow Dodge against the established pass-shader fixture values.
+- `.clip` guard comparisons: `Test_AddGlow`, `Test_ColorBurn`,
+  `Test_ColorDodge`, and `Test_GlowDodge` exact; `Test_Clipping` and
+  `Test_ClippingEdge` exact; `Test_AddGlowMultiply` remains at the existing
+  invisible one-LSB residual (`raw_max=1`, `premul_max=1`, visible `0`);
+  `Test_AddGlowMultiplyClipping` also remains at a one-LSB invisible residual;
+  `IllustrationBlendModesB` stays at the known fidelity residual
+  (`raw_max=5`, `premul_max=5`).
 
 ## Compressed Occupancy Planner
 

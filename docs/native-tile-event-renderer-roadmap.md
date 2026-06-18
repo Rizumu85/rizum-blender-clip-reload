@@ -370,10 +370,17 @@ buffer, but that buffer is now generated through the typed raster event adapter.
 and reload manifests can detect incompatible tile programs.
 
 Second form: the tile-silo shader now consumes separate event-header and
-raster-payload storage buffers. The current typed event VM still supports only
+raster-payload storage buffers. That first typed event VM supported only
 `TileEventKind::Raster`, preserving existing raster-run, clipped-raster, and
 raster-only clipping-run semantics while removing direct shader dependence on
 the fixed event-index-to-10-word layout.
+
+Third form: byte-domain special blend rasters now use
+`TileEventKind::SpecialBlendRaster` headers with the existing raster payload
+storage. `TILE_EVENT_ABI_VERSION` is `2`; the tile VM still executes the same
+ordered per-tile raster payload stream, but the header now carries enough
+semantic information for performance-plan/debug output and future payload
+splits.
 
 Remaining Phase 2 work:
 
@@ -383,15 +390,26 @@ Remaining Phase 2 work:
 
 ### Phase 3: Byte-Domain Special Blend Events
 
-Lower the current raster-silo excluded blends:
+Status: implemented for the currently supported raster byte-domain blends.
+
+Lowered from explicit `ByteDomainBlendNotLowered` barriers into tile-local
+events:
 
 - Add Glow
 - Color Burn
 - Color Dodge
 - Glow Dodge
 
-These are high-value because they are clear barriers and do not require tree
-scope modelling.
+The tile VM now reuses the existing verified byte-domain formulas for:
+
+- normal raster compositing
+- clipped preserve-alpha compositing
+- raster-only clipping-run resolve through a special-blend base
+
+`--performance-plan-json` now reports `tile_event_abi_version: 2`. Files whose
+only previous barriers were these special blends should no longer report
+`ByteDomainBlendNotLowered`; for example `IllustrationBlendModesB.clip` now
+plans one raster-run tile-local segment plus the Paper/SolidColor barrier.
 
 ### Phase 4: Pointwise Filter Events
 

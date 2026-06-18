@@ -268,11 +268,34 @@ fn clipping_run_barrier_reason(
 }
 
 fn byte_domain_blend_not_lowered(blend_mode: GpuRasterBlendMode) -> bool {
-    matches!(
-        blend_mode,
-        GpuRasterBlendMode::AddGlow
-            | GpuRasterBlendMode::ColorBurn
-            | GpuRasterBlendMode::ColorDodge
-            | GpuRasterBlendMode::GlowDodge
-    )
+    match blend_mode {
+        GpuRasterBlendMode::Normal
+        | GpuRasterBlendMode::Add
+        | GpuRasterBlendMode::AddGlow
+        | GpuRasterBlendMode::ColorDodge
+        | GpuRasterBlendMode::ColorBurn
+        | GpuRasterBlendMode::Darken
+        | GpuRasterBlendMode::DarkerColor
+        | GpuRasterBlendMode::Difference
+        | GpuRasterBlendMode::Divide
+        | GpuRasterBlendMode::Exclusion
+        | GpuRasterBlendMode::GlowDodge
+        | GpuRasterBlendMode::HardMix
+        | GpuRasterBlendMode::HardLight
+        | GpuRasterBlendMode::Hue
+        | GpuRasterBlendMode::Lighten
+        | GpuRasterBlendMode::LighterColor
+        | GpuRasterBlendMode::LinearBurn
+        | GpuRasterBlendMode::LinearLight
+        | GpuRasterBlendMode::Multiply
+        | GpuRasterBlendMode::Overlay
+        | GpuRasterBlendMode::PinLight
+        | GpuRasterBlendMode::Saturation
+        | GpuRasterBlendMode::Brightness
+        | GpuRasterBlendMode::Color
+        | GpuRasterBlendMode::SoftLight
+        | GpuRasterBlendMode::Screen
+        | GpuRasterBlendMode::Subtract
+        | GpuRasterBlendMode::VividLight => false,
+    }
 }

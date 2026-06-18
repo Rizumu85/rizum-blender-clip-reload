@@ -267,25 +267,12 @@ mod tests {
                     },
                 },
                 RenderSegment {
-                    source_range: 4..5,
-                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-                        RenderProgramBarrierReason::ByteDomainBlendNotLowered,
-                    )),
+                    source_range: 4..6,
+                    kind: RenderSegmentKind::TileLocal(TileProgramKind::RasterRun),
                     cost_hint: SegmentCostHint {
                         expected_passes: 1,
-                        tile_events: 0,
-                        legacy_sources: 1,
-                    },
-                },
-                RenderSegment {
-                    source_range: 5..6,
-                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-                        RenderProgramBarrierReason::RasterRunTooShort,
-                    )),
-                    cost_hint: SegmentCostHint {
-                        expected_passes: 1,
-                        tile_events: 0,
-                        legacy_sources: 1,
+                        tile_events: 2,
+                        legacy_sources: 0,
                     },
                 },
             ]
@@ -293,17 +280,15 @@ mod tests {
         assert_eq!(
             program.stats(),
             RenderProgramStats {
-                segments: 5,
-                tile_local_segments: 2,
-                barrier_segments: 3,
-                raster_run_segments: 1,
+                segments: 4,
+                tile_local_segments: 3,
+                barrier_segments: 1,
+                raster_run_segments: 2,
                 raster_clipping_run_segments: 1,
-                legacy_source_segments: 3,
-                planned_tile_events: 4,
-                planned_passes: 5,
+                legacy_source_segments: 1,
+                planned_tile_events: 6,
+                planned_passes: 4,
                 barrier_reasons: RenderProgramBarrierCounts {
-                    raster_run_too_short: 1,
-                    byte_domain_blend_not_lowered: 1,
                     solid_color_not_lowered: 1,
                     ..RenderProgramBarrierCounts::default()
                 },

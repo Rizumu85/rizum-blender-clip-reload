@@ -92,7 +92,7 @@ mod tests {
             serde_json::from_str(&report).expect("performance report should be valid JSON");
 
         assert_eq!(parsed["canvas"][0], 512);
-        assert_eq!(parsed["tile_event_abi_version"], 1);
+        assert_eq!(parsed["tile_event_abi_version"], 2);
         assert!(parsed["planned_passes"].as_u64().unwrap() > 0);
         assert!(parsed["compressed_raster_tiles"].as_u64().unwrap() > 0);
         assert!(parsed["source_counts"]["rasters"].as_u64().unwrap() > 0);
