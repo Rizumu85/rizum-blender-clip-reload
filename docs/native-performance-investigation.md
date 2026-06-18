@@ -10,6 +10,10 @@ not a micro-optimization log. Keep correctness constraints from
 fallback, no post-processing, and no heuristic pruning that changes CSP
 semantics.
 
+The forward-looking architecture roadmap now lives in
+`docs/native-tile-event-renderer-roadmap.md`. This file remains the evidence and
+measurement record behind that roadmap.
+
 ## Silicate Reference
 
 Reference project: <https://github.com/Avarel/silicate>
