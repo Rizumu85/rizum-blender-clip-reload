@@ -3885,3 +3885,35 @@ new transparent-target Add Glow fixture; `Test_AddGlow` remains exact;
 `Test_GlowDodge`, `Test_ColorDodge`, `Test_ColorBurn`, and `Test_SoftLight`
 remain exact; `IllustrationBlendModes` remains `raw_max=7`, and
 `IllustrationBlendModes2` remains `raw_max=8`.
+
+2026-06-18 Brightness and Hue follow-up review: another agent landed three
+strict GPU shader changes:
+
+- `LayerComposite=26` Brightness/Luminosity now uses a separate Rec.601-ish
+  `lum_rec601` / `set_lum_rec601` path (`0.299/0.587/0.114`) instead of the
+  `0.3/0.6/0.1` Hue/Saturation/Color luminosity helper.
+- `set_lum_saturation` now delegates through the shared `set_lum` helper and
+  only applies its accepted minimum-channel ceil when the pre-clamp `set_lum`
+  candidate would exceed `1.0`.
+- Hue now ceils the minimum channel after `set_lum` when the quantized base
+  saturation span is greater than `2/255`. This is distinct from the earlier
+  rejected high-key near-neutral Hue ceil variant that pushed many Hue pixels
+  into the wrong Saturation branch.
+
+Local verification accepted these changes. `cargo fmt --all --check` and
+`cargo test -q` pass. CSP PNG comparisons: `Test_Brightness` remains
+`raw_max=1` / `visible_px=0`; `Test_Hue` remains `raw_max=1` /
+`visible_px=0`; `Test_Color` remains `raw_max=1` / `visible_px=0`;
+`Test_Saturation` remains `raw_max=1` / `visible_px=0`; `Test_HSL` remains
+`raw_max=3`; `Test_AddGlowMultiply` remains `raw_max=1` / visible `0`; and
+`IllustrationBlendModes` remains `raw_max=7`. Using tracked
+`IllustrationBlendModes2.clip/png` exported from git, the current strict GPU
+output improves from the previous recorded `raw_max=8`, `visible_px=38080` to
+`raw_max=7`, `visible_px=16653`.
+
+Repository hygiene note from this review: the working tree's current
+`img/IllustrationBlendModes2.png` is not a valid CSP reference for the tracked
+`IllustrationBlendModes2.clip`; comparing against it gives `raw_max=250`.
+The working tree also contains many tracked `img/*.clip`/PNG deletions and new
+PSD/numbered PNG exports. Do not commit those assets without an explicit fixture
+cleanup decision.
