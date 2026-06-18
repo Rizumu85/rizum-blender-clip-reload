@@ -99,6 +99,13 @@ barrier, plus the segment kind, source span, barrier reason, and cost hint. It
 keeps eligibility logic behind the planner seam instead of spreading boolean
 checks through the executor.
 
+**Tile event ABI**
+
+The versioned typed event contract for tile-local rendering. The current first
+form models raster tile events with event headers and raster payloads, then
+adapts them to the existing legacy 10-word shader buffer layout. Future work
+should make shaders consume the typed headers and payload storage directly.
+
 **Performance plan diagnostic**
 
 The metadata/block-level CLI report that explains the current native render

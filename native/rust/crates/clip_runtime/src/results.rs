@@ -167,6 +167,7 @@ pub struct NativeTileSiloEstimateResult {
 pub struct NativePerformancePlanResult {
     pub tile_estimate: NativeTileSiloEstimateResult,
     pub render_program_stats: clip_gpu::RenderProgramStats,
+    pub tile_event_abi_version: u32,
     pub estimated_atlas_upload_bytes: u64,
     pub estimated_tile_events: u64,
 }

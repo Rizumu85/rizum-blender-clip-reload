@@ -21,6 +21,7 @@ pub(crate) fn performance_plan_json(
         "tile_local_segments": stats.tile_local_segments,
         "barrier_segments": stats.barrier_segments,
         "barrier_reasons": Value::Object(barrier_reasons),
+        "tile_event_abi_version": result.tile_event_abi_version,
         "compressed_raster_tiles": estimate.raster_compressed_tile_slot_count,
         "mask_tiles": estimate.mask_compressed_tile_slot_count,
         "atlas_upload_bytes": result.estimated_atlas_upload_bytes,
@@ -91,6 +92,7 @@ mod tests {
             serde_json::from_str(&report).expect("performance report should be valid JSON");
 
         assert_eq!(parsed["canvas"][0], 512);
+        assert_eq!(parsed["tile_event_abi_version"], 1);
         assert!(parsed["planned_passes"].as_u64().unwrap() > 0);
         assert!(parsed["compressed_raster_tiles"].as_u64().unwrap() > 0);
         assert!(parsed["source_counts"]["rasters"].as_u64().unwrap() > 0);

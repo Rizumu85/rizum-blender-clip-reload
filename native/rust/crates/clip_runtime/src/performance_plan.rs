@@ -33,6 +33,7 @@ impl ClipSession {
         Ok(NativePerformancePlanResult {
             tile_estimate,
             render_program_stats,
+            tile_event_abi_version: clip_gpu::TILE_EVENT_ABI_VERSION,
             estimated_atlas_upload_bytes,
             estimated_tile_events,
         })

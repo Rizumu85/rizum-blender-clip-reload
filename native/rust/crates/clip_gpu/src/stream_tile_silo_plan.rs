@@ -1,9 +1,9 @@
 use clip_model::CanvasSize;
 
-use crate::blend::blend_kind;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::CanvasRect;
 use crate::stream_effects::raster_can_affect_output;
+use crate::stream_tile_event::{RasterTileEventPayload, TileEventProgram};
 use crate::{
     GpuNormalRasterSource, GpuNormalStackSource, GpuRasterBlendMode, GpuRasterResourceCache,
     GpuRasterResourceInfo, GpuRenderError,
@@ -12,8 +12,6 @@ use crate::{
 pub(crate) const TILE_SIZE: u32 = 256;
 pub(crate) const MIN_SILO_RUN_LEN: usize = 2;
 const MAX_SILO_EVENTS: usize = 256;
-const EVENT_WORDS: usize = 10;
-const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 
 #[derive(Clone, Copy)]
 pub(crate) struct AtlasSourcePlacement {
@@ -167,22 +165,15 @@ pub(crate) fn source_local_bounds(
 }
 
 pub(crate) fn event_words(sources: &[PreparedSiloSource]) -> Vec<u32> {
-    let mut words = Vec::with_capacity(sources.len() * EVENT_WORDS);
-    for source in sources {
-        words.extend_from_slice(&[
-            source.atlas.x,
-            source.atlas.y,
-            source.info.size.width,
-            source.info.size.height,
-            i32_bits(source.offset.0),
-            i32_bits(source.offset.1),
-            source.source.opacity.to_bits(),
-            blend_kind(source.source.blend_mode),
-            source.mask_atlas.map_or(NO_MASK_ATLAS_COORD, |mask| mask.x),
-            source.mask_atlas.map_or(NO_MASK_ATLAS_COORD, |mask| mask.y),
-        ]);
-    }
-    words
+    let payloads = sources.iter().map(|source| RasterTileEventPayload {
+        atlas_origin: (source.atlas.x, source.atlas.y),
+        source_size: source.info.size,
+        source_offset: source.offset,
+        opacity: source.source.opacity,
+        blend_mode: source.source.blend_mode,
+        mask_atlas_origin: source.mask_atlas.map(|mask| (mask.x, mask.y)),
+    });
+    TileEventProgram::from_raster_payloads(payloads).legacy_raster_words()
 }
 
 pub(crate) fn tile_work_lists(
@@ -272,8 +263,4 @@ fn ceil_sqrt_u64(value: u64) -> u64 {
         root += 1;
     }
     root
-}
-
-fn i32_bits(value: i32) -> u32 {
-    u32::from_ne_bytes(value.to_ne_bytes())
 }

@@ -362,6 +362,21 @@ layout to a versioned typed event backend. Do not add new semantics in this
 phase. The success criterion is stable pixels and no performance regression for
 existing tile-local paths.
 
+Started in first form: `stream_tile_event.rs` now defines
+`TILE_EVENT_ABI_VERSION`, `TileEventKind`, typed event headers, and raster event
+payloads. Existing raster tile-silo paths still upload the legacy 10-word shader
+buffer, but that buffer is now generated through the typed raster event adapter.
+`--performance-plan-json` reports the tile event ABI version so future workers
+and reload manifests can detect incompatible tile programs.
+
+Remaining Phase 2 work:
+
+- split shader storage into event headers and typed raster payloads
+- preserve the current raster/mask/clipping event semantics while swapping the
+  shader reader to typed payloads
+- then add clip/filter/scope event kinds only after the typed raster path is
+  stable
+
 ### Phase 3: Byte-Domain Special Blend Events
 
 Lower the current raster-silo excluded blends:

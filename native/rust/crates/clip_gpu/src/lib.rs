@@ -30,6 +30,7 @@ mod stream_state;
 #[cfg(test)]
 mod stream_tests;
 mod stream_through;
+mod stream_tile_event;
 mod stream_tile_silo;
 mod stream_tile_silo_buffers;
 mod stream_tile_silo_pipeline;
@@ -53,6 +54,7 @@ pub use stream::{
 pub use stream_program::RenderProgramStats;
 pub use stream_program_barriers::{RenderProgramBarrierCounts, RenderProgramBarrierReason};
 pub use stream_program_inspect::inspect_normal_stack_render_program;
+pub use stream_tile_event::TILE_EVENT_ABI_VERSION;
 pub use types::{
     GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,
     GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput,
