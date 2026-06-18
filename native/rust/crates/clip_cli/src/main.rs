@@ -1,7 +1,5 @@
 use std::env;
 use std::ffi::OsString;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::process;
 
@@ -10,6 +8,7 @@ use clip_runtime::ClipSession;
 
 mod blender_server;
 mod blender_worker;
+mod compare_png;
 mod layer_labels;
 mod layer_window;
 mod options;
@@ -173,48 +172,27 @@ fn main() {
     }
 
     if let Some(reference_path) = &options.compare_png_path {
-        let reference = match read_png_rgba8(reference_path) {
+        let reference = match compare_png::read_png_rgba8(reference_path) {
             Ok(image) => image,
             Err(err) => {
                 eprintln!("failed to read reference PNG {:?}: {err}", reference_path);
                 process::exit(1);
             }
         };
-        let rendered = match render_full_image(&mut session) {
+        let rendered = match compare_png::render_full_image(&mut session) {
             Ok(image) => image,
             Err(err) => {
                 eprintln!("failed to render full native image from {:?}: {err}", path);
                 process::exit(1);
             }
         };
-        if rendered.width != reference.width || rendered.height != reference.height {
-            eprintln!(
-                "image size mismatch: rendered={}x{} reference={}x{}",
-                rendered.width, rendered.height, reference.width, reference.height,
-            );
-            process::exit(1);
+        match compare_png::compare_png_report(reference_path, &rendered, &reference) {
+            Ok(report) => println!("{report}"),
+            Err(err) => {
+                eprintln!("{err}");
+                process::exit(1);
+            }
         }
-        let stats = compare_images(&rendered.pixels, &reference.pixels, rendered.width);
-        println!(
-            "compare png ref={:?} size={}x{} raw_max={} raw_max_at=({},{},{}) raw_mean={:.6} raw_diff_px={} raw_visible_px={} premul_max={} premul_max_at=({},{},{}) premul_mean={:.6} premul_diff_px={} premul_visible_px={}",
-            reference_path,
-            rendered.width,
-            rendered.height,
-            stats.raw_max,
-            stats.raw_max_at.x,
-            stats.raw_max_at.y,
-            channel_name(stats.raw_max_at.channel),
-            stats.raw_mean,
-            stats.raw_diff_px,
-            stats.raw_visible_px,
-            stats.premul_max,
-            stats.premul_max_at.x,
-            stats.premul_max_at.y,
-            channel_name(stats.premul_max_at.channel),
-            stats.premul_mean,
-            stats.premul_diff_px,
-            stats.premul_visible_px,
-        );
     }
 
     if let Some(layer_id) = options.gpu_roundtrip_layer_id {
@@ -485,214 +463,4 @@ fn image_stats(pixels: &[u8]) -> ImageStats {
         nonzero_alpha,
         sums,
     }
-}
-
-#[derive(Debug)]
-struct RgbaImage {
-    width: u32,
-    height: u32,
-    pixels: Vec<u8>,
-}
-
-fn render_full_image(session: &mut ClipSession) -> Result<RgbaImage, String> {
-    let canvas = session.summary().canvas;
-    let byte_len = usize::try_from(u64::from(canvas.width) * u64::from(canvas.height) * 4)
-        .map_err(|_| "canvas byte length does not fit in usize".to_string())?;
-    let mut pixels = vec![0u8; byte_len];
-    session
-        .read_rgba8_region(Rect::new(0, 0, canvas.width, canvas.height), &mut pixels)
-        .map_err(|err| err.to_string())?;
-    Ok(RgbaImage {
-        width: canvas.width,
-        height: canvas.height,
-        pixels,
-    })
-}
-
-fn read_png_rgba8(path: &PathBuf) -> Result<RgbaImage, String> {
-    let file = File::open(path).map_err(|err| err.to_string())?;
-    let decoder = png::Decoder::new(BufReader::new(file));
-    let mut reader = decoder.read_info().map_err(|err| err.to_string())?;
-    let mut buffer = vec![0; reader.output_buffer_size()];
-    let info = reader
-        .next_frame(&mut buffer)
-        .map_err(|err| err.to_string())?;
-    let bytes = &buffer[..info.buffer_size()];
-    if info.bit_depth != png::BitDepth::Eight {
-        return Err(format!("unsupported PNG bit depth {:?}", info.bit_depth));
-    }
-
-    let pixels = match info.color_type {
-        png::ColorType::Rgba => bytes.to_vec(),
-        png::ColorType::Rgb => {
-            let mut rgba = Vec::with_capacity((bytes.len() / 3) * 4);
-            for pixel in bytes.chunks_exact(3) {
-                rgba.extend_from_slice(&[pixel[0], pixel[1], pixel[2], 255]);
-            }
-            rgba
-        }
-        png::ColorType::GrayscaleAlpha => {
-            let mut rgba = Vec::with_capacity((bytes.len() / 2) * 4);
-            for pixel in bytes.chunks_exact(2) {
-                rgba.extend_from_slice(&[pixel[0], pixel[0], pixel[0], pixel[1]]);
-            }
-            rgba
-        }
-        png::ColorType::Grayscale => {
-            let mut rgba = Vec::with_capacity(bytes.len() * 4);
-            for gray in bytes {
-                rgba.extend_from_slice(&[*gray, *gray, *gray, 255]);
-            }
-            rgba
-        }
-        png::ColorType::Indexed => {
-            return Err("indexed PNG references are not supported".to_string());
-        }
-    };
-
-    let expected_len = usize::try_from(u64::from(info.width) * u64::from(info.height) * 4)
-        .map_err(|_| "PNG byte length does not fit in usize".to_string())?;
-    if pixels.len() != expected_len {
-        return Err(format!(
-            "decoded PNG byte length mismatch: got {} expected {}",
-            pixels.len(),
-            expected_len,
-        ));
-    }
-
-    Ok(RgbaImage {
-        width: info.width,
-        height: info.height,
-        pixels,
-    })
-}
-
-#[derive(Debug)]
-struct CompareStats {
-    raw_max: u8,
-    raw_max_at: MaxLocation,
-    raw_mean: f64,
-    raw_diff_px: usize,
-    raw_visible_px: usize,
-    premul_max: u8,
-    premul_max_at: MaxLocation,
-    premul_mean: f64,
-    premul_diff_px: usize,
-    premul_visible_px: usize,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-struct MaxLocation {
-    x: u32,
-    y: u32,
-    channel: usize,
-}
-
-fn compare_images(actual: &[u8], reference: &[u8], width: u32) -> CompareStats {
-    assert_eq!(actual.len(), reference.len());
-    assert_eq!(actual.len() % 4, 0);
-
-    let mut raw_max = 0u8;
-    let mut raw_max_at = MaxLocation {
-        x: 0,
-        y: 0,
-        channel: 0,
-    };
-    let mut raw_abs_sum = 0u64;
-    let mut raw_diff_px = 0usize;
-    let mut raw_visible_px = 0usize;
-    let mut premul_max = 0u8;
-    let mut premul_max_at = MaxLocation {
-        x: 0,
-        y: 0,
-        channel: 0,
-    };
-    let mut premul_abs_sum = 0u64;
-    let mut premul_diff_px = 0usize;
-    let mut premul_visible_px = 0usize;
-
-    for (pixel_index, (actual_px, reference_px)) in actual
-        .chunks_exact(4)
-        .zip(reference.chunks_exact(4))
-        .enumerate()
-    {
-        let mut raw_pixel_max = 0u8;
-        let mut premul_pixel_max = 0u8;
-        for channel in 0..4 {
-            let diff = u8_abs_diff(actual_px[channel], reference_px[channel]);
-            raw_pixel_max = raw_pixel_max.max(diff);
-            raw_abs_sum += u64::from(diff);
-            if diff > raw_max {
-                raw_max = diff;
-                raw_max_at = max_location(pixel_index, width, channel);
-            }
-
-            let actual_value = premul_channel(actual_px, channel);
-            let reference_value = premul_channel(reference_px, channel);
-            let premul_diff = u8_abs_diff(actual_value, reference_value);
-            premul_pixel_max = premul_pixel_max.max(premul_diff);
-            premul_abs_sum += u64::from(premul_diff);
-            if premul_diff > premul_max {
-                premul_max = premul_diff;
-                premul_max_at = max_location(pixel_index, width, channel);
-            }
-        }
-        if raw_pixel_max > 0 {
-            raw_diff_px += 1;
-        }
-        if raw_pixel_max > 1 {
-            raw_visible_px += 1;
-        }
-        if premul_pixel_max > 0 {
-            premul_diff_px += 1;
-        }
-        if premul_pixel_max > 1 {
-            premul_visible_px += 1;
-        }
-    }
-
-    let channel_count = actual.len() as f64;
-    CompareStats {
-        raw_max,
-        raw_max_at,
-        raw_mean: raw_abs_sum as f64 / channel_count,
-        raw_diff_px,
-        raw_visible_px,
-        premul_max,
-        premul_max_at,
-        premul_mean: premul_abs_sum as f64 / channel_count,
-        premul_diff_px,
-        premul_visible_px,
-    }
-}
-
-fn max_location(pixel_index: usize, width: u32, channel: usize) -> MaxLocation {
-    let pixel_index = u32::try_from(pixel_index).expect("image pixel index fits in u32");
-    MaxLocation {
-        x: pixel_index % width,
-        y: pixel_index / width,
-        channel,
-    }
-}
-
-fn channel_name(channel: usize) -> &'static str {
-    match channel {
-        0 => "r",
-        1 => "g",
-        2 => "b",
-        3 => "a",
-        _ => "?",
-    }
-}
-
-fn premul_channel(pixel: &[u8], channel: usize) -> u8 {
-    if channel == 3 {
-        pixel[3]
-    } else {
-        (((u16::from(pixel[channel]) * u16::from(pixel[3])) + 127) / 255) as u8
-    }
-}
-
-fn u8_abs_diff(lhs: u8, rhs: u8) -> u8 {
-    lhs.max(rhs) - lhs.min(rhs)
 }

@@ -233,8 +233,11 @@ Deepening milestones:
      layer-window dumps, PNG compare, tile-silo estimates, and Blender worker
      commands should become command implementations behind a small runner
      Interface.
-     Remaining work: extract command execution and PNG/diagnostic output
-     formatting out of `main.rs`.
+     Current progress: `clip_cli/src/compare_png.rs` owns PNG reference loading,
+     full-image render readback for compare, raw/premultiplied diff statistics,
+     and compare report formatting.
+     Remaining work: extract the remaining command execution and non-PNG
+     diagnostic/report formatting out of `main.rs`.
    - Expected benefit: adding diagnostics no longer expands the entry point, and
      command behavior can be tested without going through process-level `main`.
 
