@@ -362,6 +362,97 @@ fn planner_lowers_simple_container_scope_with_opacity_and_blend() {
 }
 
 #[test]
+fn planner_lowers_fully_opaque_masked_simple_scopes() {
+    let opaque_mask = mask_key(9);
+    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))])
+        .with_mask_opacity(opaque_mask, true);
+
+    let container_sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::Raster(raster_source(1))],
+        opacity: 1.0,
+        mask_key: Some(opaque_mask),
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+    let container_program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &container_sources,
+    );
+
+    assert_eq!(
+        container_program.segments()[0].kind,
+        RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope)
+    );
+
+    let through_sources = vec![GpuNormalStackSource::ThroughGroup {
+        children: vec![GpuNormalStackSource::Raster(raster_source(1))],
+        opacity: 1.0,
+        mask_key: Some(opaque_mask),
+    }];
+    let through_program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &through_sources,
+    );
+
+    assert_eq!(
+        through_program.segments()[0].kind,
+        RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope)
+    );
+}
+
+#[test]
+fn planner_keeps_unknown_masked_simple_scopes_as_barriers() {
+    let unknown_mask = mask_key(10);
+    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
+
+    let container_sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::Raster(raster_source(1))],
+        opacity: 1.0,
+        mask_key: Some(unknown_mask),
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+    let container_program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &container_sources,
+    );
+
+    assert_eq!(
+        container_program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+        ))
+    );
+
+    let through_sources = vec![GpuNormalStackSource::ThroughGroup {
+        children: vec![GpuNormalStackSource::Raster(raster_source(1))],
+        opacity: 1.0,
+        mask_key: Some(unknown_mask),
+    }];
+    let through_program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &through_sources,
+    );
+
+    assert_eq!(
+        through_program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::ThroughGroupNotLowered,
+        ))
+    );
+}
+
+#[test]
 fn planner_lowers_container_inside_simple_container_scope() {
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
     let sources = vec![GpuNormalStackSource::Container {
@@ -687,13 +778,20 @@ fn planner_keeps_through_beyond_scope_depth_limit_as_barrier() {
 
 struct PlannerProvider {
     sizes: HashMap<GpuRasterResourceKey, CanvasSize>,
+    opaque_masks: HashMap<GpuMaskResourceKey, bool>,
 }
 
 impl PlannerProvider {
     fn new<const N: usize>(sizes: [(GpuRasterResourceKey, CanvasSize); N]) -> Self {
         Self {
             sizes: sizes.into_iter().collect(),
+            opaque_masks: HashMap::new(),
         }
+    }
+
+    fn with_mask_opacity(mut self, key: GpuMaskResourceKey, opaque: bool) -> Self {
+        self.opaque_masks.insert(key, opaque);
+        self
     }
 }
 
@@ -725,6 +823,10 @@ impl GpuNormalStackResourceProvider for PlannerProvider {
         true
     }
 
+    fn mask_is_fully_opaque(&self, key: GpuMaskResourceKey) -> Option<bool> {
+        self.opaque_masks.get(&key).copied()
+    }
+
     fn mask_resource(
         &mut self,
         _renderer: &GpuRenderer,
@@ -749,6 +851,13 @@ fn raster_key(id: u32) -> GpuRasterResourceKey {
     GpuRasterResourceKey {
         layer_id: LayerId(id),
         render_mipmap_id: id,
+    }
+}
+
+fn mask_key(id: u32) -> GpuMaskResourceKey {
+    GpuMaskResourceKey {
+        layer_id: LayerId(id),
+        mask_mipmap_id: id,
     }
 }
 

@@ -675,6 +675,84 @@ fn streamed_tile_silo_resolves_through_scope_opacity_like_legacy_pass() {
 }
 
 #[test]
+fn streamed_tile_silo_lowers_opaque_masked_through_scope_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let child_key = raster_key(156);
+    let opaque_mask_key = mask_key(156);
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 0,
+                g: 0,
+                b: 255,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::ThroughGroup {
+            children: vec![GpuNormalStackSource::Raster(raster_source_at(
+                child_key, 1, 1,
+            ))],
+            opacity: 0.5,
+            mask_key: Some(opaque_mask_key),
+        },
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![(
+        child_key,
+        InlineRaster {
+            render_node_id: RenderNodeId(156),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![255, 0, 0, 255],
+        },
+    )])
+    .with_masks(vec![(
+        opaque_mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(256),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 255,
+            pixels: vec![255],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy opaque masked through reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![(
+        child_key,
+        AtlasInlineRaster {
+            render_node_id: RenderNodeId(156),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![255, 0, 0, 255],
+        },
+    )])
+    .with_masks(vec![(
+        opaque_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 255,
+            pixels: vec![255],
+        },
+    )]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed opaque masked through scope");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_applies_child_blend_inside_through_scope_like_legacy_pass() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let child_key = raster_key(147);
@@ -1370,6 +1448,11 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
 
     fn raster_run_atlas_supports_masks(&self) -> bool {
         !self.masks.is_empty()
+    }
+
+    fn mask_is_fully_opaque(&self, key: GpuMaskResourceKey) -> Option<bool> {
+        let mask = self.masks.get(&key)?;
+        Some(mask.fill_value == 255 && mask.pixels.iter().all(|value| *value == 255))
     }
 
     fn raster_run_atlas_pixels(

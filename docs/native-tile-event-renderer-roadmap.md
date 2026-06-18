@@ -500,11 +500,12 @@ groups.
 Implemented subset:
 
 - `TileProgramKind::SimpleContainerScope` lowers a `Container` source only when
-  container opacity is positive, there is no container mask, the resolve blend
-  mode is modeled by the tile VM, bounds are known and intersect the current
-  target, and children are limited to eligible raster events, simple unmasked
-  container scopes up to `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise
-  filters whose masks are absent or proven fully opaque.
+  container opacity is positive, the container mask is absent or proven fully
+  opaque, the resolve blend mode is modeled by the tile VM, bounds are known
+  and intersect the current target, and children are limited to eligible raster
+  events, simple container scopes with absent/proven-opaque masks up to
+  `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise filters whose masks are
+  absent or proven fully opaque.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
@@ -514,17 +515,18 @@ Implemented subset:
   accumulator stack. Each inner container resolves into its parent accumulator
   before the outer container resolves to its parent. Container depth beyond the
   fixed limit remains a barrier.
-- THROUGH groups inside container scopes, clipping runs, solid colors, masked
-  containers, and masked or unknown filter masks still remain explicit legacy
-  barriers.
+- THROUGH groups inside container scopes, clipping runs, solid colors,
+  non-opaque or unknown container masks, and masked or unknown filter masks
+  still remain explicit legacy barriers.
 
 Implemented THROUGH subset:
 
 - `TileProgramKind::SimpleThroughScope` lowers a `ThroughGroup` source only
-  when group opacity is positive, there is no THROUGH mask, bounds are known and
-  intersect the current target, and children are limited to eligible raster
-  events, simple unmasked container scopes, plus pointwise filters whose masks
-  are absent or proven fully opaque.
+  when group opacity is positive, the THROUGH mask is absent or proven fully
+  opaque, bounds are known and intersect the current target, and children are
+  limited to eligible raster events, simple container scopes with
+  absent/proven-opaque masks, plus pointwise filters whose masks are absent or
+  proven fully opaque.
 - The shader handles `BeginThrough` / `EndThrough` events by copying the current
   parent accumulator into a local `before` and `after`, rendering child events
   into `after`, then resolving `before` and `after` with the same premultiplied
@@ -533,14 +535,15 @@ Implemented THROUGH subset:
   `BeginContainer` / `EndContainer` events up to the same fixed depth limit,
   and the outermost container resolves into the THROUGH `after` accumulator.
 - Nested THROUGH groups can lower one level deeper when the nested THROUGH has
-  opacity `1.0`, has no mask, has known intersecting bounds, and its children
-  fit the same raster/container/pointwise-filter subset. The shader keeps a
-  bounded two-level THROUGH `before`/`after` stack and resolves the inner
-  THROUGH into the outer `after` accumulator.
+  opacity `1.0`, has no mask or a proven fully opaque mask, has known
+  intersecting bounds, and its children fit the same
+  raster/container/pointwise-filter subset. The shader keeps a bounded
+  two-level THROUGH `before`/`after` stack and resolves the inner THROUGH into
+  the outer `after` accumulator.
 - Fractional-opacity nested THROUGH groups, deeper nested THROUGH groups,
-  clipping runs, solid colors, masked THROUGH groups, container depth beyond the
-  fixed limit, and real or unknown filter masks still remain explicit legacy
-  barriers.
+  clipping runs, solid colors, non-opaque or unknown masked THROUGH groups,
+  container depth beyond the fixed limit, and real or unknown filter masks still
+  remain explicit legacy barriers.
 
 Verification:
 
@@ -562,6 +565,9 @@ Verification:
 - GPU unit tests compare an opacity-1 nested THROUGH scope against the existing
   legacy source path and assert fractional-opacity nested THROUGH groups and
   nesting beyond the fixed limit remain barriers.
+- Planner and GPU unit tests prove masks that are explicitly known to be fully
+  opaque do not block simple container/THROUGH lowering, while unknown masks
+  remain barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
@@ -571,7 +577,7 @@ Next scope-stack work:
 
 - event count within limit
 - broader nested THROUGH, especially fractional-opacity nested THROUGH
-- masked container/THROUGH scopes
+- non-opaque masked container/THROUGH scopes
 - unsupported or masked filters inside scope stacks
 
 Then extend the same scope-stack model to nested/complex container and THROUGH

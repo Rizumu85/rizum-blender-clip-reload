@@ -529,10 +529,11 @@ tile resources before they can be lowered faithfully.
 The tile-event renderer now lowers a simple unmasked isolated-container subset:
 
 - `clip_gpu::stream_program` can plan a `SimpleContainerScope` segment for a
-  folder with positive opacity, no container mask, a resolve blend mode modeled
-  by the tile VM, known finite bounds, and children limited to eligible raster
-  events, one direct simple unmasked container scope, plus pointwise filters
-  whose masks are absent or proven fully opaque.
+  folder with positive opacity, no container mask or a proven fully opaque
+  container mask, a resolve blend mode modeled by the tile VM, known finite
+  bounds, and children limited to eligible raster events, one direct simple
+  container scope with absent/proven-opaque mask, plus pointwise filters whose
+  masks are absent or proven fully opaque.
 - `stream_tile_event.rs` bumps the tile event ABI to `4` and adds
   `TileEventKind::BeginContainer` / `EndContainer` with a separate
   `scope_payloads` storage buffer.
@@ -546,8 +547,9 @@ The tile-event renderer now lowers a simple unmasked isolated-container subset:
   accumulators resolve into their parent accumulator before the outer container
   resolves to its parent.
 - Unsupported scope shapes remain barriers: container depth beyond the fixed
-  limit, THROUGH groups, clipping runs, solid colors, masked containers, and
-  filters with real or unknown non-opaque masks.
+  limit, THROUGH groups inside container scopes, clipping runs, solid colors,
+  non-opaque or unknown masked containers, and filters with real or unknown
+  non-opaque masks.
 
 Verification after this milestone:
 
@@ -578,9 +580,10 @@ container/THROUGH lowering a tested shader seam.
 The tile-event renderer now lowers the first narrow THROUGH subset:
 
 - `clip_gpu::stream_program` can plan a `SimpleThroughScope` segment for a
-  THROUGH group with positive opacity, no THROUGH mask, known finite bounds, and
-  children limited to eligible raster events, simple unmasked container scopes,
-  plus pointwise filters whose masks are absent or proven fully opaque.
+  THROUGH group with positive opacity, no THROUGH mask or a proven fully opaque
+  THROUGH mask, known finite bounds, and children limited to eligible raster
+  events, simple container scopes with absent/proven-opaque masks, plus
+  pointwise filters whose masks are absent or proven fully opaque.
 - `stream_tile_event.rs` bumps the tile event ABI to `5` and adds
   `TileEventKind::BeginThrough` / `EndThrough` with the existing
   `scope_payloads` storage buffer.
@@ -592,14 +595,14 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   `EndContainer` events up to the same fixed depth limit and resolve into the
   THROUGH `after` accumulator.
 - One level of nested THROUGH can lower when the nested THROUGH has opacity
-  `1.0`, has no mask, has known intersecting bounds, and its children fit the
-  same raster/container/pointwise-filter subset. The tile VM keeps two local
-  THROUGH `before`/`after` accumulators and resolves the inner THROUGH into the
-  outer THROUGH `after` accumulator.
+  `1.0`, has no mask or a proven fully opaque mask, has known intersecting
+  bounds, and its children fit the same raster/container/pointwise-filter
+  subset. The tile VM keeps two local THROUGH `before`/`after` accumulators and
+  resolves the inner THROUGH into the outer THROUGH `after` accumulator.
 - Unsupported THROUGH shapes remain barriers: fractional-opacity nested THROUGH
-  groups, deeper nested THROUGH groups, clipping runs, solid colors, masked
-  THROUGH groups, container depth beyond the fixed limit, and filters with real
-  or unknown non-opaque masks.
+  groups, deeper nested THROUGH groups, clipping runs, solid colors,
+  non-opaque or unknown masked THROUGH groups, container depth beyond the fixed
+  limit, and filters with real or unknown non-opaque masks.
 
 Verification after this milestone:
 
@@ -612,6 +615,9 @@ Verification after this milestone:
 - GPU unit coverage compares an opacity-1 nested THROUGH scope against the
   existing legacy source path and locks fractional-opacity/deeper nested
   THROUGH groups as planner barriers.
+- Planner and GPU unit coverage prove explicitly fully opaque masks do not
+  block simple container/THROUGH tile-local lowering, while unknown masks still
+  stay barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - Guard comparisons remain stable: `Test_Clipping` exact,

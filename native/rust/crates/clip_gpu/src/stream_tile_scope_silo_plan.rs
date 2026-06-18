@@ -30,7 +30,7 @@ where
         return None;
     };
     if *opacity <= 0.0
-        || mask_key.is_some()
+        || !filter_mask_can_lower(provider, *mask_key)
         || children.is_empty()
         || !container_resolve_is_scope_eligible(*blend_mode)
     {
@@ -74,7 +74,7 @@ where
     else {
         return None;
     };
-    if *opacity <= 0.0 || mask_key.is_some() || children.is_empty() {
+    if *opacity <= 0.0 || !filter_mask_can_lower(provider, *mask_key) || children.is_empty() {
         return None;
     }
     let KnownStackBounds::Bounded(bounds) = known_stack_bounds(provider, children, output_size)
@@ -133,7 +133,7 @@ where
                 blend_mode,
             } if container_depth_remaining > 0 => {
                 if *opacity <= 0.0
-                    || mask_key.is_some()
+                    || !filter_mask_can_lower(provider, *mask_key)
                     || children.is_empty()
                     || !container_resolve_is_scope_eligible(*blend_mode)
                 {
@@ -162,7 +162,10 @@ where
                 opacity,
                 mask_key,
             } if through_depth_remaining > 0 => {
-                if *opacity != 1.0 || mask_key.is_some() || children.is_empty() {
+                if *opacity != 1.0
+                    || !filter_mask_can_lower(provider, *mask_key)
+                    || children.is_empty()
+                {
                     return None;
                 }
                 let KnownStackBounds::Bounded(bounds) =
