@@ -32,6 +32,15 @@ Project-level instructions for Codex.
 - During refactors, do not preserve old interfaces for compatibility by default; rewrite the interface cleanly and let incorrect callers fail loudly.
 - Preserve historical rejection notes in `docs/analysis.md`; update `docs/AI_MEMORY.md` when the current state changes.
 
+## Reverse Engineering Rules
+
+- IDA Pro symbol names (function names like `RenderBlendModeCall_0`, variable names, struct field names) in our IDB files are AI-assigned, not from official CSP debug info. They may be misleading or wrong.
+- Verify behavior from the **actual disassembly and observed runtime values**, not from symbol names. Treat names as hypotheses to test, not ground truth.
+- When a function name suggests one role but its callers, callees, or assembly contradicts that role, trust the assembly and runtime samples.
+- When data-driven sample fitting (computing the formula on real pixel inputs and matching CSP output) gives clean results, prefer that evidence over plausible-looking IDA decompilation.
+- Do not modify IDA databases (no `set_comments`, `rename`, `patch`, `define_*`) unless explicitly asked. Read-only investigation only.
+- IDA MCP is stateful and uses a single active instance — only one agent at a time may run IDA tool calls. Do not parallelize IDA work across subagents.
+
 ## Native Rewrite Architecture Rules
 
 - Native rewrite code lives under `native/`; do not extend the Python loader/compositor for the native path.

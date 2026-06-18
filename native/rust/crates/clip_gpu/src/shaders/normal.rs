@@ -302,6 +302,23 @@ fn set_lum_saturation(value: vec3<f32>, target_lum: f32, base_sat: f32) -> vec3<
     return out;
 }
 
+fn set_lum_hue(value: vec3<f32>, target_lum: f32, base_sat: f32) -> vec3<f32> {
+    // CSP's fixed-point Hue blend ceils the min channel after set_lum repositioning
+    // when the base saturation is non-trivial. Unlike Saturation, the ceil applies
+    // without a high-clamp requirement because CSP's fixed-point Hue always floors
+    // the division and the rounding bias goes the wrong way on the minimum channel.
+    // Use a lower threshold than Saturation (2/255 vs 4/255) to catch more cases.
+    var out = set_lum(value, target_lum);
+    if (base_sat > (2.0 / 255.0)) {
+        let ceiled = ceil_rgb_u8(out);
+        let clipped_min = min3(out);
+        if (out.r <= clipped_min + 0.000001) { out.r = ceiled.r; }
+        if (out.g <= clipped_min + 0.000001) { out.g = ceiled.g; }
+        if (out.b <= clipped_min + 0.000001) { out.b = ceiled.b; }
+    }
+    return out;
+}
+
 fn set_sat(value: vec3<f32>, target_sat: f32) -> vec3<f32> {
     let value_min = min3(value);
     let span = max3(value) - value_min;
@@ -350,7 +367,7 @@ fn hsl_blend(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
     if (source_params.blend_kind == 23u) {
         let src_q = quantize_rgb_u8(src);
         let dst_q = quantize_rgb_u8(dst);
-        return set_lum(set_sat(src_q, sat(dst_q)), lum(dst_q));
+        return set_lum_hue(set_sat(src_q, sat(dst_q)), lum(dst_q), sat(dst_q));
     }
     if (source_params.blend_kind == 24u) {
         let src_q = quantize_rgb_u8(src);
@@ -362,7 +379,7 @@ fn hsl_blend(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
         let dst_q = quantize_rgb_u8(dst);
         return set_lum_rec601(dst_q, lum_rec601(src_q));
     }
-    return set_lum(src, lum(dst));
+    return set_lum(src, lum(dst));  // unreachable -- fallback safety
 }
 
 fn blend_rgb(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
