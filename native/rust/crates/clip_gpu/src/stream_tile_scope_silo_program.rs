@@ -318,7 +318,7 @@ impl ScopeProgramKind {
 
     fn through_depth_remaining(self) -> usize {
         match self {
-            Self::Container { .. } => 0,
+            Self::Container { .. } => 1,
             Self::Through { .. } => SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT - 1,
         }
     }

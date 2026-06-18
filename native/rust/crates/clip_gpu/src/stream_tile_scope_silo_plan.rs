@@ -147,7 +147,7 @@ where
         target_size,
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
-        ThroughBudget::Unsupported,
+        ThroughBudget::Remaining(1),
     )?;
     checked_scope_event_count(2, child_count)
 }

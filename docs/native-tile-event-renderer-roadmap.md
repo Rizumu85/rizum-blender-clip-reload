@@ -524,7 +524,7 @@ Implemented subset:
   simple container scopes with the same scope-mask support up to
   `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise filters whose masks are
   absent, proven fully opaque, or available through provider-backed R8 mask
-  atlas chunks.
+  atlas chunks, plus one direct simple THROUGH scope child.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
@@ -534,9 +534,14 @@ Implemented subset:
   accumulator stack. Each inner container resolves into its parent accumulator
   before the outer container resolves to its parent. Container depth beyond the
   fixed limit remains a barrier.
-- THROUGH groups inside container scopes, clipping runs, solid colors,
-  unavailable container masks, and provider-unavailable or unknown filter masks
-  still remain explicit legacy barriers.
+- A direct THROUGH child inside a simple container can lower by capturing the
+  current container accumulator as the THROUGH `before`/`after` pair, rendering
+  THROUGH children into `after`, then resolving back into the same container
+  accumulator. Nested/indirect THROUGH-in-container shapes remain barriers until
+  each scope stack shape has parity coverage.
+- Clipping runs, solid colors, unavailable container masks, and
+  provider-unavailable or unknown filter masks still remain explicit legacy
+  barriers.
 
 Implemented THROUGH subset:
 
@@ -578,6 +583,9 @@ Verification:
 - GPU unit tests compare direct and three-deep nested containers against the
   existing legacy source path and assert nesting beyond the fixed limit remains
   a barrier.
+- GPU unit tests compare a direct THROUGH child inside a container scope
+  against the existing legacy source path, proving THROUGH resolves back into
+  the container accumulator rather than the parent canvas.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
   existing legacy source path for THROUGH opacity and child blend execution.
 - GPU unit tests compare a simple container inside a THROUGH scope against the
