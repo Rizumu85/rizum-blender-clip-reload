@@ -39,6 +39,49 @@ where
     };
     let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
 
+    simple_scope_children_event_count(provider, output_size, target_origin, target_size, children)
+}
+
+pub(crate) fn simple_through_scope_event_count<P>(
+    provider: &P,
+    output_size: CanvasSize,
+    target_origin: (i32, i32),
+    target_size: CanvasSize,
+    source: &GpuNormalStackSource,
+) -> Option<usize>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    let GpuNormalStackSource::ThroughGroup {
+        children,
+        opacity,
+        mask_key,
+    } = source
+    else {
+        return None;
+    };
+    if *opacity <= 0.0 || mask_key.is_some() || children.is_empty() {
+        return None;
+    }
+    let KnownStackBounds::Bounded(bounds) = known_stack_bounds(provider, children, output_size)
+    else {
+        return None;
+    };
+    let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
+
+    simple_scope_children_event_count(provider, output_size, target_origin, target_size, children)
+}
+
+fn simple_scope_children_event_count<P>(
+    provider: &P,
+    output_size: CanvasSize,
+    target_origin: (i32, i32),
+    target_size: CanvasSize,
+    children: &[GpuNormalStackSource],
+) -> Option<usize>
+where
+    P: GpuNormalStackResourceProvider,
+{
     let mut count = 2usize;
     let mut saw_raster = false;
     for child in children {

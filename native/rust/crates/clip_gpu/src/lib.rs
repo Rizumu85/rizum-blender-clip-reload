@@ -34,6 +34,7 @@ mod stream_tile_event;
 mod stream_tile_filter_silo;
 mod stream_tile_scope_silo;
 mod stream_tile_scope_silo_plan;
+mod stream_tile_scope_silo_program;
 mod stream_tile_silo;
 mod stream_tile_silo_buffers;
 mod stream_tile_silo_pipeline;

@@ -44,6 +44,7 @@ pub(crate) enum TileProgramKind {
     RasterClippingRun,
     RasterFilterRun,
     SimpleContainerScope,
+    SimpleThroughScope,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -67,6 +68,7 @@ pub struct RenderProgramStats {
     pub raster_clipping_run_segments: u32,
     pub raster_filter_run_segments: u32,
     pub simple_container_scope_segments: u32,
+    pub simple_through_scope_segments: u32,
     pub legacy_source_segments: u32,
     pub planned_tile_events: u32,
     pub planned_passes: u32,
@@ -92,6 +94,9 @@ impl RenderProgramStats {
         self.simple_container_scope_segments = self
             .simple_container_scope_segments
             .saturating_add(other.simple_container_scope_segments);
+        self.simple_through_scope_segments = self
+            .simple_through_scope_segments
+            .saturating_add(other.simple_through_scope_segments);
         self.legacy_source_segments = self
             .legacy_source_segments
             .saturating_add(other.legacy_source_segments);
@@ -170,6 +175,7 @@ fn push_tile_segment(
         TileProgramKind::RasterClippingRun => stats.raster_clipping_run_segments += 1,
         TileProgramKind::RasterFilterRun => stats.raster_filter_run_segments += 1,
         TileProgramKind::SimpleContainerScope => stats.simple_container_scope_segments += 1,
+        TileProgramKind::SimpleThroughScope => stats.simple_through_scope_segments += 1,
     }
 }
 
@@ -299,6 +305,7 @@ mod tests {
                 raster_clipping_run_segments: 1,
                 raster_filter_run_segments: 0,
                 simple_container_scope_segments: 0,
+                simple_through_scope_segments: 0,
                 legacy_source_segments: 1,
                 planned_tile_events: 6,
                 planned_passes: 4,
@@ -474,6 +481,51 @@ mod tests {
                 .isolated_container_requires_intermediate,
             0
         );
+    }
+
+    #[test]
+    fn planner_lowers_simple_through_scope() {
+        let provider = PlannerProvider::new([
+            (raster_key(1), CanvasSize::new(4, 4)),
+            (raster_key(2), CanvasSize::new(4, 4)),
+        ]);
+        let sources = vec![GpuNormalStackSource::ThroughGroup {
+            children: vec![
+                GpuNormalStackSource::Raster(raster_source(1)),
+                GpuNormalStackSource::LutFilter {
+                    lut_rgba: identity_lut(),
+                    opacity: 1.0,
+                    mask_key: None,
+                    filter_mode: GpuLutFilterMode::ToneCurveRgb,
+                },
+                GpuNormalStackSource::Raster(raster_source(2)),
+            ],
+            opacity: 0.5,
+            mask_key: None,
+        }];
+
+        let program = plan_render_program(
+            &provider,
+            CanvasSize::new(16, 16),
+            (0, 0),
+            CanvasSize::new(16, 16),
+            &sources,
+        );
+
+        assert_eq!(
+            program.segments(),
+            &[RenderSegment {
+                source_range: 0..1,
+                kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
+                cost_hint: SegmentCostHint {
+                    expected_passes: 1,
+                    tile_events: 5,
+                    legacy_sources: 0,
+                },
+            }]
+        );
+        assert_eq!(program.stats().simple_through_scope_segments, 1);
+        assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
     }
 
     struct PlannerProvider {

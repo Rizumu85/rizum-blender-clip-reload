@@ -556,6 +556,38 @@ elided or express folder semantics as THROUGH groups, so they may still report
 turns the scope-stack model into an executed tile event path and gives future
 container/THROUGH lowering a tested shader seam.
 
+## Simple THROUGH Scope Tile Events
+
+The tile-event renderer now lowers the first narrow THROUGH subset:
+
+- `clip_gpu::stream_program` can plan a `SimpleThroughScope` segment for a
+  THROUGH group with positive opacity, no THROUGH mask, known finite bounds, and
+  children limited to eligible raster events plus pointwise filters whose masks
+  are absent or proven fully opaque.
+- `stream_tile_event.rs` bumps the tile event ABI to `5` and adds
+  `TileEventKind::BeginThrough` / `EndThrough` with the existing
+  `scope_payloads` storage buffer.
+- `tile_silo.wgsl` stores the current parent accumulator as THROUGH `before`,
+  renders child events into THROUGH `after`, and resolves `before`/`after`
+  through the same premultiplied opacity interpolation as the existing THROUGH
+  pass.
+- Unsupported THROUGH shapes remain barriers: nested containers, nested THROUGH
+  groups, clipping runs, solid colors, masked THROUGH groups, and filters with
+  real or unknown non-opaque masks.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
+- GPU unit coverage compares the tile-scope path against the existing legacy
+  source path for THROUGH opacity and for child Multiply blending inside a
+  THROUGH group.
+- `Test_FolderNested.clip --performance-plan-json` reports
+  `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
+- Guard comparisons remain stable: `Test_Clipping` exact,
+  `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
+  and `Test_AddGlowMultiply` remains at the existing one-LSB invisible
+  residual (`raw_max=1`, `premul_max=1`, visible `0`).
+
 ## Compressed Occupancy Planner
 
 The tile-silo diagnostic now has the first Silicate-shaped planner input:

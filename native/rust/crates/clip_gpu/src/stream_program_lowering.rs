@@ -5,7 +5,9 @@ use crate::stream_clipping_tile_silo::clipping_run_silo_is_eligible;
 use crate::stream_program::{SegmentCostHint, TileProgramKind};
 use crate::stream_program_barriers::{RenderProgramBarrierReason, barrier_reason_for_source};
 use crate::stream_tile_filter_silo::raster_filter_silo_run_len;
-use crate::stream_tile_scope_silo_plan::simple_container_scope_event_count;
+use crate::stream_tile_scope_silo_plan::{
+    simple_container_scope_event_count, simple_through_scope_event_count,
+};
 use crate::stream_tile_silo::raster_silo_run_len;
 use crate::{GpuClippedStackSource, GpuNormalStackSource};
 
@@ -38,6 +40,7 @@ pub(crate) enum TileLocalReason {
     RasterOnlyClippingRun,
     RasterFilterRun,
     SimpleContainerScope,
+    SimpleThroughScope,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -87,6 +90,21 @@ where
             source_len: 1,
             kind: TileProgramKind::SimpleContainerScope,
             reason: TileLocalReason::SimpleContainerScope,
+            cost_hint: tile_cost_hint(u32::try_from(event_count).unwrap_or(u32::MAX)),
+        });
+    }
+
+    if let Some(event_count) = simple_through_scope_event_count(
+        provider,
+        output_size,
+        target_origin,
+        target_size,
+        &sources[0],
+    ) {
+        return LoweringDecision::TileLocal(TileLocalLowering {
+            source_len: 1,
+            kind: TileProgramKind::SimpleThroughScope,
+            reason: TileLocalReason::SimpleThroughScope,
             cost_hint: tile_cost_hint(u32::try_from(event_count).unwrap_or(u32::MAX)),
         });
     }

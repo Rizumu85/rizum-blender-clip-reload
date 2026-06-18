@@ -32,6 +32,7 @@ pub(crate) fn performance_plan_json(
             "raster_clipping_run_segments": stats.raster_clipping_run_segments,
             "raster_filter_run_segments": stats.raster_filter_run_segments,
             "simple_container_scope_segments": stats.simple_container_scope_segments,
+            "simple_through_scope_segments": stats.simple_through_scope_segments,
             "legacy_source_segments": stats.legacy_source_segments,
             "planned_tile_source_events": stats.planned_tile_events,
         },
@@ -94,7 +95,7 @@ mod tests {
             serde_json::from_str(&report).expect("performance report should be valid JSON");
 
         assert_eq!(parsed["canvas"][0], 512);
-        assert_eq!(parsed["tile_event_abi_version"], 4);
+        assert_eq!(parsed["tile_event_abi_version"], 5);
         assert!(parsed["planned_passes"].as_u64().unwrap() > 0);
         assert!(parsed["compressed_raster_tiles"].as_u64().unwrap() > 0);
         assert!(parsed["source_counts"]["rasters"].as_u64().unwrap() > 0);

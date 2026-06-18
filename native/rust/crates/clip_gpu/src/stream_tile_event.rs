@@ -4,7 +4,7 @@ use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 4;
+pub const TILE_EVENT_ABI_VERSION: u32 = 5;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const POINT_FILTER_PAYLOAD_WORDS: usize = 10;
@@ -19,6 +19,8 @@ pub(crate) enum TileEventKind {
     EndContainer = 6,
     PointFilter = 7,
     SpecialBlendRaster = 8,
+    BeginThrough = 9,
+    EndThrough = 10,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -142,6 +144,8 @@ pub(crate) enum TileEventPayload {
     Raster(RasterTileEventPayload),
     BeginContainer(ScopeTileEventPayload),
     EndContainer(ScopeTileEventPayload),
+    BeginThrough(ScopeTileEventPayload),
+    EndThrough(ScopeTileEventPayload),
     PointFilter(PointFilterTileEventPayload),
 }
 
@@ -189,6 +193,24 @@ impl TileEventProgram {
                 TileEventPayload::EndContainer(payload) => {
                     headers.push(TileEventHeader {
                         kind: TileEventKind::EndContainer,
+                        flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
+                }
+                TileEventPayload::BeginThrough(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::BeginThrough,
+                        flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
+                }
+                TileEventPayload::EndThrough(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::EndThrough,
                         flags: 0,
                         payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
                         payload_len: 1,
@@ -412,5 +434,38 @@ mod tests {
                 0,
             ]
         );
+    }
+
+    #[test]
+    fn builds_typed_through_scope_events() {
+        let scope = ScopeTileEventPayload {
+            opacity: 0.5,
+            blend_mode: GpuRasterBlendMode::Normal,
+            local_bounds: CanvasRect {
+                x: 4,
+                y: 5,
+                width: 6,
+                height: 7,
+            },
+        };
+        let program = TileEventProgram::from_payloads([
+            TileEventPayload::BeginThrough(scope),
+            TileEventPayload::EndThrough(scope),
+        ]);
+
+        assert_eq!(
+            program.header_words(),
+            vec![
+                TileEventKind::BeginThrough as u32,
+                0,
+                0,
+                1,
+                TileEventKind::EndThrough as u32,
+                0,
+                1,
+                1,
+            ]
+        );
+        assert_eq!(program.scope_payload_words().len(), 16);
     }
 }

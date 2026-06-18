@@ -57,6 +57,7 @@ Current state:
 - `TileLocal(RasterFilterRun)`
 - `TileLocal(SimpleContainerScope)` for the first narrow isolated-container
   subset
+- `TileLocal(SimpleThroughScope)` for the first narrow THROUGH-group subset
 - `Barrier(LegacySource)`
 
 Target state:
@@ -398,6 +399,12 @@ transparent-white local scope accumulator and resolve it back to the parent
 accumulator for the simple unmasked isolated-container subset, including
 positive container opacity and modeled resolve blend modes.
 
+Sixth form: `TileEventKind::BeginThrough` and `TileEventKind::EndThrough` use
+the same `scope_payloads` storage buffer. `TILE_EVENT_ABI_VERSION` is `5`. The
+tile VM can capture the parent accumulator as a local THROUGH `before`, render
+eligible child events into a local THROUGH `after`, and resolve `before` /
+`after` through the existing premultiplied THROUGH opacity formula.
+
 Remaining Phase 2 work:
 
 - add explicit typed event readers for additional clipping/THROUGH payloads
@@ -477,7 +484,8 @@ Remaining Phase 4 work:
 
 ### Phase 5: Container and THROUGH Scope Stack
 
-Status: started in first form for simple isolated containers.
+Status: started in first form for simple isolated containers and simple THROUGH
+groups.
 
 Implemented subset:
 
@@ -494,6 +502,20 @@ Implemented subset:
 - Nested containers, THROUGH groups, clipping runs, solid colors, masked or
   unknown filter masks still remain explicit legacy barriers.
 
+Implemented THROUGH subset:
+
+- `TileProgramKind::SimpleThroughScope` lowers a `ThroughGroup` source only
+  when group opacity is positive, there is no THROUGH mask, bounds are known and
+  intersect the current target, and children are limited to eligible raster
+  events plus pointwise filters whose masks are absent or proven fully opaque.
+- The shader handles `BeginThrough` / `EndThrough` events by copying the current
+  parent accumulator into a local `before` and `after`, rendering child events
+  into `after`, then resolving `before` and `after` with the same premultiplied
+  opacity interpolation used by the existing THROUGH pass.
+- Nested containers, nested THROUGH groups, clipping runs, solid colors, masked
+  THROUGH groups, and real or unknown filter masks still remain explicit legacy
+  barriers.
+
 Verification:
 
 - A GPU unit test distinguishes isolated-container semantics from direct
@@ -503,17 +525,24 @@ Verification:
 - GPU unit tests compare the tile-scope path against the existing legacy
   source path for Normal container opacity, Multiply container resolve, and
   Multiply container resolve with non-1 opacity.
+- GPU unit tests compare simple THROUGH tile-scope execution against the
+  existing legacy source path for THROUGH opacity and child blend execution.
+- `Test_FolderNested.clip --performance-plan-json` reports
+  `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
   and `Test_AddGlowMultiply` remain stable.
 
 Next scope-stack work:
 
-- no nested THROUGH
-- no unsupported filter
 - scope depth within limit
 - event count within limit
+- containers inside THROUGH
+- nested THROUGH
+- masked container/THROUGH scopes
+- unsupported or masked filters inside scope stacks
 
-Then extend to THROUGH groups after scope semantics are locked by tests.
+Then extend the same scope-stack model to nested/complex container and THROUGH
+subtrees once each shape has focused parity tests.
 
 ### Phase 6: Session Atlas Cache and Dirty Segment Reload
 

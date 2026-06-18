@@ -53,6 +53,8 @@ const TILE_EVENT_KIND_BEGIN_CONTAINER: u32 = 5u;
 const TILE_EVENT_KIND_END_CONTAINER: u32 = 6u;
 const TILE_EVENT_KIND_POINT_FILTER: u32 = 7u;
 const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
+const TILE_EVENT_KIND_BEGIN_THROUGH: u32 = 9u;
+const TILE_EVENT_KIND_END_THROUGH: u32 = 10u;
 const MODE_NORMAL: u32 = 0u;
 const MODE_PRESERVE_ALPHA: u32 = 1u;
 const MODE_CLIPPING_RUN: u32 = 2u;
@@ -296,6 +298,19 @@ fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32
         return dst;
     }
     return apply_standard(src, dst, blend_kind);
+}
+
+fn resolve_through_scope(event_index: u32, before: vec4<f32>, after: vec4<f32>) -> vec4<f32> {
+    let strength = clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0);
+    let before_pm = before.rgb * before.a;
+    let after_pm = after.rgb * after.a;
+    let out_alpha = before.a * (1.0 - strength) + after.a * strength;
+    let out_pm = before_pm * (1.0 - strength) + after_pm * strength;
+    var out_rgb = vec3<f32>(1.0);
+    if (out_alpha > 0.0) {
+        out_rgb = out_pm / out_alpha;
+    }
+    return vec4<f32>(out_rgb, out_alpha);
 }
 
 fn normal_alpha_over_channel(dst: i32, src: i32, src_a: i32, carry: i32, out_a: i32) -> i32 {
@@ -1003,10 +1018,28 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope_active = false;
+    var through_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var through_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var through_active = false;
 
     for (var index = 0u; index < span_count; index = index + 1u) {
         let event_index = work_indices[span_start + index];
         let kind = event_kind(event_index);
+        if (kind == TILE_EVENT_KIND_BEGIN_THROUGH) {
+            if (scope_contains(event_index, local_texel)) {
+                through_before = dst;
+                through_after = dst;
+                through_active = true;
+            }
+            continue;
+        }
+        if (kind == TILE_EVENT_KIND_END_THROUGH) {
+            if (through_active && scope_contains(event_index, local_texel)) {
+                dst = resolve_through_scope(event_index, through_before, through_after);
+                through_active = false;
+            }
+            continue;
+        }
         if (kind == TILE_EVENT_KIND_BEGIN_CONTAINER) {
             if (scope_contains(event_index, local_texel)) {
                 scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
@@ -1027,6 +1060,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     clip_dst = apply_point_filter_event(event_index, clip_dst);
                 } else if (scope_active) {
                     scope_dst = apply_point_filter_event(event_index, scope_dst);
+                } else if (through_active) {
+                    through_after = apply_point_filter_event(event_index, through_after);
                 } else {
                     dst = apply_point_filter_event(event_index, dst);
                 }
@@ -1080,6 +1115,21 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     continue;
                 }
                 scope_dst = apply_standard(src, scope_dst, blend_kind);
+            }
+        } else if (through_active) {
+            if (blend_kind == 0u) {
+                through_after = apply_normal(src, through_after, event_index, mask_value);
+            } else if (is_byte_domain_special_blend(blend_kind)) {
+                through_after = apply_byte_standard(src, through_after, event_index, mask_value, blend_kind);
+            } else {
+                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+                    src.a = src.a * mask_value;
+                }
+                if (src.a <= 0.0) {
+                    continue;
+                }
+                through_after = apply_standard(src, through_after, blend_kind);
             }
         } else if (blend_kind == 0u) {
             dst = apply_normal(src, dst, event_index, mask_value);
