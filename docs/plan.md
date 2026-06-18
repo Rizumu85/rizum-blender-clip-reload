@@ -250,6 +250,12 @@ Deepening milestones:
    - Deepen `clip_file/src/metadata.rs` into schema/sqlite access, layer graph
      reading, raster/render source reading, mask source reading, filter source
      reading, and paper colour reading.
+     Current progress: `metadata.rs` is now wiring/re-exports only. Typed
+     records live in `metadata/records.rs`; shared SQLite/schema helpers live
+     in `metadata/schema.rs`; and focused reader implementations live in
+     `metadata/summary.rs`, `metadata/layer_graph.rs`,
+     `metadata/raster_source.rs`, `metadata/mask_source.rs`,
+     `metadata/filter_source.rs`, and `metadata/paper_color.rs`.
    - Keep storage-specific SQLite details inside `clip_file`; runtime callers
      should continue to ask for typed `.clip` domain records.
    - Expected benefit: schema variation and source-resolution bugs gain
