@@ -13,7 +13,7 @@ from __future__ import annotations
 bl_info = {
     "name": "Rizum Clip Reload",
     "author": "Rizum",
-    "version": (0, 8, 66),
+    "version": (0, 8, 67),
     "blender": (3, 0, 0),
     "location": "File > Import > Clip Studio (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
@@ -21,8 +21,7 @@ bl_info = {
 }
 
 ADDON_NAME = "Rizum Clip Reload"
-ADDON_VERSION = (0, 8, 66)
-ADDON_URL = "https://github.com/Rizumu85/rizum-blender-clip-reload"
+ADDON_VERSION = (0, 8, 67)
 
 import os
 import threading
@@ -67,7 +66,7 @@ _in_flight: set = set()                 # clip paths currently being decoded
 # --------------------------------------------------------------------------- #
 
 def _ui(message: str) -> str:
-    return bpy.app.translations.pgettext_iface(message)
+    return i18n.translate(bpy, message)
 
 
 def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
@@ -1013,10 +1012,6 @@ class CSI_AddonPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        promo_box = layout.box()
-        promo_box.label(text=_ui("Made by Rizum"))
-        promo_box.operator("wm.url_open", text=_ui("Project on GitHub"), icon="URL").url = ADDON_URL
-
         reload_box = layout.box()
         reload_box.prop(self, "auto_reload")
         row = reload_box.row()

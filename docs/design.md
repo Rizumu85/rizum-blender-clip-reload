@@ -81,7 +81,6 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
     unsupported-node locators only when unsupported nodes exist
   - Developer Mode-only timing and open-diagnostics controls
 - Add-on preferences:
-  - Rizum attribution box with project link
   - reload box: `Autoreload .Clip`, `Check Timer Frequency (s)`
   - developer box: `Debug log`, `Developer Mode`
   - Packaged native renderer missing status only

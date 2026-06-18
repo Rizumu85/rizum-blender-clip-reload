@@ -18,8 +18,6 @@ _ZH_HANS = _entries({
     "Developer Mode": "开发者模式",
     "Show render timing and diagnostic actions in the image panel.": "在图像面板中显示渲染耗时和诊断操作。",
     "Packaged native renderer missing; rebuild the add-on package.": "缺少打包的 native 渲染器；请重新构建插件包。",
-    "Made by Rizum": "由 Rizum 制作",
-    "Project on GitHub": "GitHub 项目",
     "Ready": "就绪",
     "Source changed": "源文件已变化",
     "Source missing": "源文件缺失",
@@ -81,8 +79,6 @@ _JA_JP = _entries({
     "Developer Mode": "開発者モード",
     "Show render timing and diagnostic actions in the image panel.": "画像パネルにレンダー時間と診断操作を表示します。",
     "Packaged native renderer missing; rebuild the add-on package.": "同梱 native レンダラーが見つかりません。アドオンパッケージを再ビルドしてください。",
-    "Made by Rizum": "Rizum 制作",
-    "Project on GitHub": "GitHub プロジェクト",
     "Ready": "準備完了",
     "Source changed": "ソースが変更されました",
     "Source missing": "ソースが見つかりません",
@@ -144,8 +140,6 @@ _ES = _entries({
     "Developer Mode": "Modo desarrollador",
     "Show render timing and diagnostic actions in the image panel.": "Muestra tiempos de render y acciones de diagnóstico en el panel de imagen.",
     "Packaged native renderer missing; rebuild the add-on package.": "Falta el renderizador native empaquetado; reconstruye el paquete del complemento.",
-    "Made by Rizum": "Creado por Rizum",
-    "Project on GitHub": "Proyecto en GitHub",
     "Ready": "Listo",
     "Source changed": "Fuente cambiada",
     "Source missing": "Falta la fuente",
@@ -204,6 +198,33 @@ TRANSLATIONS = {
     "es": _ES,
     "es_ES": _ES,
 }
+
+
+def _language_code(bpy_module) -> str:
+    try:
+        language = bpy_module.context.preferences.view.language
+    except Exception:
+        return ""
+    return str(language or "")
+
+
+def _entries_for_language(language: str) -> dict[tuple[str, str], str] | None:
+    if language in TRANSLATIONS:
+        return TRANSLATIONS[language]
+    if language.startswith("zh"):
+        return TRANSLATIONS["zh_HANS"]
+    if language.startswith("ja"):
+        return TRANSLATIONS["ja_JP"]
+    if language.startswith("es"):
+        return TRANSLATIONS["es"]
+    return None
+
+
+def translate(bpy_module, message: str) -> str:
+    entries = _entries_for_language(_language_code(bpy_module))
+    if not entries:
+        return message
+    return entries.get((TRANSLATION_CONTEXT, message), message)
 
 
 def register(bpy_module, addon_package: str) -> None:
