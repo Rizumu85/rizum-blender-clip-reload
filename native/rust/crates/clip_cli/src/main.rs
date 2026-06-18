@@ -11,6 +11,7 @@ use clip_runtime::ClipSession;
 mod blender_server;
 mod blender_worker;
 mod layer_labels;
+mod layer_window;
 mod pixel_trace_text;
 mod support_json;
 mod support_text;
@@ -31,6 +32,7 @@ fn main() {
     if path == OsString::from("--blender-render-server") {
         process::exit(blender_server::run_blender_render_server());
     }
+    let path = PathBuf::from(path);
     let options = parse_options(args.collect());
     if options.blender_render_rgba_path.is_some() != options.blender_render_json_path.is_some() {
         eprintln!("--blender-render-rgba and --blender-render-json must be used together");
@@ -143,17 +145,13 @@ fn main() {
     }
 
     if let Some((layer_id, x, y, radius)) = options.dump_layer_window {
-        let image = match clip_file::read_raster_layer_rgba(&path, layer_id) {
-            Ok(image) => image,
+        match layer_window::dump_layer_window(&path, layer_id, x, y, radius) {
+            Ok(()) => {}
             Err(err) => {
-                eprintln!(
-                    "failed to read raster layer {} from {:?}: {err}",
-                    layer_id.0, path,
-                );
+                eprintln!("{err}");
                 process::exit(1);
             }
-        };
-        print_layer_window(&image, layer_id, x, y, radius);
+        }
     }
 
     if let Some(reference_path) = &options.compare_png_path {
@@ -600,41 +598,6 @@ fn image_stats(pixels: &[u8]) -> ImageStats {
     ImageStats {
         nonzero_alpha,
         sums,
-    }
-}
-
-fn print_layer_window(
-    image: &clip_file::tiles::RgbaTileImage,
-    layer_id: LayerId,
-    x: u32,
-    y: u32,
-    radius: u32,
-) {
-    println!(
-        "layer window layer={} size={}x{} center=({}, {}) radius={}",
-        layer_id.0, image.width, image.height, x, y, radius,
-    );
-    if image.width == 0 || image.height == 0 {
-        return;
-    }
-    let min_x = x.saturating_sub(radius);
-    let min_y = y.saturating_sub(radius);
-    let max_x = x.saturating_add(radius).min(image.width - 1);
-    let max_y = y.saturating_add(radius).min(image.height - 1);
-    for sample_y in min_y..=max_y {
-        let mut row = format!("  y={sample_y}:");
-        for sample_x in min_x..=max_x {
-            let index = usize::try_from(
-                (u64::from(sample_y) * u64::from(image.width) + u64::from(sample_x)) * 4,
-            )
-            .expect("layer pixel index fits in usize");
-            let pixel = &image.pixels[index..index + 4];
-            row.push_str(&format!(
-                " x={sample_x}[{},{},{},{}]",
-                pixel[0], pixel[1], pixel[2], pixel[3]
-            ));
-        }
-        println!("{row}");
     }
 }
 

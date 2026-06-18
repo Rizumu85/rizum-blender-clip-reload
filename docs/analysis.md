@@ -4142,3 +4142,33 @@ threshold shape is low-value for further semantic work: `>2` has only `181`
 pixels, `>4` has `3` pixels, and `>5` has `0`; the broad stocking-area residual
 is predominantly 1-2/255. Treat this sample as visually low-level unless a new
 reference exposes a structural hotspot.
+
+Additional MXL instrumentation confirms that the broad stocking-area residual is
+not caused by layer-mask sampling. At representative pixel `(2672,6177)`, the
+`layer 306 [leg base]` subtree renders:
+
+- `layer 309 [base]`: `[255,244,233,255]`;
+- `layer 310 [black socks]` source window center: `[104,87,95,241]`, mask
+  alpha `255`, output `[112,92,95,255]`;
+- `layer 312 [leg shadow]` source window center: `[53,35,88,43]`, mask alpha
+  `255`, output `[97,79,85,255]`;
+- CSP reference at the final pixel is `[95,77,85,255]`.
+
+Simple byte-domain probes over alpha denominators, alpha `+1..+7`, product
+floor/round, output floor/round, and `255-a` versus `256-a` inverse-alpha
+families either miss the blue channel or require channel-specific behaviour.
+Do not retune ordinary `LayerComposite=2` Multiply from this local MXL point;
+`Test_Multiply` remains a guard, and the current evidence points to a deeper
+source/decode or native resolve detail rather than a safe generic Multiply
+formula. The CLI diagnostic `--dump-layer-window` now prints a matching mask
+alpha window when the layer has a mask, so future masked-layer probes can avoid
+guessing whether mask sampling is involved.
+
+Gradient Map fixed-point interpolation spike: replacing the current float
+gradient color interpolation with the recovered `0x10000` fixed-point truncation
+model lowered `Test_Gradiation` max only from `10` to `9`, but expanded visible
+pixels from `45528` to `1028499` and raised mean from roughly `0.31` to
+`0.77`. `Test_ToneCurve` stayed exact and `Test_HSL` stayed unchanged, so the
+failure is local to Gradient Map. Rejected; keep the current rounded float LUT
+interpolation until a native path explains how the fixed-point runtime model
+maps back to the compact `.clip` payload without broad regression.
