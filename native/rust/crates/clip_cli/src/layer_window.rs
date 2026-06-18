@@ -9,12 +9,7 @@ pub(crate) fn dump_layer_window(
     y: u32,
     radius: u32,
 ) -> Result<(), String> {
-    let image = clip_file::read_raster_layer_rgba(path, layer_id).map_err(|err| {
-        format!(
-            "failed to read raster layer {} from {path:?}: {err}",
-            layer_id.0
-        )
-    })?;
+    let image = read_layer_rgba(path, layer_id)?;
     print_rgba_layer_window(&image, layer_id, x, y, radius);
 
     match clip_file::read_layer_mask_alpha(path, layer_id) {
@@ -22,6 +17,47 @@ pub(crate) fn dump_layer_window(
         Err(err) => println!("mask window layer={} unavailable={err}", layer_id.0),
     }
     Ok(())
+}
+
+pub(crate) fn dump_layer_rgba(
+    path: &Path,
+    layer_id: LayerId,
+    out_path: &Path,
+) -> Result<(), String> {
+    let image = read_layer_rgba(path, layer_id)?;
+    let expected_len = usize::try_from(u64::from(image.width) * u64::from(image.height) * 4)
+        .map_err(|_| format!("layer {} byte length does not fit in usize", layer_id.0))?;
+    if image.pixels.len() != expected_len {
+        return Err(format!(
+            "layer {} decoded byte length mismatch: expected {}, got {}",
+            layer_id.0,
+            expected_len,
+            image.pixels.len()
+        ));
+    }
+    std::fs::write(out_path, &image.pixels).map_err(|err| {
+        format!(
+            "failed to write layer {} RGBA to {out_path:?}: {err}",
+            layer_id.0
+        )
+    })?;
+    println!(
+        "wrote layer rgba layer={} size={}x{} path={:?}",
+        layer_id.0, image.width, image.height, out_path
+    );
+    Ok(())
+}
+
+fn read_layer_rgba(
+    path: &Path,
+    layer_id: LayerId,
+) -> Result<clip_file::tiles::RgbaTileImage, String> {
+    clip_file::read_raster_layer_rgba(path, layer_id).map_err(|err| {
+        format!(
+            "failed to read raster layer {} from {path:?}: {err}",
+            layer_id.0
+        )
+    })
 }
 
 fn print_rgba_layer_window(

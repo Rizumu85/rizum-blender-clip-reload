@@ -25,7 +25,7 @@ fn main() {
     let _program = args.next();
     let Some(path) = args.next() else {
         eprintln!(
-            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--gpu-trace-layer-pixel <layer> <x> <y>] [--tile-silo-estimate] [--tile-size <px>] | clip_cli --blender-render-server"
+            "usage: clip_cli <file.clip> [--plan-only] [--compare-png <ref.png>] [--blender-render-rgba <out.rgba> --blender-render-json <out.json> [--blender-reload-old-json <manifest.json>]] [--dump-layer-window <id> <x> <y> <radius>] [--dump-layer-rgba <id> <out.rgba>] [--gpu-roundtrip-layer <id>] [--gpu-upload-planned-rasters] [--gpu-draw-layer <id>] [--gpu-simple-stack] [--gpu-support-check] [--gpu-support-json] [--gpu-normal-stack] [--gpu-trace-pixel <x> <y>] [--gpu-trace-layer-pixel <layer> <x> <y>] [--tile-silo-estimate] [--tile-size <px>] | clip_cli --blender-render-server"
         );
         process::exit(2);
     };
@@ -146,6 +146,16 @@ fn main() {
 
     if let Some((layer_id, x, y, radius)) = options.dump_layer_window {
         match layer_window::dump_layer_window(&path, layer_id, x, y, radius) {
+            Ok(()) => {}
+            Err(err) => {
+                eprintln!("{err}");
+                process::exit(1);
+            }
+        }
+    }
+
+    if let Some((layer_id, out_path)) = &options.dump_layer_rgba {
+        match layer_window::dump_layer_rgba(&path, *layer_id, out_path) {
             Ok(()) => {}
             Err(err) => {
                 eprintln!("{err}");
@@ -456,6 +466,7 @@ struct CliOptions {
     tile_silo_estimate: bool,
     tile_size: u32,
     dump_layer_window: Option<(LayerId, u32, u32, u32)>,
+    dump_layer_rgba: Option<(LayerId, PathBuf)>,
     compare_png_path: Option<PathBuf>,
     blender_render_rgba_path: Option<PathBuf>,
     blender_render_json_path: Option<PathBuf>,
@@ -527,6 +538,13 @@ fn parse_options(args: Vec<OsString>) -> CliOptions {
             let y = parse_next_u32(&mut iter, "--dump-layer-window y");
             let radius = parse_next_u32(&mut iter, "--dump-layer-window radius");
             options.dump_layer_window = Some((LayerId(layer_id), x, y, radius));
+        } else if arg == "--dump-layer-rgba" {
+            let layer_id = parse_next_u32(&mut iter, "--dump-layer-rgba layer id");
+            let Some(path) = iter.next() else {
+                eprintln!("missing value after --dump-layer-rgba layer id");
+                process::exit(2);
+            };
+            options.dump_layer_rgba = Some((LayerId(layer_id), PathBuf::from(path)));
         } else if arg == "--compare-png" {
             let Some(path) = iter.next() else {
                 eprintln!("missing value after --compare-png");

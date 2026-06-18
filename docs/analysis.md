@@ -4164,6 +4164,25 @@ formula. The CLI diagnostic `--dump-layer-window` now prints a matching mask
 alpha window when the layer has a mask, so future masked-layer probes can avoid
 guessing whether mask sampling is involved.
 
+Follow-up MXL probe: `clip_cli --dump-layer-rgba` was added as a developer-only
+decoded-source dump and used to export layers `3`, `309`, `310`, and `312`.
+`--gpu-trace-pixel 2672 6177` confirms the root stack starts with opaque
+`layer 3 [Ref_MXL_Idol1]` at `[97,79,85,255]`; the later `layer 306 [leg base]`
+subtree independently reaches the same value through `layer 310` and
+`layer 312` Multiply, so the broad residual is not a top-layer visibility or
+region-stitching failure. `LayerCompManager.AppliedLayerCompIndex` is `-1`, so
+there is no obvious applied layer-comp override to explain the difference.
+
+An offline formula sweep over the main stocking residual shows that adding about
+`+4` to the effective alpha of `layer 312` collapses most of that local `+2`
+delta, but applying the same treatment to both masked Multiply layers reverses
+the signed error and worsens the region. The required effective alpha also
+differs by colour channel when solved from CSP's target bytes. This remains a
+rejected local fit, not a faithful compositor rule. The Blender worker path
+itself is healthy for MXL: `Ref_MXL_Idol1.clip --blender-render-rgba/--json`
+writes the expected `5877x8326` / `195727608`-byte payload and metadata without
+the historical max-texture import failure.
+
 Gradient Map fixed-point interpolation spike: replacing the current float
 gradient color interpolation with the recovered `0x10000` fixed-point truncation
 model lowered `Test_Gradiation` max only from `10` to `9`, but expanded visible
