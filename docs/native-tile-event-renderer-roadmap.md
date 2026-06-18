@@ -342,11 +342,16 @@ Done in first form: `clip_gpu::stream_program` now plans raster-run,
 raster-only clipping-run, and legacy-source barrier segments, while
 `stream_sequence.rs` executes segments.
 
+Second form: `stream_program_lowering.rs` now owns the first-class
+`LoweringDecision` interface for the next source range. The planner consumes
+tile-local or barrier decisions with source span and cost hints instead of
+directly branching on tile-silo eligibility helpers.
+
 Next deepening:
 
 - keep expanding explicit `BarrierReason` coverage as new semantics are lowered
-- make lowering decisions first-class instead of using scattered boolean
-  eligibility helpers
+- continue moving boolean eligibility helpers behind lowering-decision modules
+  as new segment kinds are added
 - attach cost hints and barrier reasons to future segment kinds, not only the
   current legacy-source barrier
 

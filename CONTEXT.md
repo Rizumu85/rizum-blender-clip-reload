@@ -91,6 +91,14 @@ must currently execute through the faithful legacy source path. Future native
 performance work should add new segment kinds instead of adding opportunistic
 branches directly to streaming traversal code.
 
+**Lowering decision**
+
+The render-program planner's first-class answer for the next source range. It
+states whether that range lowers to a tile-local render segment or remains a
+barrier, plus the segment kind, source span, barrier reason, and cost hint. It
+keeps eligibility logic behind the planner seam instead of spreading boolean
+checks through the executor.
+
 **Performance plan diagnostic**
 
 The metadata/block-level CLI report that explains the current native render

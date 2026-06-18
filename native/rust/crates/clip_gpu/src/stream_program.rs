@@ -2,13 +2,12 @@ use std::ops::Range;
 
 use clip_model::CanvasSize;
 
+use crate::GpuNormalStackSource;
 use crate::stream::GpuNormalStackResourceProvider;
-use crate::stream_clipping_tile_silo::clipping_run_silo_is_eligible;
-use crate::stream_program_barriers::{
-    RenderProgramBarrierCounts, RenderProgramBarrierReason, barrier_reason_for_source,
+use crate::stream_program_barriers::{RenderProgramBarrierCounts, RenderProgramBarrierReason};
+use crate::stream_program_lowering::{
+    BarrierLowering, LoweringDecision, TileLocalLowering, lower_source_range,
 };
-use crate::stream_tile_silo::raster_silo_run_len;
-use crate::{GpuClippedStackSource, GpuNormalStackSource};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct RenderProgram {
@@ -109,61 +108,29 @@ where
     let mut source_index = 0usize;
 
     while source_index < sources.len() {
-        if let GpuNormalStackSource::ClippingRun { base, clipped } = &sources[source_index]
-            && clipping_run_silo_is_eligible(
-                provider,
-                output_size,
-                target_origin,
-                target_size,
-                *base,
-                clipped,
-            )
-        {
-            let tile_events = raster_clipping_tile_event_count(clipped);
-            push_tile_segment(
-                &mut segments,
-                &mut stats,
-                source_index..source_index + 1,
-                TileProgramKind::RasterClippingRun,
-                tile_events,
-            );
-            source_index += 1;
-            continue;
-        }
-
-        let run_len = raster_silo_run_len(
+        let lowering = lower_source_range(
             provider,
             output_size,
             target_origin,
             target_size,
             &sources[source_index..],
         );
-        if run_len >= 2 {
-            push_tile_segment(
+        let source_len = lowering.source_len();
+        match lowering {
+            LoweringDecision::TileLocal(tile) => push_tile_segment(
                 &mut segments,
                 &mut stats,
-                source_index..source_index + run_len,
-                TileProgramKind::RasterRun,
-                u32::try_from(run_len).unwrap_or(u32::MAX),
-            );
-            source_index += run_len;
-            continue;
+                source_index..source_index + source_len,
+                tile,
+            ),
+            LoweringDecision::Barrier(barrier) => push_barrier_segment(
+                &mut segments,
+                &mut stats,
+                source_index..source_index + source_len,
+                barrier,
+            ),
         }
-
-        let reason = barrier_reason_for_source(
-            provider,
-            output_size,
-            target_origin,
-            target_size,
-            &sources[source_index],
-        );
-        push_barrier_segment(
-            &mut segments,
-            &mut stats,
-            source_index..source_index + 1,
-            reason,
-        );
-        source_index += 1;
+        source_index += source_len;
     }
 
     RenderProgram { segments, stats }
@@ -173,23 +140,22 @@ fn push_tile_segment(
     segments: &mut Vec<RenderSegment>,
     stats: &mut RenderProgramStats,
     source_range: Range<usize>,
-    tile_kind: TileProgramKind,
-    tile_events: u32,
+    lowering: TileLocalLowering,
 ) {
     segments.push(RenderSegment {
         source_range,
-        kind: RenderSegmentKind::TileLocal(tile_kind),
-        cost_hint: SegmentCostHint {
-            expected_passes: 1,
-            tile_events,
-            legacy_sources: 0,
-        },
+        kind: RenderSegmentKind::TileLocal(lowering.kind),
+        cost_hint: lowering.cost_hint,
     });
     stats.segments += 1;
     stats.tile_local_segments += 1;
-    stats.planned_passes += 1;
-    stats.planned_tile_events = stats.planned_tile_events.saturating_add(tile_events);
-    match tile_kind {
+    stats.planned_passes = stats
+        .planned_passes
+        .saturating_add(lowering.cost_hint.expected_passes);
+    stats.planned_tile_events = stats
+        .planned_tile_events
+        .saturating_add(lowering.cost_hint.tile_events);
+    match lowering.kind {
         TileProgramKind::RasterRun => stats.raster_run_segments += 1,
         TileProgramKind::RasterClippingRun => stats.raster_clipping_run_segments += 1,
     }
@@ -199,31 +165,20 @@ fn push_barrier_segment(
     segments: &mut Vec<RenderSegment>,
     stats: &mut RenderProgramStats,
     source_range: Range<usize>,
-    reason: RenderProgramBarrierReason,
+    lowering: BarrierLowering,
 ) {
-    let legacy_sources = u32::try_from(source_range.len()).unwrap_or(u32::MAX);
     segments.push(RenderSegment {
         source_range,
-        kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(reason)),
-        cost_hint: SegmentCostHint {
-            expected_passes: legacy_sources.max(1),
-            tile_events: 0,
-            legacy_sources,
-        },
+        kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(lowering.reason)),
+        cost_hint: lowering.cost_hint,
     });
     stats.segments += 1;
     stats.barrier_segments += 1;
     stats.legacy_source_segments += 1;
-    stats.planned_passes = stats.planned_passes.saturating_add(legacy_sources.max(1));
-    stats.barrier_reasons.add(reason);
-}
-
-fn raster_clipping_tile_event_count(clipped: &[GpuClippedStackSource]) -> u32 {
-    let clipped_rasters = clipped
-        .iter()
-        .filter(|source| matches!(source, GpuClippedStackSource::Raster(_)))
-        .count();
-    u32::try_from(clipped_rasters.saturating_add(1)).unwrap_or(u32::MAX)
+    stats.planned_passes = stats
+        .planned_passes
+        .saturating_add(lowering.cost_hint.expected_passes);
+    stats.barrier_reasons.add(lowering.reason);
 }
 
 #[cfg(test)]
@@ -234,8 +189,9 @@ mod tests {
 
     use super::*;
     use crate::{
-        GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterBlendMode,
-        GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError, GpuRenderer,
+        GpuClippedStackSource, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
+        GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError,
+        GpuRenderer,
     };
 
     #[test]

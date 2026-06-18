@@ -20,6 +20,7 @@ mod stream_groups;
 mod stream_program;
 mod stream_program_barriers;
 mod stream_program_inspect;
+mod stream_program_lowering;
 mod stream_provider;
 mod stream_resources;
 #[cfg(test)]
