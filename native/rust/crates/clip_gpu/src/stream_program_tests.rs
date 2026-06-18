@@ -597,8 +597,12 @@ fn planner_keeps_container_beyond_scope_depth_limit_as_barrier() {
     assert_eq!(
         program.segments()[0].kind,
         RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+            RenderProgramBarrierReason::ScopeDepthLimitExceeded,
         ))
+    );
+    assert_eq!(
+        program.stats().barrier_reasons.scope_depth_limit_exceeded,
+        1
     );
 }
 
@@ -785,9 +789,50 @@ fn planner_keeps_through_beyond_scope_depth_limit_as_barrier() {
     assert_eq!(
         program.segments()[0].kind,
         RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::ThroughGroupNotLowered,
+            RenderProgramBarrierReason::ScopeDepthLimitExceeded,
         ))
     );
+    assert_eq!(
+        program.stats().barrier_reasons.scope_depth_limit_exceeded,
+        1
+    );
+}
+
+#[test]
+fn planner_reports_scope_tile_event_limit_as_barrier() {
+    let ids: Vec<u32> = (1..=255).collect();
+    let provider = PlannerProvider::from_sizes(
+        ids.iter()
+            .copied()
+            .map(|id| (raster_key(id), CanvasSize::new(4, 4))),
+    );
+    let sources = vec![GpuNormalStackSource::Container {
+        children: ids
+            .iter()
+            .copied()
+            .map(raster_source)
+            .map(GpuNormalStackSource::Raster)
+            .collect(),
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::TileEventLimitExceeded,
+        ))
+    );
+    assert_eq!(program.stats().barrier_reasons.tile_event_limit_exceeded, 1);
 }
 
 struct PlannerProvider {
@@ -797,6 +842,10 @@ struct PlannerProvider {
 
 impl PlannerProvider {
     fn new<const N: usize>(sizes: [(GpuRasterResourceKey, CanvasSize); N]) -> Self {
+        Self::from_sizes(sizes)
+    }
+
+    fn from_sizes(sizes: impl IntoIterator<Item = (GpuRasterResourceKey, CanvasSize)>) -> Self {
         Self {
             sizes: sizes.into_iter().collect(),
             opaque_masks: HashMap::new(),

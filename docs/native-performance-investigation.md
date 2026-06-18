@@ -618,6 +618,11 @@ Verification after this milestone:
 - Planner and GPU unit coverage prove explicitly fully opaque masks do not
   block simple container/THROUGH tile-local lowering, while unknown masks now
   report the explicit `ScopeMaskNotLowered` barrier reason.
+- Planner unit coverage reports scope stacks beyond the fixed accumulator limit
+  as `ScopeDepthLimitExceeded`, and simple scope programs above
+  `MAX_SILO_EVENTS` as `TileEventLimitExceeded`, so large/complex scope
+  barriers are measurable instead of collapsing into generic container or
+  THROUGH barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - Guard comparisons remain stable: `Test_Clipping` exact,

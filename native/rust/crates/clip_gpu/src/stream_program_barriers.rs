@@ -2,6 +2,7 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_effects::raster_can_affect_output;
+use crate::stream_tile_scope_silo_plan::{SimpleScopeBarrierHint, simple_scope_barrier_hint};
 use crate::stream_tile_silo_plan::{source_bounds, source_local_bounds};
 use crate::{
     GpuClippedStackSource, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
@@ -20,6 +21,8 @@ pub struct RenderProgramBarrierCounts {
     pub clipping_run_not_lowered: u32,
     pub clipped_container_sibling_not_lowered: u32,
     pub scope_mask_not_lowered: u32,
+    pub scope_depth_limit_exceeded: u32,
+    pub tile_event_limit_exceeded: u32,
     pub isolated_container_requires_intermediate: u32,
     pub through_group_not_lowered: u32,
 }
@@ -50,6 +53,12 @@ impl RenderProgramBarrierCounts {
             }
             RenderProgramBarrierReason::ScopeMaskNotLowered => {
                 self.scope_mask_not_lowered += 1;
+            }
+            RenderProgramBarrierReason::ScopeDepthLimitExceeded => {
+                self.scope_depth_limit_exceeded += 1;
+            }
+            RenderProgramBarrierReason::TileEventLimitExceeded => {
+                self.tile_event_limit_exceeded += 1;
             }
             RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate => {
                 self.isolated_container_requires_intermediate += 1;
@@ -91,6 +100,12 @@ impl RenderProgramBarrierCounts {
         self.scope_mask_not_lowered = self
             .scope_mask_not_lowered
             .saturating_add(other.scope_mask_not_lowered);
+        self.scope_depth_limit_exceeded = self
+            .scope_depth_limit_exceeded
+            .saturating_add(other.scope_depth_limit_exceeded);
+        self.tile_event_limit_exceeded = self
+            .tile_event_limit_exceeded
+            .saturating_add(other.tile_event_limit_exceeded);
         self.isolated_container_requires_intermediate = self
             .isolated_container_requires_intermediate
             .saturating_add(other.isolated_container_requires_intermediate);
@@ -142,6 +157,14 @@ impl RenderProgramBarrierCounts {
                 self.scope_mask_not_lowered,
             ),
             (
+                RenderProgramBarrierReason::ScopeDepthLimitExceeded,
+                self.scope_depth_limit_exceeded,
+            ),
+            (
+                RenderProgramBarrierReason::TileEventLimitExceeded,
+                self.tile_event_limit_exceeded,
+            ),
+            (
                 RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
                 self.isolated_container_requires_intermediate,
             ),
@@ -168,6 +191,8 @@ pub enum RenderProgramBarrierReason {
     ClippingRunNotLowered,
     ClippedContainerSiblingNotLowered,
     ScopeMaskNotLowered,
+    ScopeDepthLimitExceeded,
+    TileEventLimitExceeded,
     IsolatedContainerRequiresIntermediate,
     ThroughGroupNotLowered,
 }
@@ -185,6 +210,8 @@ impl RenderProgramBarrierReason {
             Self::ClippingRunNotLowered => "ClippingRunNotLowered",
             Self::ClippedContainerSiblingNotLowered => "ClippedContainerSiblingNotLowered",
             Self::ScopeMaskNotLowered => "ScopeMaskNotLowered",
+            Self::ScopeDepthLimitExceeded => "ScopeDepthLimitExceeded",
+            Self::TileEventLimitExceeded => "TileEventLimitExceeded",
             Self::IsolatedContainerRequiresIntermediate => "IsolatedContainerRequiresIntermediate",
             Self::ThroughGroupNotLowered => "ThroughGroupNotLowered",
         }
@@ -216,6 +243,10 @@ where
         } => {
             if scope_mask_not_lowered(provider, *mask_key, children) {
                 RenderProgramBarrierReason::ScopeMaskNotLowered
+            } else if let Some(reason) =
+                scope_barrier_hint_reason(provider, output_size, target_origin, target_size, source)
+            {
+                reason
             } else {
                 RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate
             }
@@ -225,12 +256,36 @@ where
         } => {
             if scope_mask_not_lowered(provider, *mask_key, children) {
                 RenderProgramBarrierReason::ScopeMaskNotLowered
+            } else if let Some(reason) =
+                scope_barrier_hint_reason(provider, output_size, target_origin, target_size, source)
+            {
+                reason
             } else {
                 RenderProgramBarrierReason::ThroughGroupNotLowered
             }
         }
         GpuNormalStackSource::SolidColor { .. } => RenderProgramBarrierReason::SolidColorNotLowered,
         GpuNormalStackSource::LutFilter { .. } => RenderProgramBarrierReason::FilterNotLowered,
+    }
+}
+
+fn scope_barrier_hint_reason<P>(
+    provider: &P,
+    output_size: CanvasSize,
+    target_origin: (i32, i32),
+    target_size: CanvasSize,
+    source: &GpuNormalStackSource,
+) -> Option<RenderProgramBarrierReason>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    match simple_scope_barrier_hint(provider, output_size, target_origin, target_size, source)? {
+        SimpleScopeBarrierHint::ScopeDepthLimitExceeded => {
+            Some(RenderProgramBarrierReason::ScopeDepthLimitExceeded)
+        }
+        SimpleScopeBarrierHint::TileEventLimitExceeded => {
+            Some(RenderProgramBarrierReason::TileEventLimitExceeded)
+        }
     }
 }
 

@@ -327,6 +327,8 @@ Expected output shape:
     "ByteDomainBlendNotLowered": 31,
     "IsolatedContainerRequiresIntermediate": 40,
     "ScopeMaskNotLowered": 6,
+    "ScopeDepthLimitExceeded": 2,
+    "TileEventLimitExceeded": 1,
     "ThroughGroupNotLowered": 8,
     "FilterNotLowered": 15
   },
@@ -570,6 +572,9 @@ Verification:
 - Planner and GPU unit tests prove masks that are explicitly known to be fully
   opaque do not block simple container/THROUGH lowering, while unknown masks
   remain `ScopeMaskNotLowered` barriers.
+- Planner unit tests classify scope stacks beyond the fixed accumulator depth
+  as `ScopeDepthLimitExceeded`, and scope programs whose event count exceeds
+  `MAX_SILO_EVENTS` as `TileEventLimitExceeded`.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
@@ -577,7 +582,6 @@ Verification:
 
 Next scope-stack work:
 
-- event count within limit
 - broader nested THROUGH, especially fractional-opacity nested THROUGH
 - non-opaque masked container/THROUGH scopes
 - unsupported or masked filters inside scope stacks
