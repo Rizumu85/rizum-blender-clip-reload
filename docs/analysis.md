@@ -3917,3 +3917,44 @@ Repository hygiene decision after Rizum's fixture update: the old
 is the current full-sample reference, and the numbered
 `IllustrationBlendModes*.png` plus `IllustrationBlendModesB*.png` exports are
 intentional progressive layer reveal references for future blend-mode tracing.
+
+2026-06-18 IllustrationBlendModesB Color low-clamp follow-up: after the Hue
+and Saturation fixes, the current max moved into a Color blend region. At
+`(308,239)`, the progressive reference before Color (`IllustrationBlendModesB13`)
+is `[0,0,241,255]`, the Color source is `[84,51,250,255]`, and the full CSP
+reference is `[28,0,168,255]`. The existing `0.3/0.6/0.1` Color formula produced
+`[27,0,161,255]`; full Rec.601 Color produced this point but regressed
+`Test_Color` to visible pixels. Scanning Color-only pixels where the Color source
+is fully opaque and later Brightness/Lighten layers are transparent showed CSP's
+low-luminosity blue outputs are stepped (`dst_b=223..231 -> [26,0,155]`,
+`232..240 -> [27,0,162]`, `241..245 -> [28,0,168]`) rather than the continuous
+current curve.
+
+Accepted scope: Color blend only, and only when the ordinary Color luminosity
+translation would enter the low-side ClipColor branch (`min < 0`). In that branch
+the GPU path rounds source and target luminosity to the u8 grid using canonical
+`0.3/0.59/0.11` weights before applying the low clamp. Ordinary/high-clamp Color
+stays on the existing `0.3/0.6/0.1` path so `Test_Color` remains `raw_max=1` /
+`visible_px=0`. A new `clip_gpu` one-pixel test locks `[84,51,250]` Color over
+`[0,0,241]` to `[28,0,168]`.
+
+Rejected probes during this pass:
+
+- Color-only Rec.601 reduced one B hot spot but changed `Test_Color` to
+  `raw_max=2` / `visible_px=24`.
+- Disabling Hue's minimum-channel ceil improved one partial-Hue boundary but
+  regressed the B max back to `(427,138)` at `raw_max=8`.
+- Flooring the partial-Hue pure blend target moved the max back to `(382,99)`
+  and slightly worsened the B full metrics, so keep only the accepted final Hue
+  writeback floor.
+
+Verification after the accepted Color branch: `cargo fmt --all --check` and
+`cargo test -q` pass. PNG comparisons: `IllustrationBlendModesB` improves from
+`raw_max=7` / `visible_px=16653` to `raw_max=5` / `visible_px=3194`;
+`IllustrationBlendModes` remains `raw_max=7` / `visible_px=1008`;
+`Test_Color`, `Test_Hue`, and `Test_Saturation` remain `raw_max=1` /
+`visible_px=0`; `Test_AddGlowMultiply` remains `raw_max=1` / visible `0`.
+The remaining B max is in the Pin Light/Hue/Saturation/Lighten chain; at
+`(374,108)`, native Hue is `[93,62,56]` while the B12 reference is
+`[93,61,56]`, and Saturation amplifies that boundary to the final red-channel
+residual.

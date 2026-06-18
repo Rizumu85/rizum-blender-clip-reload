@@ -347,6 +347,8 @@ Progress:
   (`0.2126/0.7152/0.0722`) for source/destination comparison. HSL blend modes
   use CSP's sample-backed luminosity weights (`0.3/0.6/0.1`) and quantize
   `set_sat` tiny spans (`max-min <= 2/255`) to min/max channel membership.
+  Color uses a rounded byte-domain `0.3/0.59/0.11` luminosity path only for the
+  low-side ClipColor branch; ordinary/high-clamp Color stays on `0.3/0.6/0.1`.
   Saturation additionally ceils the minimum output channel after the high-end
   luminosity clamp when the quantized base span is greater than `4/255`;
   near-neutral spans keep the tiny-span path.

@@ -1289,6 +1289,23 @@ fn color_raster_source_uses_hsl_blend_formula() {
 }
 
 #[test]
+fn color_raster_source_quantizes_low_luminosity_clip() {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Color,
+            [84, 51, 250, 255],
+            Rgba8 {
+                r: 0,
+                g: 0,
+                b: 241,
+                a: 255,
+            },
+        ),
+        [28, 0, 168, 255]
+    );
+}
+
+#[test]
 fn glow_dodge_raster_source_uses_byte_domain_formula() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = GpuRasterResourceKey {
