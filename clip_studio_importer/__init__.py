@@ -34,23 +34,23 @@ from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
 
 from . import i18n
+from . import image_state
 from . import native_bridge
 
 
-CLIP_SOURCE_KEY = "clip_source"   # custom prop on Image: path to source .clip
-CLIP_MTIME_KEY = "clip_mtime"     # custom prop on Image: last-seen mtime (str)
-CLIP_SIZE_KEY = native_bridge.CLIP_SIZE_KEY
-CLIP_SHA256_KEY = native_bridge.CLIP_SHA256_KEY
-CLIP_NATIVE_KEY = native_bridge.CLIP_NATIVE_KEY
-CLIP_SUPPORT_DETAILS_EXPANDED_KEY = "clip_support_details_expanded"
-CLIP_PACK_STATUS_KEY = "clip_pack_status"
-CLIP_PACK_LAST_SECONDS_KEY = "clip_pack_last_seconds"
-CLIP_PACK_ERROR_KEY = "clip_pack_error"
-PACK_STATUS_PACKED = "packed"
-PACK_STATUS_NEEDS_PACK = "needs_pack"
-PACK_STATUS_RENDERING = "rendering"
-PACK_STATUS_PACKING = "packing"
-PACK_STATUS_ERROR = "error"
+CLIP_SOURCE_KEY = image_state.CLIP_SOURCE_KEY
+CLIP_SIZE_KEY = image_state.CLIP_SIZE_KEY
+CLIP_SHA256_KEY = image_state.CLIP_SHA256_KEY
+CLIP_NATIVE_KEY = image_state.CLIP_NATIVE_KEY
+CLIP_SUPPORT_DETAILS_EXPANDED_KEY = image_state.CLIP_SUPPORT_DETAILS_EXPANDED_KEY
+CLIP_PACK_STATUS_KEY = image_state.CLIP_PACK_STATUS_KEY
+CLIP_PACK_LAST_SECONDS_KEY = image_state.CLIP_PACK_LAST_SECONDS_KEY
+CLIP_PACK_ERROR_KEY = image_state.CLIP_PACK_ERROR_KEY
+PACK_STATUS_PACKED = image_state.PACK_STATUS_PACKED
+PACK_STATUS_NEEDS_PACK = image_state.PACK_STATUS_NEEDS_PACK
+PACK_STATUS_RENDERING = image_state.PACK_STATUS_RENDERING
+PACK_STATUS_PACKING = image_state.PACK_STATUS_PACKING
+PACK_STATUS_ERROR = image_state.PACK_STATUS_ERROR
 SUPPORT_DETAIL_PREVIEW_LINES = 4
 ADDON_PKG = __package__
 
@@ -76,32 +76,13 @@ def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
         bpy_module=bpy,
         pack=False,
     )
-    image[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
-    _mark_image_needs_pack(image)
+    image_state.set_last_render_seconds(image, time.time() - started_at)
+    image_state.mark_needs_pack(image)
     return image
 
 
-def _delete_image_key(image, key: str) -> None:
-    try:
-        del image[key]
-    except (KeyError, TypeError):
-        pass
-
-
-def _set_pack_status(image, status: str, *, error: str = "") -> None:
-    image[CLIP_PACK_STATUS_KEY] = status
-    if error:
-        image[CLIP_PACK_ERROR_KEY] = error
-    elif status != PACK_STATUS_ERROR:
-        _delete_image_key(image, CLIP_PACK_ERROR_KEY)
-
-
-def _mark_image_needs_pack(image) -> None:
-    _set_pack_status(image, PACK_STATUS_NEEDS_PACK)
-
-
 def _resolve_clip_source_path(path: str | None) -> str:
-    return native_bridge.resolve_source_path(str(path or ""), _blender_abspath())
+    return image_state.resolve_source_path(str(path or ""), _blender_abspath())
 
 
 def _blender_abspath():
@@ -110,18 +91,11 @@ def _blender_abspath():
 
 
 def _image_source_matches(img, clip_path: str) -> bool:
-    stored_path = str(img.get(CLIP_SOURCE_KEY, "") or "")
-    return stored_path == clip_path or _resolve_clip_source_path(stored_path) == clip_path
+    return image_state.image_source_matches(img, clip_path, _blender_abspath())
 
 
 def _pack_status_label_raw(status: str) -> str:
-    return {
-        PACK_STATUS_PACKED: "Packed",
-        PACK_STATUS_NEEDS_PACK: "Needs Pack",
-        PACK_STATUS_RENDERING: "Waiting for render",
-        PACK_STATUS_PACKING: "Packing",
-        PACK_STATUS_ERROR: "Pack Error",
-    }.get(status, "Unknown")
+    return image_state.pack_status_label_raw(status)
 
 
 def _pack_status_label(status: str) -> str:
@@ -129,29 +103,11 @@ def _pack_status_label(status: str) -> str:
 
 
 def _pack_status_icon(status: str) -> str:
-    return {
-        PACK_STATUS_PACKED: "CHECKMARK",
-        PACK_STATUS_NEEDS_PACK: "INFO",
-        PACK_STATUS_RENDERING: "SORTTIME",
-        PACK_STATUS_PACKING: "SORTTIME",
-        PACK_STATUS_ERROR: "ERROR",
-    }.get(status, "INFO")
+    return image_state.pack_status_icon(status)
 
 
 def _pack_image_now(image) -> float:
-    if not hasattr(image, "pack"):
-        raise RuntimeError("Blender image does not support packing")
-    _set_pack_status(image, PACK_STATUS_PACKING)
-    started_at = time.perf_counter()
-    try:
-        image.pack()
-    except Exception as exc:
-        _set_pack_status(image, PACK_STATUS_ERROR, error=str(exc))
-        raise
-    seconds = time.perf_counter() - started_at
-    image[CLIP_PACK_LAST_SECONDS_KEY] = float(seconds)
-    _set_pack_status(image, PACK_STATUS_PACKED)
-    return seconds
+    return image_state.pack_image_now(image)
 
 
 def _schedule_pack_after_initial_import(image_name: str, clip_path: str) -> None:
@@ -221,13 +177,7 @@ def _addon_prefs():
 
 
 def _reload_status_label_raw(status: str) -> str:
-    return {
-        native_bridge.RELOAD_STATUS_OK: "Ready",
-        native_bridge.RELOAD_STATUS_STALE: "Source changed",
-        native_bridge.RELOAD_STATUS_MISSING: "Source missing",
-        native_bridge.RELOAD_STATUS_REFRESHING: "Rendering",
-        native_bridge.RELOAD_STATUS_ERROR: "Render failed",
-    }.get(status, "Unknown")
+    return image_state.reload_status_label_raw(status)
 
 
 def _reload_status_label(status: str) -> str:
@@ -235,13 +185,7 @@ def _reload_status_label(status: str) -> str:
 
 
 def _reload_status_icon(status: str) -> str:
-    return {
-        native_bridge.RELOAD_STATUS_OK: "CHECKMARK",
-        native_bridge.RELOAD_STATUS_STALE: "FILE_REFRESH",
-        native_bridge.RELOAD_STATUS_MISSING: "ERROR",
-        native_bridge.RELOAD_STATUS_REFRESHING: "SORTTIME",
-        native_bridge.RELOAD_STATUS_ERROR: "ERROR",
-    }.get(status, "INFO")
+    return image_state.reload_status_icon(status)
 
 
 def _short_diagnostic(message: str, limit: int = 120) -> str:
@@ -254,28 +198,15 @@ def _short_diagnostic(message: str, limit: int = 120) -> str:
 
 
 def _image_int_property(img, key: str, default: int = 0) -> int:
-    try:
-        return int(img.get(key, default))
-    except (TypeError, ValueError):
-        return default
+    return image_state.int_property(img, key, default)
 
 
 def _image_float_property(img, key: str, default: float = 0.0) -> float:
-    try:
-        return float(img.get(key, default))
-    except (TypeError, ValueError):
-        return default
+    return image_state.float_property(img, key, default)
 
 
 def _image_has_property(img, key: str) -> bool:
-    try:
-        return key in img.keys()
-    except AttributeError:
-        return key in img
-
-
-def _native_bridge_key(attribute_name: str, fallback: str) -> str:
-    return getattr(native_bridge, attribute_name, fallback)
+    return image_state.has_property(img, key)
 
 
 def _format_seconds(value: float) -> str:
@@ -300,12 +231,12 @@ def _format_byte_count(value: int) -> str:
 
 
 def _support_location_lines(img) -> list[str]:
-    stored_locations = img.get(native_bridge.CLIP_SUPPORT_LOCATIONS_KEY, "")
+    stored_locations = img.get(image_state.CLIP_SUPPORT_LOCATIONS_KEY, "")
     locations = [line for line in str(stored_locations).splitlines() if line]
     if locations:
         return locations
-    support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
-    return list(native_bridge.support_detail_locations(support_details))
+    support_details = img.get(image_state.CLIP_SUPPORT_DETAILS_KEY, "")
+    return list(image_state.support_detail_locations(support_details))
 
 
 def _short_support_location(location: str) -> str:
@@ -334,9 +265,9 @@ def _support_location_summary(img, *, limit: int = 3) -> str:
 
 def _support_diagnostic_text(img) -> str:
     clip_path = img.get(CLIP_SOURCE_KEY, "")
-    status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
-    width = _image_int_property(img, native_bridge.CLIP_CANVAS_WIDTH_KEY)
-    height = _image_int_property(img, native_bridge.CLIP_CANVAS_HEIGHT_KEY)
+    status = img.get(image_state.CLIP_RELOAD_STATUS_KEY, "unknown")
+    width = _image_int_property(img, image_state.CLIP_CANVAS_WIDTH_KEY)
+    height = _image_int_property(img, image_state.CLIP_CANVAS_HEIGHT_KEY)
     lines = [
         "Clip Studio native render diagnostics",
         f"Source: {clip_path}",
@@ -348,16 +279,16 @@ def _support_diagnostic_text(img) -> str:
     source_sha256 = str(img.get(CLIP_SHA256_KEY, "") or "")
     if source_sha256:
         lines.append(f"Source SHA-256: {source_sha256}")
-    if status == native_bridge.RELOAD_STATUS_REFRESHING:
-        started_at = _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY)
+    if status == image_state.RELOAD_STATUS_REFRESHING:
+        started_at = _image_float_property(img, image_state.CLIP_RELOAD_STARTED_AT_KEY)
         if started_at:
             lines.append(f"Render elapsed: {_format_seconds(time.time() - started_at)}")
-    last_seconds = _image_float_property(img, native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY)
+    last_seconds = _image_float_property(img, image_state.CLIP_RELOAD_LAST_SECONDS_KEY)
     if last_seconds:
         lines.append(f"Last render duration: {_format_seconds(last_seconds)}")
-    diff_mode = str(img.get(native_bridge.CLIP_RELOAD_DIFF_MODE_KEY, "") or "")
+    diff_mode = str(img.get(image_state.CLIP_RELOAD_DIFF_MODE_KEY, "") or "")
     if diff_mode:
-        patch_count = _image_int_property(img, native_bridge.CLIP_RELOAD_PATCH_COUNT_KEY)
+        patch_count = _image_int_property(img, image_state.CLIP_RELOAD_PATCH_COUNT_KEY)
         if diff_mode == "patch":
             lines.append(f"Reload diff: patch ({patch_count} rects)")
         elif diff_mode == "no_change":
@@ -379,18 +310,18 @@ def _support_diagnostic_text(img) -> str:
         lines.append(f"Pack error: {pack_error}")
     if width and height:
         lines.append(f"Canvas: {width}x{height}")
-    renderer_abi = _image_int_property(img, native_bridge.CLIP_RENDERER_ABI_KEY)
+    renderer_abi = _image_int_property(img, image_state.CLIP_RENDERER_ABI_KEY)
     if renderer_abi:
         lines.append(f"Renderer ABI: {renderer_abi}")
-    renderer_version = img.get(native_bridge.CLIP_RENDERER_VERSION_KEY, "")
+    renderer_version = img.get(image_state.CLIP_RENDERER_VERSION_KEY, "")
     if renderer_version:
         lines.append(f"Renderer version: {renderer_version}")
-    layer_count = _image_int_property(img, native_bridge.CLIP_LAYER_COUNT_KEY)
+    layer_count = _image_int_property(img, image_state.CLIP_LAYER_COUNT_KEY)
     if layer_count:
         lines.append(f"Layers: {layer_count}")
     unsupported_count = _image_int_property(
         img,
-        native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
+        image_state.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
     )
     if unsupported_count:
         lines.append(f"Unsupported native nodes: {unsupported_count}")
@@ -398,58 +329,22 @@ def _support_diagnostic_text(img) -> str:
     if location_lines:
         lines.append("Unsupported locations:")
         lines.extend(f"- {line}" for line in location_lines)
-    support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
+    support_details = img.get(image_state.CLIP_SUPPORT_DETAILS_KEY, "")
     detail_lines = [line for line in str(support_details).splitlines() if line]
     if detail_lines:
         lines.append("Unsupported details:")
         lines.extend(detail_lines)
-    error = img.get(native_bridge.CLIP_RELOAD_ERROR_KEY, "")
+    error = img.get(image_state.CLIP_RELOAD_ERROR_KEY, "")
     if error:
         lines.append(f"Render error: {error}")
     return "\n".join(lines)
 
 
 def _timing_phase_lines(img) -> list[str]:
-    phases = [
-        (
-            "Native worker",
-            _native_bridge_key("CLIP_PHASE_WORKER_SECONDS_KEY", "clip_phase_worker_seconds"),
-        ),
-        (
-            "Worker output read",
-            _native_bridge_key(
-                "CLIP_PHASE_OUTPUT_READ_SECONDS_KEY",
-                "clip_phase_output_read_seconds",
-            ),
-        ),
-        (
-            "RGBA8 to Blender floats",
-            _native_bridge_key("CLIP_PHASE_CONVERT_SECONDS_KEY", "clip_phase_convert_seconds"),
-        ),
-        (
-            "Blender foreach_set",
-            _native_bridge_key("CLIP_PHASE_FOREACH_SECONDS_KEY", "clip_phase_foreach_seconds"),
-        ),
-        (
-            "Blender image update",
-            _native_bridge_key("CLIP_PHASE_UPDATE_SECONDS_KEY", "clip_phase_update_seconds"),
-        ),
-        (
-            "Blender image pack",
-            _native_bridge_key("CLIP_PHASE_PACK_SECONDS_KEY", "clip_phase_pack_seconds"),
-        ),
-        (
-            "Blender upload total",
-            _native_bridge_key("CLIP_PHASE_UPLOAD_SECONDS_KEY", "clip_phase_upload_seconds"),
-        ),
+    return [
+        f"{label}: {_format_seconds(seconds)}"
+        for label, seconds in image_state.timing_phase_values(img)
     ]
-    lines = []
-    for label, key in phases:
-        if not _image_has_property(img, key):
-            continue
-        seconds = _image_float_property(img, key)
-        lines.append(f"{label}: {_format_seconds(seconds)}")
-    return lines
 
 
 def _support_report_text_name(img) -> str:
@@ -498,14 +393,14 @@ def _schedule_async_decode(
     previous_manifest_json = ""
     if img is not None and _image_source_matches(img, clip_path):
         previous_manifest_json = str(
-            img.get(native_bridge.CLIP_RELOAD_MANIFEST_KEY, "") or ""
+            img.get(image_state.CLIP_RELOAD_MANIFEST_KEY, "") or ""
         )
-        img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
-        native_bridge.write_reload_status(
+        image_state.set_render_started(img)
+        image_state.write_reload_status(
             img,
-            native_bridge.RELOAD_STATUS_REFRESHING,
+            image_state.RELOAD_STATUS_REFRESHING,
         )
-        _set_pack_status(img, PACK_STATUS_RENDERING)
+        image_state.set_pack_status(img, image_state.PACK_STATUS_RENDERING)
 
     threading.Thread(
         target=_async_decode,
@@ -576,9 +471,9 @@ class IMAGE_OT_reload_clip_studio(Operator):
         stored_clip_path = img.get(CLIP_SOURCE_KEY)
         clip_path = _resolve_clip_source_path(stored_clip_path)
         if not clip_path or not os.path.exists(clip_path):
-            native_bridge.write_reload_status(
+            image_state.write_reload_status(
                 img,
-                native_bridge.RELOAD_STATUS_MISSING,
+                image_state.RELOAD_STATUS_MISSING,
             )
             self.report(
                 {"ERROR"},
@@ -780,12 +675,12 @@ def _async_decode(
         def _on_error():
             img = bpy.data.images.get(image_name) if image_name else None
             if img is not None and _image_source_matches(img, clip_path):
-                img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
-                native_bridge.write_reload_error(img, error_message)
+                image_state.set_last_render_seconds(img, time.time() - started_at)
+                image_state.write_reload_error(img, error_message)
                 if img.get(CLIP_PACK_STATUS_KEY) == PACK_STATUS_RENDERING:
-                    _set_pack_status(
+                    image_state.set_pack_status(
                         img,
-                        PACK_STATUS_ERROR,
+                        image_state.PACK_STATUS_ERROR,
                         error="Render failed before pixels were updated",
                     )
             return None
@@ -812,8 +707,8 @@ def _async_decode(
                 pack=False,
                 allow_resize=img is not None,
             )
-            img[native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY] = time.time() - started_at
-            _mark_image_needs_pack(img)
+            image_state.set_last_render_seconds(img, time.time() - started_at)
+            image_state.mark_needs_pack(img)
             if show_on_success:
                 _show_image_in_open_image_editors(bpy.context, img)
             if auto_pack_on_success:
@@ -849,22 +744,22 @@ def _watcher_tick():
         if not clip_path:
             continue
 
-        state = native_bridge.inspect_native_image_source(
+        state = image_state.inspect_native_image_source(
             img,
             resolve_path=_blender_abspath(),
         )
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:
-            if not _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY):
-                img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
-            native_bridge.write_reload_status(
+            if not _image_float_property(img, image_state.CLIP_RELOAD_STARTED_AT_KEY):
+                image_state.set_render_started(img)
+            image_state.write_reload_status(
                 img,
-                native_bridge.RELOAD_STATUS_REFRESHING,
+                image_state.RELOAD_STATUS_REFRESHING,
             )
             continue
-        native_bridge.write_reload_status(img, state.status)
-        if state.status == native_bridge.RELOAD_STATUS_MISSING:
+        image_state.write_reload_status(img, state.status)
+        if state.status == image_state.RELOAD_STATUS_MISSING:
             continue
         if not state.should_reload or state.current_mtime is None:
             continue
@@ -905,7 +800,7 @@ def _load_post_refresh_native_images(_dummy):
         if not img.get(CLIP_NATIVE_KEY):
             continue
 
-        state = native_bridge.inspect_native_image_source(
+        state = image_state.inspect_native_image_source(
             img,
             resolve_path=_blender_abspath(),
             check_hash=True,
@@ -913,15 +808,15 @@ def _load_post_refresh_native_images(_dummy):
         with _state_lock:
             running = bool(state.clip_path and state.clip_path in _in_flight)
         if running:
-            if not _image_float_property(img, native_bridge.CLIP_RELOAD_STARTED_AT_KEY):
-                img[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = time.time()
-            native_bridge.write_reload_status(
+            if not _image_float_property(img, image_state.CLIP_RELOAD_STARTED_AT_KEY):
+                image_state.set_render_started(img)
+            image_state.write_reload_status(
                 img,
-                native_bridge.RELOAD_STATUS_REFRESHING,
+                image_state.RELOAD_STATUS_REFRESHING,
             )
             continue
-        native_bridge.write_reload_status(img, state.status)
-        if state.status == native_bridge.RELOAD_STATUS_MISSING:
+        image_state.write_reload_status(img, state.status)
+        if state.status == image_state.RELOAD_STATUS_MISSING:
             if debug:
                 print(
                     "[clip_studio_importer] native source missing; "
@@ -1044,13 +939,13 @@ class IMAGE_PT_clip_studio(Panel):
         img = context.space_data.image
         layout = self.layout
         clip_path = img.get(CLIP_SOURCE_KEY, "")
-        status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
+        status = img.get(image_state.CLIP_RELOAD_STATUS_KEY, "unknown")
         prefs = _addon_prefs()
         developer_mode = bool(getattr(prefs, "developer_mode", False))
         layout.label(
             text=_ui("Source: {name}").format(name=os.path.basename(clip_path))
         )
-        if status != native_bridge.RELOAD_STATUS_OK:
+        if status != image_state.RELOAD_STATUS_OK:
             layout.label(
                 text=_reload_status_label(status),
                 icon=_reload_status_icon(status),
@@ -1081,9 +976,9 @@ class IMAGE_PT_clip_studio(Panel):
             )
         unsupported_count = _image_int_property(
             img,
-            native_bridge.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
+            image_state.CLIP_SUPPORT_UNSUPPORTED_COUNT_KEY,
         )
-        support_details = img.get(native_bridge.CLIP_SUPPORT_DETAILS_KEY, "")
+        support_details = img.get(image_state.CLIP_SUPPORT_DETAILS_KEY, "")
         detail_lines = [line for line in str(support_details).splitlines() if line]
         if unsupported_count or detail_lines:
             layout.label(
@@ -1133,10 +1028,10 @@ class IMAGE_PT_clip_studio(Panel):
                     text=_ui("Copy layer locations"),
                     icon="COPYDOWN",
                 )
-        if status == native_bridge.RELOAD_STATUS_MISSING:
+        if status == image_state.RELOAD_STATUS_MISSING:
             layout.label(text=_ui("Packed pixels are still visible."), icon="INFO")
-        elif status == native_bridge.RELOAD_STATUS_ERROR:
-            message = img.get(native_bridge.CLIP_RELOAD_ERROR_KEY, "")
+        elif status == image_state.RELOAD_STATUS_ERROR:
+            message = img.get(image_state.CLIP_RELOAD_ERROR_KEY, "")
             if message:
                 layout.label(
                     text=_ui("Error: {message}").format(
@@ -1149,10 +1044,10 @@ class IMAGE_PT_clip_studio(Panel):
             text=_ui("Manual Reload"),
             icon="FILE_REFRESH",
         )
-        if status == native_bridge.RELOAD_STATUS_REFRESHING:
+        if status == image_state.RELOAD_STATUS_REFRESHING:
             started_at = _image_float_property(
                 img,
-                native_bridge.CLIP_RELOAD_STARTED_AT_KEY,
+                image_state.CLIP_RELOAD_STARTED_AT_KEY,
             )
             if started_at:
                 layout.label(
@@ -1164,7 +1059,7 @@ class IMAGE_PT_clip_studio(Panel):
         if developer_mode:
             last_seconds = _image_float_property(
                 img,
-                native_bridge.CLIP_RELOAD_LAST_SECONDS_KEY,
+                image_state.CLIP_RELOAD_LAST_SECONDS_KEY,
             )
             if last_seconds:
                 layout.label(

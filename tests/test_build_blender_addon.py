@@ -16,14 +16,18 @@ class BuildBlenderAddonTests(unittest.TestCase):
             written = build_blender_addon.build_zip(output, include_native=False)
 
             self.assertIn("clip_studio_importer/__init__.py", written)
+            self.assertIn("clip_studio_importer/image_state.py", written)
             self.assertIn("clip_studio_importer/native_bridge.py", written)
+            self.assertIn("clip_studio_importer/worker_protocol.py", written)
             self.assertNotIn("clip_studio_importer/clip_loader.py", written)
 
             with zipfile.ZipFile(output) as archive:
                 names = set(archive.namelist())
 
         self.assertIn("clip_studio_importer/__init__.py", names)
+        self.assertIn("clip_studio_importer/image_state.py", names)
         self.assertIn("clip_studio_importer/native_bridge.py", names)
+        self.assertIn("clip_studio_importer/worker_protocol.py", names)
         self.assertNotIn("clip_studio_importer/clip_loader.py", names)
 
 

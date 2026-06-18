@@ -4,12 +4,38 @@ import os
 import unittest
 import importlib.util
 import sys
+import types
 from pathlib import Path
 
 
 def _load_native_bridge():
-    path = Path(__file__).resolve().parents[1] / "clip_studio_importer" / "native_bridge.py"
-    spec = importlib.util.spec_from_file_location("native_bridge_under_test", path)
+    package_dir = Path(__file__).resolve().parents[1] / "clip_studio_importer"
+    package = types.ModuleType("clip_studio_importer")
+    package.__path__ = [str(package_dir)]
+    sys.modules["clip_studio_importer"] = package
+
+    image_state_spec = importlib.util.spec_from_file_location(
+        "clip_studio_importer.image_state",
+        package_dir / "image_state.py",
+    )
+    image_state = importlib.util.module_from_spec(image_state_spec)
+    assert image_state_spec.loader is not None
+    sys.modules[image_state_spec.name] = image_state
+    image_state_spec.loader.exec_module(image_state)
+
+    worker_protocol_spec = importlib.util.spec_from_file_location(
+        "clip_studio_importer.worker_protocol",
+        package_dir / "worker_protocol.py",
+    )
+    worker_protocol = importlib.util.module_from_spec(worker_protocol_spec)
+    assert worker_protocol_spec.loader is not None
+    sys.modules[worker_protocol_spec.name] = worker_protocol
+    worker_protocol_spec.loader.exec_module(worker_protocol)
+
+    spec = importlib.util.spec_from_file_location(
+        "clip_studio_importer.native_bridge",
+        package_dir / "native_bridge.py",
+    )
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     sys.modules[spec.name] = module
@@ -18,6 +44,7 @@ def _load_native_bridge():
 
 
 native_bridge = _load_native_bridge()
+worker_protocol = sys.modules["clip_studio_importer.worker_protocol"]
 
 
 class FakePixels:
@@ -221,7 +248,7 @@ class NativeBridgeTests(unittest.TestCase):
 
     def test_worker_unsupported_detail_formats_issue_locator(self) -> None:
         self.assertEqual(
-            native_bridge._worker_unsupported_detail(
+            worker_protocol._worker_unsupported_detail(
                 {
                     "layer_id": 9,
                     "layer_name": "Tone curve",

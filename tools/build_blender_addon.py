@@ -7,8 +7,10 @@ import zipfile
 
 PACKAGE_FILES = (
     "__init__.py",
+    "image_state.py",
     "i18n.py",
     "native_bridge.py",
+    "worker_protocol.py",
 )
 
 NATIVE_LIBRARY_NAMES = (

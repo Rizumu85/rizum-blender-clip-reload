@@ -134,7 +134,11 @@ def _load_addon_module():
         preferences=types.SimpleNamespace(
             addons={
                 "clip_studio_importer": types.SimpleNamespace(
-                    preferences=types.SimpleNamespace(auto_reload=True)
+                    preferences=types.SimpleNamespace(
+                        auto_reload=True,
+                        debug=False,
+                        developer_mode=False,
+                    )
                 )
             }
         )
@@ -181,12 +185,15 @@ class FakeLayout:
     def prop(self, _owner, property_name: str, **kwargs) -> None:
         self.props.append((property_name, kwargs))
 
-    def row(self):
+    def row(self, **_kwargs):
+        return self
+
+    def box(self):
         return self
 
 
 class AddonDiagnosticsTests(unittest.TestCase):
-    def test_preferences_draw_reports_packaged_native_renderer(self) -> None:
+    def test_preferences_draw_hides_packaged_native_renderer_status(self) -> None:
         addon = _load_addon_module()
         original_worker = addon.native_bridge.packaged_renderer_worker_path
         addon.native_bridge.packaged_renderer_worker_path = (
@@ -202,11 +209,12 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.native_bridge.packaged_renderer_worker_path = original_worker
 
         labels = [label for label, _icon in preferences.layout.labels]
-        self.assertIn(
-            "Packaged native renderer found.",
-            labels,
-        )
+        self.assertNotIn("Packaged native renderer found.", labels)
         prop_names = [name for name, _kwargs in preferences.layout.props]
+        self.assertIn("auto_reload", prop_names)
+        self.assertIn("poll_interval", prop_names)
+        self.assertIn("debug", prop_names)
+        self.assertIn("developer_mode", prop_names)
         self.assertNotIn("native_library_path", prop_names)
 
     def test_panel_draws_error_diagnostic(self) -> None:
@@ -251,7 +259,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         panel.draw(context)
 
         labels = [label for label, _icon in panel.layout.labels]
-        self.assertIn("Status: Render failed", labels)
+        self.assertIn("Render failed", labels)
         self.assertIn("Unsupported native nodes: 2", labels)
         self.assertNotIn("Mode: Native renderer", labels)
         self.assertNotIn("Native support: Unsupported nodes", labels)
@@ -275,7 +283,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertNotIn("- layer 14 node 9 Raster", labels)
         self.assertIn("2 more unsupported item(s)", labels)
         self.assertIn("Error: native renderer failed loudly", labels)
-        self.assertIn("Last render: 2.4s", labels)
+        self.assertNotIn("Last render: 2.4s", labels)
         self.assertIn(
             (
                 addon.IMAGE_OT_toggle_clip_support_details.bl_idname,
@@ -286,7 +294,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn(
             (
                 addon.IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
-                {"text": "Copy diagnostics", "icon": "COPYDOWN"},
+                {"text": "Copy Diagnostic", "icon": "COPYDOWN"},
             ),
             panel.layout.operators,
         )
@@ -297,10 +305,10 @@ class AddonDiagnosticsTests(unittest.TestCase):
             ),
             panel.layout.operators,
         )
-        self.assertIn(
+        self.assertNotIn(
             (
                 addon.IMAGE_OT_open_clip_support_diagnostics.bl_idname,
-                {"text": "Open diagnostics", "icon": "TEXT"},
+                {"text": "Open Diagnostics", "icon": "TEXT"},
             ),
             panel.layout.operators,
         )
@@ -327,7 +335,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         image = {
             addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
             addon.CLIP_PACK_STATUS_KEY: addon.PACK_STATUS_NEEDS_PACK,
-            addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_OK,
+            addon.image_state.CLIP_RELOAD_STATUS_KEY: addon.image_state.RELOAD_STATUS_OK,
             addon.native_bridge.CLIP_RENDERER_VERSION_KEY: "0.1.0-test",
             addon.native_bridge.CLIP_SUPPORT_STATUS_KEY: addon.native_bridge.SUPPORT_STATUS_FULL,
             addon.native_bridge.CLIP_SUPPORT_REPORT_KEY: "Full native support for 4 source(s).",
@@ -349,8 +357,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         panel.draw(context)
 
         labels = [label for label, _icon in panel.layout.labels]
-        self.assertIn("Status: Ready", labels)
-        self.assertIn("Pack: Needs pack", labels)
+        self.assertNotIn("Ready", labels)
+        self.assertIn("Needs Pack", labels)
         self.assertNotIn("Mode: Native renderer", labels)
         self.assertNotIn("Will pack before saving the .blend.", labels)
         self.assertNotIn("Native support: Full native support", labels)
@@ -364,7 +372,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertIn(
             (
                 addon.IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
-                {"text": "Copy diagnostics", "icon": "COPYDOWN"},
+                {"text": "Copy Diagnostic", "icon": "COPYDOWN"},
             ),
             panel.layout.operators,
         )
@@ -395,6 +403,9 @@ class AddonDiagnosticsTests(unittest.TestCase):
             }
             panel = addon.IMAGE_PT_clip_studio()
             panel.layout = FakeLayout()
+            addon.bpy.context.preferences.addons[
+                "clip_studio_importer"
+            ].preferences.developer_mode = True
             context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
 
             panel.draw(context)

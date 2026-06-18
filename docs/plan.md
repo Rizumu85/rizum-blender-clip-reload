@@ -203,10 +203,23 @@ Deepening milestones:
      source freshness, timing, support diagnostics, and IDProperty keys are not
      spread across `clip_studio_importer/__init__.py` and
      `clip_studio_importer/native_bridge.py`.
+     Current progress: `clip_studio_importer/image_state.py` now owns the
+     generated-image IDProperty keys, reload/source freshness checks, pack
+     status writes, support locator parsing, render-result property writes, and
+     timing property writes. `native_bridge.py` still exposes imported state
+     names for existing internal tests, but its implementation no longer owns
+     those writes.
    - Deepen the native worker protocol Module so one-shot files, persistent
      server messages, reload manifests, dirty-rect patches, and timing fields
      have one explicit Interface shared by the Python Adapter and Rust worker
      implementation.
+     Current progress: `clip_studio_importer/worker_protocol.py` now owns
+     one-shot command construction, persistent worker request JSON, temporary
+     render-file layout, worker output reading, reload manifest compaction,
+     dirty-rect patch parsing, support JSON parsing, and typed native render
+     result records. `native_bridge.py` is now the Adapter that times worker
+     calls, translates protocol errors to bridge errors, and uploads pixels into
+     Blender.
    - Expected benefit: Blender UI/reload changes become localized, and protocol
      tests can verify JSON examples without exercising full Blender operators.
 
