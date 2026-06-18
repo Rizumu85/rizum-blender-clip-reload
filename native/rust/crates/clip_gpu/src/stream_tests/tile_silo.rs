@@ -968,7 +968,7 @@ fn streamed_tile_silo_applies_child_blend_inside_through_scope_like_legacy_pass(
 }
 
 #[test]
-fn streamed_tile_silo_resolves_nested_through_scope_like_legacy_pass() {
+fn streamed_tile_silo_resolves_fractional_nested_through_scope_like_legacy_pass() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let red_key = raster_key(154);
     let green_key = raster_key(155);
@@ -989,7 +989,7 @@ fn streamed_tile_silo_resolves_nested_through_scope_like_legacy_pass() {
                     children: vec![GpuNormalStackSource::Raster(raster_source_at(
                         green_key, 1, 1,
                     ))],
-                    opacity: 1.0,
+                    opacity: 0.5,
                     mask_key: None,
                 },
             ],

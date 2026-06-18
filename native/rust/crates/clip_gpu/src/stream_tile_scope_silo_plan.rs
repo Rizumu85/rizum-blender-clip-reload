@@ -3,6 +3,7 @@ use clip_model::CanvasSize;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::target_canvas_bounds;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
+use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
 
@@ -13,6 +14,7 @@ pub(crate) const SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT: usize = 2;
 pub(crate) enum SimpleScopeBarrierHint {
     ScopeDepthLimitExceeded,
     TileEventLimitExceeded,
+    FilterNotLowered,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -20,6 +22,7 @@ enum SimpleScopeReject {
     NotSimple,
     ScopeDepthLimitExceeded,
     TileEventLimitExceeded,
+    FilterNotLowered,
 }
 
 #[derive(Clone, Copy)]
@@ -102,6 +105,7 @@ where
         Err(SimpleScopeReject::TileEventLimitExceeded) => {
             Some(SimpleScopeBarrierHint::TileEventLimitExceeded)
         }
+        Err(SimpleScopeReject::FilterNotLowered) => Some(SimpleScopeBarrierHint::FilterNotLowered),
         _ => None,
     }
 }
@@ -311,12 +315,11 @@ where
                 mask_key,
                 ..
             } => {
-                if !saw_raster
-                    || *opacity <= 0.0
-                    || !scope_mask_can_lower(provider, *mask_key)
-                    || lut_rgba.len() != 256 * 4
-                {
+                if !saw_raster || *opacity <= 0.0 {
                     return Err(SimpleScopeReject::NotSimple);
+                }
+                if !filter_mask_can_lower(provider, *mask_key) || lut_rgba.len() != 256 * 4 {
+                    return Err(SimpleScopeReject::FilterNotLowered);
                 }
                 count = add_scope_events(count, 1)?;
             }
@@ -407,7 +410,7 @@ fn ensure_nested_through_scope_header<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if opacity != 1.0 || !scope_mask_can_lower(provider, mask_key) || children.is_empty() {
+    if opacity <= 0.0 || !scope_mask_can_lower(provider, mask_key) || children.is_empty() {
         return Err(SimpleScopeReject::NotSimple);
     }
     Ok(())

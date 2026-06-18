@@ -1084,7 +1084,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             if (scope_contains(event_index, local_texel)) {
                 let scope_mask = load_scope_mask(event_index, local_texel);
                 if (through_depth == 2u) {
-                    through0_after = resolve_through_scope(event_index, through1_before, through1_after, scope_mask);
+                    through0_after = floor_quantize_u8(resolve_through_scope(event_index, through1_before, through1_after, scope_mask));
                     through_depth = 1u;
                 } else if (through_depth == 1u) {
                     dst = resolve_through_scope(event_index, through0_before, through0_after, scope_mask);

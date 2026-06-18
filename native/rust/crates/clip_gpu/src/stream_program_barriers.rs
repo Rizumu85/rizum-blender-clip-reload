@@ -288,6 +288,9 @@ where
         SimpleScopeBarrierHint::TileEventLimitExceeded => {
             Some(RenderProgramBarrierReason::TileEventLimitExceeded)
         }
+        SimpleScopeBarrierHint::FilterNotLowered => {
+            Some(RenderProgramBarrierReason::FilterNotLowered)
+        }
     }
 }
 

@@ -467,6 +467,44 @@ fn planner_keeps_unknown_masked_simple_scopes_as_barriers() {
 }
 
 #[test]
+fn planner_keeps_masked_filter_inside_scope_as_filter_barrier() {
+    let filter_mask = mask_key(11);
+    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))])
+        .with_mask_opacity(filter_mask, false)
+        .with_mask_atlas_tiles_supported();
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![
+            GpuNormalStackSource::Raster(raster_source(1)),
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: identity_lut(),
+                opacity: 1.0,
+                mask_key: Some(filter_mask),
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+        ],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::FilterNotLowered,
+        ))
+    );
+    assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 1);
+}
+
+#[test]
 fn planner_lowers_container_inside_simple_container_scope() {
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
     let sources = vec![GpuNormalStackSource::Container {
@@ -733,7 +771,7 @@ fn planner_lowers_nested_simple_through_scope() {
 }
 
 #[test]
-fn planner_keeps_fractional_nested_through_as_barrier() {
+fn planner_lowers_fractional_nested_through_scope() {
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
     let sources = vec![GpuNormalStackSource::ThroughGroup {
         children: vec![GpuNormalStackSource::ThroughGroup {
@@ -755,10 +793,10 @@ fn planner_keeps_fractional_nested_through_as_barrier() {
 
     assert_eq!(
         program.segments()[0].kind,
-        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::ThroughGroupNotLowered,
-        ))
+        RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope)
     );
+    assert_eq!(program.stats().simple_through_scope_segments, 1);
+    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
 }
 
 #[test]
@@ -838,6 +876,7 @@ fn planner_reports_scope_tile_event_limit_as_barrier() {
 struct PlannerProvider {
     sizes: HashMap<GpuRasterResourceKey, CanvasSize>,
     opaque_masks: HashMap<GpuMaskResourceKey, bool>,
+    mask_atlas_tiles_supported: bool,
 }
 
 impl PlannerProvider {
@@ -849,11 +888,17 @@ impl PlannerProvider {
         Self {
             sizes: sizes.into_iter().collect(),
             opaque_masks: HashMap::new(),
+            mask_atlas_tiles_supported: false,
         }
     }
 
     fn with_mask_opacity(mut self, key: GpuMaskResourceKey, opaque: bool) -> Self {
         self.opaque_masks.insert(key, opaque);
+        self
+    }
+
+    fn with_mask_atlas_tiles_supported(mut self) -> Self {
+        self.mask_atlas_tiles_supported = true;
         self
     }
 }
@@ -888,6 +933,10 @@ impl GpuNormalStackResourceProvider for PlannerProvider {
 
     fn mask_is_fully_opaque(&self, key: GpuMaskResourceKey) -> Option<bool> {
         self.opaque_masks.get(&key).copied()
+    }
+
+    fn mask_atlas_tiles_supported(&self) -> bool {
+        self.mask_atlas_tiles_supported
     }
 
     fn mask_resource(

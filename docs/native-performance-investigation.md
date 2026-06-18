@@ -599,15 +599,17 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
 - Simple containers inside the THROUGH scope lower as nested `BeginContainer` /
   `EndContainer` events up to the same fixed depth limit and resolve into the
   THROUGH `after` accumulator.
-- One level of nested THROUGH can lower when the nested THROUGH has opacity
-  `1.0`, has the same supported scope-mask shape, has known intersecting
+- One level of nested THROUGH can lower when the nested THROUGH has positive
+  opacity, has the same supported scope-mask shape, has known intersecting
   bounds, and its children fit the same raster/container/pointwise-filter
-  subset. The tile VM keeps two local THROUGH `before`/`after` accumulators and
-  resolves the inner THROUGH into the outer THROUGH `after` accumulator.
-- Unsupported THROUGH shapes remain barriers: fractional-opacity nested THROUGH
-  groups, deeper nested THROUGH groups, clipping runs, solid colors,
-  unavailable masked THROUGH groups, container depth beyond the fixed limit,
-  and filters with real or unknown non-opaque masks.
+  subset. The tile VM keeps two local THROUGH `before`/`after` accumulators,
+  resolves the inner THROUGH into the outer THROUGH `after` accumulator, and
+  floor-quantizes the inner resolve to match the intermediate RGBA8 writeback
+  of the existing pass-heavy path.
+- Unsupported THROUGH shapes remain barriers: deeper nested THROUGH groups,
+  clipping runs, solid colors, unavailable masked THROUGH groups, container
+  depth beyond the fixed limit, and filters with real or unknown non-opaque
+  masks.
 
 Verification after this milestone:
 
@@ -617,9 +619,9 @@ Verification after this milestone:
   THROUGH group.
 - GPU unit coverage also compares a simple container inside a THROUGH scope
   against the existing legacy source path.
-- GPU unit coverage compares an opacity-1 nested THROUGH scope against the
-  existing legacy source path and locks fractional-opacity/deeper nested
-  THROUGH groups as planner barriers.
+- GPU unit coverage compares a fractional-opacity nested THROUGH scope against
+  the existing legacy source path and keeps deeper nested THROUGH groups as
+  planner barriers.
 - Planner and GPU unit coverage prove explicitly fully opaque masks do not
   block simple container/THROUGH tile-local lowering, and GPU unit coverage now
   compares non-opaque masked container and THROUGH scope resolves against the

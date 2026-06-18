@@ -546,15 +546,15 @@ Implemented THROUGH subset:
   `BeginContainer` / `EndContainer` events up to the same fixed depth limit,
   and the outermost container resolves into the THROUGH `after` accumulator.
 - Nested THROUGH groups can lower one level deeper when the nested THROUGH has
-  opacity `1.0`, has the same supported scope-mask shape, has known
+  positive opacity, has the same supported scope-mask shape, has known
   intersecting bounds, and its children fit the same raster/container/
   pointwise-filter subset. The shader keeps a bounded two-level THROUGH
-  `before`/`after` stack and resolves the inner THROUGH into the outer `after`
-  accumulator.
-- Fractional-opacity nested THROUGH groups, deeper nested THROUGH groups,
-  clipping runs, solid colors, unavailable THROUGH masks, container depth
-  beyond the fixed limit, and real or unknown filter masks still remain
-  explicit legacy barriers.
+  `before`/`after` stack, resolves the inner THROUGH into the outer `after`
+  accumulator, and floor-quantizes the inner resolve to match the intermediate
+  RGBA8 writeback of the existing pass-heavy path.
+- Deeper nested THROUGH groups, clipping runs, solid colors, unavailable
+  THROUGH masks, container depth beyond the fixed limit, and real or unknown
+  filter masks still remain explicit legacy barriers.
 
 Verification:
 
@@ -573,9 +573,9 @@ Verification:
 - GPU unit tests compare a simple container inside a THROUGH scope against the
   existing legacy source path, proving nested container resolve goes to the
   THROUGH `after` accumulator.
-- GPU unit tests compare an opacity-1 nested THROUGH scope against the existing
-  legacy source path and assert fractional-opacity nested THROUGH groups and
-  nesting beyond the fixed limit remain barriers.
+- GPU unit tests compare a fractional-opacity nested THROUGH scope against the
+  existing legacy source path and assert nesting beyond the fixed limit remains
+  a barrier.
 - Planner and GPU unit tests prove masks that are explicitly known to be fully
   opaque do not block simple container/THROUGH lowering, and GPU unit tests now
   compare non-opaque masked container and THROUGH scope resolves against the
@@ -591,7 +591,6 @@ Verification:
 
 Next scope-stack work:
 
-- broader nested THROUGH, especially fractional-opacity nested THROUGH
 - unsupported or masked filters inside scope stacks
 
 Then extend the same scope-stack model to nested/complex container and THROUGH

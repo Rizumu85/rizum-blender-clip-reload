@@ -182,7 +182,7 @@ where
                 opacity,
                 mask_key,
             } if through_depth_remaining > 0 => {
-                if *opacity != 1.0
+                if *opacity <= 0.0
                     || !scope_mask_can_lower(context.provider, *mask_key)
                     || children.is_empty()
                 {
