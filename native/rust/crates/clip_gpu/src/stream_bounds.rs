@@ -122,11 +122,30 @@ pub(crate) fn union_optional(
     }
 }
 
+pub(crate) fn target_canvas_bounds(
+    target_origin: (i32, i32),
+    target_size: CanvasSize,
+) -> Option<CanvasRect> {
+    if target_size.width == 0 || target_size.height == 0 {
+        return None;
+    }
+    let x = u32::try_from(target_origin.0).ok()?;
+    let y = u32::try_from(target_origin.1).ok()?;
+    x.checked_add(target_size.width)?;
+    y.checked_add(target_size.height)?;
+    Some(CanvasRect {
+        x,
+        y,
+        width: target_size.width,
+        height: target_size.height,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use clip_model::CanvasSize;
 
-    use super::{CanvasRect, union_optional};
+    use super::{CanvasRect, target_canvas_bounds, union_optional};
 
     #[test]
     fn source_rect_clips_to_canvas() {
@@ -159,6 +178,21 @@ mod tests {
         };
         assert_eq!(union_optional(Some(rect), None), Some(rect));
         assert_eq!(union_optional(None, Some(rect)), Some(rect));
+    }
+
+    #[test]
+    fn target_bounds_use_target_origin() {
+        assert_eq!(
+            target_canvas_bounds((4, 5), CanvasSize::new(6, 7)),
+            Some(CanvasRect {
+                x: 4,
+                y: 5,
+                width: 6,
+                height: 7,
+            })
+        );
+        assert_eq!(target_canvas_bounds((-1, 0), CanvasSize::new(6, 7)), None);
+        assert_eq!(target_canvas_bounds((0, 0), CanvasSize::new(0, 7)), None);
     }
 
     #[test]

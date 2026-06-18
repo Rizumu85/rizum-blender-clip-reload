@@ -392,6 +392,43 @@ mod tests {
     }
 
     #[test]
+    fn planner_lowers_unmasked_leading_filter_before_raster() {
+        let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
+        let sources = vec![
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: identity_lut(),
+                opacity: 1.0,
+                mask_key: None,
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+            GpuNormalStackSource::Raster(raster_source(1)),
+        ];
+
+        let program = plan_render_program(
+            &provider,
+            CanvasSize::new(16, 16),
+            (0, 0),
+            CanvasSize::new(16, 16),
+            &sources,
+        );
+
+        assert_eq!(
+            program.segments(),
+            &[RenderSegment {
+                source_range: 0..2,
+                kind: RenderSegmentKind::TileLocal(TileProgramKind::RasterFilterRun),
+                cost_hint: SegmentCostHint {
+                    expected_passes: 1,
+                    tile_events: 2,
+                    legacy_sources: 0,
+                },
+            }]
+        );
+        assert_eq!(program.stats().raster_filter_run_segments, 1);
+        assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 0);
+    }
+
+    #[test]
     fn planner_lowers_simple_normal_container_scope() {
         let provider = PlannerProvider::new([
             (raster_key(1), CanvasSize::new(4, 4)),

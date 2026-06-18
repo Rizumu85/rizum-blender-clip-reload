@@ -1,7 +1,7 @@
 use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
-use crate::stream_bounds::CanvasRect;
+use crate::stream_bounds::target_canvas_bounds;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
@@ -207,17 +207,4 @@ fn container_resolve_is_scope_eligible(blend_mode: GpuRasterBlendMode) -> bool {
         | GpuRasterBlendMode::Subtract
         | GpuRasterBlendMode::VividLight => true,
     }
-}
-
-fn target_canvas_bounds(target_origin: (i32, i32), target_size: CanvasSize) -> Option<CanvasRect> {
-    let x = u32::try_from(target_origin.0).ok()?;
-    let y = u32::try_from(target_origin.1).ok()?;
-    x.checked_add(target_size.width)?;
-    y.checked_add(target_size.height)?;
-    Some(CanvasRect {
-        x,
-        y,
-        width: target_size.width,
-        height: target_size.height,
-    })
 }

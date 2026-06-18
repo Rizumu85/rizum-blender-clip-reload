@@ -1,7 +1,7 @@
 use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
-use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_bounds::{CanvasRect, target_canvas_bounds, union_optional};
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_tile_event::{PointFilterTileEventPayload, TileEventPayload, TileEventProgram};
 use crate::stream_tile_silo::{
@@ -59,8 +59,7 @@ where
                 mask_key,
                 ..
             } => {
-                if !saw_raster
-                    || *opacity <= 0.0
+                if *opacity <= 0.0
                     || !filter_mask_can_lower(provider, *mask_key)
                     || lut_rgba.len() != 256 * 4
                 {
@@ -73,7 +72,7 @@ where
         }
     }
 
-    if saw_filter && len >= MIN_SILO_RUN_LEN {
+    if saw_filter && saw_raster && len >= MIN_SILO_RUN_LEN {
         len
     } else {
         0
@@ -440,7 +439,9 @@ where
                 {
                     return Ok(None);
                 }
-                let Some(filter_bounds) = context.state.clip_pass_bounds(current_dirty) else {
+                let filter_bounds =
+                    current_dirty.or_else(|| target_canvas_bounds(target_origin, target_size));
+                let Some(filter_bounds) = context.state.clip_pass_bounds(filter_bounds) else {
                     return Ok(None);
                 };
                 let local_bounds = local_pass_bounds(filter_bounds, target_origin);
@@ -454,6 +455,7 @@ where
                 }));
                 event_bounds.push(local_bounds);
                 lut_rows.push(lut_rgba.as_slice());
+                current_dirty = Some(filter_bounds);
                 saw_filter = true;
             }
             _ => return Ok(None),

@@ -476,14 +476,17 @@ The tile-event renderer now lowers the first pointwise filter subset into the
 same tile-local execution model:
 
 - `clip_gpu::stream_program` can plan a `RasterFilterRun` segment when a source
-  range starts with eligible raster events and includes supported pointwise LUT
-  filters.
+  range contains eligible raster events and supported pointwise LUT filters,
+  including filter-first mixed runs such as `filter, raster`.
 - `stream_tile_event.rs` bumps the tile event ABI to `3` and adds
   `TileEventKind::PointFilter` plus a separate `filter_payloads` storage
   buffer.
 - `tile_silo.wgsl` applies Tone Curve, HSL, Threshold, and Gradient Map filter
   modes to the local accumulator in event order, using the same math as the
   existing LUT filter pass.
+- Leading filters in a mixed run now apply to the parent accumulator over the
+  current target bounds before later raster events execute in the same tile
+  program.
 - Filter masks are only bypassed when the provider can prove they are fully
   opaque. The runtime provider proves this from mask `empty_fill=255` plus zero
   compressed mask tiles. Any non-opaque or unknown filter mask remains an
@@ -502,6 +505,8 @@ Performance-plan evidence:
 Verification after this milestone:
 
 - Rust: `cargo check -q` and `cargo test -q`.
+- GPU unit coverage compares a leading filter followed by a raster against the
+  existing legacy source path.
 - `Test_ToneCurve` exact.
 - `Test_HSL2` exact.
 - `Test_HSL3`, `Test_HSL4`, and `Test_HSL5` keep the existing one-LSB
@@ -512,8 +517,9 @@ Verification after this milestone:
   and `Test_ClippingEdge` remains exact.
 
 This is a real semantic-barrier reduction, not a full filter/mask solution.
-Masked filters with real non-opaque mask pixels still need independent mask
-tile resources before they can be lowered faithfully.
+Filter-only ranges still remain on the existing path, and masked filters with
+real non-opaque mask pixels still need independent mask tile resources before
+they can be lowered faithfully.
 
 ## Simple Container Scope Tile Events
 

@@ -124,6 +124,55 @@ fn streamed_tile_silo_accepts_provider_backed_atlas_pixels() {
 }
 
 #[test]
+fn streamed_tile_silo_applies_leading_filter_before_raster_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let child_key = raster_key(149);
+    let sources = vec![
+        GpuNormalStackSource::LutFilter {
+            lut_rgba: inverted_tone_curve_lut(),
+            opacity: 1.0,
+            mask_key: None,
+            filter_mode: lut_mode(),
+        },
+        GpuNormalStackSource::Raster(raster_source_at(child_key, 1, 1)),
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![(
+        child_key,
+        InlineRaster {
+            render_node_id: RenderNodeId(149),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![64, 128, 192, 255],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy leading filter reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![(
+        child_key,
+        AtlasInlineRaster {
+            render_node_id: RenderNodeId(149),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![64, 128, 192, 255],
+        },
+    )]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed leading filter tile event");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_lowers_simple_container_as_isolated_scope() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let multiply_key = raster_key(142);
