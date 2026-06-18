@@ -7,6 +7,7 @@ import zipfile
 
 PACKAGE_FILES = (
     "__init__.py",
+    "i18n.py",
     "native_bridge.py",
 )
 

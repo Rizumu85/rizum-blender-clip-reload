@@ -1,5 +1,5 @@
 """
-Clip Studio Paint (.clip) Importer for Blender.
+Rizum Clip Reload for Blender.
 
 The default importer path calls the Rust C ABI, uploads RGBA pixels into a
 generated Blender Image, packs rendered pixels on save or explicit user
@@ -10,12 +10,16 @@ No external auto-reload add-on is required.
 
 from __future__ import annotations
 
+ADDON_NAME = "Rizum Clip Reload"
+ADDON_VERSION = (0, 8, 64)
+ADDON_URL = "https://github.com/Rizumu85/rizum-blender-clip-reload"
+
 bl_info = {
-    "name": "Clip Studio Paint (.clip) Importer",
+    "name": ADDON_NAME,
     "author": "Rizum",
-    "version": (0, 8, 63),
+    "version": ADDON_VERSION,
     "blender": (3, 0, 0),
-    "location": "File > Import > Clip Studio (.clip)",
+    "location": "File > Import > Rizum Clip Reload (.clip)",
     "description": "Read .clip files as flattened image textures with non-blocking auto-reload.",
     "category": "Import-Export",
 }
@@ -30,6 +34,7 @@ from bpy.props import BoolProperty, FloatProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
 
+from . import i18n
 from . import native_bridge
 
 
@@ -60,6 +65,10 @@ _in_flight: set = set()                 # clip paths currently being decoded
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
+def _ui(message: str) -> str:
+    return bpy.app.translations.pgettext_iface(message)
+
 
 def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
     started_at = time.time()
@@ -106,7 +115,7 @@ def _image_source_matches(img, clip_path: str) -> bool:
     return stored_path == clip_path or _resolve_clip_source_path(stored_path) == clip_path
 
 
-def _pack_status_label(status: str) -> str:
+def _pack_status_label_raw(status: str) -> str:
     return {
         PACK_STATUS_PACKED: "Packed",
         PACK_STATUS_NEEDS_PACK: "Needs Pack",
@@ -114,6 +123,10 @@ def _pack_status_label(status: str) -> str:
         PACK_STATUS_PACKING: "Packing",
         PACK_STATUS_ERROR: "Pack Error",
     }.get(status, "Unknown")
+
+
+def _pack_status_label(status: str) -> str:
+    return _ui(_pack_status_label_raw(status))
 
 
 def _pack_status_icon(status: str) -> str:
@@ -208,7 +221,7 @@ def _addon_prefs():
     return bpy.context.preferences.addons[ADDON_PKG].preferences
 
 
-def _reload_status_label(status: str) -> str:
+def _reload_status_label_raw(status: str) -> str:
     return {
         native_bridge.RELOAD_STATUS_OK: "Ready",
         native_bridge.RELOAD_STATUS_STALE: "Source changed",
@@ -216,6 +229,10 @@ def _reload_status_label(status: str) -> str:
         native_bridge.RELOAD_STATUS_REFRESHING: "Rendering",
         native_bridge.RELOAD_STATUS_ERROR: "Render failed",
     }.get(status, "Unknown")
+
+
+def _reload_status_label(status: str) -> str:
+    return _ui(_reload_status_label_raw(status))
 
 
 def _reload_status_icon(status: str) -> str:
@@ -324,7 +341,7 @@ def _support_diagnostic_text(img) -> str:
     lines = [
         "Clip Studio native render diagnostics",
         f"Source: {clip_path}",
-        f"Status: {_reload_status_label(status)}",
+        f"Status: {_reload_status_label_raw(status)}",
     ]
     source_size = _image_int_property(img, CLIP_SIZE_KEY)
     if source_size:
@@ -354,7 +371,7 @@ def _support_diagnostic_text(img) -> str:
         lines.extend(f"- {line}" for line in phase_lines)
     pack_status = str(img.get(CLIP_PACK_STATUS_KEY, "") or "")
     if pack_status:
-        lines.append(f"Pack status: {_pack_status_label(pack_status)}")
+        lines.append(f"Pack status: {_pack_status_label_raw(pack_status)}")
     pack_seconds = _image_float_property(img, CLIP_PACK_LAST_SECONDS_KEY)
     if pack_seconds:
         lines.append(f"Last pack duration: {_format_seconds(pack_seconds)}")
@@ -513,7 +530,7 @@ def _schedule_async_decode(
 class IMPORT_OT_clip_studio(Operator, ImportHelper):
     """Import a Clip Studio Paint (.clip) file as a flattened Image."""
     bl_idname = "import_image.clip_studio"
-    bl_label = "Import Clip Studio (.clip)"
+    bl_label = "Import .clip as Rizum Clip Reload image"
     bl_options = {"REGISTER", "UNDO"}
 
     filename_ext = ".clip"
@@ -529,10 +546,17 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
             show_on_success=True,
             auto_pack_on_success=True,
         ):
-            self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
+            self.report(
+                {"WARNING"},
+                _ui("Already rendering {name}").format(
+                    name=os.path.basename(clip_path)
+                ),
+            )
             return {"CANCELLED"}
         self.report({"INFO"},
-                    f"Rendering {os.path.basename(clip_path)} in the background")
+                    _ui("Rendering {name} in the background").format(
+                        name=os.path.basename(clip_path)
+                    ))
         return {"FINISHED"}
 
 
@@ -557,12 +581,27 @@ class IMAGE_OT_reload_clip_studio(Operator):
                 img,
                 native_bridge.RELOAD_STATUS_MISSING,
             )
-            self.report({"ERROR"}, f"Source .clip not found: {stored_clip_path!r}")
+            self.report(
+                {"ERROR"},
+                _ui("Source .clip not found: {path}").format(
+                    path=repr(stored_clip_path)
+                ),
+            )
             return {"CANCELLED"}
         if not _schedule_async_decode(clip_path, img.name):
-            self.report({"WARNING"}, f"Already rendering {os.path.basename(clip_path)}")
+            self.report(
+                {"WARNING"},
+                _ui("Already rendering {name}").format(
+                    name=os.path.basename(clip_path)
+                ),
+            )
             return {"CANCELLED"}
-        self.report({"INFO"}, f"Reloading {os.path.basename(clip_path)} in the background")
+        self.report(
+            {"INFO"},
+            _ui("Reloading {name} in the background").format(
+                name=os.path.basename(clip_path)
+            ),
+        )
         return {"FINISHED"}
 
 
@@ -588,14 +627,20 @@ class IMAGE_OT_pack_clip_studio(Operator):
         with _state_lock:
             running = bool(clip_path and clip_path in _in_flight)
         if running:
-            self.report({"WARNING"}, "Wait for the current render before packing")
+            self.report({"WARNING"}, _ui("Wait for the current render before packing"))
             return {"CANCELLED"}
         try:
             seconds = _pack_image_now(img)
         except Exception as exc:
-            self.report({"ERROR"}, f"Pack failed: {exc}")
+            self.report({"ERROR"}, _ui("Pack failed: {message}").format(message=exc))
             return {"CANCELLED"}
-        self.report({"INFO"}, f"Packed {img.name} in {_format_seconds(seconds)}")
+        self.report(
+            {"INFO"},
+            _ui("Packed {name} in {seconds}").format(
+                name=img.name,
+                seconds=_format_seconds(seconds),
+            ),
+        )
         return {"FINISHED"}
 
 
@@ -635,7 +680,7 @@ class IMAGE_OT_copy_clip_support_diagnostics(Operator):
         context.window_manager.clipboard = _support_diagnostic_text(
             context.space_data.image
         )
-        self.report({"INFO"}, "Copied Clip Studio diagnostics")
+        self.report({"INFO"}, _ui("Copied Clip Studio diagnostics"))
         return {"FINISHED"}
 
 
@@ -655,7 +700,7 @@ class IMAGE_OT_copy_clip_support_locations(Operator):
         img = context.space_data.image
         locations = _support_location_lines(img)
         if not locations:
-            self.report({"WARNING"}, "No unsupported layer locations")
+            self.report({"WARNING"}, _ui("No unsupported layer locations"))
             return {"CANCELLED"}
         lines = [
             "Clip Studio unsupported layer locations",
@@ -663,7 +708,7 @@ class IMAGE_OT_copy_clip_support_locations(Operator):
         ]
         lines.extend(f"- {location}" for location in locations)
         context.window_manager.clipboard = "\n".join(lines)
-        self.report({"INFO"}, "Copied Clip Studio layer locations")
+        self.report({"INFO"}, _ui("Copied Clip Studio layer locations"))
         return {"FINISHED"}
 
 
@@ -683,9 +728,9 @@ class IMAGE_OT_open_clip_support_diagnostics(Operator):
         text = _write_support_report_text(context.space_data.image)
         shown = _show_text_in_editor(context, text)
         if shown:
-            self.report({"INFO"}, f"Opened {text.name}")
+            self.report({"INFO"}, _ui("Opened {name}").format(name=text.name))
         else:
-            self.report({"INFO"}, f"Wrote {text.name}")
+            self.report({"INFO"}, _ui("Wrote {name}").format(name=text.name))
         return {"FINISHED"}
 
 
@@ -968,6 +1013,10 @@ class CSI_AddonPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
+        promo_box = layout.box()
+        promo_box.label(text=_ui("Made by Rizum"))
+        promo_box.operator("wm.url_open", text=_ui("Project on GitHub"), icon="URL").url = ADDON_URL
+
         reload_box = layout.box()
         reload_box.prop(self, "auto_reload")
         row = reload_box.row()
@@ -979,7 +1028,7 @@ class CSI_AddonPreferences(AddonPreferences):
         developer_box.prop(self, "developer_mode")
         if not native_bridge.packaged_renderer_worker_path():
             developer_box.label(
-                text="Packaged native renderer missing; rebuild the add-on package.",
+                text=_ui("Packaged native renderer missing; rebuild the add-on package."),
                 icon="ERROR",
             )
 
@@ -988,7 +1037,7 @@ class IMAGE_PT_clip_studio(Panel):
     bl_space_type = "IMAGE_EDITOR"
     bl_region_type = "UI"
     bl_category = "Image"
-    bl_label = "Clip Studio"
+    bl_label = ADDON_NAME
 
     @classmethod
     def poll(cls, context):
@@ -1003,7 +1052,9 @@ class IMAGE_PT_clip_studio(Panel):
         status = img.get(native_bridge.CLIP_RELOAD_STATUS_KEY, "unknown")
         prefs = _addon_prefs()
         developer_mode = bool(getattr(prefs, "developer_mode", False))
-        layout.label(text=f"Source: {os.path.basename(clip_path)}")
+        layout.label(
+            text=_ui("Source: {name}").format(name=os.path.basename(clip_path))
+        )
         if status != native_bridge.RELOAD_STATUS_OK:
             layout.label(
                 text=_reload_status_label(status),
@@ -1018,18 +1069,20 @@ class IMAGE_PT_clip_studio(Panel):
             )
             pack_row.operator(
                 IMAGE_OT_pack_clip_studio.bl_idname,
-                text="Pack",
+                text=_ui("Pack"),
             )
             pack_error = img.get(CLIP_PACK_ERROR_KEY, "")
             if pack_error:
                 layout.label(
-                    text=f"Pack error: {_short_diagnostic(pack_error)}",
+                    text=_ui("Pack error: {message}").format(
+                        message=_short_diagnostic(pack_error)
+                    ),
                     icon="ERROR",
                 )
         else:
             layout.operator(
                 IMAGE_OT_pack_clip_studio.bl_idname,
-                text="Pack",
+                text=_ui("Pack"),
             )
         unsupported_count = _image_int_property(
             img,
@@ -1039,7 +1092,9 @@ class IMAGE_PT_clip_studio(Panel):
         detail_lines = [line for line in str(support_details).splitlines() if line]
         if unsupported_count or detail_lines:
             layout.label(
-                text=f"Unsupported native nodes: {unsupported_count or len(detail_lines)}",
+                text=_ui("Unsupported native nodes: {count}").format(
+                    count=unsupported_count or len(detail_lines)
+                ),
                 icon="ERROR",
             )
             location_summary = _support_location_summary(img)
@@ -1067,35 +1122,36 @@ class IMAGE_PT_clip_studio(Panel):
                 )
                 layout.operator(
                     IMAGE_OT_toggle_clip_support_details.bl_idname,
-                    text=label,
+                    text=_ui(label),
                     icon="TRIA_DOWN" if expanded else "TRIA_RIGHT",
                 )
             if not expanded and len(detail_lines) > SUPPORT_DETAIL_PREVIEW_LINES:
                 layout.label(
-                    text=(
-                        f"{len(detail_lines) - SUPPORT_DETAIL_PREVIEW_LINES} "
-                        "more unsupported item(s)"
+                    text=_ui("{count} more unsupported item(s)").format(
+                        count=len(detail_lines) - SUPPORT_DETAIL_PREVIEW_LINES
                     ),
                     icon="INFO",
                 )
             if _support_location_lines(img):
                 layout.operator(
                     IMAGE_OT_copy_clip_support_locations.bl_idname,
-                    text="Copy layer locations",
+                    text=_ui("Copy layer locations"),
                     icon="COPYDOWN",
                 )
         if status == native_bridge.RELOAD_STATUS_MISSING:
-            layout.label(text="Packed pixels are still visible.", icon="INFO")
+            layout.label(text=_ui("Packed pixels are still visible."), icon="INFO")
         elif status == native_bridge.RELOAD_STATUS_ERROR:
             message = img.get(native_bridge.CLIP_RELOAD_ERROR_KEY, "")
             if message:
                 layout.label(
-                    text=f"Error: {_short_diagnostic(message)}",
+                    text=_ui("Error: {message}").format(
+                        message=_short_diagnostic(message)
+                    ),
                     icon="ERROR",
                 )
         layout.operator(
             IMAGE_OT_reload_clip_studio.bl_idname,
-            text="Manual Reload",
+            text=_ui("Manual Reload"),
             icon="FILE_REFRESH",
         )
         if status == native_bridge.RELOAD_STATUS_REFRESHING:
@@ -1105,7 +1161,9 @@ class IMAGE_PT_clip_studio(Panel):
             )
             if started_at:
                 layout.label(
-                    text=f"Elapsed: {_format_seconds(time.time() - started_at)}",
+                    text=_ui("Elapsed: {seconds}").format(
+                        seconds=_format_seconds(time.time() - started_at)
+                    ),
                     icon="SORTTIME",
                 )
         if developer_mode:
@@ -1115,7 +1173,9 @@ class IMAGE_PT_clip_studio(Panel):
             )
             if last_seconds:
                 layout.label(
-                    text=f"Last render: {_format_seconds(last_seconds)}",
+                    text=_ui("Last render: {seconds}").format(
+                        seconds=_format_seconds(last_seconds)
+                    ),
                     icon="TIME",
                 )
             for line in _timing_phase_lines(img):
@@ -1125,23 +1185,23 @@ class IMAGE_PT_clip_studio(Panel):
                 )
             layout.operator(
                 IMAGE_OT_open_clip_support_diagnostics.bl_idname,
-                text="Open Diagnostics",
+                text=_ui("Open Diagnostics"),
                 icon="TEXT",
             )
         layout.operator(
             IMAGE_OT_copy_clip_support_diagnostics.bl_idname,
-            text="Copy Diagnostic",
+            text=_ui("Copy Diagnostic"),
             icon="COPYDOWN",
         )
         # If a render is currently running for this image's clip, show a hint.
         with _state_lock:
             running = clip_path in _in_flight
         if running:
-            layout.label(text="Rendering in background", icon="SORTTIME")
+            layout.label(text=_ui("Rendering in background"), icon="SORTTIME")
 
 
 def _menu_func_import(self, context):
-    self.layout.operator(IMPORT_OT_clip_studio.bl_idname, text="Clip Studio (.clip)")
+    self.layout.operator(IMPORT_OT_clip_studio.bl_idname, text=f"{ADDON_NAME} (.clip)")
 
 
 # --------------------------------------------------------------------------- #
@@ -1162,6 +1222,7 @@ _classes = (
 
 
 def register():
+    i18n.register(bpy, ADDON_PKG)
     for cls in _classes:
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_import.append(_menu_func_import)
@@ -1178,6 +1239,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(_menu_func_import)
     for cls in reversed(_classes):
         bpy.utils.unregister_class(cls)
+    i18n.unregister(bpy, ADDON_PKG)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Blender Clip Studio Importer
+# Rizum Clip Reload
 
 Blender add-on for loading Clip Studio Paint `.clip` files as flattened raster image textures.
 
@@ -6,7 +6,7 @@ The importer calls the Rust C ABI, uploads RGBA pixels into a generated Blender 
 
 ## Status
 
-Package version: `0.8.34`.
+Package version: `0.8.64`.
 
 Implemented:
 - Full-color raster tile decode from `.clip` external chunks.
@@ -14,7 +14,8 @@ Implemented:
 - Observed CSP blend modes, plus current adjustment/filter-layer support used by the supplied samples.
 - Blender import, manual reload, non-blocking auto-reload, and packed-image freshness checks after opening a `.blend`.
 - Native renderer bridge for Blender generated images through packaged `clip_capi`.
-- Image-panel diagnostics for native render status, render timing, missing sources, render errors, native support summaries, support resource statistics, expandable unsupported-layer details, copyable support reports, and searchable Blender Text support reports.
+- Image-panel status for native render state, missing sources, render errors, pack state, Developer Mode timing, and copyable English diagnostics.
+- Localized Blender UI strings for Simplified Chinese, Japanese, and Spanish while keeping the add-on name and diagnostic output in English.
 - Native CLI support diagnostics in both readable text and machine-readable JSON.
 
 Known fidelity gaps:
@@ -26,16 +27,16 @@ Known fidelity gaps:
 1. In Blender, open `Edit > Preferences > Add-ons`.
 2. Choose `Install...`.
 3. Select `clip_studio_importer.zip` from this project root.
-4. Enable `Clip Studio Paint (.clip) Importer`.
+4. Enable `Rizum Clip Reload`.
 
 ## Use
 
-1. In Blender, choose `File > Import > Clip Studio (.clip)`.
+1. In Blender, choose `File > Import > Rizum Clip Reload (.clip)`.
 2. Select a `.clip` file.
 3. Blender creates or updates a generated image from the packaged native renderer and packs the rendered pixels into the `.blend`.
-4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Reload from .clip` in the Image Editor N-panel.
+4. Save the `.clip` again in Clip Studio Paint to trigger auto-reload, or use `Manual Reload` in the Image Editor N-panel.
 
-The installable zip includes the locally built release `clip_capi` library under `clip_studio_importer/native/`, so `Native renderer library` is only needed as an override.
+The installable zip includes the locally built release native worker and C ABI library under `clip_studio_importer/native/`.
 
 ## Build Package
 

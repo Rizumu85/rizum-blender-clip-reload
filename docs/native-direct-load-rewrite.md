@@ -173,7 +173,8 @@ Result:
 - `clip_studio_importer/__init__.py` no longer imports `clip_loader`, no longer
   exposes a `Use native renderer` off switch, and no longer writes or reloads
   sidecar PNGs. `tools/build_blender_addon.py` packages only `__init__.py`,
-  `native_bridge.py`, and native libraries under `clip_studio_importer/native/`.
+  `i18n.py`, `native_bridge.py`, and native libraries under
+  `clip_studio_importer/native/`.
   The duplicate `clip_studio_importer/clip_loader.py` package copy has been
   removed; the project-root `clip_loader.py` remains reference verification
   tooling outside the add-on runtime.

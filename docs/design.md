@@ -7,7 +7,7 @@ Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as f
 ## Current User Workflow
 
 1. Install the Blender add-on from `clip_studio_importer.zip`.
-2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
+2. Use `File > Import > Rizum Clip Reload (.clip)` to choose a `.clip` file.
 3. By default, the add-on starts the packaged out-of-process `clip_cli` worker
    in the background without creating a temporary placeholder image. When the
    worker returns RGBA pixels, the add-on creates the generated Blender image,
@@ -43,7 +43,7 @@ The accepted stock Blender native workflow is an image-datablock bridge, not a
 sidecar PNG cache and not a Python compositor:
 
 1. Install the native renderer plus the Blender add-on.
-2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
+2. Use `File > Import > Rizum Clip Reload (.clip)` to choose a `.clip` file.
 3. The add-on calls the packaged native Rust/wgpu worker in the background.
    Initial import creates the generated Blender `Image` only after the worker
    returns real canvas pixels, shows it in open image editors, and then packs
@@ -70,20 +70,23 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
 
 ## Blender UI Surface
 
-- Import menu entry: `File > Import > Clip Studio (.clip)`.
+- Import menu entry: `File > Import > Rizum Clip Reload (.clip)`.
 - Import completion shows the new generated image in any Image Editor or UV
   Editor areas already open on the current screen. It does not create a
   placeholder image, create new editors, or change the user's workspace layout.
-- Image Editor N-panel: `Image > Clip Studio`.
+- Image Editor N-panel: `Image > Rizum Clip Reload`.
   - `Manual Reload`
   - bare pack status (`Packed` / `Needs Pack`) with adjacent `Pack`
   - non-ready render status, pack status, errors, lower `Copy Diagnostic`, and
     unsupported-node locators only when unsupported nodes exist
   - Developer Mode-only timing and open-diagnostics controls
 - Add-on preferences:
+  - Rizum attribution box with project link
   - reload box: `Autoreload .Clip`, `Check Timer Frequency (s)`
   - developer box: `Debug log`, `Developer Mode`
   - Packaged native renderer missing status only
+  - UI strings are registered for Simplified Chinese, Japanese, and Spanish;
+    the add-on name and copied/opened diagnostics remain English.
 
 ## Interaction Principles
 
