@@ -4114,6 +4114,28 @@ Keep the current Glow Dodge shader until native evidence explains the missing
 dispatch/resolve condition. The local case-516 match is useful evidence, but it
 is not a retainable general algorithm by itself.
 
+Follow-up after the 2026-06-18 saved `.clip` refresh kept that conclusion.
+The fresh release scan of all matching `img/*.clip`/`.png` pairs ranked the
+largest premultiplied visible residuals as:
+
+- `Ref_Kabi_Live2D`: `premul_max=32`, `premul_visible_px=341`;
+- `Test_Gradiation`: `premul_max=10`, `premul_visible_px=45528`;
+- `IllustrationBlendModes`: `premul_max=7`, `premul_visible_px=1008`;
+- `Ref_MXL_Idol1`: `premul_max=5`, `premul_visible_px=473627`;
+- `IllustrationBlendModesB`: `premul_max=5`, `premul_visible_px=2718`.
+
+The newly saved `Ref_Meimei_*_Live2D.clip` remains visually clean
+(`premul_max=1`, `premul_visible_px=0`); its `raw_max=255` is transparent RGB.
+
+A narrower Glow Dodge spike that applied a case-516-like additive-alpha path
+only when `0 < dst_a < src_a` was also rejected. It preserved the exact
+`Test_GlowDodge` fixture and left `Test_AddGlowMultiply`,
+`IllustrationBlendModes`, `IllustrationBlendModesB`, `Ref_Terra404_Live2D`,
+and `Ref_MXL_Idol1` unchanged, but it regressed the Kabi target itself from
+`premul_max=32` to `premul_max=207` at `(1460,1157)`. This rules out the
+tempting "source alpha stronger than destination alpha" gate as the missing
+native condition.
+
 `Ref_MXL_Idol1` was also rechecked and remains `raw_max=80` in transparent
 RGB, `premul_max=5`, and `premul_visible_px=473627`. The premultiplied
 threshold shape is low-value for further semantic work: `>2` has only `181`
