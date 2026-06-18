@@ -4,7 +4,7 @@ use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_clipping_tile_silo::clipping_run_silo_is_eligible;
 use crate::stream_program::{SegmentCostHint, TileProgramKind};
 use crate::stream_program_barriers::{RenderProgramBarrierReason, barrier_reason_for_source};
-use crate::stream_tile_filter_silo::raster_filter_silo_run_len;
+use crate::stream_tile_filter_silo::{point_filter_silo_run_len, raster_filter_silo_run_len};
 use crate::stream_tile_scope_silo_plan::{
     simple_container_scope_event_count, simple_through_scope_event_count,
 };
@@ -39,6 +39,7 @@ pub(crate) enum TileLocalReason {
     RasterRun,
     RasterOnlyClippingRun,
     RasterFilterRun,
+    PointFilterRun,
     SimpleContainerScope,
     SimpleThroughScope,
 }
@@ -117,6 +118,17 @@ where
             kind: TileProgramKind::RasterFilterRun,
             reason: TileLocalReason::RasterFilterRun,
             cost_hint: tile_cost_hint(u32::try_from(raster_filter_run_len).unwrap_or(u32::MAX)),
+        });
+    }
+
+    let point_filter_run_len =
+        point_filter_silo_run_len(provider, target_origin, target_size, sources);
+    if point_filter_run_len > 0 {
+        return LoweringDecision::TileLocal(TileLocalLowering {
+            source_len: point_filter_run_len,
+            kind: TileProgramKind::PointFilterRun,
+            reason: TileLocalReason::PointFilterRun,
+            cost_hint: tile_cost_hint(u32::try_from(point_filter_run_len).unwrap_or(u32::MAX)),
         });
     }
 

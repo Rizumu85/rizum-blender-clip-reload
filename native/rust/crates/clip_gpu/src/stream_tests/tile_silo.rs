@@ -173,6 +173,35 @@ fn streamed_tile_silo_applies_leading_filter_before_raster_like_legacy_pass() {
 }
 
 #[test]
+fn streamed_tile_silo_applies_filter_only_run_after_legacy_source() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 10,
+                g: 20,
+                b: 30,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::LutFilter {
+            lut_rgba: inverted_tone_curve_lut(),
+            opacity: 1.0,
+            mask_key: None,
+            filter_mode: lut_mode(),
+        },
+    ];
+    let mut provider = InlineProvider::new(Vec::new());
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw filter-only tile event after legacy source");
+
+    assert_eq!(output.pixels, [245, 235, 225, 255].repeat(9));
+}
+
+#[test]
 fn streamed_tile_silo_lowers_simple_container_as_isolated_scope() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let multiply_key = raster_key(142);

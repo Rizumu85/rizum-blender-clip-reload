@@ -43,6 +43,7 @@ pub(crate) enum TileProgramKind {
     RasterRun,
     RasterClippingRun,
     RasterFilterRun,
+    PointFilterRun,
     SimpleContainerScope,
     SimpleThroughScope,
 }
@@ -67,6 +68,7 @@ pub struct RenderProgramStats {
     pub raster_run_segments: u32,
     pub raster_clipping_run_segments: u32,
     pub raster_filter_run_segments: u32,
+    pub point_filter_run_segments: u32,
     pub simple_container_scope_segments: u32,
     pub simple_through_scope_segments: u32,
     pub legacy_source_segments: u32,
@@ -91,6 +93,9 @@ impl RenderProgramStats {
         self.raster_filter_run_segments = self
             .raster_filter_run_segments
             .saturating_add(other.raster_filter_run_segments);
+        self.point_filter_run_segments = self
+            .point_filter_run_segments
+            .saturating_add(other.point_filter_run_segments);
         self.simple_container_scope_segments = self
             .simple_container_scope_segments
             .saturating_add(other.simple_container_scope_segments);
@@ -174,6 +179,7 @@ fn push_tile_segment(
         TileProgramKind::RasterRun => stats.raster_run_segments += 1,
         TileProgramKind::RasterClippingRun => stats.raster_clipping_run_segments += 1,
         TileProgramKind::RasterFilterRun => stats.raster_filter_run_segments += 1,
+        TileProgramKind::PointFilterRun => stats.point_filter_run_segments += 1,
         TileProgramKind::SimpleContainerScope => stats.simple_container_scope_segments += 1,
         TileProgramKind::SimpleThroughScope => stats.simple_through_scope_segments += 1,
     }
@@ -304,6 +310,7 @@ mod tests {
                 raster_run_segments: 2,
                 raster_clipping_run_segments: 1,
                 raster_filter_run_segments: 0,
+                point_filter_run_segments: 0,
                 simple_container_scope_segments: 0,
                 simple_through_scope_segments: 0,
                 legacy_source_segments: 1,
@@ -425,6 +432,48 @@ mod tests {
             }]
         );
         assert_eq!(program.stats().raster_filter_run_segments, 1);
+        assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 0);
+    }
+
+    #[test]
+    fn planner_lowers_filter_only_run() {
+        let provider = PlannerProvider::new([]);
+        let sources = vec![
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: identity_lut(),
+                opacity: 1.0,
+                mask_key: None,
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: identity_lut(),
+                opacity: 0.5,
+                mask_key: None,
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+        ];
+
+        let program = plan_render_program(
+            &provider,
+            CanvasSize::new(16, 16),
+            (0, 0),
+            CanvasSize::new(16, 16),
+            &sources,
+        );
+
+        assert_eq!(
+            program.segments(),
+            &[RenderSegment {
+                source_range: 0..2,
+                kind: RenderSegmentKind::TileLocal(TileProgramKind::PointFilterRun),
+                cost_hint: SegmentCostHint {
+                    expected_passes: 1,
+                    tile_events: 2,
+                    legacy_sources: 0,
+                },
+            }]
+        );
+        assert_eq!(program.stats().point_filter_run_segments, 1);
         assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 0);
     }
 

@@ -478,6 +478,9 @@ same tile-local execution model:
 - `clip_gpu::stream_program` can plan a `RasterFilterRun` segment when a source
   range contains eligible raster events and supported pointwise LUT filters,
   including filter-first mixed runs such as `filter, raster`.
+- It can also plan a `PointFilterRun` segment for consecutive filter-only
+  ranges, applying those filters to the current dirty accumulator from previous
+  segments.
 - `stream_tile_event.rs` bumps the tile event ABI to `3` and adds
   `TileEventKind::PointFilter` plus a separate `filter_payloads` storage
   buffer.
@@ -507,6 +510,7 @@ Verification after this milestone:
 - Rust: `cargo check -q` and `cargo test -q`.
 - GPU unit coverage compares a leading filter followed by a raster against the
   existing legacy source path.
+- GPU unit coverage also checks a filter-only segment after a legacy source.
 - `Test_ToneCurve` exact.
 - `Test_HSL2` exact.
 - `Test_HSL3`, `Test_HSL4`, and `Test_HSL5` keep the existing one-LSB
@@ -517,9 +521,8 @@ Verification after this milestone:
   and `Test_ClippingEdge` remains exact.
 
 This is a real semantic-barrier reduction, not a full filter/mask solution.
-Filter-only ranges still remain on the existing path, and masked filters with
-real non-opaque mask pixels still need independent mask tile resources before
-they can be lowered faithfully.
+Masked filters with real non-opaque mask pixels still need independent mask
+tile resources before they can be lowered faithfully.
 
 ## Simple Container Scope Tile Events
 

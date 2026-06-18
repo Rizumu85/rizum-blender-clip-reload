@@ -55,6 +55,7 @@ Current state:
 - `TileLocal(RasterRun)`
 - `TileLocal(RasterClippingRun)`
 - `TileLocal(RasterFilterRun)`
+- `TileLocal(PointFilterRun)`
 - `TileLocal(SimpleContainerScope)` for the first narrow isolated-container
   subset
 - `TileLocal(SimpleThroughScope)` for the first narrow THROUGH-group subset
@@ -440,15 +441,18 @@ segment plus the Paper/SolidColor barrier.
 Lower supported pointwise adjustment/filter layers into tile events. Keep
 non-local filters as explicit barriers.
 
-Status: implemented in first form for raster/filter mixed runs whose filter
-mask is absent or is proven fully opaque from `.clip` mask metadata and
-compressed tile inspection.
+Status: implemented in first form for raster/filter mixed runs and
+filter-only runs whose filter mask is absent or is proven fully opaque from
+`.clip` mask metadata and compressed tile inspection.
 
 Implemented shape:
 
 - `TileProgramKind::RasterFilterRun` lowers source ranges such as
   `raster, filter, raster` and `filter, raster` into one tile-local segment
   instead of raster segment plus filter barrier/pass.
+- `TileProgramKind::PointFilterRun` lowers consecutive filter-only source
+  ranges into one tile-local segment, applying them to the current dirty
+  parent accumulator without requiring a raster event in the same segment.
 - `TileEventKind::PointFilter` carries LUT row, opacity, filter mode, HSL
   parameters, and local dirty bounds in `filter_payloads`.
 - The tile VM applies Tone Curve, HSL, Threshold, and Gradient Map filter modes
@@ -478,12 +482,14 @@ Verification:
 - `Test_Gradiation` keeps the known `raw_max=10` / `premul_max=10` residual.
 - GPU unit coverage compares a leading filter followed by a raster against the
   existing legacy source path.
+- GPU unit coverage also locks a filter-only tile segment after a legacy
+  source, proving a standalone pointwise filter run can consume the previous
+  segment's dirty accumulator.
 - `Test_AddGlowMultiply` and `Test_ClippingEdge` guards remain stable.
 
 Remaining Phase 4 work:
 
 - masked filters whose masks are not provably fully opaque
-- filter-only segments that do not include a raster event
 - filters inside complex tile-local container/THROUGH scope stacks
 
 ### Phase 5: Container and THROUGH Scope Stack
