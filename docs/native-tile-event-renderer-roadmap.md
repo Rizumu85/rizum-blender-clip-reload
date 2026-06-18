@@ -395,7 +395,8 @@ Fifth form: `TileEventKind::BeginContainer` and
 `TileEventKind::EndContainer` now have a separate `scope_payloads` storage
 buffer. `TILE_EVENT_ABI_VERSION` is `4`. The tile VM can maintain one
 transparent-white local scope accumulator and resolve it back to the parent
-accumulator for the first simple isolated-container subset.
+accumulator for the simple unmasked isolated-container subset, including
+positive container opacity and modeled resolve blend modes.
 
 Remaining Phase 2 work:
 
@@ -481,17 +482,17 @@ Status: started in first form for simple isolated containers.
 Implemented subset:
 
 - `TileProgramKind::SimpleContainerScope` lowers a `Container` source only when
-  the folder resolve is Normal, opacity is `1.0`, there is no container mask,
-  bounds are known and intersect the current target, and children are limited
-  to eligible raster events plus pointwise filters whose masks are absent or
-  proven fully opaque.
+  container opacity is positive, there is no container mask, the resolve blend
+  mode is modeled by the tile VM, bounds are known and intersect the current
+  target, and children are limited to eligible raster events plus pointwise
+  filters whose masks are absent or proven fully opaque.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
-  local result into the parent accumulator with the same Normal alpha-over path
-  used by existing raster events.
+  local result into the parent accumulator through the same Normal,
+  byte-domain special-blend, or standard blend helpers used by existing raster
+  events.
 - Nested containers, THROUGH groups, clipping runs, solid colors, masked or
-  non-opaque container resolves, and real non-opaque filter masks still remain
-  explicit legacy barriers.
+  unknown filter masks still remain explicit legacy barriers.
 
 Verification:
 
@@ -499,6 +500,9 @@ Verification:
   through compositing by placing a Multiply raster inside a Normal folder over
   an opaque gray background. The expected isolated result is the source colour;
   the direct-through result would be darker.
+- GPU unit tests compare the tile-scope path against the existing legacy
+  source path for Normal container opacity, Multiply container resolve, and
+  Multiply container resolve with non-1 opacity.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
   and `Test_AddGlowMultiply` remain stable.
 

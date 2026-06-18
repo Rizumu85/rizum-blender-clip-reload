@@ -3,97 +3,21 @@ use clip_model::CanvasSize;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_context::StreamingExecutionContext;
-use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_tile_event::{
     PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload, TileEventProgram,
 };
 use crate::stream_tile_filter_silo::{
     filter_mask_can_lower, raster_payload, upload_raster_sources,
 };
+use crate::stream_tile_scope_silo_plan::simple_container_scope_event_count;
 use crate::stream_tile_silo::atlas_requests;
 use crate::stream_tile_silo_buffers::{
     create_params_buffer, create_tile_event_storage_buffers, create_u32_storage_buffer,
 };
-use crate::stream_tile_silo_plan::{
-    MAX_SILO_EVENTS, TILE_SIZE, plan_atlas_layout, source_is_silo_eligible,
-    tile_work_lists_for_bounds,
-};
+use crate::stream_tile_silo_plan::{TILE_SIZE, plan_atlas_layout, tile_work_lists_for_bounds};
 use crate::stream_tile_silo_upload::{rgba8_texture_byte_len, upload_lut_atlas_texture};
 use crate::stream_utils::local_pass_bounds;
 use crate::{GpuNormalStackSource, GpuRasterBlendMode, GpuRenderError};
-
-pub(crate) fn simple_container_scope_event_count<P>(
-    provider: &P,
-    output_size: CanvasSize,
-    target_origin: (i32, i32),
-    target_size: CanvasSize,
-    source: &GpuNormalStackSource,
-) -> Option<usize>
-where
-    P: GpuNormalStackResourceProvider,
-{
-    let GpuNormalStackSource::Container {
-        children,
-        opacity,
-        mask_key,
-        blend_mode,
-    } = source
-    else {
-        return None;
-    };
-    if *blend_mode != GpuRasterBlendMode::Normal
-        || *opacity != 1.0
-        || mask_key.is_some()
-        || children.is_empty()
-    {
-        return None;
-    }
-    let KnownStackBounds::Bounded(bounds) = known_stack_bounds(provider, children, output_size)
-    else {
-        return None;
-    };
-    let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
-
-    let mut count = 2usize;
-    let mut saw_raster = false;
-    for child in children {
-        match child {
-            GpuNormalStackSource::Raster(_) => {
-                if !source_is_silo_eligible(
-                    provider,
-                    output_size,
-                    target_origin,
-                    target_size,
-                    child,
-                ) {
-                    return None;
-                }
-                saw_raster = true;
-                count = count.saturating_add(1);
-            }
-            GpuNormalStackSource::LutFilter {
-                lut_rgba,
-                opacity,
-                mask_key,
-                ..
-            } => {
-                if !saw_raster
-                    || *opacity <= 0.0
-                    || !filter_mask_can_lower(provider, *mask_key)
-                    || lut_rgba.len() != 256 * 4
-                {
-                    return None;
-                }
-                count = count.saturating_add(1);
-            }
-            _ => return None,
-        }
-        if count > MAX_SILO_EVENTS {
-            return None;
-        }
-    }
-    saw_raster.then_some(count)
-}
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_simple_container_scope_silo_with_provider<P>(
@@ -108,7 +32,13 @@ pub(crate) fn encode_simple_container_scope_silo_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    let GpuNormalStackSource::Container { children, .. } = source else {
+    let GpuNormalStackSource::Container {
+        children,
+        opacity,
+        blend_mode,
+        ..
+    } = source
+    else {
         return Ok(false);
     };
     if simple_container_scope_event_count(
@@ -166,6 +96,8 @@ where
         context,
         target_origin,
         target_size,
+        *opacity,
+        *blend_mode,
         children,
         upload.prepared,
         *dirty_bounds,
@@ -363,6 +295,8 @@ fn build_scope_event_program_inputs<'a, P>(
     context: &StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     target_size: CanvasSize,
+    container_opacity: f32,
+    container_blend_mode: GpuRasterBlendMode,
     children: &'a [GpuNormalStackSource],
     prepared: Vec<crate::stream_tile_silo_plan::PreparedSiloSource>,
     initial_dirty_bounds: Option<CanvasRect>,
@@ -422,8 +356,8 @@ where
     };
     let local_scope_bounds = local_pass_bounds(scope_bounds, target_origin);
     let scope = ScopeTileEventPayload {
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
+        opacity: container_opacity,
+        blend_mode: container_blend_mode,
         local_bounds: local_scope_bounds,
     };
     let mut payloads = Vec::with_capacity(child_payloads.len() + 2);
@@ -462,19 +396,6 @@ fn raster_sources_have_masks(sources: &[GpuNormalStackSource]) -> bool {
     sources.iter().any(|source| match source {
         GpuNormalStackSource::Raster(raster) => raster.mask_key.is_some(),
         _ => false,
-    })
-}
-
-fn target_canvas_bounds(target_origin: (i32, i32), target_size: CanvasSize) -> Option<CanvasRect> {
-    let x = u32::try_from(target_origin.0).ok()?;
-    let y = u32::try_from(target_origin.1).ok()?;
-    x.checked_add(target_size.width)?;
-    y.checked_add(target_size.height)?;
-    Some(CanvasRect {
-        x,
-        y,
-        width: target_size.width,
-        height: target_size.height,
     })
 }
 

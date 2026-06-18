@@ -274,12 +274,28 @@ fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
 }
 
 fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
-    if (scope_word(event_index, 1u) != 0u) {
+    let blend_kind = scope_word(event_index, 1u);
+    let opacity = clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0);
+    if (blend_kind == 0u) {
+        let src_a = (to_u8(scope_dst.a) * opacity_to_u8(opacity)) / 256;
+        if (src_a <= 0) {
+            return dst;
+        }
+        return apply_normal_alpha(scope_dst, dst, src_a);
+    }
+    if (is_byte_domain_special_blend(blend_kind)) {
+        let src_a = (to_u8(scope_dst.a) * opacity_to_u8(opacity)) / 256;
+        if (src_a <= 0) {
+            return dst;
+        }
+        return apply_byte_standard_alpha(scope_dst, dst, src_a, blend_kind);
+    }
+    var src = scope_dst;
+    src.a = clamp(src.a * opacity, 0.0, 1.0);
+    if (src.a <= 0.0) {
         return dst;
     }
-    let opacity = opacity_to_u8(bitcast<f32>(scope_word(event_index, 0u)));
-    let src_a = (to_u8(scope_dst.a) * opacity) / 256;
-    return apply_normal_alpha(scope_dst, dst, src_a);
+    return apply_standard(src, dst, blend_kind);
 }
 
 fn normal_alpha_over_channel(dst: i32, src: i32, src_a: i32, carry: i32, out_a: i32) -> i32 {
