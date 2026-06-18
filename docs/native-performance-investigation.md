@@ -515,6 +515,43 @@ This is a real semantic-barrier reduction, not a full filter/mask solution.
 Masked filters with real non-opaque mask pixels still need independent mask
 tile resources before they can be lowered faithfully.
 
+## Simple Container Scope Tile Events
+
+The tile-event renderer now lowers the first narrow isolated-container subset:
+
+- `clip_gpu::stream_program` can plan a `SimpleContainerScope` segment for a
+  Normal folder with opacity `1.0`, no container mask, known finite bounds, and
+  children limited to eligible raster events plus pointwise filters whose masks
+  are absent or proven fully opaque.
+- `stream_tile_event.rs` bumps the tile event ABI to `4` and adds
+  `TileEventKind::BeginContainer` / `EndContainer` with a separate
+  `scope_payloads` storage buffer.
+- `tile_silo.wgsl` keeps one local transparent-white scope accumulator. Raster
+  and pointwise-filter events inside the scope modify that local accumulator,
+  then `EndContainer` resolves it into the parent accumulator through the
+  existing Normal alpha-over helper.
+- Unsupported scope shapes remain barriers: nested containers, THROUGH groups,
+  clipping runs, solid colors, masked or non-opaque container resolves, and
+  filters with real or unknown non-opaque masks.
+
+Verification after this milestone:
+
+- Rust: `cargo fmt --all --check`, `cargo check -q`, and
+  `cargo test -q -p clip_gpu`.
+- New GPU unit coverage renders a Multiply raster inside a Normal folder over
+  an opaque gray background. The tile scope path produces the isolated source
+  colour; a direct-through Multiply implementation would darken it.
+- Guard comparisons remain stable: `Test_Clipping` exact,
+  `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
+  and `Test_AddGlowMultiply` remains at the existing one-LSB invisible
+  residual (`raw_max=1`, `premul_max=1`, visible `0`).
+
+Most existing public fixtures either have their structural root container
+elided or express folder semantics as THROUGH groups, so they may still report
+`simple_container_scope_segments: 0`. This milestone is still useful because it
+turns the scope-stack model into an executed tile event path and gives future
+container/THROUGH lowering a tested shader seam.
+
 ## Compressed Occupancy Planner
 
 The tile-silo diagnostic now has the first Silicate-shaped planner input:

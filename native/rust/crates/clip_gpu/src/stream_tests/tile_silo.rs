@@ -124,6 +124,51 @@ fn streamed_tile_silo_accepts_provider_backed_atlas_pixels() {
 }
 
 #[test]
+fn streamed_tile_silo_lowers_simple_container_as_isolated_scope() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let multiply_key = raster_key(142);
+    let mut multiply = raster_source_at(multiply_key, 1, 1);
+    multiply.blend_mode = GpuRasterBlendMode::Multiply;
+    let mut provider = AtlasInlineProvider::new(vec![(
+        multiply_key,
+        AtlasInlineRaster {
+            render_node_id: RenderNodeId(142),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![128, 0, 0, 255],
+        },
+    )]);
+    let sources = [
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 128,
+                g: 128,
+                b: 128,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Container {
+            children: vec![GpuNormalStackSource::Raster(multiply)],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        },
+    ];
+
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed simple container scope");
+
+    let mut expected = [128, 128, 128, 255].repeat(9);
+    expected[((1 * 3 + 1) * 4) as usize..((1 * 3 + 1) * 4 + 4) as usize]
+        .copy_from_slice(&[128, 0, 0, 255]);
+    assert_eq!(output.pixels, expected);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_accepts_provider_backed_masked_normal_atlas_pixels() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let red_key = raster_key(240);

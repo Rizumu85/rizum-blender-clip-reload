@@ -5,6 +5,7 @@ pub(crate) struct TileEventStorageBuffers {
     pub(crate) headers: wgpu::Buffer,
     pub(crate) raster_payloads: wgpu::Buffer,
     pub(crate) filter_payloads: wgpu::Buffer,
+    pub(crate) scope_payloads: wgpu::Buffer,
 }
 
 pub(crate) fn create_tile_event_storage_buffers(
@@ -24,10 +25,16 @@ pub(crate) fn create_tile_event_storage_buffers(
         "rizum_clip_tile_silo_filter_payloads",
         &program.filter_payload_words(),
     );
+    let scope_payloads = create_u32_storage_buffer(
+        device,
+        "rizum_clip_tile_silo_scope_payloads",
+        &program.scope_payload_words(),
+    );
     TileEventStorageBuffers {
         headers,
         raster_payloads,
         filter_payloads,
+        scope_payloads,
     }
 }
 

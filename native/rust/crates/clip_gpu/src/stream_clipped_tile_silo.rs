@@ -262,6 +262,10 @@ where
                     binding: 9,
                     resource: wgpu::BindingResource::TextureView(&lut_atlas_view),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 10,
+                    resource: event_buffers.scope_payloads.as_entire_binding(),
+                },
             ],
         });
 

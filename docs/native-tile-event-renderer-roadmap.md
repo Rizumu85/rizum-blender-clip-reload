@@ -54,6 +54,9 @@ Current state:
 
 - `TileLocal(RasterRun)`
 - `TileLocal(RasterClippingRun)`
+- `TileLocal(RasterFilterRun)`
+- `TileLocal(SimpleContainerScope)` for the first narrow isolated-container
+  subset
 - `Barrier(LegacySource)`
 
 Target state:
@@ -388,10 +391,16 @@ is `3`. Existing raster-only paths bind an empty filter payload buffer and a
 dummy LUT texture, while raster/filter tile-local segments bind real filter
 payloads and LUT rows.
 
+Fifth form: `TileEventKind::BeginContainer` and
+`TileEventKind::EndContainer` now have a separate `scope_payloads` storage
+buffer. `TILE_EVENT_ABI_VERSION` is `4`. The tile VM can maintain one
+transparent-white local scope accumulator and resolve it back to the parent
+accumulator for the first simple isolated-container subset.
+
 Remaining Phase 2 work:
 
-- add explicit typed event readers for clipping/scope payloads only when those
-  semantics are ready to lower
+- add explicit typed event readers for additional clipping/THROUGH payloads
+  only when those semantics are ready to lower
 - keep guard samples stable as new event kinds are added
 
 ### Phase 3: Byte-Domain Special Blend Events
@@ -463,11 +472,37 @@ Remaining Phase 4 work:
 
 - masked filters whose masks are not provably fully opaque
 - leading filters that must operate on an already-dirty parent accumulator
-- filters inside future tile-local container/THROUGH scope stacks
+- filters inside complex tile-local container/THROUGH scope stacks
 
 ### Phase 5: Container and THROUGH Scope Stack
 
-Start with simple isolated containers:
+Status: started in first form for simple isolated containers.
+
+Implemented subset:
+
+- `TileProgramKind::SimpleContainerScope` lowers a `Container` source only when
+  the folder resolve is Normal, opacity is `1.0`, there is no container mask,
+  bounds are known and intersect the current target, and children are limited
+  to eligible raster events plus pointwise filters whose masks are absent or
+  proven fully opaque.
+- The shader handles `BeginContainer` / `EndContainer` events by rendering
+  child events into a transparent-white local accumulator, then resolving that
+  local result into the parent accumulator with the same Normal alpha-over path
+  used by existing raster events.
+- Nested containers, THROUGH groups, clipping runs, solid colors, masked or
+  non-opaque container resolves, and real non-opaque filter masks still remain
+  explicit legacy barriers.
+
+Verification:
+
+- A GPU unit test distinguishes isolated-container semantics from direct
+  through compositing by placing a Multiply raster inside a Normal folder over
+  an opaque gray background. The expected isolated result is the source colour;
+  the direct-through result would be darker.
+- `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
+  and `Test_AddGlowMultiply` remain stable.
+
+Next scope-stack work:
 
 - no nested THROUGH
 - no unsupported filter

@@ -40,11 +40,17 @@ var<storage, read> filter_payloads: array<u32>;
 @group(0) @binding(9)
 var lut_texture: texture_2d<f32>;
 
+@group(0) @binding(10)
+var<storage, read> scope_payloads: array<u32>;
+
 const EVENT_HEADER_WORDS: u32 = 4u;
 const RASTER_PAYLOAD_WORDS: u32 = 10u;
 const POINT_FILTER_PAYLOAD_WORDS: u32 = 10u;
+const SCOPE_PAYLOAD_WORDS: u32 = 8u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
 const TILE_EVENT_KIND_RASTER: u32 = 1u;
+const TILE_EVENT_KIND_BEGIN_CONTAINER: u32 = 5u;
+const TILE_EVENT_KIND_END_CONTAINER: u32 = 6u;
 const TILE_EVENT_KIND_POINT_FILTER: u32 = 7u;
 const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
 const MODE_NORMAL: u32 = 0u;
@@ -81,6 +87,11 @@ fn filter_word(event_index: u32, word_index: u32) -> u32 {
     return filter_payloads[payload_offset * POINT_FILTER_PAYLOAD_WORDS + word_index];
 }
 
+fn scope_word(event_index: u32, word_index: u32) -> u32 {
+    let payload_offset = event_headers[event_index * EVENT_HEADER_WORDS + 2u];
+    return scope_payloads[payload_offset * SCOPE_PAYLOAD_WORDS + word_index];
+}
+
 fn quantize_u8(value: vec4<f32>) -> vec4<f32> {
     return floor(clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0 + vec4<f32>(0.5)) / 255.0;
 }
@@ -111,6 +122,10 @@ fn div_round_255(value: i32) -> i32 {
 
 fn div_round(numerator: i32, denominator: i32) -> i32 {
     return (numerator + denominator / 2) / denominator;
+}
+
+fn opacity_to_u8(value: f32) -> i32 {
+    return i32(clamp(floor(value * 256.0 + 0.5), 0.0, 256.0));
 }
 
 fn filter_gradient_lum_u8(value: vec3<f32>) -> i32 {
@@ -221,6 +236,23 @@ fn filter_contains(event_index: u32, local_texel: vec2<i32>) -> bool {
     );
 }
 
+fn scope_contains(event_index: u32, local_texel: vec2<i32>) -> bool {
+    let origin = vec2<i32>(
+        i32(scope_word(event_index, 2u)),
+        i32(scope_word(event_index, 3u)),
+    );
+    let size = vec2<i32>(
+        i32(scope_word(event_index, 4u)),
+        i32(scope_word(event_index, 5u)),
+    );
+    return !(
+        local_texel.x < origin.x ||
+        local_texel.y < origin.y ||
+        local_texel.x >= origin.x + size.x ||
+        local_texel.y >= origin.y + size.y
+    );
+}
+
 fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
     let lut_row = i32(filter_word(event_index, 0u));
     let mode = filter_word(event_index, 2u);
@@ -239,6 +271,15 @@ fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
     let strength = clamp(bitcast<f32>(filter_word(event_index, 1u)), 0.0, 1.0);
     let rgb = before.rgb * (1.0 - strength) + mapped * strength;
     return quantize_u8(vec4<f32>(rgb, before.a));
+}
+
+fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+    if (scope_word(event_index, 1u) != 0u) {
+        return dst;
+    }
+    let opacity = opacity_to_u8(bitcast<f32>(scope_word(event_index, 0u)));
+    let src_a = (to_u8(scope_dst.a) * opacity) / 256;
+    return apply_normal_alpha(scope_dst, dst, src_a);
 }
 
 fn normal_alpha_over_channel(dst: i32, src: i32, src_a: i32, carry: i32, out_a: i32) -> i32 {
@@ -944,14 +985,32 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let span_count = tile_spans[span_base + 1u];
     var dst = textureLoad(dest_texture, local_texel, 0);
     var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var scope_active = false;
 
     for (var index = 0u; index < span_count; index = index + 1u) {
         let event_index = work_indices[span_start + index];
         let kind = event_kind(event_index);
+        if (kind == TILE_EVENT_KIND_BEGIN_CONTAINER) {
+            if (scope_contains(event_index, local_texel)) {
+                scope_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                scope_active = true;
+            }
+            continue;
+        }
+        if (kind == TILE_EVENT_KIND_END_CONTAINER) {
+            if (scope_active && scope_contains(event_index, local_texel)) {
+                dst = resolve_container_scope(event_index, scope_dst, dst);
+                scope_active = false;
+            }
+            continue;
+        }
         if (kind == TILE_EVENT_KIND_POINT_FILTER) {
             if (filter_contains(event_index, local_texel)) {
                 if (params.mode == MODE_CLIPPING_RUN) {
                     clip_dst = apply_point_filter_event(event_index, clip_dst);
+                } else if (scope_active) {
+                    scope_dst = apply_point_filter_event(event_index, scope_dst);
                 } else {
                     dst = apply_point_filter_event(event_index, dst);
                 }
@@ -991,6 +1050,21 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             }
             if (src.a <= 0.0 || dst.a <= 0.0) { continue; }
             dst = apply_preserve(src, dst, blend_kind);
+        } else if (scope_active) {
+            if (blend_kind == 0u) {
+                scope_dst = apply_normal(src, scope_dst, event_index, mask_value);
+            } else if (is_byte_domain_special_blend(blend_kind)) {
+                scope_dst = apply_byte_standard(src, scope_dst, event_index, mask_value, blend_kind);
+            } else {
+                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+                    src.a = src.a * mask_value;
+                }
+                if (src.a <= 0.0) {
+                    continue;
+                }
+                scope_dst = apply_standard(src, scope_dst, blend_kind);
+            }
         } else if (blend_kind == 0u) {
             dst = apply_normal(src, dst, event_index, mask_value);
         } else if (is_byte_domain_special_blend(blend_kind)) {

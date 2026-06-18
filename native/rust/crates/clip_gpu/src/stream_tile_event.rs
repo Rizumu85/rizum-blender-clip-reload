@@ -4,16 +4,19 @@ use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 3;
+pub const TILE_EVENT_ABI_VERSION: u32 = 4;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const POINT_FILTER_PAYLOAD_WORDS: usize = 10;
+const SCOPE_PAYLOAD_WORDS: usize = 8;
 const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum TileEventKind {
     Raster = 1,
+    BeginContainer = 5,
+    EndContainer = 6,
     PointFilter = 7,
     SpecialBlendRaster = 8,
 }
@@ -52,6 +55,13 @@ pub(crate) struct PointFilterTileEventPayload {
     pub(crate) lut_row: u32,
     pub(crate) opacity: f32,
     pub(crate) filter_mode: GpuLutFilterMode,
+    pub(crate) local_bounds: CanvasRect,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct ScopeTileEventPayload {
+    pub(crate) opacity: f32,
+    pub(crate) blend_mode: GpuRasterBlendMode,
     pub(crate) local_bounds: CanvasRect,
 }
 
@@ -112,8 +122,26 @@ impl PointFilterTileEventPayload {
     }
 }
 
+impl ScopeTileEventPayload {
+    fn words(self) -> [u32; SCOPE_PAYLOAD_WORDS] {
+        [
+            self.opacity.to_bits(),
+            blend_kind(self.blend_mode),
+            self.local_bounds.x,
+            self.local_bounds.y,
+            self.local_bounds.width,
+            self.local_bounds.height,
+            0,
+            0,
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum TileEventPayload {
     Raster(RasterTileEventPayload),
+    BeginContainer(ScopeTileEventPayload),
+    EndContainer(ScopeTileEventPayload),
     PointFilter(PointFilterTileEventPayload),
 }
 
@@ -123,6 +151,7 @@ pub(crate) struct TileEventProgram {
     headers: Vec<TileEventHeader>,
     raster_payloads: Vec<RasterTileEventPayload>,
     filter_payloads: Vec<PointFilterTileEventPayload>,
+    scope_payloads: Vec<ScopeTileEventPayload>,
 }
 
 impl TileEventProgram {
@@ -136,6 +165,7 @@ impl TileEventProgram {
         let mut headers = Vec::new();
         let mut raster_payloads = Vec::new();
         let mut filter_payloads = Vec::new();
+        let mut scope_payloads = Vec::new();
         for payload in payloads {
             match payload {
                 TileEventPayload::Raster(payload) => {
@@ -146,6 +176,24 @@ impl TileEventProgram {
                         payload_len: 1,
                     });
                     raster_payloads.push(payload);
+                }
+                TileEventPayload::BeginContainer(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::BeginContainer,
+                        flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
+                }
+                TileEventPayload::EndContainer(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::EndContainer,
+                        flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
                 }
                 TileEventPayload::PointFilter(payload) => {
                     headers.push(TileEventHeader {
@@ -163,6 +211,7 @@ impl TileEventProgram {
             headers,
             raster_payloads,
             filter_payloads,
+            scope_payloads,
         }
     }
 
@@ -185,6 +234,14 @@ impl TileEventProgram {
     pub(crate) fn filter_payload_words(&self) -> Vec<u32> {
         let mut words = Vec::with_capacity(self.filter_payloads.len() * POINT_FILTER_PAYLOAD_WORDS);
         for payload in &self.filter_payloads {
+            words.extend_from_slice(&payload.words());
+        }
+        words
+    }
+
+    pub(crate) fn scope_payload_words(&self) -> Vec<u32> {
+        let mut words = Vec::with_capacity(self.scope_payloads.len() * SCOPE_PAYLOAD_WORDS);
+        for payload in &self.scope_payloads {
             words.extend_from_slice(&payload.words());
         }
         words
@@ -300,6 +357,59 @@ mod tests {
                 2,
                 31,
                 32,
+            ]
+        );
+    }
+
+    #[test]
+    fn builds_typed_container_scope_events() {
+        let scope = ScopeTileEventPayload {
+            opacity: 1.0,
+            blend_mode: GpuRasterBlendMode::Normal,
+            local_bounds: CanvasRect {
+                x: 4,
+                y: 5,
+                width: 6,
+                height: 7,
+            },
+        };
+        let program = TileEventProgram::from_payloads([
+            TileEventPayload::BeginContainer(scope),
+            TileEventPayload::EndContainer(scope),
+        ]);
+
+        assert_eq!(
+            program.header_words(),
+            vec![
+                TileEventKind::BeginContainer as u32,
+                0,
+                0,
+                1,
+                TileEventKind::EndContainer as u32,
+                0,
+                1,
+                1,
+            ]
+        );
+        assert_eq!(
+            program.scope_payload_words(),
+            vec![
+                1.0f32.to_bits(),
+                0,
+                4,
+                5,
+                6,
+                7,
+                0,
+                0,
+                1.0f32.to_bits(),
+                0,
+                4,
+                5,
+                6,
+                7,
+                0,
+                0,
             ]
         );
     }
