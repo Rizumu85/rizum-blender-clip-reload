@@ -34,10 +34,18 @@ var<uniform> params: TileSiloParams;
 @group(0) @binding(7)
 var<storage, read> raster_payloads: array<u32>;
 
+@group(0) @binding(8)
+var<storage, read> filter_payloads: array<u32>;
+
+@group(0) @binding(9)
+var lut_texture: texture_2d<f32>;
+
 const EVENT_HEADER_WORDS: u32 = 4u;
 const RASTER_PAYLOAD_WORDS: u32 = 10u;
+const POINT_FILTER_PAYLOAD_WORDS: u32 = 10u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
 const TILE_EVENT_KIND_RASTER: u32 = 1u;
+const TILE_EVENT_KIND_POINT_FILTER: u32 = 7u;
 const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
 const MODE_NORMAL: u32 = 0u;
 const MODE_PRESERVE_ALPHA: u32 = 1u;
@@ -64,12 +72,25 @@ fn event_word(event_index: u32, word_index: u32) -> u32 {
     return raster_payloads[payload_offset * RASTER_PAYLOAD_WORDS + word_index];
 }
 
+fn event_kind(event_index: u32) -> u32 {
+    return event_headers[event_index * EVENT_HEADER_WORDS];
+}
+
+fn filter_word(event_index: u32, word_index: u32) -> u32 {
+    let payload_offset = event_headers[event_index * EVENT_HEADER_WORDS + 2u];
+    return filter_payloads[payload_offset * POINT_FILTER_PAYLOAD_WORDS + word_index];
+}
+
 fn quantize_u8(value: vec4<f32>) -> vec4<f32> {
     return floor(clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0 + vec4<f32>(0.5)) / 255.0;
 }
 
 fn quantize_rgb_u8(value: vec3<f32>) -> vec3<f32> {
     return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0 + vec3<f32>(0.5)) / 255.0;
+}
+
+fn truncate_rgb_u8(value: vec3<f32>) -> vec3<f32> {
+    return floor(clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)) * 255.0) / 255.0;
 }
 
 fn floor_quantize_u8(value: vec4<f32>) -> vec4<f32> {
@@ -90,6 +111,134 @@ fn div_round_255(value: i32) -> i32 {
 
 fn div_round(numerator: i32, denominator: i32) -> i32 {
     return (numerator + denominator / 2) / denominator;
+}
+
+fn filter_gradient_lum_u8(value: vec3<f32>) -> i32 {
+    let lum_value = value.r * 255.0 * 0.3 + value.g * 255.0 * 0.59 + value.b * 255.0 * 0.11;
+    return i32(clamp(floor(lum_value), 0.0, 255.0));
+}
+
+fn filter_threshold_lum_u8(value: vec3<f32>) -> i32 {
+    let lum_value = value.r * 255.0 * 0.299 + value.g * 255.0 * 0.587 + value.b * 255.0 * 0.114;
+    return i32(clamp(floor(lum_value), 0.0, 255.0));
+}
+
+fn filter_rgb_to_hsv_u8(value: vec3<f32>) -> vec3<f32> {
+    let rgb = quantize_rgb_u8(value);
+    let mx = max(max(rgb.r, rgb.g), rgb.b);
+    let mn = min(min(rgb.r, rgb.g), rgb.b);
+    let delta = mx - mn;
+    var hue = 0.0;
+    if (delta > 0.000001) {
+        if (mx == rgb.b) {
+            hue = ((rgb.r - rgb.g) / max(delta, 0.000001)) + 4.0;
+        } else if (mx == rgb.g) {
+            hue = ((rgb.b - rgb.r) / max(delta, 0.000001)) + 2.0;
+        } else {
+            hue = (rgb.g - rgb.b) / max(delta, 0.000001);
+            hue = hue - floor(hue / 6.0) * 6.0;
+        }
+        hue = hue / 6.0;
+    }
+    var saturation = 0.0;
+    if (mx > 0.000001) {
+        saturation = delta / max(mx, 0.000001);
+    }
+    return vec3<f32>(hue, saturation, mx);
+}
+
+fn filter_hsv_to_rgb_u8(hue: f32, saturation: f32, value: f32) -> vec3<f32> {
+    let wrapped_hue = hue - floor(hue);
+    let h = wrapped_hue * 6.0;
+    let sector = i32(floor(h)) % 6;
+    let f = h - floor(h);
+    let p = value * (1.0 - saturation);
+    let q = value * (1.0 - saturation * f);
+    let t = value * (1.0 - saturation * (1.0 - f));
+    var rgb = vec3<f32>(value, p, q);
+    if (sector == 0) {
+        rgb = vec3<f32>(value, t, p);
+    } else if (sector == 1) {
+        rgb = vec3<f32>(q, value, p);
+    } else if (sector == 2) {
+        rgb = vec3<f32>(p, value, t);
+    } else if (sector == 3) {
+        rgb = vec3<f32>(p, q, value);
+    } else if (sector == 4) {
+        rgb = vec3<f32>(t, p, value);
+    }
+    return truncate_rgb_u8(rgb);
+}
+
+fn apply_hsl_adjust_filter(value: vec3<f32>, event_index: u32) -> vec3<f32> {
+    let hsv = filter_rgb_to_hsv_u8(value);
+    var hue = hsv.x + bitcast<f32>(filter_word(event_index, 3u));
+    var saturation = hsv.y;
+    var luminosity = hsv.z;
+    let saturation_delta = bitcast<f32>(filter_word(event_index, 4u));
+    let luminosity_delta = bitcast<f32>(filter_word(event_index, 5u));
+
+    if (luminosity_delta > 0.0) {
+        luminosity = luminosity + luminosity_delta * (1.0 - luminosity);
+        saturation = saturation - luminosity_delta * saturation;
+    } else if (luminosity_delta < 0.0) {
+        luminosity = luminosity + luminosity_delta * luminosity;
+    }
+
+    if (saturation_delta > 0.0 && saturation > 0.0) {
+        var inc = saturation_delta * (1.0 - saturation);
+        let value_delta = luminosity * inc;
+        if (luminosity + value_delta > 1.0 && value_delta > 0.0) {
+            inc = inc * (1.0 - luminosity) / value_delta;
+            luminosity = 1.0;
+        } else {
+            luminosity = luminosity + value_delta;
+        }
+        saturation = saturation + inc;
+    } else if (saturation_delta < 0.0) {
+        let dec = -saturation_delta * saturation;
+        saturation = saturation - dec;
+        luminosity = luminosity - luminosity * dec * 0.5;
+    }
+
+    return filter_hsv_to_rgb_u8(hue, clamp(saturation, 0.0, 1.0), clamp(luminosity, 0.0, 1.0));
+}
+
+fn filter_contains(event_index: u32, local_texel: vec2<i32>) -> bool {
+    let origin = vec2<i32>(
+        i32(filter_word(event_index, 6u)),
+        i32(filter_word(event_index, 7u)),
+    );
+    let size = vec2<i32>(
+        i32(filter_word(event_index, 8u)),
+        i32(filter_word(event_index, 9u)),
+    );
+    return !(
+        local_texel.x < origin.x ||
+        local_texel.y < origin.y ||
+        local_texel.x >= origin.x + size.x ||
+        local_texel.y >= origin.y + size.y
+    );
+}
+
+fn apply_point_filter_event(event_index: u32, before: vec4<f32>) -> vec4<f32> {
+    let lut_row = i32(filter_word(event_index, 0u));
+    let mode = filter_word(event_index, 2u);
+    var mapped = vec3<f32>(
+        textureLoad(lut_texture, vec2<i32>(to_u8(before.r), lut_row), 0).r,
+        textureLoad(lut_texture, vec2<i32>(to_u8(before.g), lut_row), 0).g,
+        textureLoad(lut_texture, vec2<i32>(to_u8(before.b), lut_row), 0).b,
+    );
+    if (mode == 1u) {
+        mapped = textureLoad(lut_texture, vec2<i32>(filter_gradient_lum_u8(before.rgb), lut_row), 0).rgb;
+    } else if (mode == 2u) {
+        mapped = textureLoad(lut_texture, vec2<i32>(filter_threshold_lum_u8(before.rgb), lut_row), 0).rgb;
+    } else if (mode == 3u) {
+        mapped = apply_hsl_adjust_filter(before.rgb, event_index);
+    }
+    let strength = clamp(bitcast<f32>(filter_word(event_index, 1u)), 0.0, 1.0);
+    let rgb = before.rgb * (1.0 - strength) + mapped * strength;
+    return quantize_u8(vec4<f32>(rgb, before.a));
 }
 
 fn normal_alpha_over_channel(dst: i32, src: i32, src_a: i32, carry: i32, out_a: i32) -> i32 {
@@ -798,6 +947,17 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     for (var index = 0u; index < span_count; index = index + 1u) {
         let event_index = work_indices[span_start + index];
+        let kind = event_kind(event_index);
+        if (kind == TILE_EVENT_KIND_POINT_FILTER) {
+            if (filter_contains(event_index, local_texel)) {
+                if (params.mode == MODE_CLIPPING_RUN) {
+                    clip_dst = apply_point_filter_event(event_index, clip_dst);
+                } else {
+                    dst = apply_point_filter_event(event_index, dst);
+                }
+            }
+            continue;
+        }
         let source_texel = source_texel_for_event(event_index, local_texel);
         if (!source_contains(event_index, source_texel)) {
             continue;

@@ -7,6 +7,7 @@ use crate::stream_program::{
     BarrierProgramKind, RenderSegmentKind, TileProgramKind, plan_render_program,
 };
 use crate::stream_state::StreamingTexturePair;
+use crate::stream_tile_filter_silo::encode_raster_filter_silo_run_with_provider;
 use crate::stream_tile_silo::encode_raster_silo_run_with_provider;
 
 pub(crate) fn encode_source_sequence_with_provider<P>(
@@ -79,6 +80,32 @@ where
             }
             RenderSegmentKind::TileLocal(TileProgramKind::RasterRun) => {
                 let wrote_silo = encode_raster_silo_run_with_provider(
+                    context,
+                    target_origin,
+                    texture_pair.size(),
+                    &sources[segment.source_range.clone()],
+                    texture_pair.view(previous_index),
+                    texture_pair.view(next_index),
+                    dirty_bounds,
+                )?;
+                if wrote_silo {
+                    std::mem::swap(&mut previous_index, &mut next_index);
+                    continue;
+                }
+                encode_legacy_segment(
+                    context,
+                    target_origin,
+                    sources,
+                    segment.source_range.clone(),
+                    texture_pair,
+                    &mut previous_index,
+                    &mut next_index,
+                    fallback_texture,
+                    dirty_bounds,
+                )?;
+            }
+            RenderSegmentKind::TileLocal(TileProgramKind::RasterFilterRun) => {
+                let wrote_silo = encode_raster_filter_silo_run_with_provider(
                     context,
                     target_origin,
                     texture_pair.size(),

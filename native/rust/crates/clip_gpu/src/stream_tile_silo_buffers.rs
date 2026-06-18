@@ -4,6 +4,7 @@ use crate::stream_tile_silo_plan::TILE_SIZE;
 pub(crate) struct TileEventStorageBuffers {
     pub(crate) headers: wgpu::Buffer,
     pub(crate) raster_payloads: wgpu::Buffer,
+    pub(crate) filter_payloads: wgpu::Buffer,
 }
 
 pub(crate) fn create_tile_event_storage_buffers(
@@ -18,9 +19,15 @@ pub(crate) fn create_tile_event_storage_buffers(
         raster_payload_label,
         &program.raster_payload_words(),
     );
+    let filter_payloads = create_u32_storage_buffer(
+        device,
+        "rizum_clip_tile_silo_filter_payloads",
+        &program.filter_payload_words(),
+    );
     TileEventStorageBuffers {
         headers,
         raster_payloads,
+        filter_payloads,
     }
 }
 
@@ -29,6 +36,14 @@ pub(crate) fn create_u32_storage_buffer(
     label: &'static str,
     values: &[u32],
 ) -> wgpu::Buffer {
+    if values.is_empty() {
+        return create_buffer_with_bytes(
+            device,
+            label,
+            wgpu::BufferUsages::STORAGE,
+            &u32_bytes(&[0]),
+        );
+    }
     create_buffer_with_bytes(
         device,
         label,

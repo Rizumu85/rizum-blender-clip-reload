@@ -17,7 +17,7 @@ use crate::stream_tile_silo_plan::{
 };
 use crate::stream_tile_silo_upload::{
     rgba8_texture_byte_len, upload_atlas_texture, upload_atlas_tile_texture,
-    upload_mask_atlas_tile_texture,
+    upload_lut_atlas_texture, upload_mask_atlas_tile_texture,
 };
 use crate::stream_utils::local_pass_bounds;
 use crate::{GpuClippedStackSource, GpuNormalRasterSource, GpuNormalStackSource, GpuRenderError};
@@ -203,6 +203,9 @@ where
 
     let atlas_view = atlas.create_view(&wgpu::TextureViewDescriptor::default());
     let mask_atlas_view = mask_atlas.create_view(&wgpu::TextureViewDescriptor::default());
+    let (lut_atlas, lut_atlas_bytes) =
+        upload_lut_atlas_texture(context.renderer, &[]).map_err(P::Error::from)?;
+    let lut_atlas_view = lut_atlas.create_view(&wgpu::TextureViewDescriptor::default());
     let event_program = tile_event_program(&prepared);
     let event_buffers = create_tile_event_storage_buffers(
         context.state.device(),
@@ -268,6 +271,14 @@ where
                     binding: 7,
                     resource: event_buffers.raster_payloads.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: event_buffers.filter_payloads.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 9,
+                    resource: wgpu::BindingResource::TextureView(&lut_atlas_view),
+                },
             ],
         });
 
@@ -306,6 +317,7 @@ where
     let atlas_bytes = rgba8_texture_byte_len(layout.size).map_err(P::Error::from)?;
     context.state.retain_texture(atlas, atlas_bytes);
     context.state.retain_texture(mask_atlas, mask_atlas_bytes);
+    context.state.retain_texture(lut_atlas, lut_atlas_bytes);
     context.state.finish_pass()?;
     *dirty_bounds = Some(pass_bounds);
     Ok(true)

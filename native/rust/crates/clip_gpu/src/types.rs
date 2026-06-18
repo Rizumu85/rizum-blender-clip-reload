@@ -26,7 +26,7 @@ pub struct GpuNormalStackChunk {
     pub sources: Vec<GpuNormalStackSource>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GpuNormalRasterSource {
     pub key: GpuRasterResourceKey,
     pub opacity: f32,

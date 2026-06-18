@@ -163,6 +163,10 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         self.texture_cache.is_none()
     }
 
+    fn mask_is_fully_opaque(&self, key: clip_gpu::GpuMaskResourceKey) -> Option<bool> {
+        self.planned_mask_is_fully_opaque(key)
+    }
+
     fn raster_resource(
         &mut self,
         renderer: &clip_gpu::GpuRenderer,
@@ -331,6 +335,26 @@ impl RuntimeGpuResourceProvider<'_> {
             }
         }
     }
+
+    fn planned_mask_is_fully_opaque(&self, key: clip_gpu::GpuMaskResourceKey) -> Option<bool> {
+        let meta = self.plan.masks.get(&key)?;
+        if meta.source.empty_fill != 255 {
+            return Some(false);
+        }
+        let body = self
+            .container
+            .external_data_body(&meta.source.external_id)?;
+        let tile_cols = tile_cols(meta.source.pixel_size.width)?;
+        let expected_tiles = tile_count(meta.source.pixel_size)?;
+        let inspection = clip_file::external::inspect_external_tile_blocks_with_compressed_tiles(
+            body,
+            clip_file::tiles::MASK_TILE_BYTES,
+            expected_tiles,
+            tile_cols,
+        )
+        .ok()?;
+        Some(inspection.compressed_tiles.is_empty())
+    }
 }
 
 pub(crate) fn rgba_byte_len(size: CanvasSize) -> Result<usize, RuntimeError> {
@@ -462,4 +486,17 @@ fn clip_region_to_render_bounds(
         region,
         render_bounds,
     )?)
+}
+
+fn tile_cols(width: u32) -> Option<usize> {
+    if width == 0 {
+        return None;
+    }
+    usize::try_from(width.div_ceil(clip_file::tiles::TILE_SIZE as u32)).ok()
+}
+
+fn tile_count(size: CanvasSize) -> Option<usize> {
+    let cols = u64::from(size.width.div_ceil(clip_file::tiles::TILE_SIZE as u32));
+    let rows = u64::from(size.height.div_ceil(clip_file::tiles::TILE_SIZE as u32));
+    usize::try_from(cols.checked_mul(rows)?).ok()
 }

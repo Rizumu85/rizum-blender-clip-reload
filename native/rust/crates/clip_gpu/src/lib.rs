@@ -31,6 +31,7 @@ mod stream_state;
 mod stream_tests;
 mod stream_through;
 mod stream_tile_event;
+mod stream_tile_filter_silo;
 mod stream_tile_silo;
 mod stream_tile_silo_buffers;
 mod stream_tile_silo_pipeline;

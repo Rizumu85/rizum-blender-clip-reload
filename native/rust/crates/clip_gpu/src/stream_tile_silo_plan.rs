@@ -11,7 +11,7 @@ use crate::{
 
 pub(crate) const TILE_SIZE: u32 = 256;
 pub(crate) const MIN_SILO_RUN_LEN: usize = 2;
-const MAX_SILO_EVENTS: usize = 256;
+pub(crate) const MAX_SILO_EVENTS: usize = 256;
 
 #[derive(Clone, Copy)]
 pub(crate) struct AtlasSourcePlacement {
@@ -181,12 +181,21 @@ pub(crate) fn tile_work_lists(
     tile_cols: u32,
     sources: &[PreparedSiloSource],
 ) -> Result<(Vec<u32>, Vec<u32>), GpuRenderError> {
+    let bounds: Vec<_> = sources.iter().map(|source| source.local_bounds).collect();
+    tile_work_lists_for_bounds(tile_count, tile_cols, &bounds)
+}
+
+pub(crate) fn tile_work_lists_for_bounds(
+    tile_count: usize,
+    tile_cols: u32,
+    bounds: &[CanvasRect],
+) -> Result<(Vec<u32>, Vec<u32>), GpuRenderError> {
     let mut by_tile = vec![Vec::<u32>::new(); tile_count];
-    for (event_index, source) in sources.iter().enumerate() {
-        let tile_x0 = source.local_bounds.x / TILE_SIZE;
-        let tile_y0 = source.local_bounds.y / TILE_SIZE;
-        let tile_x1 = (source.local_bounds.x + source.local_bounds.width - 1) / TILE_SIZE;
-        let tile_y1 = (source.local_bounds.y + source.local_bounds.height - 1) / TILE_SIZE;
+    for (event_index, bounds) in bounds.iter().enumerate() {
+        let tile_x0 = bounds.x / TILE_SIZE;
+        let tile_y0 = bounds.y / TILE_SIZE;
+        let tile_x1 = (bounds.x + bounds.width - 1) / TILE_SIZE;
+        let tile_y1 = (bounds.y + bounds.height - 1) / TILE_SIZE;
         for tile_y in tile_y0..=tile_y1 {
             for tile_x in tile_x0..=tile_x1 {
                 let tile_index =
@@ -215,7 +224,7 @@ pub(crate) fn tile_work_lists(
     Ok((work_indices, spans))
 }
 
-fn source_is_silo_eligible<P>(
+pub(crate) fn source_is_silo_eligible<P>(
     provider: &P,
     output_size: CanvasSize,
     target_origin: (i32, i32),

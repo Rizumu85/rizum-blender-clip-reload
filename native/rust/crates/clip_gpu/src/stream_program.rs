@@ -42,6 +42,7 @@ pub(crate) enum RenderSegmentKind {
 pub(crate) enum TileProgramKind {
     RasterRun,
     RasterClippingRun,
+    RasterFilterRun,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -63,6 +64,7 @@ pub struct RenderProgramStats {
     pub barrier_segments: u32,
     pub raster_run_segments: u32,
     pub raster_clipping_run_segments: u32,
+    pub raster_filter_run_segments: u32,
     pub legacy_source_segments: u32,
     pub planned_tile_events: u32,
     pub planned_passes: u32,
@@ -82,6 +84,9 @@ impl RenderProgramStats {
         self.raster_clipping_run_segments = self
             .raster_clipping_run_segments
             .saturating_add(other.raster_clipping_run_segments);
+        self.raster_filter_run_segments = self
+            .raster_filter_run_segments
+            .saturating_add(other.raster_filter_run_segments);
         self.legacy_source_segments = self
             .legacy_source_segments
             .saturating_add(other.legacy_source_segments);
@@ -158,6 +163,7 @@ fn push_tile_segment(
     match lowering.kind {
         TileProgramKind::RasterRun => stats.raster_run_segments += 1,
         TileProgramKind::RasterClippingRun => stats.raster_clipping_run_segments += 1,
+        TileProgramKind::RasterFilterRun => stats.raster_filter_run_segments += 1,
     }
 }
 
@@ -189,9 +195,9 @@ mod tests {
 
     use super::*;
     use crate::{
-        GpuClippedStackSource, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
-        GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError,
-        GpuRenderer,
+        GpuClippedStackSource, GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey,
+        GpuNormalRasterSource, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey,
+        GpuRenderError, GpuRenderer,
     };
 
     #[test]
@@ -285,6 +291,7 @@ mod tests {
                 barrier_segments: 1,
                 raster_run_segments: 2,
                 raster_clipping_run_segments: 1,
+                raster_filter_run_segments: 0,
                 legacy_source_segments: 1,
                 planned_tile_events: 6,
                 planned_passes: 4,
@@ -327,6 +334,47 @@ mod tests {
                 RenderProgramBarrierReason::ClippedContainerSiblingNotLowered,
             ))
         );
+    }
+
+    #[test]
+    fn planner_lowers_unmasked_filter_between_rasters() {
+        let provider = PlannerProvider::new([
+            (raster_key(1), CanvasSize::new(4, 4)),
+            (raster_key(2), CanvasSize::new(4, 4)),
+        ]);
+        let sources = vec![
+            GpuNormalStackSource::Raster(raster_source(1)),
+            GpuNormalStackSource::LutFilter {
+                lut_rgba: identity_lut(),
+                opacity: 1.0,
+                mask_key: None,
+                filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            },
+            GpuNormalStackSource::Raster(raster_source(2)),
+        ];
+
+        let program = plan_render_program(
+            &provider,
+            CanvasSize::new(16, 16),
+            (0, 0),
+            CanvasSize::new(16, 16),
+            &sources,
+        );
+
+        assert_eq!(
+            program.segments(),
+            &[RenderSegment {
+                source_range: 0..3,
+                kind: RenderSegmentKind::TileLocal(TileProgramKind::RasterFilterRun),
+                cost_hint: SegmentCostHint {
+                    expected_passes: 1,
+                    tile_events: 3,
+                    legacy_sources: 0,
+                },
+            }]
+        );
+        assert_eq!(program.stats().raster_filter_run_segments, 1);
+        assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 0);
     }
 
     struct PlannerProvider {
@@ -394,5 +442,13 @@ mod tests {
             layer_id: LayerId(id),
             render_mipmap_id: id,
         }
+    }
+
+    fn identity_lut() -> Vec<u8> {
+        let mut lut = Vec::with_capacity(256 * 4);
+        for value in 0..=255u8 {
+            lut.extend_from_slice(&[value, value, value, 255]);
+        }
+        lut
     }
 }

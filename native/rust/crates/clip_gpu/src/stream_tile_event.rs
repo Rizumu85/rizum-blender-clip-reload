@@ -1,17 +1,20 @@
 use clip_model::CanvasSize;
 
-use crate::GpuRasterBlendMode;
 use crate::blend::blend_kind;
+use crate::stream_bounds::CanvasRect;
+use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 2;
+pub const TILE_EVENT_ABI_VERSION: u32 = 3;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
+const POINT_FILTER_PAYLOAD_WORDS: usize = 10;
 const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum TileEventKind {
     Raster = 1,
+    PointFilter = 7,
     SpecialBlendRaster = 8,
 }
 
@@ -44,6 +47,14 @@ pub(crate) struct RasterTileEventPayload {
     pub(crate) mask_atlas_origin: Option<(u32, u32)>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct PointFilterTileEventPayload {
+    pub(crate) lut_row: u32,
+    pub(crate) opacity: f32,
+    pub(crate) filter_mode: GpuLutFilterMode,
+    pub(crate) local_bounds: CanvasRect,
+}
+
 impl RasterTileEventPayload {
     fn words(self) -> [u32; RASTER_PAYLOAD_WORDS] {
         [
@@ -73,32 +84,85 @@ impl RasterTileEventPayload {
     }
 }
 
+impl PointFilterTileEventPayload {
+    fn words(self) -> [u32; POINT_FILTER_PAYLOAD_WORDS] {
+        let (mode, hue, saturation, luminosity) = match self.filter_mode {
+            GpuLutFilterMode::ToneCurveRgb => (0, 0.0, 0.0, 0.0),
+            GpuLutFilterMode::GradientMapLum => (1, 0.0, 0.0, 0.0),
+            GpuLutFilterMode::ThresholdLum => (2, 0.0, 0.0, 0.0),
+            GpuLutFilterMode::Hsl(params) => (
+                3,
+                params.hue_turns,
+                params.saturation_delta,
+                params.luminosity_delta,
+            ),
+        };
+        [
+            self.lut_row,
+            self.opacity.to_bits(),
+            mode,
+            hue.to_bits(),
+            saturation.to_bits(),
+            luminosity.to_bits(),
+            self.local_bounds.x,
+            self.local_bounds.y,
+            self.local_bounds.width,
+            self.local_bounds.height,
+        ]
+    }
+}
+
+pub(crate) enum TileEventPayload {
+    Raster(RasterTileEventPayload),
+    PointFilter(PointFilterTileEventPayload),
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct TileEventProgram {
     abi_version: u32,
     headers: Vec<TileEventHeader>,
     raster_payloads: Vec<RasterTileEventPayload>,
+    filter_payloads: Vec<PointFilterTileEventPayload>,
 }
 
 impl TileEventProgram {
     pub(crate) fn from_raster_payloads(
         payloads: impl IntoIterator<Item = RasterTileEventPayload>,
     ) -> Self {
-        let raster_payloads: Vec<_> = payloads.into_iter().collect();
-        let headers = raster_payloads
-            .iter()
-            .enumerate()
-            .map(|(index, payload)| TileEventHeader {
-                kind: payload.event_kind(),
-                flags: 0,
-                payload_offset: u32::try_from(index).unwrap_or(u32::MAX),
-                payload_len: 1,
-            })
-            .collect();
+        Self::from_payloads(payloads.into_iter().map(TileEventPayload::Raster))
+    }
+
+    pub(crate) fn from_payloads(payloads: impl IntoIterator<Item = TileEventPayload>) -> Self {
+        let mut headers = Vec::new();
+        let mut raster_payloads = Vec::new();
+        let mut filter_payloads = Vec::new();
+        for payload in payloads {
+            match payload {
+                TileEventPayload::Raster(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: payload.event_kind(),
+                        flags: 0,
+                        payload_offset: u32::try_from(raster_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    raster_payloads.push(payload);
+                }
+                TileEventPayload::PointFilter(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::PointFilter,
+                        flags: 0,
+                        payload_offset: u32::try_from(filter_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    filter_payloads.push(payload);
+                }
+            }
+        }
         Self {
             abi_version: TILE_EVENT_ABI_VERSION,
             headers,
             raster_payloads,
+            filter_payloads,
         }
     }
 
@@ -113,6 +177,14 @@ impl TileEventProgram {
     pub(crate) fn raster_payload_words(&self) -> Vec<u32> {
         let mut words = Vec::with_capacity(self.raster_payloads.len() * RASTER_PAYLOAD_WORDS);
         for payload in &self.raster_payloads {
+            words.extend_from_slice(&payload.words());
+        }
+        words
+    }
+
+    pub(crate) fn filter_payload_words(&self) -> Vec<u32> {
+        let mut words = Vec::with_capacity(self.filter_payloads.len() * POINT_FILTER_PAYLOAD_WORDS);
+        for payload in &self.filter_payloads {
             words.extend_from_slice(&payload.words());
         }
         words
@@ -192,6 +264,43 @@ mod tests {
         assert_eq!(
             program.header_words(),
             vec![TileEventKind::SpecialBlendRaster as u32, 0, 0, 1]
+        );
+    }
+
+    #[test]
+    fn builds_typed_point_filter_events() {
+        let program = TileEventProgram::from_payloads([TileEventPayload::PointFilter(
+            PointFilterTileEventPayload {
+                lut_row: 3,
+                opacity: 0.25,
+                filter_mode: GpuLutFilterMode::ThresholdLum,
+                local_bounds: CanvasRect {
+                    x: 1,
+                    y: 2,
+                    width: 31,
+                    height: 32,
+                },
+            },
+        )]);
+
+        assert_eq!(
+            program.header_words(),
+            vec![TileEventKind::PointFilter as u32, 0, 0, 1]
+        );
+        assert_eq!(
+            program.filter_payload_words(),
+            vec![
+                3,
+                0.25f32.to_bits(),
+                2,
+                0.0f32.to_bits(),
+                0.0f32.to_bits(),
+                0.0f32.to_bits(),
+                1,
+                2,
+                31,
+                32,
+            ]
         );
     }
 }

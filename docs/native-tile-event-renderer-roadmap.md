@@ -382,10 +382,16 @@ ordered per-tile raster payload stream, but the header now carries enough
 semantic information for performance-plan/debug output and future payload
 splits.
 
+Fourth form: `TileEventKind::PointFilter` now has a separate
+`filter_payloads` storage buffer and LUT atlas binding. `TILE_EVENT_ABI_VERSION`
+is `3`. Existing raster-only paths bind an empty filter payload buffer and a
+dummy LUT texture, while raster/filter tile-local segments bind real filter
+payloads and LUT rows.
+
 Remaining Phase 2 work:
 
-- add explicit typed event readers for clipping/filter/scope payloads only when
-  those semantics are ready to lower
+- add explicit typed event readers for clipping/scope payloads only when those
+  semantics are ready to lower
 - keep guard samples stable as new event kinds are added
 
 ### Phase 3: Byte-Domain Special Blend Events
@@ -406,15 +412,58 @@ The tile VM now reuses the existing verified byte-domain formulas for:
 - clipped preserve-alpha compositing
 - raster-only clipping-run resolve through a special-blend base
 
-`--performance-plan-json` now reports `tile_event_abi_version: 2`. Files whose
-only previous barriers were these special blends should no longer report
-`ByteDomainBlendNotLowered`; for example `IllustrationBlendModesB.clip` now
-plans one raster-run tile-local segment plus the Paper/SolidColor barrier.
+At the end of this phase, `--performance-plan-json` reported
+`tile_event_abi_version: 2`. Files whose only previous barriers were these
+special blends should no longer report `ByteDomainBlendNotLowered`; for
+example `IllustrationBlendModesB.clip` planned one raster-run tile-local
+segment plus the Paper/SolidColor barrier.
 
 ### Phase 4: Pointwise Filter Events
 
 Lower supported pointwise adjustment/filter layers into tile events. Keep
 non-local filters as explicit barriers.
+
+Status: implemented in first form for raster/filter runs whose filter mask is
+absent or is proven fully opaque from `.clip` mask metadata and compressed tile
+inspection.
+
+Implemented shape:
+
+- `TileProgramKind::RasterFilterRun` lowers source ranges such as
+  `raster, filter, raster` into one tile-local segment instead of raster
+  segment plus filter barrier/pass.
+- `TileEventKind::PointFilter` carries LUT row, opacity, filter mode, HSL
+  parameters, and local dirty bounds in `filter_payloads`.
+- The tile VM applies Tone Curve, HSL, Threshold, and Gradient Map filter modes
+  to the per-pixel accumulator in event order, using the same formulas as the
+  existing LUT filter pass.
+- Runtime providers expose `mask_is_fully_opaque()`. A filter with a default
+  all-opaque mask can lower without sampling a mask. Any filter mask that cannot
+  be proven fully opaque remains `FilterNotLowered`.
+
+Current diagnostics:
+
+- `Test_ToneCurve.clip --performance-plan-json` now reports one
+  `raster_filter_run_segments` segment, no filter barrier, and one planned pass.
+- `Test_Gradiation.clip --performance-plan-json` also reports one
+  `raster_filter_run_segments` segment and no filter barrier.
+- `Test_HSL2.clip` lowers the raster plus HSL filter, while its Paper source
+  remains a `SolidColorNotLowered` barrier.
+
+Verification:
+
+- `Test_ToneCurve` exact.
+- `Test_HSL2` exact.
+- `Test_HSL3`, `Test_HSL4`, and `Test_HSL5` keep the existing one-LSB
+  non-visible residual shape.
+- `Test_Gradiation` keeps the known `raw_max=10` / `premul_max=10` residual.
+- `Test_AddGlowMultiply` and `Test_ClippingEdge` guards remain stable.
+
+Remaining Phase 4 work:
+
+- masked filters whose masks are not provably fully opaque
+- leading filters that must operate on an already-dirty parent accumulator
+- filters inside future tile-local container/THROUGH scope stacks
 
 ### Phase 5: Container and THROUGH Scope Stack
 

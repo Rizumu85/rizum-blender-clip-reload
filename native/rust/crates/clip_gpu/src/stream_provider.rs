@@ -88,6 +88,11 @@ pub trait GpuNormalStackResourceProvider {
         false
     }
 
+    fn mask_is_fully_opaque(&self, key: GpuMaskResourceKey) -> Option<bool> {
+        let _ = key;
+        None
+    }
+
     fn raster_run_atlas_pixels(
         &mut self,
         sources: &[GpuRasterAtlasSource],

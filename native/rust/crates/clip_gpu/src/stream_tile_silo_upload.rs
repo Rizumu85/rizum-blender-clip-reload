@@ -167,6 +167,71 @@ pub(crate) fn upload_mask_atlas_tile_texture(
     Ok((texture, r8_texture_byte_len(atlas_size)?))
 }
 
+pub(crate) fn upload_lut_atlas_texture(
+    renderer: &GpuRenderer,
+    rows: &[&[u8]],
+) -> Result<(wgpu::Texture, usize), GpuRenderError> {
+    if rows.is_empty() {
+        let texture = create_atlas_texture(&renderer.context.device, CanvasSize::new(1, 1));
+        renderer.context.queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &[0, 0, 0, 255],
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4),
+                rows_per_image: Some(1),
+            },
+            wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
+        );
+        return Ok((texture, 4));
+    }
+
+    let height = u32::try_from(rows.len()).map_err(|_| GpuRenderError::TextureSizeOverflow)?;
+    let size = CanvasSize::new(256, height);
+    let texture = create_atlas_texture(&renderer.context.device, size);
+    for (row_index, row) in rows.iter().enumerate() {
+        if row.len() != 256 * 4 {
+            return Err(GpuRenderError::InputBufferSizeMismatch {
+                expected: 256 * 4,
+                actual: row.len(),
+            });
+        }
+        renderer.context.queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x: 0,
+                    y: u32::try_from(row_index).map_err(|_| GpuRenderError::TextureSizeOverflow)?,
+                    z: 0,
+                },
+                aspect: wgpu::TextureAspect::All,
+            },
+            row,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(256 * 4),
+                rows_per_image: Some(1),
+            },
+            wgpu::Extent3d {
+                width: 256,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
+        );
+    }
+    Ok((texture, rgba8_texture_byte_len(size)?))
+}
+
 pub(crate) fn rgba8_texture_byte_len(size: CanvasSize) -> Result<usize, GpuRenderError> {
     if size.width == 0 || size.height == 0 {
         return Err(GpuRenderError::InvalidImageSize);

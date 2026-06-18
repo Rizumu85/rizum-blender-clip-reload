@@ -470,6 +470,51 @@ Verification after this milestone:
   `IllustrationBlendModesB` stays at the known fidelity residual
   (`raw_max=5`, `premul_max=5`).
 
+## Pointwise Filter Tile Events
+
+The tile-event renderer now lowers the first pointwise filter subset into the
+same tile-local execution model:
+
+- `clip_gpu::stream_program` can plan a `RasterFilterRun` segment when a source
+  range starts with eligible raster events and includes supported pointwise LUT
+  filters.
+- `stream_tile_event.rs` bumps the tile event ABI to `3` and adds
+  `TileEventKind::PointFilter` plus a separate `filter_payloads` storage
+  buffer.
+- `tile_silo.wgsl` applies Tone Curve, HSL, Threshold, and Gradient Map filter
+  modes to the local accumulator in event order, using the same math as the
+  existing LUT filter pass.
+- Filter masks are only bypassed when the provider can prove they are fully
+  opaque. The runtime provider proves this from mask `empty_fill=255` plus zero
+  compressed mask tiles. Any non-opaque or unknown filter mask remains an
+  explicit `FilterNotLowered` barrier.
+
+Performance-plan evidence:
+
+- `Test_ToneCurve.clip --performance-plan-json` now reports
+  `raster_filter_run_segments: 1`, `barrier_segments: 0`, and `planned_passes:
+  1`.
+- `Test_Gradiation.clip --performance-plan-json` reports the same filter
+  segment shape.
+- `Test_HSL2.clip --performance-plan-json` lowers the raster plus HSL filter;
+  the remaining barrier is the Paper/SolidColor source.
+
+Verification after this milestone:
+
+- Rust: `cargo check -q` and `cargo test -q`.
+- `Test_ToneCurve` exact.
+- `Test_HSL2` exact.
+- `Test_HSL3`, `Test_HSL4`, and `Test_HSL5` keep the existing one-LSB
+  non-visible residual shape.
+- `Test_Gradiation` remains at the known `raw_max=10` / `premul_max=10`
+  Gradient Map residual.
+- `Test_AddGlowMultiply` remains at the existing one-LSB invisible residual,
+  and `Test_ClippingEdge` remains exact.
+
+This is a real semantic-barrier reduction, not a full filter/mask solution.
+Masked filters with real non-opaque mask pixels still need independent mask
+tile resources before they can be lowered faithfully.
+
 ## Compressed Occupancy Planner
 
 The tile-silo diagnostic now has the first Silicate-shaped planner input:
