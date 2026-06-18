@@ -50,6 +50,9 @@ Open raster targets:
   smoke guards for structural regressions. Their broad low-level differences
   are less actionable than the targets above unless a hotspot shows a coherent
   visible artifact rather than transparent-RGB or edge quantization noise.
+- `Ref_Meimei_*_Live2D` is currently a clean smoke guard rather than a repair
+  target: release compare reports `premul_max=1` and `premul_visible_px=0`,
+  with raw max dominated by transparent RGB.
 - Non-zero render or mask offsets should stay sample-driven and guarded.
 
 ## Direction 2: Blender Add-on Workflow
