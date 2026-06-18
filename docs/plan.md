@@ -236,8 +236,13 @@ Deepening milestones:
      Current progress: `clip_cli/src/compare_png.rs` owns PNG reference loading,
      full-image render readback for compare, raw/premultiplied diff statistics,
      and compare report formatting.
-     Remaining work: extract the remaining command execution and non-PNG
-     diagnostic/report formatting out of `main.rs`.
+     Current progress: `clip_cli/src/runner.rs` owns command execution for
+     file-based CLI commands and returns process exit codes to the entry point.
+     `clip_cli/src/reload_manifest.rs` owns shared reload-manifest reads for the
+     runner and persistent Blender server. `main.rs` is now 37 lines of entry
+     wiring for usage, server mode, option parsing, and runner dispatch.
+     Remaining work: move any future non-PNG diagnostic/report formatting into
+     named formatter modules instead of adding it to `runner.rs`.
    - Expected benefit: adding diagnostics no longer expands the entry point, and
      command behavior can be tested without going through process-level `main`.
 

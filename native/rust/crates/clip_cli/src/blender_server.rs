@@ -73,7 +73,7 @@ fn handle_render_request(
         .json_path
         .ok_or_else(|| "server request is missing json_path".to_string())?;
     let previous_manifest = match request.previous_manifest_path {
-        Some(path) => Some(super::read_reload_manifest(&path)?),
+        Some(path) => Some(super::reload_manifest::read_reload_manifest(&path)?),
         None => None,
     };
     let mut session = ClipSession::open(&clip_path).map_err(|err| err.to_string())?;
