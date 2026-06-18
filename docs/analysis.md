@@ -3906,14 +3906,14 @@ Local verification accepted these changes. `cargo fmt --all --check` and
 `visible_px=0`; `Test_Color` remains `raw_max=1` / `visible_px=0`;
 `Test_Saturation` remains `raw_max=1` / `visible_px=0`; `Test_HSL` remains
 `raw_max=3`; `Test_AddGlowMultiply` remains `raw_max=1` / visible `0`; and
-`IllustrationBlendModes` remains `raw_max=7`. Using tracked
-`IllustrationBlendModes2.clip/png` exported from git, the current strict GPU
-output improves from the previous recorded `raw_max=8`, `visible_px=38080` to
-`raw_max=7`, `visible_px=16653`.
+`IllustrationBlendModes` remains `raw_max=7`. Using the current
+`IllustrationBlendModesB.clip/png` fixture, renamed from the old
+`IllustrationBlendModes2` sample after layer-by-layer PNG export, the current
+strict GPU output improves from the previous recorded `raw_max=8`,
+`visible_px=38080` to `raw_max=7`, `visible_px=16653`.
 
-Repository hygiene note from this review: the working tree's current
-`img/IllustrationBlendModes2.png` is not a valid CSP reference for the tracked
-`IllustrationBlendModes2.clip`; comparing against it gives `raw_max=250`.
-The working tree also contains many tracked `img/*.clip`/PNG deletions and new
-PSD/numbered PNG exports. Do not commit those assets without an explicit fixture
-cleanup decision.
+Repository hygiene decision after Rizum's fixture update: the old
+`IllustrationBlendModes2.clip` asset is removed, `IllustrationBlendModesB.*`
+is the current full-sample reference, and the numbered
+`IllustrationBlendModes*.png` plus `IllustrationBlendModesB*.png` exports are
+intentional progressive layer reveal references for future blend-mode tracing.

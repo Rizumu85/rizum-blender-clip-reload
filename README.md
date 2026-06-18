@@ -68,13 +68,14 @@ The package script writes `clip_studio_importer.zip` and, by default, requires a
 
 ## Verification Samples
 
-The repository root contains `.clip` files and CSP-exported `.png` files used as ground truth. Important current samples include:
+The `img/` directory contains public `.clip` fixtures and CSP-exported `.png`
+ground truth. Larger client/reference files such as `Ref_*` and
+`Test_RealArt*` are local-only ignored fixtures.
 
-- `Illustration.clip/png` - single-layer MVP decode.
+Important current tracked samples include:
+
 - `Illustration4K.clip/png` - large multi-layer alpha-over baseline.
-- `Test_RealArt.clip/png` - real artwork smoke test for masks, groups, clipping, and folder semantics.
+- `IllustrationBlendModes.clip/png` and `IllustrationBlendModesB.clip/png` - blend-mode regression samples, with numbered PNG layer-reveal references.
 - `Test_ClippingEdge.clip/png` and `Test_ClippingEdge4K.clip/png` - root-level clipped edge alpha samples.
-- `Ref_Emuri_Live2D_2024.clip/png` - clipped Add Glow sample.
-- `Test_AddGlowMultiply.clip/png` - unresolved clipping group structure sample.
-- `Test_ToneCurve.clip/png` - adjustment/filter-layer regression sample.
-- `Ref_Terra404_Live2D.clip/png` - real artwork follow-up sample for mask and THROUGH group semantics.
+- `Test_AddGlowMultiply.clip/png` - clipped Add Glow plus Multiply regression sample.
+- `Test_ToneCurve.clip/png` and `Test_Gradiation.clip/png` - adjustment/filter-layer regression samples.

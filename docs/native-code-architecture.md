@@ -409,16 +409,11 @@ Progress:
   `Test_VividLight.clip`, `Test_AddGlow.clip`, and `Test_Mask.clip` remain
   within `raw_max=1` / `premul_max=1`. `Test_AddGlowMultiply.clip` now routes
   without unsupported nodes and compares at `raw_max=5` / `premul_max=3`.
-- `IllustrationBlendModes.clip --gpu-normal-stack` and
-  `IllustrationBlendModes2.clip --gpu-normal-stack` now report
-  `unsupported=0`. C ABI comparisons remain diagnostic rather than exact:
-  `IllustrationBlendModes.png` is currently `raw_max=72`,
-  `premul_max=72`, `premul_visible_px=16946`; `IllustrationBlendModes2.png`
-  is currently `raw_max=9`, `premul_max=9`,
-  `premul_visible_px=38164`. Current trace evidence points
-  `IllustrationBlendModes.png` at a narrow Subtract -> Color Dodge -> Color Burn
-  interaction around `(266,244)` and `IllustrationBlendModes2.png` at a
-  Pin Light/Hue/Saturation chain around `(427,138)`.
+- `IllustrationBlendModes.clip --gpu-normal-stack` and the renamed
+  `IllustrationBlendModesB.clip --gpu-normal-stack` report `unsupported=0`.
+  Latest C ABI comparison metrics are tracked in `docs/AI_MEMORY.md`; this
+  older architecture note remains historical evidence for the Subtract ->
+  Color Dodge -> Color Burn and Pin Light/Hue/Saturation trace paths.
 
 Completed nineteenth milestone foundation: native adjustment/filter GPU pass.
 

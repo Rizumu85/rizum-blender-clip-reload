@@ -15,9 +15,8 @@ v0.5 optimizations:
   鈥?Vectorized tile assembly (numpy reshape/transpose, no Python per-tile loop)
   鈥?save_png defaults to zlib level 1 (PNG cache; size cost ~10鈥?0%, much faster)
 
-Verified bit-equivalent (alpha-aware) against CSP's PNG export on:
-  - Illustration.clip   (512x512, 1 raster layer)
-  - Illustration4K.clip (4096x4096, 3 raster layers)
+Verified bit-equivalent (alpha-aware) against CSP's PNG export on the legacy
+single-layer MVP fixture and the public `Illustration4K.clip` baseline.
 """
 
 from __future__ import annotations

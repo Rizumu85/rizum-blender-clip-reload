@@ -714,12 +714,11 @@ Eighteenth milestone progress:
   produces `[42,4,142,255]`, while CSP final is `[42,4,214,255]`. A simple
   near-white Color Dodge saturation threshold was rejected because exact
   counterexample pixels regress.
-- `IllustrationBlendModes2.clip --gpu-normal-stack` now reports
+- The renamed `IllustrationBlendModesB.clip --gpu-normal-stack` reports
   `unsupported=0` after adding Linear Burn, Darker/Lighter Color, Linear Light,
-  Pin Light, Exclusion, Brightness/Luminosity, and Divide. C ABI comparison
-  against `IllustrationBlendModes2.png` is currently `raw_max=9`,
-  `premul_max=9`, and `premul_visible_px=38164`. GPU prefix trace at
-  `(427,138)` identifies the residual as `PinLight -> Hue -> Saturation`.
+  Pin Light, Exclusion, Brightness/Luminosity, and Divide. Latest C ABI metrics
+  live in `docs/AI_MEMORY.md`; the GPU prefix trace at `(427,138)` identifies
+  the residual family as `PinLight -> Hue -> Saturation`.
   Raising HSL tiny-span quantization from `2/255` to `3/255` improves this
   image but regresses `Test_Saturation`, so that candidate is rejected.
 
