@@ -11,6 +11,7 @@ This file records durable project directions. Do not update it for every probe, 
 - User-facing design context: `docs/design.md`
 - Native rewrite direction: `docs/native-direct-load-rewrite.md`
 - Native performance investigation: `docs/native-performance-investigation.md`
+- Domain vocabulary for architecture work: `CONTEXT.md`
 
 ## Direction 1: Raster Fidelity First
 
@@ -34,8 +35,11 @@ Open raster targets:
   public sample to investigate before more blend-mode quantization nibbling.
 - `Ref_Kabi_Live2D`: strongest local-reference outlier by visible magnitude.
   The former white-eye structural error is fixed, but the current release
-  compare still has `premul_max=32` at a small local green-channel residual.
-  This is more suspicious than local references whose raw max is dominated by
+  compare still has `premul_max=29` at a small local Glow Dodge residual.
+  The accepted translucent-black destination fix reduced the earlier
+  `premul_max=32` hot spot; remaining work is the coloured-destination
+  `layer 264 [发光1]` path, not another broad partial-alpha threshold. This is
+  more suspicious than local references whose raw max is dominated by
   transparent RGB and whose premultiplied max is only 2-5.
 - `Test_HSL`: current release compare is `raw_max=3`, `premul_max=3`, and
   `premul_visible_px=2668`. This remains worth tracking, but it should come
@@ -174,7 +178,70 @@ Current policy:
 - Do not reintroduce the Python compositor/loader or sidecar PNG implementation into the installable add-on.
 - This direction is about flattened raster loading only; it does not restore vector, bubble/frame, or text renderer compatibility.
 
-## Direction 4: Documentation Hygiene
+## Direction 4: Architecture Deepening
+
+Goal: deepen shallow modules without changing renderer semantics, user-facing
+scope, or adding compatibility shims.
+
+Current policy:
+
+- Architecture work should improve Locality and Leverage at existing seams.
+  Avoid moving code only to reduce line counts; the Interface must become
+  smaller or more explicit.
+- Keep root files as wiring. Crate/package roots and command entry points should
+  delegate to named modules with clear Interfaces.
+- Refactors must preserve current raster fidelity and Blender workflow behavior.
+  Run targeted guards for the touched seam rather than broad sample sweeps by
+  default.
+- Use `CONTEXT.md` vocabulary for named domain Modules and keep new durable
+  terms there.
+
+Deepening milestones:
+
+1. Blender image state and worker protocol.
+   - Deepen the generated-image state Module so pack status, reload status,
+     source freshness, timing, support diagnostics, and IDProperty keys are not
+     spread across `clip_studio_importer/__init__.py` and
+     `clip_studio_importer/native_bridge.py`.
+   - Deepen the native worker protocol Module so one-shot files, persistent
+     server messages, reload manifests, dirty-rect patches, and timing fields
+     have one explicit Interface shared by the Python Adapter and Rust worker
+     implementation.
+   - Expected benefit: Blender UI/reload changes become localized, and protocol
+     tests can verify JSON examples without exercising full Blender operators.
+
+2. CLI command runner.
+   - Split `clip_cli/src/main.rs` into command parsing, command execution, and
+     output formatting modules.
+   - Existing diagnostics such as support text/json, pixel trace text,
+     layer-window dumps, PNG compare, tile-silo estimates, and Blender worker
+     commands should become command implementations behind a small runner
+     Interface.
+   - Expected benefit: adding diagnostics no longer expands the entry point, and
+     command behavior can be tested without going through process-level `main`.
+
+3. `clip_file` metadata readers.
+   - Deepen `clip_file/src/metadata.rs` into schema/sqlite access, layer graph
+     reading, raster/render source reading, mask source reading, filter source
+     reading, and paper colour reading.
+   - Keep storage-specific SQLite details inside `clip_file`; runtime callers
+     should continue to ask for typed `.clip` domain records.
+   - Expected benefit: schema variation and source-resolution bugs gain
+     Locality, while new diagnostics avoid touching unrelated metadata readers.
+
+4. Streaming execution context.
+   - Deepen `clip_gpu` streaming execution so full render, region render,
+     split-region stitching, encoder lifecycle, ping-pong texture selection,
+     dirty bounds, flush policy, and provider resource retention sit behind one
+     execution-context Interface.
+   - Keep tile-silo, mask/clipping events, filters, THROUGH groups, and
+     byte-domain special blends as explicit semantic barriers until faithful
+     models exist.
+   - Expected benefit: future mask/clipping tile-event performance work changes
+     scheduling in one place instead of threading invariants through multiple
+     streaming modules.
+
+## Direction 5: Documentation Hygiene
 
 Goal: make new conversations start from the right state quickly.
 
@@ -183,3 +250,5 @@ Current policy:
 - Keep `docs/AI_MEMORY.md` as the short current-state memory.
 - Keep `docs/analysis.md` as the append-only historical evidence log.
 - Keep this file as durable direction, not a running checklist.
+- Keep `CONTEXT.md` aligned with durable domain vocabulary used by
+  architecture work.
