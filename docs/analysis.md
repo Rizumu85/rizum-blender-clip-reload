@@ -4020,3 +4020,59 @@ evidence explains a broader rule.
   the old `Test_HSL` max pixel locally, but over-saturated broad regions
   (`Test_HSL raw_max=80`) and regressed the saturation-only guard
   (`Test_HSL3 raw_max=9`). Keep the current rescale path.
+
+2026-06-18 IllustrationBlendModesB HSL follow-up audit: targeted IDA and
+progressive-PNG diagnostics narrowed the remaining B residual further, but did
+not produce a retainable general rule.
+
+IDA facts:
+
+- `RenderRGB100_8bit_Lkup @ 0x123f59e0` has code xrefs only from
+  `CSAdjustmentLayer::RenderRGB100_8bitCaller` and
+  `CSAdjustmentLayer::RenderXXXFor8Bit`; it is an adjustment/LUT writeback path,
+  not proven ordinary raster HSL blend handling.
+- `RenderRGB100_HSV_8bit @ 0x123f6920` also has a code xref only from the
+  adjustment-layer caller and calls `sub_123FC180`, matching the HSL adjustment
+  filter route rather than ordinary `LayerComposite=23/24/25`.
+- `RenderRGB100_32bit @ 0x12401a60` still routes ordinary nonzero internal blend
+  codes through `RenderBlendModeCall_0`, but the persisted `.clip`
+  `LayerComposite` to internal `a9` mapping for HSL modes remains unrecovered.
+
+Progressive reference facts:
+
+- With CSP's `IllustrationBlendModesB12.png` as input, current Saturation alone
+  differs from `IllustrationBlendModesB13.png` at `max=12`; broad
+  `0.3/0.59/0.11` Saturation lowers that layer probe to `max=2`, but the same
+  broad change regresses `Test_Saturation` to visible errors.
+- The broad Saturation benefit clusters around high-clamp pixels where the base
+  channel order is green-high/blue-low. `Test_Saturation`'s visible regressions
+  are the opposite blue-high/green-low order. A channel-order Saturation spike
+  using `0.3/0.59/0.11` except for blue-high/green-low high-clamp pixels kept
+  `Test_Saturation` stable, but the full B comparison only moved
+  `raw_visible_px=2718 -> 2693` while worsening aggregate error
+  (`raw_mean=0.076072 -> 0.076137`, `raw_diff_px=31570 -> 31749`) and keeping
+  `raw_max=5`. Reject it as a sample-shaped branch until native code explains
+  the channel-order rule.
+- The full-image `raw_max=5` hot pixel at `(374,108)` is primarily a partial Hue
+  boundary: native B12 has `[93,62,56]` while CSP B12 has `[93,61,56]`. Feeding
+  CSP's B12 into the current Saturation formula gives only a one-LSB local
+  mismatch at that point. Therefore Saturation-only tweaks cannot fully solve
+  the current max.
+- For the `(374,108)` partial Hue pixel, CSP's alpha lookup
+  `byte_12652F90[64*(255-81) + 58*81]` still returns `62`; the CSP value `61`
+  cannot be explained by changing the final alpha lookup after a ceiled pure
+  green value of `58`. The remaining cause is earlier in the partial-Hue pure
+  blend/min-channel-ceil path.
+
+Rejected probes during this audit:
+
+- Partial-Hue low-clamp Rec.601/`0.298912/0.586611/0.114478` improved the
+  B11->B12 Hue layer probe (`max 7 -> 3`) for low-blue partial-Hue pixels, but
+  full `IllustrationBlendModesB` stayed at `raw_max=5` and slightly worsened
+  aggregate error (`raw_mean=0.076086`, `raw_diff_px=31585`).
+- The Saturation channel-order spike described above is rejected despite a small
+  visible-pixel reduction because it does not reduce the full-image max and
+  worsens aggregate error.
+- Alpha-thresholded partial-Hue min-channel-ceil probes can locally flip
+  `(374,108)` to `[93,61,56]`, but the useful threshold is magic
+  (`alpha ~= 81`) and is not a faithful general rule without native evidence.
