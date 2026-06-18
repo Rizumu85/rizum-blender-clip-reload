@@ -1165,6 +1165,23 @@ fn hue_raster_source_floors_partial_alpha_writeback() {
 }
 
 #[test]
+fn opaque_hue_raster_source_uses_hue_luminosity_weights() {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Hue,
+            [84, 51, 250, 255],
+            Rgba8 {
+                r: 112,
+                g: 83,
+                b: 16,
+                a: 255,
+            },
+        ),
+        [85, 69, 165, 255]
+    );
+}
+
+#[test]
 fn saturation_raster_source_uses_hsl_blend_formula() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = GpuRasterResourceKey {

@@ -3958,3 +3958,44 @@ The remaining B max is in the Pin Light/Hue/Saturation/Lighten chain; at
 `(374,108)`, native Hue is `[93,62,56]` while the B12 reference is
 `[93,61,56]`, and Saturation amplifies that boundary to the final red-channel
 residual.
+
+2026-06-18 IllustrationBlendModesB opaque-Hue luminosity follow-up: after the
+Color low-clamp fix, the remaining visible B residuals were rechecked against
+the progressive references `IllustrationBlendModesB11.png` (before Hue) and
+`IllustrationBlendModesB12.png` (after Hue). Decoding the Hue source layer shows
+the source RGB is constant `[84,51,250]` with varying alpha. A CPU diagnostic
+scored Hue formulas over the full B11 -> B12 layer:
+
+- Current Hue `0.3/0.6/0.1`: `max=7`, `visible=3766` on Hue-active pixels.
+- Hue `0.3/0.59/0.11`: `max=3`, `visible=21` on Hue-active pixels.
+- Hue Rec.601: `max=3`, `visible=35`.
+- Low-clamp-only Hue `0.3/0.59/0.11`: still `visible=2623`, because ordinary
+  full-alpha Hue pixels such as source `[84,51,250,255]` over `[112,83,16]`
+  need `[85,69,165]`, while the old formula produced `[87,71,167]`.
+
+The accepted scope is Hue-only and alpha-gated: fully opaque Hue uses the
+canonical `0.3/0.59/0.11` luminosity path, while partially transparent Hue keeps
+the existing `0.3/0.6/0.1` path plus final floor writeback. This keeps the
+partial-Hue guards and avoids the max regression from applying `0.3/0.59/0.11`
+to all Hue sources. A new `clip_gpu` one-pixel test locks the opaque Hue sample
+`[84,51,250,255]` over `[112,83,16] -> [85,69,165]`.
+
+Rejected probes during this pass:
+
+- Broad Saturation `0.3/0.59/0.11` slightly reduced B visible pixels but
+  regressed `Test_Saturation` to `raw_max=2` / `visible_px=9`.
+- Saturation `0.3/0.59/0.11` only outside the high-clamp branch kept
+  `Test_Saturation` stable but worsened B's `raw_mean`/`raw_diff_px`, so the
+  gain was not general enough to keep.
+- Keeping the partial-Hue blend target unquantized preserved `Test_Hue` but
+  raised `IllustrationBlendModesB` to `raw_max=7`.
+- Applying Hue `0.3/0.59/0.11` to both opaque and partial sources lowered B
+  visible pixels but raised the max to `8` at `(374,108)`, where partial Hue
+  moved to `[92,61,55]` before Saturation.
+
+Verification after the accepted opaque-Hue branch: `cargo fmt --all --check`
+and `cargo test -q` pass. PNG comparisons: `IllustrationBlendModesB` is now
+`raw_max=5`, `raw_mean=0.076072`, `raw_diff_px=31570`, `visible_px=2718`;
+`IllustrationBlendModes` remains `raw_max=7` / `visible_px=1008`; `Test_Hue`,
+`Test_Color`, and `Test_Saturation` remain `raw_max=1` / `visible_px=0`;
+`Test_AddGlowMultiply` remains `raw_max=1` / visible `0`.

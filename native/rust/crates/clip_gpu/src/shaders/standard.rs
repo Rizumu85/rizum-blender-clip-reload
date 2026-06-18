@@ -84,6 +84,10 @@ fn lum_color_low(value: vec3<f32>) -> f32 {
     return 0.3 * value.r + 0.59 * value.g + 0.11 * value.b;
 }
 
+fn lum_hue(value: vec3<f32>) -> f32 {
+    return 0.3 * value.r + 0.59 * value.g + 0.11 * value.b;
+}
+
 fn color_compare_lum(value: vec3<f32>) -> f32 {
     return 0.2126 * value.r + 0.7152 * value.g + 0.0722 * value.b;
 }
@@ -143,6 +147,29 @@ fn set_lum_hue(value: vec3<f32>, target_lum: f32, base_sat: f32) -> vec3<f32> {
     // without a high-clamp requirement because CSP's fixed-point Hue always floors
     // the division and the rounding bias goes the wrong way on the minimum channel.
     // Use a lower threshold than Saturation (2/255 vs 4/255) to catch more cases.
+    var out = value + vec3<f32>(target_lum - lum_hue(value));
+    let out_lum = lum_hue(out);
+    let out_min = min3(out);
+    let out_max = max3(out);
+    if (out_min < 0.0) {
+        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
+            (out_lum / max(out_lum - out_min, 0.000001));
+    }
+    if (out_max > 1.0) {
+        out = vec3<f32>(out_lum) + (out - vec3<f32>(out_lum)) *
+            ((1.0 - out_lum) / max(out_max - out_lum, 0.000001));
+    }
+    if (base_sat > (2.0 / 255.0)) {
+        let ceiled = ceil_rgb_u8(out);
+        let clipped_min = min3(out);
+        if (out.r <= clipped_min + 0.000001) { out.r = ceiled.r; }
+        if (out.g <= clipped_min + 0.000001) { out.g = ceiled.g; }
+        if (out.b <= clipped_min + 0.000001) { out.b = ceiled.b; }
+    }
+    return out;
+}
+
+fn set_lum_hue_partial(value: vec3<f32>, target_lum: f32, base_sat: f32) -> vec3<f32> {
     var out = set_lum(value, target_lum);
     if (base_sat > (2.0 / 255.0)) {
         let ceiled = ceil_rgb_u8(out);
@@ -222,11 +249,15 @@ fn soft_light_channel(src: f32, dst: f32) -> f32 {
     return dst + (2.0 * src - 1.0) * (curve - dst);
 }
 
-fn hsl_blend(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
+fn hsl_blend(src: vec3<f32>, dst: vec3<f32>, src_alpha: f32) -> vec3<f32> {
     if (source_params.blend_kind == 23u) {
         let src_q = quantize_rgb_u8(src);
         let dst_q = quantize_rgb_u8(dst);
-        return set_lum_hue(set_sat(src_q, sat(dst_q)), lum(dst_q), sat(dst_q));
+        let saturated = set_sat(src_q, sat(dst_q));
+        if (src_alpha >= 1.0) {
+            return set_lum_hue(saturated, lum_hue(dst_q), sat(dst_q));
+        }
+        return set_lum_hue_partial(saturated, lum(dst_q), sat(dst_q));
     }
     if (source_params.blend_kind == 24u) {
         let src_q = quantize_rgb_u8(src);
@@ -246,7 +277,7 @@ fn hsl_blend(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
     return set_lum(src, lum(dst));  // unreachable -- fallback safety
 }
 
-fn blend_rgb(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
+fn blend_rgb(src: vec3<f32>, dst: vec3<f32>, src_alpha: f32) -> vec3<f32> {
     if (source_params.blend_kind == 1u) {
         return min(src, dst);
     }
@@ -318,7 +349,7 @@ fn blend_rgb(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
         return src + dst - 2.0 * src * dst;
     }
     if (source_params.blend_kind == 23u || source_params.blend_kind == 24u || source_params.blend_kind == 25u || source_params.blend_kind == 26u) {
-        return hsl_blend(src, dst);
+        return hsl_blend(src, dst, src_alpha);
     }
     if (source_params.blend_kind == 36u) {
         return min(dst / max(src, vec3<f32>(0.000001)), vec3<f32>(1.0));
@@ -385,7 +416,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         return dst;
     }
 
-    let blended_raw = blend_rgb(src.rgb, dst.rgb);
+    let blended_raw = blend_rgb(src.rgb, dst.rgb, src.a);
     var blended = select(
         quantize_rgb_u8(blended_raw),
         clamp(blended_raw, vec3<f32>(0.0), vec3<f32>(1.0)),
