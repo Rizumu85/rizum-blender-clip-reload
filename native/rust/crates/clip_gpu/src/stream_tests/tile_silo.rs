@@ -6,10 +6,11 @@ use clip_model::CanvasSize;
 use super::common::*;
 use crate::stream_tile_silo::raster_silo_run_len;
 use crate::{
-    GpuDeviceConfig, GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
-    GpuNormalStackResourceProvider, GpuNormalStackSource, GpuRasterAtlasPixels,
-    GpuRasterAtlasSource, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo,
-    GpuRasterResourceKey, GpuRenderError, GpuRenderer,
+    GpuDeviceConfig, GpuMaskAtlasTileChunk, GpuMaskResourceCache, GpuMaskResourceKey,
+    GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuNormalStackSource,
+    GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
+    GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey,
+    GpuRenderError, GpuRenderer,
 };
 
 #[test]
@@ -297,6 +298,105 @@ fn streamed_tile_silo_applies_standard_blend_order() {
 }
 
 #[test]
+fn streamed_tile_silo_accepts_provider_backed_masked_multiply_atlas_tiles() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let base_key = raster_key(340);
+    let multiply_key = raster_key(341);
+    let multiply_mask_key = mask_key(341);
+    let mut multiply = raster_source_at_with_mask(multiply_key, multiply_mask_key, 1, 1);
+    multiply.blend_mode = GpuRasterBlendMode::Multiply;
+    let sources = [
+        GpuNormalStackSource::Raster(raster_source_at(base_key, 1, 1)),
+        GpuNormalStackSource::Raster(multiply),
+    ];
+
+    let mut reference_provider = InlineProvider::new(vec![
+        (
+            base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(340),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![200, 100, 50, 255],
+            },
+        ),
+        (
+            multiply_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(341),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![128, 128, 128, 255],
+            },
+        ),
+    ])
+    .with_masks(vec![(
+        multiply_mask_key,
+        InlineMask {
+            render_node_id: RenderNodeId(1341),
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw masked multiply reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![
+        (
+            base_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(340),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![200, 100, 50, 255],
+            },
+        ),
+        (
+            multiply_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(341),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![128, 128, 128, 255],
+            },
+        ),
+    ])
+    .with_masks(vec![(
+        multiply_mask_key,
+        AtlasInlineMask {
+            size: CanvasSize::new(1, 1),
+            origin: (1, 1),
+            fill_value: 0,
+            pixels: vec![128],
+        },
+    )]);
+    assert_eq!(
+        raster_silo_run_len(
+            &provider,
+            CanvasSize::new(3, 3),
+            (0, 0),
+            CanvasSize::new(3, 3),
+            &sources,
+        ),
+        2
+    );
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed masked multiply atlas tile-silo run");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn tile_silo_planner_stops_at_masks_and_byte_domain_blends() {
     let first_key = raster_key(44);
     let add_glow_key = raster_key(45);
@@ -420,7 +520,7 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
         self.rasters.get(&source.key).map(|raster| raster.offset)
     }
 
-    fn raster_run_atlas_applies_masks(&self) -> bool {
+    fn raster_run_atlas_supports_masks(&self) -> bool {
         !self.masks.is_empty()
     }
 
@@ -470,6 +570,80 @@ impl GpuNormalStackResourceProvider for AtlasInlineProvider {
         Ok(Some(GpuRasterAtlasPixels {
             size: atlas_size,
             pixels,
+            resources,
+        }))
+    }
+
+    fn raster_run_atlas_tile_pixels(
+        &mut self,
+        sources: &[GpuRasterAtlasSource],
+        atlas_size: CanvasSize,
+    ) -> Result<Option<GpuRasterAtlasTilePixels>, Self::Error> {
+        if !sources
+            .iter()
+            .any(|source| source.source.mask_key.is_some())
+        {
+            return Ok(None);
+        }
+        self.atlas_requests += 1;
+        let mut chunks = Vec::with_capacity(sources.len());
+        let mut mask_chunks = Vec::new();
+        let mut resources = Vec::with_capacity(sources.len());
+        for request in sources {
+            let raster = self.rasters.get(&request.source.key).ok_or(
+                GpuRenderError::MissingRasterResource {
+                    layer_id: request.source.key.layer_id,
+                    render_mipmap_id: request.source.key.render_mipmap_id,
+                },
+            )?;
+            if let Some(mask_key) = request.source.mask_key {
+                let mask =
+                    self.masks
+                        .get(&mask_key)
+                        .ok_or(GpuRenderError::MissingMaskResource {
+                            layer_id: mask_key.layer_id,
+                            mask_mipmap_id: mask_key.mask_mipmap_id,
+                        })?;
+                let mut mask_pixels =
+                    Vec::with_capacity((raster.size.width * raster.size.height) as usize);
+                for y in 0..raster.size.height {
+                    for x in 0..raster.size.width {
+                        mask_pixels.push(atlas_mask_value(
+                            mask,
+                            request.offset_x + x as i32,
+                            request.offset_y + y as i32,
+                        ));
+                    }
+                }
+                mask_chunks.push(GpuMaskAtlasTileChunk {
+                    atlas_x: request.atlas_x,
+                    atlas_y: request.atlas_y,
+                    size: raster.size,
+                    pixels: mask_pixels,
+                });
+            }
+            chunks.push(GpuRasterAtlasTileChunk {
+                source: request.source,
+                atlas_x: request.atlas_x,
+                atlas_y: request.atlas_y,
+                mask_atlas_x: request.source.mask_key.map(|_| request.atlas_x),
+                mask_atlas_y: request.source.mask_key.map(|_| request.atlas_y),
+                size: raster.size,
+                offset_x: request.offset_x,
+                offset_y: request.offset_y,
+                pixels: raster.pixels.clone(),
+            });
+            resources.push(GpuRasterResourceInfo {
+                key: request.source.key,
+                render_node_id: raster.render_node_id,
+                size: raster.size,
+                byte_len: raster.pixels.len(),
+            });
+        }
+        Ok(Some(GpuRasterAtlasTilePixels {
+            size: atlas_size,
+            chunks,
+            mask_chunks,
             resources,
         }))
     }

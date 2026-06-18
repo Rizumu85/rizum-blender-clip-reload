@@ -25,6 +25,7 @@ impl TileSiloPipeline {
                     },
                     count: None,
                 },
+                texture_entry(6),
             ],
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {

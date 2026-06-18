@@ -5,6 +5,7 @@ use clip_model::CanvasSize;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_context::StreamingExecutionContext;
+use crate::stream_tile_silo_buffers::{create_params_buffer, create_u32_storage_buffer};
 pub(crate) use crate::stream_tile_silo_plan::raster_silo_run_len;
 use crate::stream_tile_silo_plan::{
     MIN_SILO_RUN_LEN, PreparedSiloSource, TILE_SIZE, event_words, plan_atlas_layout, source_bounds,
@@ -12,7 +13,7 @@ use crate::stream_tile_silo_plan::{
 };
 use crate::stream_tile_silo_upload::{
     copy_sources_to_atlas, create_atlas_texture, rgba8_texture_byte_len, upload_atlas_texture,
-    upload_atlas_tile_texture,
+    upload_atlas_tile_texture, upload_mask_atlas_tile_texture,
 };
 use crate::stream_utils::local_pass_bounds;
 use crate::{
@@ -58,9 +59,10 @@ where
         return Ok(false);
     };
     let run_has_masks = sources_have_masks(sources);
-    let (prepared, atlas, drawn_resources) = if let Some(upload) = context
-        .provider
-        .raster_run_atlas_tile_pixels(&requests, layout.size)?
+    let (prepared, atlas, mask_atlas, mask_atlas_bytes, drawn_resources) = if let Some(upload) =
+        context
+            .provider
+            .raster_run_atlas_tile_pixels(&requests, layout.size)?
     {
         if upload.size != layout.size {
             return Err(P::Error::from(GpuRenderError::RasterAtlasSizeMismatch {
@@ -69,6 +71,9 @@ where
             }));
         }
         let atlas = upload_atlas_tile_texture(context.renderer, &upload).map_err(P::Error::from)?;
+        let (mask_atlas, mask_atlas_bytes) =
+            upload_mask_atlas_tile_texture(context.renderer, upload.size, &upload.mask_chunks)
+                .map_err(P::Error::from)?;
         let prepared = prepared_sources_from_atlas_tiles(
             &upload.chunks,
             &upload.resources,
@@ -77,7 +82,13 @@ where
             target_size,
         )
         .map_err(P::Error::from)?;
-        (prepared, atlas, upload.resources)
+        (
+            prepared,
+            atlas,
+            mask_atlas,
+            mask_atlas_bytes,
+            upload.resources,
+        )
     } else if let Some(upload) = context
         .provider
         .raster_run_atlas_pixels(&requests, layout.size)?
@@ -89,6 +100,9 @@ where
             }));
         }
         let atlas = upload_atlas_texture(context.renderer, &upload).map_err(P::Error::from)?;
+        let (mask_atlas, mask_atlas_bytes) =
+            upload_mask_atlas_tile_texture(context.renderer, upload.size, &[])
+                .map_err(P::Error::from)?;
         let drawn_resources = upload.resources.clone();
         let prepared = prepared_sources_from_atlas_upload(
             &requests,
@@ -98,7 +112,13 @@ where
             upload.resources,
         )
         .map_err(P::Error::from)?;
-        (prepared, atlas, drawn_resources)
+        (
+            prepared,
+            atlas,
+            mask_atlas,
+            mask_atlas_bytes,
+            drawn_resources,
+        )
     } else {
         if run_has_masks {
             return Ok(false);
@@ -112,9 +132,18 @@ where
             &layout.sources,
         )?;
         let atlas = create_atlas_texture(context.state.device(), layout.size);
+        let (mask_atlas, mask_atlas_bytes) =
+            upload_mask_atlas_tile_texture(context.renderer, layout.size, &[])
+                .map_err(P::Error::from)?;
         copy_sources_to_atlas(context.state.encoder_mut(), &prepared, &atlas);
         let drawn_resources = prepared.iter().map(|source| source.info).collect();
-        (prepared, atlas, drawn_resources)
+        (
+            prepared,
+            atlas,
+            mask_atlas,
+            mask_atlas_bytes,
+            drawn_resources,
+        )
     };
     for info in drawn_resources {
         context.state.push_drawn_resource(info);
@@ -146,6 +175,7 @@ where
     }
 
     let atlas_view = atlas.create_view(&wgpu::TextureViewDescriptor::default());
+    let mask_atlas_view = mask_atlas.create_view(&wgpu::TextureViewDescriptor::default());
     let event_words = event_words(&prepared);
     let event_buffer = create_u32_storage_buffer(
         context.state.device(),
@@ -195,6 +225,10 @@ where
                     binding: 5,
                     resource: params_buffer.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: wgpu::BindingResource::TextureView(&mask_atlas_view),
+                },
             ],
         });
 
@@ -237,6 +271,7 @@ where
         }
     }
     context.state.retain_texture(atlas, atlas_bytes);
+    context.state.retain_texture(mask_atlas, mask_atlas_bytes);
     context.state.finish_pass()?;
     *dirty_bounds = Some(pass_bounds);
     Ok(true)
@@ -297,6 +332,7 @@ where
             bounds,
             local_bounds,
             atlas: placements[index],
+            mask_atlas: None,
         });
     }
     Ok(prepared)
@@ -384,6 +420,7 @@ fn prepared_sources_from_atlas_upload(
                     x: request.atlas_x,
                     y: request.atlas_y,
                 },
+                mask_atlas: None,
             })
         })
         .collect()
@@ -427,66 +464,11 @@ fn prepared_sources_from_atlas_tiles(
                     x: chunk.atlas_x,
                     y: chunk.atlas_y,
                 },
+                mask_atlas: chunk
+                    .mask_atlas_x
+                    .zip(chunk.mask_atlas_y)
+                    .map(|(x, y)| crate::stream_tile_silo_plan::AtlasSourcePlacement { x, y }),
             })
         })
         .collect()
-}
-
-fn create_u32_storage_buffer(
-    device: &wgpu::Device,
-    label: &'static str,
-    values: &[u32],
-) -> wgpu::Buffer {
-    create_buffer_with_bytes(
-        device,
-        label,
-        wgpu::BufferUsages::STORAGE,
-        &u32_bytes(values),
-    )
-}
-
-fn create_params_buffer(
-    device: &wgpu::Device,
-    target_origin: (i32, i32),
-    tile_cols: u32,
-) -> wgpu::Buffer {
-    let mut bytes = Vec::with_capacity(16);
-    bytes.extend_from_slice(&target_origin.0.to_ne_bytes());
-    bytes.extend_from_slice(&target_origin.1.to_ne_bytes());
-    bytes.extend_from_slice(&TILE_SIZE.to_ne_bytes());
-    bytes.extend_from_slice(&tile_cols.to_ne_bytes());
-    create_buffer_with_bytes(
-        device,
-        "rizum_clip_tile_silo_params",
-        wgpu::BufferUsages::UNIFORM,
-        &bytes,
-    )
-}
-
-fn u32_bytes(values: &[u32]) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(values.len() * 4);
-    for value in values {
-        bytes.extend_from_slice(&value.to_ne_bytes());
-    }
-    bytes
-}
-
-fn create_buffer_with_bytes(
-    device: &wgpu::Device,
-    label: &'static str,
-    usage: wgpu::BufferUsages,
-    bytes: &[u8],
-) -> wgpu::Buffer {
-    let buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some(label),
-        size: bytes.len() as wgpu::BufferAddress,
-        usage,
-        mapped_at_creation: true,
-    });
-    {
-        let mut mapped = buffer.slice(..).get_mapped_range_mut();
-        mapped.copy_from_slice(bytes);
-    }
-    buffer.unmap();
-    buffer
 }

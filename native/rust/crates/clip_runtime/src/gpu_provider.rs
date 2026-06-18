@@ -159,7 +159,7 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             .or_else(|| self.raster_resource_offset(source))
     }
 
-    fn raster_run_atlas_applies_masks(&self) -> bool {
+    fn raster_run_atlas_supports_masks(&self) -> bool {
         self.texture_cache.is_none()
     }
 

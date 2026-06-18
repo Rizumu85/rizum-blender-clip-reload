@@ -5,6 +5,9 @@ var atlas_texture: texture_2d<f32>;
 @group(0) @binding(1)
 var dest_texture: texture_2d<f32>;
 
+@group(0) @binding(6)
+var mask_atlas_texture: texture_2d<f32>;
+
 @group(0) @binding(2)
 var<storage, read> event_data: array<u32>;
 
@@ -23,7 +26,8 @@ struct TileSiloParams {
 @group(0) @binding(5)
 var<uniform> params: TileSiloParams;
 
-const EVENT_WORDS: u32 = 8u;
+const EVENT_WORDS: u32 = 10u;
+const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
 
 struct VertexOut {
     @builtin(position) position: vec4<f32>,
@@ -374,24 +378,35 @@ fn blend_rgb(src: vec3<f32>, dst: vec3<f32>, src_alpha: f32, blend_kind: u32) ->
     return vivid;
 }
 
-fn load_source(event_index: u32, local_texel: vec2<i32>) -> vec4<f32> {
-    let source_origin = vec2<i32>(
+fn source_origin(event_index: u32) -> vec2<i32> {
+    return vec2<i32>(
         bitcast<i32>(event_word(event_index, 4u)),
         bitcast<i32>(event_word(event_index, 5u)),
     );
-    let source_texel = local_texel + params.target_origin - source_origin;
-    let source_size = vec2<i32>(
+}
+
+fn source_size(event_index: u32) -> vec2<i32> {
+    return vec2<i32>(
         i32(event_word(event_index, 2u)),
         i32(event_word(event_index, 3u)),
     );
-    if (
+}
+
+fn source_texel_for_event(event_index: u32, local_texel: vec2<i32>) -> vec2<i32> {
+    return local_texel + params.target_origin - source_origin(event_index);
+}
+
+fn source_contains(event_index: u32, source_texel: vec2<i32>) -> bool {
+    let size = source_size(event_index);
+    return !(
         source_texel.x < 0 ||
         source_texel.y < 0 ||
-        source_texel.x >= source_size.x ||
-        source_texel.y >= source_size.y
-    ) {
-        return vec4<f32>(0.0, 0.0, 0.0, 0.0);
-    }
+        source_texel.x >= size.x ||
+        source_texel.y >= size.y
+    );
+}
+
+fn load_source_at(event_index: u32, source_texel: vec2<i32>) -> vec4<f32> {
     let atlas_origin = vec2<i32>(
         i32(event_word(event_index, 0u)),
         i32(event_word(event_index, 1u)),
@@ -399,8 +414,24 @@ fn load_source(event_index: u32, local_texel: vec2<i32>) -> vec4<f32> {
     return textureLoad(atlas_texture, atlas_origin + source_texel, 0);
 }
 
-fn apply_normal(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
-    let src_a = to_u8(src.a);
+fn load_event_mask(event_index: u32, source_texel: vec2<i32>) -> f32 {
+    let mask_atlas_x = event_word(event_index, 8u);
+    if (mask_atlas_x == NO_MASK_ATLAS_COORD) {
+        return 1.0;
+    }
+    let mask_atlas_origin = vec2<i32>(
+        i32(mask_atlas_x),
+        i32(event_word(event_index, 9u)),
+    );
+    return textureLoad(mask_atlas_texture, mask_atlas_origin + source_texel, 0).r;
+}
+
+fn apply_normal(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32) -> vec4<f32> {
+    var src_a = to_u8(src.a);
+    if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+        src_a = (src_a * to_u8(mask_value)) / 255;
+    }
+    src_a = to_u8(f32(src_a) / 255.0 * bitcast<f32>(event_word(event_index, 6u)));
     if (src_a <= 0) {
         return dst;
     }
@@ -457,15 +488,23 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
 
     for (var index = 0u; index < span_count; index = index + 1u) {
         let event_index = work_indices[span_start + index];
-        var src = load_source(event_index, local_texel);
-        src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
-        if (src.a <= 0.0) {
+        let source_texel = source_texel_for_event(event_index, local_texel);
+        if (!source_contains(event_index, source_texel)) {
             continue;
         }
+        var src = load_source_at(event_index, source_texel);
         let blend_kind = event_word(event_index, 7u);
+        let mask_value = load_event_mask(event_index, source_texel);
         if (blend_kind == 0u) {
-            dst = apply_normal(src, dst);
+            dst = apply_normal(src, dst, event_index, mask_value);
         } else {
+            src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+            if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+                src.a = src.a * mask_value;
+            }
+            if (src.a <= 0.0) {
+                continue;
+            }
             dst = apply_standard(src, dst, blend_kind);
         }
     }

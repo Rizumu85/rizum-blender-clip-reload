@@ -259,60 +259,68 @@ Verification after this milestone:
   2.180s; `Ref_Terra404_Live2D.clip --blender-render-rgba
   --blender-render-json` is about 3.322s.
 
-The next large lever is no longer ordinary raster-run source upload. It is
-making more source types tile-local: true mask atlas events, clipping-base and
-clipped relationships, and eventually larger faithful raster/clipping segments.
+The next large lever is no longer ordinary raster-run source upload or mask
+upload. It is making more source types tile-local: clipping-base and clipped
+relationships, and eventually larger faithful raster/clipping segments.
 Filters, THROUGH groups, isolated containers, and byte-domain special blends
 should stay barriers until their tile-local semantics are explicitly modelled.
 
-## Masked Normal Atlas Run
+## Mask Atlas Tile Events
 
-The first mask-aware tile-silo step is implemented for the narrow faithful
-subset where the existing shader already applies masks with integer Normal
-alpha semantics:
+The mask-aware tile-silo path now uses shader-side R8 mask atlas events instead
+of CPU pre-applying masks into RGBA chunks. This keeps the event model closer to
+Silicate's tile-silo shape and allows masked standard raster blends to stay in
+provider-backed atlas runs when their blend mode is otherwise eligible.
 
-- `GpuNormalStackResourceProvider` exposes whether provider-backed atlas runs
-  apply masks. The default is false, so alternate/test providers keep masked
-  sources as barriers unless they explicitly opt in.
-- The tile-silo planner now allows masked raster sources only when the blend
-  mode is Normal and the provider promises to apply the mask into the atlas
-  payload. Masked standard blends remain on the old pass path because their
-  shader-side mask alpha arithmetic is different.
-- The runtime provider pre-applies layer-mask alpha to each decoded compressed
-  RGBA atlas chunk using the existing Normal path's integer rule,
-  `alpha = alpha * mask / 255`, sampled at canvas-global coordinates. This
-  keeps the tile-silo shader unchanged and avoids adding a new broad mask
-  formula.
-- The encoder refuses the old per-source texture-copy atlas fallback for masked
-  runs, because that fallback would skip mask application. If the provider
-  cannot return a masked atlas payload, the renderer falls back to the existing
-  faithful per-source path.
-- The runtime atlas-run code lives in `clip_runtime/src/gpu_provider/atlas_run.rs`
-  so `gpu_provider.rs` remains provider/resource wiring instead of growing a
-  monolithic performance path.
+- `GpuNormalStackResourceProvider::raster_run_atlas_supports_masks()` exposes
+  whether provider-backed atlas runs can carry mask events. The default is
+  false, so alternate/test providers keep masked sources as barriers unless
+  they explicitly opt in.
+- `GpuRasterAtlasTileChunk` carries optional `mask_atlas_x/y` coordinates, and
+  `GpuRasterAtlasTilePixels` carries R8 `GpuMaskAtlasTileChunk` uploads. The
+  runtime provider samples layer masks at canvas-global coordinates and emits
+  one mask chunk matching each decoded compressed RGBA atlas chunk.
+- The tile-silo shader binds a second atlas texture for masks. Event words keep
+  the existing RGBA atlas coordinates, source size, canvas offset, opacity, and
+  blend kind, then add optional mask atlas coordinates. `u32::MAX` marks
+  unmasked events.
+- Normal and standard blends intentionally keep their existing arithmetic
+  domains: Normal applies the mask through the existing integer
+  `alpha * mask / 255` rule before the established tile-silo opacity step,
+  while standard blends multiply the float source alpha by the mask after
+  opacity, matching the per-source standard shader.
+- The encoder still refuses the old per-source texture-copy atlas fallback for
+  masked runs, because that fallback has no mask events. If the provider cannot
+  return masked tile chunks, the renderer falls back to the existing faithful
+  per-source path.
+- The runtime atlas-run code lives in
+  `clip_runtime/src/gpu_provider/atlas_run.rs`, and tile-silo buffer creation is
+  split into `clip_gpu/src/stream_tile_silo_buffers.rs`, keeping the runtime
+  provider and GPU stream modules below the production-file size budget.
 
 Verification after this milestone:
 
 - Rust: `cargo fmt --all --check`, `cargo check -q`, and `cargo test -q`.
-- New GPU unit coverage locks provider-backed masked Normal atlas collapse and
-  verifies that the run uses the atlas provider rather than per-source raster
-  upload.
+- GPU unit coverage locks provider-backed masked Normal atlas collapse and adds
+  a masked Multiply comparison against the existing per-source shader path,
+  verifying that masked standard blends can use atlas tile events without
+  changing pixels.
 - `Test_Mask.clip --compare-png Test_Mask.png` is exact.
 - `Test_AddGlowMultiply.clip --compare-png Test_AddGlowMultiply.png` remains at
   the existing one-LSB invisible residual (`raw_max=1`, `premul_max=1`,
   visible `0`).
-- `Test_RealArt.clip --compare-png Test_RealArt.png` remains stable
-  (`raw_max=5`, `premul_max=1` in the direct release comparison run used here).
 - `Ref_Terra404_Live2D.clip --compare-png Ref_Terra404_Live2D.png` remains
   stable (`premul_max=3`, `premul_visible_px=13501`), with raw differences still
-  dominated by transparent RGB.
+  dominated by transparent RGB. A baseline worktree at `aed8840` produced the
+  same Terra metrics, so this residual is not from shader-side mask atlas
+  events.
 
 Performance note: this is a structural stepping stone, not the full Silicate
-mask model. RealArt showed small/same-range worker timing in direct release
-runs, while Terra remained in the same range because most of its remaining
-cost is behind clipping/container/standard-blend barriers. The next
-quantity-level step is shader-side mask/clipping tile events, not more CPU
-pre-application of isolated mask cases.
+clipping model. RealArt/Terra direct timings remain in the same broad range on
+this machine because their largest remaining barriers are clipping/container
+relationships and byte-domain special blends. The next quantity-level step is
+tile-local clipping/base events and larger faithful raster/clipping segments,
+not more CPU pre-application of isolated mask cases.
 
 ## Compressed Occupancy Planner
 

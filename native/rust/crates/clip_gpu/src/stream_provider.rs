@@ -27,6 +27,8 @@ pub struct GpuRasterAtlasTileChunk {
     pub source: GpuNormalRasterSource,
     pub atlas_x: u32,
     pub atlas_y: u32,
+    pub mask_atlas_x: Option<u32>,
+    pub mask_atlas_y: Option<u32>,
     pub size: CanvasSize,
     pub offset_x: i32,
     pub offset_y: i32,
@@ -34,9 +36,18 @@ pub struct GpuRasterAtlasTileChunk {
 }
 
 #[derive(Debug)]
+pub struct GpuMaskAtlasTileChunk {
+    pub atlas_x: u32,
+    pub atlas_y: u32,
+    pub size: CanvasSize,
+    pub pixels: Vec<u8>,
+}
+
+#[derive(Debug)]
 pub struct GpuRasterAtlasTilePixels {
     pub size: CanvasSize,
     pub chunks: Vec<GpuRasterAtlasTileChunk>,
+    pub mask_chunks: Vec<GpuMaskAtlasTileChunk>,
     pub resources: Vec<GpuRasterResourceInfo>,
 }
 
@@ -73,7 +84,7 @@ pub trait GpuNormalStackResourceProvider {
         self.raster_resource_offset(source)
     }
 
-    fn raster_run_atlas_applies_masks(&self) -> bool {
+    fn raster_run_atlas_supports_masks(&self) -> bool {
         false
     }
 

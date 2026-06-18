@@ -16,13 +16,9 @@ impl RuntimeGpuResourceProvider<'_> {
         }
 
         let mut chunks = Vec::new();
+        let mut mask_chunks = Vec::new();
         let mut resources = Vec::with_capacity(sources.len());
         for request in sources {
-            if request.source.mask_key.is_some()
-                && request.source.blend_mode != clip_gpu::GpuRasterBlendMode::Normal
-            {
-                return Ok(None);
-            }
             let meta = self
                 .plan
                 .rasters
@@ -87,23 +83,30 @@ impl RuntimeGpuResourceProvider<'_> {
                 let offset_y = i32::try_from(i64::from(visible.offset_y) + i64::from(local_y))
                     .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
                 let size = CanvasSize::new(chunk.width, chunk.height);
-                let mut pixels = chunk.pixels;
-                if let Some(mask_payload) = &mask_payload {
-                    apply_mask_to_rgba_chunk(
-                        &mut pixels,
+                let mask_atlas = mask_payload
+                    .as_ref()
+                    .map(|mask_payload| {
+                        mask_pixels_for_chunk(size, (offset_x, offset_y), mask_payload)
+                    })
+                    .transpose()?;
+                if let Some(mask_pixels) = mask_atlas {
+                    mask_chunks.push(clip_gpu::GpuMaskAtlasTileChunk {
+                        atlas_x: chunk.x,
+                        atlas_y: chunk.y,
                         size,
-                        (offset_x, offset_y),
-                        mask_payload,
-                    )?;
+                        pixels: mask_pixels,
+                    });
                 }
                 chunks.push(clip_gpu::GpuRasterAtlasTileChunk {
                     source: request.source,
                     atlas_x: chunk.x,
                     atlas_y: chunk.y,
+                    mask_atlas_x: request.source.mask_key.map(|_| chunk.x),
+                    mask_atlas_y: request.source.mask_key.map(|_| chunk.y),
                     size,
                     offset_x,
                     offset_y,
-                    pixels,
+                    pixels: chunk.pixels,
                 });
             }
 
@@ -120,6 +123,7 @@ impl RuntimeGpuResourceProvider<'_> {
         Ok(Some(clip_gpu::GpuRasterAtlasTilePixels {
             size: atlas_size,
             chunks,
+            mask_chunks,
             resources,
         }))
     }
@@ -144,31 +148,23 @@ impl RuntimeGpuResourceProvider<'_> {
     }
 }
 
-fn apply_mask_to_rgba_chunk(
-    pixels: &mut [u8],
+fn mask_pixels_for_chunk(
     size: CanvasSize,
     canvas_offset: (i32, i32),
     mask: &MaskUploadPayload,
-) -> Result<(), RuntimeError> {
+) -> Result<Vec<u8>, RuntimeError> {
     let width =
         usize::try_from(size.width).map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
     let height =
         usize::try_from(size.height).map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
     let expected_len = width
         .checked_mul(height)
-        .and_then(|pixels| pixels.checked_mul(4))
         .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?;
-    if pixels.len() != expected_len {
-        return Err(clip_gpu::GpuRenderError::InputBufferSizeMismatch {
-            expected: expected_len,
-            actual: pixels.len(),
-        }
-        .into());
-    }
     let mask_width = usize::try_from(mask.image.width)
         .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
     let mask_height = usize::try_from(mask.image.height)
         .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+    let mut pixels = Vec::with_capacity(expected_len);
     for y in 0..height {
         let global_y = canvas_offset
             .1
@@ -184,12 +180,10 @@ fn apply_mask_to_rgba_chunk(
                 )
                 .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?;
             let mask_value = mask_value_at(mask, mask_width, mask_height, global_x, global_y);
-            let alpha_index = (y * width + x) * 4 + 3;
-            pixels[alpha_index] =
-                ((u16::from(pixels[alpha_index]) * u16::from(mask_value)) / 255) as u8;
+            pixels.push(mask_value);
         }
     }
-    Ok(())
+    Ok(pixels)
 }
 
 fn mask_value_at(

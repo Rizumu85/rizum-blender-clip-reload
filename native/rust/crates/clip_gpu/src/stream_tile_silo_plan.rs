@@ -12,7 +12,8 @@ use crate::{
 pub(crate) const TILE_SIZE: u32 = 256;
 pub(crate) const MIN_SILO_RUN_LEN: usize = 2;
 const MAX_SILO_EVENTS: usize = 256;
-const EVENT_WORDS: usize = 8;
+const EVENT_WORDS: usize = 10;
+const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 
 #[derive(Clone, Copy)]
 pub(crate) struct AtlasSourcePlacement {
@@ -34,6 +35,7 @@ pub(crate) struct PreparedSiloSource {
     pub(crate) bounds: CanvasRect,
     pub(crate) local_bounds: CanvasRect,
     pub(crate) atlas: AtlasSourcePlacement,
+    pub(crate) mask_atlas: Option<AtlasSourcePlacement>,
 }
 
 pub(crate) fn raster_silo_run_len<P>(
@@ -176,6 +178,8 @@ pub(crate) fn event_words(sources: &[PreparedSiloSource]) -> Vec<u32> {
             i32_bits(source.offset.1),
             source.source.opacity.to_bits(),
             blend_kind(source.source.blend_mode),
+            source.mask_atlas.map_or(NO_MASK_ATLAS_COORD, |mask| mask.x),
+            source.mask_atlas.map_or(NO_MASK_ATLAS_COORD, |mask| mask.y),
         ]);
     }
     words
@@ -236,10 +240,7 @@ where
     if !raster_can_affect_output(*raster) || !blend_is_silo_eligible(raster.blend_mode) {
         return false;
     }
-    if raster.mask_key.is_some()
-        && (raster.blend_mode != GpuRasterBlendMode::Normal
-            || !provider.raster_run_atlas_applies_masks())
-    {
+    if raster.mask_key.is_some() && !provider.raster_run_atlas_supports_masks() {
         return false;
     }
     let Some(size) = provider.raster_resource_size(*raster) else {

@@ -25,6 +25,7 @@ mod stream_state;
 mod stream_tests;
 mod stream_through;
 mod stream_tile_silo;
+mod stream_tile_silo_buffers;
 mod stream_tile_silo_pipeline;
 mod stream_tile_silo_plan;
 mod stream_tile_silo_upload;
@@ -40,8 +41,8 @@ pub use resource::{
     GpuRasterUpload,
 };
 pub use stream::{
-    GpuNormalStackResourceProvider, GpuRasterAtlasPixels, GpuRasterAtlasSource,
-    GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
+    GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider, GpuRasterAtlasPixels,
+    GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
 };
 pub use types::{
     GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,
