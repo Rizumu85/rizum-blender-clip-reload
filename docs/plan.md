@@ -266,6 +266,14 @@ Deepening milestones:
      split-region stitching, encoder lifecycle, ping-pong texture selection,
      dirty bounds, flush policy, and provider resource retention sit behind one
      execution-context Interface.
+     Current progress: `clip_gpu/src/stream_context.rs` owns the internal
+     `StreamingExecutionContext` Interface for renderer/provider/encoder,
+     output size, pipeline set, texture-pair creation, initial clears, and
+     final flush/drawn-resource extraction. Sequence/source/group/clipping,
+     THROUGH, and tile-silo streaming modules now take that context instead of
+     threading renderer, provider, encoder, output size, and pipelines through
+     each call. `stream_state.rs` remains the lower-level encoder/resource
+     retention implementation behind the context.
    - Keep tile-silo, mask/clipping events, filters, THROUGH groups, and
      byte-domain special blends as explicit semantic barriers until faithful
      models exist.

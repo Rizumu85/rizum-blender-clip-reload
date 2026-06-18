@@ -11,6 +11,7 @@ mod source_params;
 pub mod stream;
 mod stream_bounds;
 mod stream_clipping;
+mod stream_context;
 mod stream_effects;
 mod stream_extents;
 mod stream_groups;

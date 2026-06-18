@@ -4,7 +4,7 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
-use crate::stream_state::StreamingEncoder;
+use crate::stream_context::StreamingExecutionContext;
 pub(crate) use crate::stream_tile_silo_plan::raster_silo_run_len;
 use crate::stream_tile_silo_plan::{
     MIN_SILO_RUN_LEN, PreparedSiloSource, TILE_SIZE, event_words, plan_atlas_layout, source_bounds,
@@ -17,15 +17,12 @@ use crate::stream_tile_silo_upload::{
 use crate::stream_utils::local_pass_bounds;
 use crate::{
     GpuNormalStackSource, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterResourceInfo,
-    GpuRenderError, GpuRenderer,
+    GpuRenderError,
 };
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_raster_silo_run_with_provider<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
-    output_size: CanvasSize,
+    context: &mut StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     target_size: CanvasSize,
     sources: &[GpuNormalStackSource],
@@ -40,13 +37,18 @@ where
         return Ok(false);
     }
 
-    let Some(layout) =
-        plan_atlas_layout(provider, output_size, target_origin, target_size, sources)
-    else {
+    let output_size = context.output_size;
+    let Some(layout) = plan_atlas_layout(
+        &*context.provider,
+        output_size,
+        target_origin,
+        target_size,
+        sources,
+    ) else {
         return Ok(false);
     };
     let Some(requests) = atlas_requests(
-        provider,
+        &*context.provider,
         output_size,
         target_origin,
         target_size,
@@ -55,60 +57,63 @@ where
     ) else {
         return Ok(false);
     };
-    let (prepared, atlas, drawn_resources) =
-        if let Some(upload) = provider.raster_run_atlas_tile_pixels(&requests, layout.size)? {
-            if upload.size != layout.size {
-                return Err(P::Error::from(GpuRenderError::RasterAtlasSizeMismatch {
-                    expected: layout.size,
-                    actual: upload.size,
-                }));
-            }
-            let atlas = upload_atlas_tile_texture(renderer, &upload).map_err(P::Error::from)?;
-            let prepared = prepared_sources_from_atlas_tiles(
-                &upload.chunks,
-                &upload.resources,
-                output_size,
-                target_origin,
-                target_size,
-            )
-            .map_err(P::Error::from)?;
-            (prepared, atlas, upload.resources)
-        } else if let Some(upload) = provider.raster_run_atlas_pixels(&requests, layout.size)? {
-            if upload.size != layout.size {
-                return Err(P::Error::from(GpuRenderError::RasterAtlasSizeMismatch {
-                    expected: layout.size,
-                    actual: upload.size,
-                }));
-            }
-            let atlas = upload_atlas_texture(renderer, &upload).map_err(P::Error::from)?;
-            let drawn_resources = upload.resources.clone();
-            let prepared = prepared_sources_from_atlas_upload(
-                &requests,
-                output_size,
-                target_origin,
-                target_size,
-                upload.resources,
-            )
-            .map_err(P::Error::from)?;
-            (prepared, atlas, drawn_resources)
-        } else {
-            let prepared = prepare_sources_with_caches(
-                renderer,
-                provider,
-                state,
-                output_size,
-                target_origin,
-                target_size,
-                sources,
-                &layout.sources,
-            )?;
-            let atlas = create_atlas_texture(state.device(), layout.size);
-            copy_sources_to_atlas(state.encoder_mut(), &prepared, &atlas);
-            let drawn_resources = prepared.iter().map(|source| source.info).collect();
-            (prepared, atlas, drawn_resources)
-        };
+    let (prepared, atlas, drawn_resources) = if let Some(upload) = context
+        .provider
+        .raster_run_atlas_tile_pixels(&requests, layout.size)?
+    {
+        if upload.size != layout.size {
+            return Err(P::Error::from(GpuRenderError::RasterAtlasSizeMismatch {
+                expected: layout.size,
+                actual: upload.size,
+            }));
+        }
+        let atlas = upload_atlas_tile_texture(context.renderer, &upload).map_err(P::Error::from)?;
+        let prepared = prepared_sources_from_atlas_tiles(
+            &upload.chunks,
+            &upload.resources,
+            output_size,
+            target_origin,
+            target_size,
+        )
+        .map_err(P::Error::from)?;
+        (prepared, atlas, upload.resources)
+    } else if let Some(upload) = context
+        .provider
+        .raster_run_atlas_pixels(&requests, layout.size)?
+    {
+        if upload.size != layout.size {
+            return Err(P::Error::from(GpuRenderError::RasterAtlasSizeMismatch {
+                expected: layout.size,
+                actual: upload.size,
+            }));
+        }
+        let atlas = upload_atlas_texture(context.renderer, &upload).map_err(P::Error::from)?;
+        let drawn_resources = upload.resources.clone();
+        let prepared = prepared_sources_from_atlas_upload(
+            &requests,
+            output_size,
+            target_origin,
+            target_size,
+            upload.resources,
+        )
+        .map_err(P::Error::from)?;
+        (prepared, atlas, drawn_resources)
+    } else {
+        let prepared = prepare_sources_with_caches(
+            context,
+            output_size,
+            target_origin,
+            target_size,
+            sources,
+            &layout.sources,
+        )?;
+        let atlas = create_atlas_texture(context.state.device(), layout.size);
+        copy_sources_to_atlas(context.state.encoder_mut(), &prepared, &atlas);
+        let drawn_resources = prepared.iter().map(|source| source.info).collect();
+        (prepared, atlas, drawn_resources)
+    };
     for info in drawn_resources {
-        state.push_drawn_resource(info);
+        context.state.push_drawn_resource(info);
     }
 
     let Some(source_bounds) = prepared
@@ -118,8 +123,9 @@ where
     else {
         return Ok(false);
     };
-    let Some(pass_bounds) =
-        state.clip_pass_bounds(union_optional(*dirty_bounds, Some(source_bounds)))
+    let Some(pass_bounds) = context
+        .state
+        .clip_pass_bounds(union_optional(*dirty_bounds, Some(source_bounds)))
     else {
         return Ok(false);
     };
@@ -137,18 +143,25 @@ where
 
     let atlas_view = atlas.create_view(&wgpu::TextureViewDescriptor::default());
     let event_words = event_words(&prepared);
-    let event_buffer =
-        create_u32_storage_buffer(state.device(), "rizum_clip_tile_silo_events", &event_words);
+    let event_buffer = create_u32_storage_buffer(
+        context.state.device(),
+        "rizum_clip_tile_silo_events",
+        &event_words,
+    );
     let work_buffer = create_u32_storage_buffer(
-        state.device(),
+        context.state.device(),
         "rizum_clip_tile_silo_work_indices",
         &work_indices,
     );
-    let span_buffer =
-        create_u32_storage_buffer(state.device(), "rizum_clip_tile_silo_spans", &tile_spans);
-    let params_buffer = create_params_buffer(state.device(), target_origin, tile_cols);
-    let pipeline = state.tile_silo_pipeline();
-    let bind_group = state
+    let span_buffer = create_u32_storage_buffer(
+        context.state.device(),
+        "rizum_clip_tile_silo_spans",
+        &tile_spans,
+    );
+    let params_buffer = create_params_buffer(context.state.device(), target_origin, tile_cols);
+    let pipeline = context.state.tile_silo_pipeline();
+    let bind_group = context
+        .state
         .device()
         .create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("rizum_clip_tile_silo_bind_group"),
@@ -182,7 +195,8 @@ where
         });
 
     {
-        let mut pass = state
+        let mut pass = context
+            .state
             .encoder_mut()
             .begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("rizum_clip_tile_silo_raster_pass"),
@@ -215,20 +229,18 @@ where
     let atlas_bytes = rgba8_texture_byte_len(layout.size).map_err(P::Error::from)?;
     for source in prepared {
         if let Some(cache) = source.cache {
-            state.retain_raster_cache(cache);
+            context.state.retain_raster_cache(cache);
         }
     }
-    state.retain_texture(atlas, atlas_bytes);
-    state.finish_pass()?;
+    context.state.retain_texture(atlas, atlas_bytes);
+    context.state.finish_pass()?;
     *dirty_bounds = Some(pass_bounds);
     Ok(true)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn prepare_sources_with_caches<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
+    context: &mut StreamingExecutionContext<'_, '_, P>,
     output_size: CanvasSize,
     target_origin: (i32, i32),
     target_size: CanvasSize,
@@ -243,10 +255,11 @@ where
         let GpuNormalStackSource::Raster(raster) = source else {
             return Ok(Vec::new());
         };
-        let cache = state
+        let cache = context
+            .state
             .retained_raster_cache(raster.key)
             .map(Ok)
-            .unwrap_or_else(|| provider.raster_resource(renderer, *raster))?;
+            .unwrap_or_else(|| context.provider.raster_resource(context.renderer, *raster))?;
         let resource = cache
             .resource(raster.key)
             .ok_or(GpuRenderError::MissingRasterResource {
@@ -255,7 +268,8 @@ where
             })
             .map_err(P::Error::from)?;
         let info = resource.info();
-        let offset = provider
+        let offset = context
+            .provider
             .raster_resource_offset(*raster)
             .unwrap_or((raster.offset_x, raster.offset_y));
         let bounds = source_bounds(offset, info.size, output_size)

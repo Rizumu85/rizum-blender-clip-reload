@@ -1,23 +1,20 @@
 use clip_model::CanvasSize;
 
-use crate::pass::{NormalStackPipelines, encode_normal_source_pass_scissored};
+use crate::pass::encode_normal_source_pass_scissored;
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_and_origins,
     generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
 };
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_context::StreamingExecutionContext;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_resources::{known_stack_activity, mask_view_with_provider};
-use crate::stream_state::{StreamingEncoder, StreamingTexturePair};
-use crate::{GpuMaskResourceKey, GpuRasterBlendMode, GpuRenderer};
+use crate::{GpuMaskResourceKey, GpuRasterBlendMode};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn render_through_group_with_provider<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
-    output_size: CanvasSize,
+    context: &mut StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     children: &[crate::GpuNormalStackSource],
     opacity: f32,
@@ -26,22 +23,25 @@ pub(crate) fn render_through_group_with_provider<P>(
     before_view: &wgpu::TextureView,
     fallback_texture: &wgpu::Texture,
     output_view: &wgpu::TextureView,
-    pipelines: &NormalStackPipelines,
     parent_dirty_bounds: &mut Option<CanvasRect>,
 ) -> Result<bool, P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
-    let through_bounds =
-        through_cache_bounds(provider, children, output_size, state.render_bounds());
+    let output_size = context.output_size;
+    let through_bounds = through_cache_bounds(
+        &*context.provider,
+        children,
+        output_size,
+        context.state.render_bounds(),
+    );
     let Some((cache_size, cache_origin, cache_global_bounds)) = through_bounds else {
         return Ok(false);
     };
 
     let through_usage =
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-    let through_pair = StreamingTexturePair::new(
-        state.device(),
+    let through_pair = context.texture_pair(
         "rizum_clip_provider_through_after_a",
         "rizum_clip_provider_through_after_b",
         cache_size,
@@ -49,9 +49,10 @@ where
     );
     let mut previous_index = 0usize;
     let mut next_index = 1usize;
-    state.clear_rgba8_texture_pair(
-        through_pair.view(previous_index),
-        through_pair.view(next_index),
+    context.clear_texture_pair(
+        &through_pair,
+        previous_index,
+        next_index,
         "rizum_clip_provider_through_initial_clear",
     );
     let mut after_dirty_bounds = if cache_global_bounds.is_some() {
@@ -64,12 +65,12 @@ where
     if let Some(global_cache_bounds) = cache_global_bounds {
         let local_cache_bounds = CanvasRect::full(cache_size)
             .expect("non-empty through bounds must create local bounds");
-        let pipeline = pipelines.alpha_pipeline(state.device());
+        let pipeline = context.pipelines.alpha_pipeline(context.state.device());
         encode_normal_source_pass_scissored(
-            state.device(),
-            state.encoder_mut(),
+            context.state.device(),
+            context.state.encoder_mut(),
             pipeline,
-            &pipelines.bind_group_layout,
+            &context.pipelines.bind_group_layout,
             before_view,
             through_pair.view(previous_index),
             through_pair.view(previous_index),
@@ -84,7 +85,7 @@ where
             "rizum_clip_provider_through_seed_pass",
             local_cache_bounds,
         );
-        state.finish_pass()?;
+        context.state.finish_pass()?;
         after_dirty_bounds = Some(global_cache_bounds);
         std::mem::swap(&mut previous_index, &mut next_index);
     }
@@ -100,17 +101,13 @@ where
             )
         };
         let did_write = encode_source_with_provider(
-            renderer,
-            provider,
-            state,
-            output_size,
+            context,
             cache_origin,
             child,
             previous_texture,
             fallback_texture,
             previous_view,
             through_pair.view(next_index),
-            pipelines,
             &mut after_dirty_bounds,
         )?;
         if did_write {
@@ -120,15 +117,15 @@ where
     }
 
     if !has_child_output {
-        state.retain_texture_pair(through_pair);
+        context.state.retain_texture_pair(through_pair);
         return Ok(false);
     }
 
     let after_view = through_pair.view(previous_index);
     let (mask_cache, mask_view) = mask_view_with_provider(
-        renderer,
-        provider,
-        state,
+        context.renderer,
+        &mut *context.provider,
+        &mut context.state,
         output_size,
         mask_key,
         mask_key
@@ -139,12 +136,12 @@ where
     let Some(pass_bounds) = through_resolve_bounds(*parent_dirty_bounds, after_dirty_bounds) else {
         return Ok(false);
     };
-    let pipeline = pipelines.through_pipeline(state.device());
+    let pipeline = context.pipelines.through_pipeline(context.state.device());
     encode_normal_source_pass_scissored(
-        state.device(),
-        state.encoder_mut(),
+        context.state.device(),
+        context.state.encoder_mut(),
         pipeline,
-        &pipelines.bind_group_layout,
+        &context.pipelines.bind_group_layout,
         after_view,
         before_view,
         mask_view.view(),
@@ -162,9 +159,9 @@ where
             .translate_to_local(target_origin)
             .expect("through resolve bounds must fit inside the target"),
     );
-    state.retain_optional_mask_cache(mask_cache);
-    state.retain_texture_pair(through_pair);
-    state.finish_pass()?;
+    context.state.retain_optional_mask_cache(mask_cache);
+    context.state.retain_texture_pair(through_pair);
+    context.state.finish_pass()?;
     *parent_dirty_bounds = Some(pass_bounds);
     Ok(true)
 }

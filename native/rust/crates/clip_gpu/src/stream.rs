@@ -1,9 +1,7 @@
 use clip_model::{CanvasSize, Rect};
 
 use crate::lut_filter::{create_lut_filter_texture, encode_lut_filter_pass_scissored};
-use crate::pass::{
-    NormalStackPipelines, encode_normal_source_pass, encode_normal_source_pass_scissored,
-};
+use crate::pass::{encode_normal_source_pass, encode_normal_source_pass_scissored};
 use crate::source_params::{
     generated_raster_source_uniform_bytes_with_blend_and_origins,
     generated_raster_source_uniform_bytes_with_blend_origins_and_mask,
@@ -11,6 +9,7 @@ use crate::source_params::{
     raster_source_uniform_bytes_with_target_origin_and_mask, solid_source_uniform_bytes,
 };
 use crate::stream_bounds::CanvasRect;
+use crate::stream_context::StreamingExecutionContext;
 use crate::stream_effects::source_can_affect_output;
 use crate::stream_groups::{
     render_clipping_run_with_provider, render_container_clipping_run_with_provider,
@@ -25,7 +24,7 @@ use crate::stream_resources::{
     pass_bounds_for_change, raster_view_with_provider,
 };
 use crate::stream_sequence::encode_source_sequence_with_provider;
-use crate::stream_state::{StreamingEncoder, StreamingTexturePair};
+use crate::stream_state::StreamingTexturePair;
 use crate::stream_through::render_through_group_with_provider;
 use crate::stream_utils::{local_pass_bounds, lut_filter_label, renderer_context_queue};
 use crate::{GpuNormalStackSource, GpuRasterStackOutput, GpuRenderError, GpuRenderer};
@@ -61,45 +60,40 @@ impl GpuRenderer {
         let accum_usage = wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::TEXTURE_BINDING
             | wgpu::TextureUsages::COPY_SRC;
-        let accum_pair = StreamingTexturePair::new(
-            &self.context.device,
+        let mut context = StreamingExecutionContext::new(
+            self,
+            provider,
+            output_size,
+            "rizum_clip_provider_normal_encoder",
+        );
+        let accum_pair = context.texture_pair(
             "rizum_clip_provider_normal_accum_a",
             "rizum_clip_provider_normal_accum_b",
             output_size,
             accum_usage,
         );
-        let pipelines = NormalStackPipelines::new(&self.context.device);
-        let mut state = StreamingEncoder::<P::Error>::new(
-            &self.context.device,
-            &self.context.queue,
-            "rizum_clip_provider_normal_encoder",
-        );
         let mut previous_index = 0usize;
         let mut next_index = 1usize;
 
-        state.clear_rgba8_texture_pair(
-            accum_pair.view(previous_index),
-            accum_pair.view(next_index),
+        context.clear_texture_pair(
+            &accum_pair,
+            previous_index,
+            next_index,
             "rizum_clip_provider_normal_initial_clear",
         );
 
         let updated = encode_sources_with_provider(
-            self,
-            provider,
-            &mut state,
-            output_size,
+            &mut context,
             (0, 0),
             sources,
             &accum_pair,
             previous_index,
             next_index,
-            &pipelines,
         )?;
         previous_index = updated.0;
         next_index = updated.1;
         let _ = next_index;
-        state.flush()?;
-        let drawn_resources = state.into_drawn_resources();
+        let drawn_resources = context.finish()?;
 
         let pixels = self
             .read_texture_rgba8(
@@ -137,44 +131,39 @@ impl GpuRenderer {
         let accum_usage = wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::TEXTURE_BINDING
             | wgpu::TextureUsages::COPY_SRC;
-        let accum_pair = StreamingTexturePair::new(
-            &self.context.device,
+        let mut context = StreamingExecutionContext::new_with_render_bounds(
+            self,
+            provider,
+            output_size,
+            "rizum_clip_provider_region_encoder",
+            Some(render_bounds),
+        );
+        let accum_pair = context.texture_pair(
             "rizum_clip_provider_region_accum_a",
             "rizum_clip_provider_region_accum_b",
             region_size,
             accum_usage,
         );
-        let pipelines = NormalStackPipelines::new(&self.context.device);
-        let mut state = StreamingEncoder::<P::Error>::new_with_render_bounds(
-            &self.context.device,
-            &self.context.queue,
-            "rizum_clip_provider_region_encoder",
-            Some(render_bounds),
-        );
         let mut previous_index = 0usize;
         let next_index = 1usize;
 
-        state.clear_rgba8_texture_pair(
-            accum_pair.view(previous_index),
-            accum_pair.view(next_index),
+        context.clear_texture_pair(
+            &accum_pair,
+            previous_index,
+            next_index,
             "rizum_clip_provider_region_initial_clear",
         );
 
         let updated = encode_sources_with_provider(
-            self,
-            provider,
-            &mut state,
-            output_size,
+            &mut context,
             render_bounds.origin_i32(),
             sources,
             &accum_pair,
             previous_index,
             next_index,
-            &pipelines,
         )?;
         previous_index = updated.0;
-        state.flush()?;
-        let drawn_resources = state.into_drawn_resources();
+        let drawn_resources = context.finish()?;
 
         let pixels = self
             .read_texture_rgba8(
@@ -330,33 +319,25 @@ mod tests {
 
 #[allow(clippy::too_many_arguments)]
 fn encode_sources_with_provider<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
-    output_size: CanvasSize,
+    context: &mut StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     sources: &[GpuNormalStackSource],
     accum_pair: &StreamingTexturePair,
     previous_index: usize,
     next_index: usize,
-    pipelines: &NormalStackPipelines,
 ) -> Result<(usize, usize), P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
     let mut dirty_bounds = None;
     encode_source_sequence_with_provider(
-        renderer,
-        provider,
-        state,
-        output_size,
+        context,
         target_origin,
         sources,
         accum_pair,
         previous_index,
         next_index,
         None,
-        pipelines,
         &mut dirty_bounds,
     )
 }
@@ -380,17 +361,13 @@ fn region_bounds(output_size: CanvasSize, region: Rect) -> Result<CanvasRect, Gp
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_source_with_provider<P>(
-    renderer: &GpuRenderer,
-    provider: &mut P,
-    state: &mut StreamingEncoder<'_, P::Error>,
-    output_size: CanvasSize,
+    context: &mut StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     source: &GpuNormalStackSource,
     previous_texture: &wgpu::Texture,
     fallback_texture: &wgpu::Texture,
     previous_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
-    pipelines: &NormalStackPipelines,
     dirty_bounds: &mut Option<CanvasRect>,
 ) -> Result<bool, P::Error>
 where
@@ -400,40 +377,51 @@ where
         return Ok(false);
     }
 
+    let output_size = context.output_size;
     match source {
         GpuNormalStackSource::Raster(raster) => {
-            let known_source_bounds = known_raster_source_bounds(provider, *raster, output_size);
+            let known_source_bounds =
+                known_raster_source_bounds(&*context.provider, *raster, output_size);
             if matches!(known_source_bounds, Some(None)) {
                 return Ok(false);
             }
             if let Some(Some(bounds)) = known_source_bounds
-                && state.clip_pass_bounds(Some(bounds)).is_none()
+                && context.state.clip_pass_bounds(Some(bounds)).is_none()
             {
                 return Ok(false);
             }
             let (raster_cache, source_view, effective_raster, uploaded_source_bounds) =
-                raster_view_with_provider(renderer, provider, state, output_size, *raster)?;
+                raster_view_with_provider(
+                    context.renderer,
+                    &mut *context.provider,
+                    &mut context.state,
+                    output_size,
+                    *raster,
+                )?;
             let source_bounds = known_source_bounds.flatten().or(uploaded_source_bounds);
-            let Some(pass_bounds) =
-                state.clip_pass_bounds(pass_bounds_for_change(*dirty_bounds, source_bounds))
+            let Some(pass_bounds) = context
+                .state
+                .clip_pass_bounds(pass_bounds_for_change(*dirty_bounds, source_bounds))
             else {
                 return Ok(false);
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
-                renderer,
-                provider,
-                state,
+                context.renderer,
+                &mut *context.provider,
+                &mut context.state,
                 output_size,
                 raster.mask_key,
                 raster.key.layer_id,
                 previous_view,
             )?;
-            let pipeline = pipelines.raster_source_pipeline(state.device(), raster.blend_mode);
+            let pipeline = context
+                .pipelines
+                .raster_source_pipeline(context.state.device(), raster.blend_mode);
             encode_normal_source_pass_scissored(
-                state.device(),
-                state.encoder_mut(),
+                context.state.device(),
+                context.state.encoder_mut(),
                 pipeline,
-                &pipelines.bind_group_layout,
+                &context.pipelines.bind_group_layout,
                 &source_view,
                 previous_view,
                 mask_view.view(),
@@ -446,52 +434,44 @@ where
                 "rizum_clip_provider_normal_raster_pass",
                 local_pass_bounds(pass_bounds, target_origin),
             );
-            state.retain_raster_cache(raster_cache);
-            state.retain_optional_mask_cache(mask_cache);
-            state.finish_pass()?;
+            context.state.retain_raster_cache(raster_cache);
+            context.state.retain_optional_mask_cache(mask_cache);
+            context.state.finish_pass()?;
             *dirty_bounds = Some(pass_bounds);
             Ok(true)
         }
         GpuNormalStackSource::ClippingRun { base, clipped } => {
-            if known_clipped_sibling_activity(provider, *base, clipped, output_size).is_empty() {
+            if known_clipped_sibling_activity(&*context.provider, *base, clipped, output_size)
+                .is_empty()
+            {
                 let base_source = GpuNormalStackSource::Raster(*base);
                 return encode_source_with_provider(
-                    renderer,
-                    provider,
-                    state,
-                    output_size,
+                    context,
                     target_origin,
                     &base_source,
                     previous_texture,
                     fallback_texture,
                     previous_view,
                     output_view,
-                    pipelines,
                     dirty_bounds,
                 );
             }
-            let clipping_cache = render_clipping_run_with_provider(
-                renderer,
-                provider,
-                state,
-                output_size,
-                *base,
-                clipped,
-                fallback_texture,
-                pipelines,
-            )?;
-            let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(
+            let clipping_cache =
+                render_clipping_run_with_provider(context, *base, clipped, fallback_texture)?;
+            let Some(pass_bounds) = context.state.clip_pass_bounds(pass_bounds_for_change(
                 *dirty_bounds,
                 clipping_cache.bounds(),
             )) else {
                 return Ok(false);
             };
-            let pipeline = pipelines.raster_source_pipeline(state.device(), base.blend_mode);
+            let pipeline = context
+                .pipelines
+                .raster_source_pipeline(context.state.device(), base.blend_mode);
             encode_normal_source_pass_scissored(
-                state.device(),
-                state.encoder_mut(),
+                context.state.device(),
+                context.state.encoder_mut(),
                 pipeline,
-                &pipelines.bind_group_layout,
+                &context.pipelines.bind_group_layout,
                 clipping_cache.view(),
                 previous_view,
                 previous_view,
@@ -506,8 +486,8 @@ where
                 "rizum_clip_provider_clipping_resolve_pass",
                 local_pass_bounds(pass_bounds, target_origin),
             );
-            state.retain_intermediate_cache(clipping_cache);
-            state.finish_pass()?;
+            context.state.retain_intermediate_cache(clipping_cache);
+            context.state.finish_pass()?;
             *dirty_bounds = Some(pass_bounds);
             Ok(true)
         }
@@ -519,29 +499,27 @@ where
             clipped,
         } => {
             let clipping_cache = render_container_clipping_run_with_provider(
-                renderer,
-                provider,
-                state,
-                output_size,
+                context,
                 children,
                 *opacity,
                 *mask_key,
                 clipped,
                 fallback_texture,
-                pipelines,
             )?;
-            let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(
+            let Some(pass_bounds) = context.state.clip_pass_bounds(pass_bounds_for_change(
                 *dirty_bounds,
                 clipping_cache.bounds(),
             )) else {
                 return Ok(false);
             };
-            let pipeline = pipelines.raster_source_pipeline(state.device(), *blend_mode);
+            let pipeline = context
+                .pipelines
+                .raster_source_pipeline(context.state.device(), *blend_mode);
             encode_normal_source_pass_scissored(
-                state.device(),
-                state.encoder_mut(),
+                context.state.device(),
+                context.state.encoder_mut(),
                 pipeline,
-                &pipelines.bind_group_layout,
+                &context.pipelines.bind_group_layout,
                 clipping_cache.view(),
                 previous_view,
                 previous_view,
@@ -556,8 +534,8 @@ where
                 "rizum_clip_provider_container_clipping_resolve_pass",
                 local_pass_bounds(pass_bounds, target_origin),
             );
-            state.retain_intermediate_cache(clipping_cache);
-            state.finish_pass()?;
+            context.state.retain_intermediate_cache(clipping_cache);
+            context.state.finish_pass()?;
             *dirty_bounds = Some(pass_bounds);
             Ok(true)
         }
@@ -567,25 +545,18 @@ where
             mask_key,
             blend_mode,
         } => {
-            let container_cache = render_container_with_provider(
-                renderer,
-                provider,
-                state,
-                output_size,
-                children,
-                fallback_texture,
-                pipelines,
-            )?;
-            let Some(pass_bounds) = state.clip_pass_bounds(pass_bounds_for_change(
+            let container_cache =
+                render_container_with_provider(context, children, fallback_texture)?;
+            let Some(pass_bounds) = context.state.clip_pass_bounds(pass_bounds_for_change(
                 *dirty_bounds,
                 container_cache.bounds(),
             )) else {
                 return Ok(false);
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
-                renderer,
-                provider,
-                state,
+                context.renderer,
+                &mut *context.provider,
+                &mut context.state,
                 output_size,
                 *mask_key,
                 mask_key
@@ -593,12 +564,14 @@ where
                     .unwrap_or(clip_model::LayerId(0)),
                 previous_view,
             )?;
-            let pipeline = pipelines.raster_source_pipeline(state.device(), *blend_mode);
+            let pipeline = context
+                .pipelines
+                .raster_source_pipeline(context.state.device(), *blend_mode);
             encode_normal_source_pass_scissored(
-                state.device(),
-                state.encoder_mut(),
+                context.state.device(),
+                context.state.encoder_mut(),
                 pipeline,
-                &pipelines.bind_group_layout,
+                &context.pipelines.bind_group_layout,
                 container_cache.view(),
                 previous_view,
                 mask_view.view(),
@@ -614,9 +587,9 @@ where
                 "rizum_clip_provider_container_resolve_pass",
                 local_pass_bounds(pass_bounds, target_origin),
             );
-            state.retain_intermediate_cache(container_cache);
-            state.retain_optional_mask_cache(mask_cache);
-            state.finish_pass()?;
+            context.state.retain_intermediate_cache(container_cache);
+            context.state.retain_optional_mask_cache(mask_cache);
+            context.state.finish_pass()?;
             *dirty_bounds = Some(pass_bounds);
             Ok(true)
         }
@@ -625,10 +598,7 @@ where
             opacity,
             mask_key,
         } => render_through_group_with_provider(
-            renderer,
-            provider,
-            state,
-            output_size,
+            context,
             target_origin,
             children,
             *opacity,
@@ -637,19 +607,21 @@ where
             previous_view,
             fallback_texture,
             output_view,
-            pipelines,
             dirty_bounds,
         ),
         GpuNormalStackSource::SolidColor { color, opacity } => {
-            let Some(full_bounds) = state.clip_pass_bounds(CanvasRect::full(output_size)) else {
+            let Some(full_bounds) = context
+                .state
+                .clip_pass_bounds(CanvasRect::full(output_size))
+            else {
                 return Ok(false);
             };
-            let pipeline = pipelines.alpha_pipeline(state.device());
+            let pipeline = context.pipelines.alpha_pipeline(context.state.device());
             encode_normal_source_pass(
-                state.device(),
-                state.encoder_mut(),
+                context.state.device(),
+                context.state.encoder_mut(),
                 pipeline,
-                &pipelines.bind_group_layout,
+                &context.pipelines.bind_group_layout,
                 previous_view,
                 previous_view,
                 previous_view,
@@ -657,7 +629,7 @@ where
                 solid_source_uniform_bytes(*color, *opacity),
                 "rizum_clip_provider_solid_pass",
             );
-            state.finish_pass()?;
+            context.state.finish_pass()?;
             *dirty_bounds = Some(full_bounds);
             Ok(true)
         }
@@ -676,13 +648,13 @@ where
                     full_bounds
                 }
             };
-            let Some(pass_bounds) = state.clip_pass_bounds(Some(pass_bounds)) else {
+            let Some(pass_bounds) = context.state.clip_pass_bounds(Some(pass_bounds)) else {
                 return Ok(false);
             };
             let (mask_cache, mask_view) = mask_view_with_provider(
-                renderer,
-                provider,
-                state,
+                context.renderer,
+                &mut *context.provider,
+                &mut context.state,
                 output_size,
                 *mask_key,
                 mask_key
@@ -691,18 +663,20 @@ where
                 previous_view,
             )?;
             let lut_texture = create_lut_filter_texture(
-                state.device(),
-                renderer_context_queue(renderer),
+                context.state.device(),
+                renderer_context_queue(context.renderer),
                 lut_rgba,
             )
             .map_err(P::Error::from)?;
             let lut_view = lut_texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let pipeline = pipelines.lut_filter_pipeline(state.device());
+            let pipeline = context
+                .pipelines
+                .lut_filter_pipeline(context.state.device());
             encode_lut_filter_pass_scissored(
-                state.device(),
-                state.encoder_mut(),
+                context.state.device(),
+                context.state.encoder_mut(),
                 pipeline,
-                &pipelines.bind_group_layout,
+                &context.pipelines.bind_group_layout,
                 previous_view,
                 mask_view.view(),
                 &lut_view,
@@ -717,9 +691,9 @@ where
                 lut_filter_label(*filter_mode),
                 local_pass_bounds(pass_bounds, target_origin),
             );
-            state.retain_optional_mask_cache(mask_cache);
-            state.retain_lut_texture(lut_texture);
-            state.finish_pass()?;
+            context.state.retain_optional_mask_cache(mask_cache);
+            context.state.retain_lut_texture(lut_texture);
+            context.state.finish_pass()?;
             *dirty_bounds = Some(pass_bounds);
             Ok(true)
         }
