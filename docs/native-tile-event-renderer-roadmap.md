@@ -302,10 +302,10 @@ This should come after the typed event VM and session atlas cache are stable.
 
 ### Phase 0: Performance Plan JSON
 
-Add a diagnostic command before changing rendering semantics:
+Done in first form. The diagnostic command is:
 
 ```powershell
-clip_cli --performance-plan-json <file.clip>
+clip_cli <file.clip> --performance-plan-json
 ```
 
 Expected output shape:
@@ -331,6 +331,10 @@ Expected output shape:
 ```
 
 This makes performance work measurable instead of sample-by-sample intuition.
+The current implementation combines actual `clip_gpu::stream_program`
+planning stats with metadata/block-level compressed tile occupancy. The
+`atlas_upload_bytes` value is an estimate based on sparse compressed tile slots,
+not a measured GPU upload counter.
 
 ### Phase 1: Render Segment IR
 
@@ -340,10 +344,11 @@ raster-only clipping-run, and legacy-source barrier segments, while
 
 Next deepening:
 
-- add explicit `BarrierReason`
-- make barrier and tile-local decisions inspectable
-- expose render-program stats through CLI
-- stop hiding planner decisions inside boolean eligibility helpers
+- keep expanding explicit `BarrierReason` coverage as new semantics are lowered
+- make lowering decisions first-class instead of using scattered boolean
+  eligibility helpers
+- attach cost hints and barrier reasons to future segment kinds, not only the
+  current legacy-source barrier
 
 ### Phase 2: Typed Tile Event VM
 

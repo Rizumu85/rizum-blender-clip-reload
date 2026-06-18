@@ -163,6 +163,14 @@ pub struct NativeTileSiloEstimateResult {
     pub unsupported_count: usize,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct NativePerformancePlanResult {
+    pub tile_estimate: NativeTileSiloEstimateResult,
+    pub render_program_stats: clip_gpu::RenderProgramStats,
+    pub estimated_atlas_upload_bytes: u64,
+    pub estimated_tile_events: u64,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SimpleRasterStackUnsupported {
     pub render_node_id: RenderNodeId,

@@ -8,6 +8,7 @@ use crate::compare_png;
 use crate::layer_labels::layer_label;
 use crate::layer_window;
 use crate::options::CliOptions;
+use crate::performance_plan_json;
 use crate::pixel_trace_text::print_pixel_trace_result;
 use crate::reload_manifest::read_reload_manifest;
 use crate::support_json;
@@ -83,6 +84,21 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
         print!(
             "{}",
             tile_silo_text::tile_silo_estimate_text(&session, &result)
+        );
+        return 0;
+    }
+
+    if options.performance_plan_json {
+        let result = match session.performance_plan(options.tile_size) {
+            Ok(result) => result,
+            Err(err) => {
+                eprintln!("failed to build performance plan from {:?}: {err}", path);
+                return 1;
+            }
+        };
+        println!(
+            "{}",
+            performance_plan_json::performance_plan_json(&session, &result)
         );
         return 0;
     }

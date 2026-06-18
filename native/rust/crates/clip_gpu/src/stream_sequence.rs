@@ -103,7 +103,7 @@ where
                     dirty_bounds,
                 )?;
             }
-            RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource) => {
+            RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(_)) => {
                 encode_legacy_segment(
                     context,
                     target_origin,

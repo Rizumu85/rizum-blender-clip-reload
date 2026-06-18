@@ -90,3 +90,11 @@ as an atlas-backed raster run or raster-only clipping run, or a barrier that
 must currently execute through the faithful legacy source path. Future native
 performance work should add new segment kinds instead of adding opportunistic
 branches directly to streaming traversal code.
+
+**Performance plan diagnostic**
+
+The metadata/block-level CLI report that explains the current native render
+program without running a GPU render. It combines render-program segment stats,
+typed barrier reason counts, compressed tile occupancy, and sparse atlas upload
+estimates so native performance work can be compared by planner coverage rather
+than intuition.

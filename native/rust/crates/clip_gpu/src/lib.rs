@@ -18,6 +18,8 @@ mod stream_effects;
 mod stream_extents;
 mod stream_groups;
 mod stream_program;
+mod stream_program_barriers;
+mod stream_program_inspect;
 mod stream_provider;
 mod stream_resources;
 #[cfg(test)]
@@ -47,6 +49,9 @@ pub use stream::{
     GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider, GpuRasterAtlasPixels,
     GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
 };
+pub use stream_program::RenderProgramStats;
+pub use stream_program_barriers::{RenderProgramBarrierCounts, RenderProgramBarrierReason};
+pub use stream_program_inspect::inspect_normal_stack_render_program;
 pub use types::{
     GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,
     GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput,

@@ -4,6 +4,9 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_clipping_tile_silo::clipping_run_silo_is_eligible;
+use crate::stream_program_barriers::{
+    RenderProgramBarrierCounts, RenderProgramBarrierReason, barrier_reason_for_source,
+};
 use crate::stream_tile_silo::raster_silo_run_len;
 use crate::{GpuClippedStackSource, GpuNormalStackSource};
 
@@ -44,7 +47,7 @@ pub(crate) enum TileProgramKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum BarrierProgramKind {
-    LegacySource,
+    LegacySource(RenderProgramBarrierReason),
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -55,15 +58,40 @@ pub(crate) struct SegmentCostHint {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(crate) struct RenderProgramStats {
-    pub(crate) segments: u32,
-    pub(crate) tile_local_segments: u32,
-    pub(crate) barrier_segments: u32,
-    pub(crate) raster_run_segments: u32,
-    pub(crate) raster_clipping_run_segments: u32,
-    pub(crate) legacy_source_segments: u32,
-    pub(crate) planned_tile_events: u32,
-    pub(crate) planned_passes: u32,
+pub struct RenderProgramStats {
+    pub segments: u32,
+    pub tile_local_segments: u32,
+    pub barrier_segments: u32,
+    pub raster_run_segments: u32,
+    pub raster_clipping_run_segments: u32,
+    pub legacy_source_segments: u32,
+    pub planned_tile_events: u32,
+    pub planned_passes: u32,
+    pub barrier_reasons: RenderProgramBarrierCounts,
+}
+
+impl RenderProgramStats {
+    pub(crate) fn add_assign(&mut self, other: Self) {
+        self.segments = self.segments.saturating_add(other.segments);
+        self.tile_local_segments = self
+            .tile_local_segments
+            .saturating_add(other.tile_local_segments);
+        self.barrier_segments = self.barrier_segments.saturating_add(other.barrier_segments);
+        self.raster_run_segments = self
+            .raster_run_segments
+            .saturating_add(other.raster_run_segments);
+        self.raster_clipping_run_segments = self
+            .raster_clipping_run_segments
+            .saturating_add(other.raster_clipping_run_segments);
+        self.legacy_source_segments = self
+            .legacy_source_segments
+            .saturating_add(other.legacy_source_segments);
+        self.planned_tile_events = self
+            .planned_tile_events
+            .saturating_add(other.planned_tile_events);
+        self.planned_passes = self.planned_passes.saturating_add(other.planned_passes);
+        self.barrier_reasons.add_counts(other.barrier_reasons);
+    }
 }
 
 pub(crate) fn plan_render_program<P>(
@@ -122,7 +150,19 @@ where
             continue;
         }
 
-        push_barrier_segment(&mut segments, &mut stats, source_index..source_index + 1);
+        let reason = barrier_reason_for_source(
+            provider,
+            output_size,
+            target_origin,
+            target_size,
+            &sources[source_index],
+        );
+        push_barrier_segment(
+            &mut segments,
+            &mut stats,
+            source_index..source_index + 1,
+            reason,
+        );
         source_index += 1;
     }
 
@@ -159,11 +199,12 @@ fn push_barrier_segment(
     segments: &mut Vec<RenderSegment>,
     stats: &mut RenderProgramStats,
     source_range: Range<usize>,
+    reason: RenderProgramBarrierReason,
 ) {
     let legacy_sources = u32::try_from(source_range.len()).unwrap_or(u32::MAX);
     segments.push(RenderSegment {
         source_range,
-        kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource),
+        kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(reason)),
         cost_hint: SegmentCostHint {
             expected_passes: legacy_sources.max(1),
             tile_events: 0,
@@ -174,6 +215,7 @@ fn push_barrier_segment(
     stats.barrier_segments += 1;
     stats.legacy_source_segments += 1;
     stats.planned_passes = stats.planned_passes.saturating_add(legacy_sources.max(1));
+    stats.barrier_reasons.add(reason);
 }
 
 fn raster_clipping_tile_event_count(clipped: &[GpuClippedStackSource]) -> u32 {
@@ -250,7 +292,9 @@ mod tests {
                 },
                 RenderSegment {
                     source_range: 2..3,
-                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource),
+                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+                        RenderProgramBarrierReason::SolidColorNotLowered,
+                    )),
                     cost_hint: SegmentCostHint {
                         expected_passes: 1,
                         tile_events: 0,
@@ -268,7 +312,9 @@ mod tests {
                 },
                 RenderSegment {
                     source_range: 4..5,
-                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource),
+                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+                        RenderProgramBarrierReason::ByteDomainBlendNotLowered,
+                    )),
                     cost_hint: SegmentCostHint {
                         expected_passes: 1,
                         tile_events: 0,
@@ -277,7 +323,9 @@ mod tests {
                 },
                 RenderSegment {
                     source_range: 5..6,
-                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource),
+                    kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+                        RenderProgramBarrierReason::RasterRunTooShort,
+                    )),
                     cost_hint: SegmentCostHint {
                         expected_passes: 1,
                         tile_events: 0,
@@ -297,6 +345,12 @@ mod tests {
                 legacy_source_segments: 3,
                 planned_tile_events: 4,
                 planned_passes: 5,
+                barrier_reasons: RenderProgramBarrierCounts {
+                    raster_run_too_short: 1,
+                    byte_domain_blend_not_lowered: 1,
+                    solid_color_not_lowered: 1,
+                    ..RenderProgramBarrierCounts::default()
+                },
             }
         );
     }
@@ -328,7 +382,9 @@ mod tests {
 
         assert_eq!(
             program.segments()[0].kind,
-            RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource)
+            RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+                RenderProgramBarrierReason::ClippedContainerSiblingNotLowered,
+            ))
         );
     }
 

@@ -16,6 +16,7 @@ pub struct CliOptions {
     pub gpu_trace_pixel: Option<(u32, u32)>,
     pub gpu_trace_layer_pixel: Option<(LayerId, u32, u32)>,
     pub tile_silo_estimate: bool,
+    pub performance_plan_json: bool,
     pub tile_size: u32,
     pub dump_layer_window: Option<(LayerId, u32, u32, u32)>,
     pub dump_layer_rgba: Option<(LayerId, PathBuf)>,
@@ -59,6 +60,8 @@ pub fn parse_options(args: Vec<OsString>) -> Result<CliOptions, String> {
             options.gpu_trace_layer_pixel = Some((LayerId(layer_id), x, y));
         } else if arg == "--tile-silo-estimate" {
             options.tile_silo_estimate = true;
+        } else if arg == "--performance-plan-json" {
+            options.performance_plan_json = true;
         } else if arg == "--tile-size" {
             let tile_size = parse_next_u32(&mut iter, "--tile-size")?;
             if tile_size == 0 {
@@ -128,6 +131,7 @@ mod tests {
             "10",
             "20",
             "--tile-silo-estimate",
+            "--performance-plan-json",
             "--tile-size",
             "128",
         ]))
@@ -135,6 +139,7 @@ mod tests {
 
         assert_eq!(options.gpu_trace_layer_pixel, Some((LayerId(42), 10, 20)));
         assert!(options.tile_silo_estimate);
+        assert!(options.performance_plan_json);
         assert_eq!(options.tile_size, 128);
     }
 
