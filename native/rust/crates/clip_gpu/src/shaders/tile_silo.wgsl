@@ -1049,7 +1049,11 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
         if (kind == TILE_EVENT_KIND_END_CONTAINER) {
             if (scope_active && scope_contains(event_index, local_texel)) {
-                dst = resolve_container_scope(event_index, scope_dst, dst);
+                if (through_active) {
+                    through_after = resolve_container_scope(event_index, scope_dst, through_after);
+                } else {
+                    dst = resolve_container_scope(event_index, scope_dst, dst);
+                }
                 scope_active = false;
             }
             continue;

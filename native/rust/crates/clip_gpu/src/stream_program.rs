@@ -528,6 +528,44 @@ mod tests {
         assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
     }
 
+    #[test]
+    fn planner_lowers_container_inside_simple_through_scope() {
+        let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
+        let sources = vec![GpuNormalStackSource::ThroughGroup {
+            children: vec![GpuNormalStackSource::Container {
+                children: vec![GpuNormalStackSource::Raster(raster_source(1))],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: GpuRasterBlendMode::Normal,
+            }],
+            opacity: 1.0,
+            mask_key: None,
+        }];
+
+        let program = plan_render_program(
+            &provider,
+            CanvasSize::new(16, 16),
+            (0, 0),
+            CanvasSize::new(16, 16),
+            &sources,
+        );
+
+        assert_eq!(
+            program.segments(),
+            &[RenderSegment {
+                source_range: 0..1,
+                kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
+                cost_hint: SegmentCostHint {
+                    expected_passes: 1,
+                    tile_events: 5,
+                    legacy_sources: 0,
+                },
+            }]
+        );
+        assert_eq!(program.stats().simple_through_scope_segments, 1);
+        assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
+    }
+
     struct PlannerProvider {
         sizes: HashMap<GpuRasterResourceKey, CanvasSize>,
     }

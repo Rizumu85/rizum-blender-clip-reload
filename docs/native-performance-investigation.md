@@ -562,8 +562,8 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
 
 - `clip_gpu::stream_program` can plan a `SimpleThroughScope` segment for a
   THROUGH group with positive opacity, no THROUGH mask, known finite bounds, and
-  children limited to eligible raster events plus pointwise filters whose masks
-  are absent or proven fully opaque.
+  children limited to eligible raster events, simple unmasked container scopes,
+  plus pointwise filters whose masks are absent or proven fully opaque.
 - `stream_tile_event.rs` bumps the tile event ABI to `5` and adds
   `TileEventKind::BeginThrough` / `EndThrough` with the existing
   `scope_payloads` storage buffer.
@@ -571,9 +571,12 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   renders child events into THROUGH `after`, and resolves `before`/`after`
   through the same premultiplied opacity interpolation as the existing THROUGH
   pass.
-- Unsupported THROUGH shapes remain barriers: nested containers, nested THROUGH
-  groups, clipping runs, solid colors, masked THROUGH groups, and filters with
-  real or unknown non-opaque masks.
+- A simple container directly inside the THROUGH scope lowers as nested
+  `BeginContainer` / `EndContainer` events and resolves into the THROUGH
+  `after` accumulator.
+- Unsupported THROUGH shapes remain barriers: container-in-container, nested
+  THROUGH groups, clipping runs, solid colors, masked THROUGH groups, and
+  filters with real or unknown non-opaque masks.
 
 Verification after this milestone:
 
@@ -581,6 +584,8 @@ Verification after this milestone:
 - GPU unit coverage compares the tile-scope path against the existing legacy
   source path for THROUGH opacity and for child Multiply blending inside a
   THROUGH group.
+- GPU unit coverage also compares a simple container inside a THROUGH scope
+  against the existing legacy source path.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - Guard comparisons remain stable: `Test_Clipping` exact,

@@ -507,14 +507,18 @@ Implemented THROUGH subset:
 - `TileProgramKind::SimpleThroughScope` lowers a `ThroughGroup` source only
   when group opacity is positive, there is no THROUGH mask, bounds are known and
   intersect the current target, and children are limited to eligible raster
-  events plus pointwise filters whose masks are absent or proven fully opaque.
+  events, simple unmasked container scopes, plus pointwise filters whose masks
+  are absent or proven fully opaque.
 - The shader handles `BeginThrough` / `EndThrough` events by copying the current
   parent accumulator into a local `before` and `after`, rendering child events
   into `after`, then resolving `before` and `after` with the same premultiplied
   opacity interpolation used by the existing THROUGH pass.
-- Nested containers, nested THROUGH groups, clipping runs, solid colors, masked
-  THROUGH groups, and real or unknown filter masks still remain explicit legacy
-  barriers.
+- A simple container directly inside a THROUGH scope can lower as nested
+  `BeginContainer` / `EndContainer` events, and resolves into the THROUGH
+  `after` accumulator.
+- Container-in-container, nested THROUGH groups, clipping runs, solid colors,
+  masked THROUGH groups, and real or unknown filter masks still remain explicit
+  legacy barriers.
 
 Verification:
 
@@ -527,6 +531,9 @@ Verification:
   Multiply container resolve with non-1 opacity.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
   existing legacy source path for THROUGH opacity and child blend execution.
+- GPU unit tests compare a simple container inside a THROUGH scope against the
+  existing legacy source path, proving nested container resolve goes to the
+  THROUGH `after` accumulator.
 - `Test_FolderNested.clip --performance-plan-json` reports
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 5`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
@@ -536,8 +543,8 @@ Next scope-stack work:
 
 - scope depth within limit
 - event count within limit
-- containers inside THROUGH
 - nested THROUGH
+- container-in-container
 - masked container/THROUGH scopes
 - unsupported or masked filters inside scope stacks
 

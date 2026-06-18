@@ -39,7 +39,17 @@ where
     };
     let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
 
-    simple_scope_children_event_count(provider, output_size, target_origin, target_size, children)
+    let child_count = simple_scope_children_event_count(
+        provider,
+        output_size,
+        target_origin,
+        target_size,
+        children,
+        false,
+    )?;
+    2usize
+        .checked_add(child_count)
+        .filter(|count| *count <= MAX_SILO_EVENTS)
 }
 
 pub(crate) fn simple_through_scope_event_count<P>(
@@ -69,7 +79,17 @@ where
     };
     let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
 
-    simple_scope_children_event_count(provider, output_size, target_origin, target_size, children)
+    let child_count = simple_scope_children_event_count(
+        provider,
+        output_size,
+        target_origin,
+        target_size,
+        children,
+        true,
+    )?;
+    2usize
+        .checked_add(child_count)
+        .filter(|count| *count <= MAX_SILO_EVENTS)
 }
 
 fn simple_scope_children_event_count<P>(
@@ -78,11 +98,12 @@ fn simple_scope_children_event_count<P>(
     target_origin: (i32, i32),
     target_size: CanvasSize,
     children: &[GpuNormalStackSource],
+    allow_container_child: bool,
 ) -> Option<usize>
 where
     P: GpuNormalStackResourceProvider,
 {
-    let mut count = 2usize;
+    let mut count = 0usize;
     let mut saw_raster = false;
     for child in children {
         match child {
@@ -98,6 +119,36 @@ where
                 }
                 saw_raster = true;
                 count = count.saturating_add(1);
+            }
+            GpuNormalStackSource::Container {
+                children,
+                opacity,
+                mask_key,
+                blend_mode,
+            } if allow_container_child => {
+                if *opacity <= 0.0
+                    || mask_key.is_some()
+                    || children.is_empty()
+                    || !container_resolve_is_scope_eligible(*blend_mode)
+                {
+                    return None;
+                }
+                let KnownStackBounds::Bounded(bounds) =
+                    known_stack_bounds(provider, children, output_size)
+                else {
+                    return None;
+                };
+                let _ = bounds.intersection(target_canvas_bounds(target_origin, target_size)?)?;
+                let child_count = simple_scope_children_event_count(
+                    provider,
+                    output_size,
+                    target_origin,
+                    target_size,
+                    children,
+                    false,
+                )?;
+                count = count.saturating_add(2).saturating_add(child_count);
+                saw_raster = true;
             }
             GpuNormalStackSource::LutFilter {
                 lut_rgba,
@@ -120,7 +171,9 @@ where
             return None;
         }
     }
-    saw_raster.then_some(count)
+    saw_raster
+        .then_some(count)
+        .filter(|count| *count <= MAX_SILO_EVENTS)
 }
 
 fn container_resolve_is_scope_eligible(blend_mode: GpuRasterBlendMode) -> bool {

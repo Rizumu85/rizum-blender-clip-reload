@@ -35,47 +35,18 @@ where
     let mut child_bounds = Vec::new();
     let mut lut_rows = Vec::new();
     let mut scope_dirty = None;
-
-    for child in children {
-        match child {
-            GpuNormalStackSource::Raster(raster) => {
-                for prepared_source in prepared.iter().filter(|item| item.source == *raster) {
-                    child_payloads.push(TileEventPayload::Raster(raster_payload(prepared_source)));
-                    child_bounds.push(prepared_source.local_bounds);
-                    scope_dirty = union_optional(scope_dirty, Some(prepared_source.bounds));
-                }
-            }
-            GpuNormalStackSource::LutFilter {
-                lut_rgba,
-                opacity,
-                mask_key,
-                filter_mode,
-            } => {
-                if !filter_mask_can_lower(context.provider, *mask_key)
-                    || *opacity <= 0.0
-                    || lut_rgba.len() != 256 * 4
-                {
-                    return Ok(None);
-                }
-                let Some(filter_bounds) = context.state.clip_pass_bounds(scope_dirty) else {
-                    return Ok(None);
-                };
-                let local_bounds = local_pass_bounds(filter_bounds, target_origin);
-                let lut_row = u32::try_from(lut_rows.len())
-                    .map_err(|_| GpuRenderError::TextureSizeOverflow)
-                    .map_err(P::Error::from)?;
-                child_payloads.push(TileEventPayload::PointFilter(PointFilterTileEventPayload {
-                    lut_row,
-                    opacity: *opacity,
-                    filter_mode: *filter_mode,
-                    local_bounds,
-                }));
-                child_bounds.push(local_bounds);
-                lut_rows.push(lut_rgba.as_slice());
-                scope_dirty = Some(filter_bounds);
-            }
-            _ => return Ok(None),
-        }
+    if !append_scope_child_events(
+        context,
+        target_origin,
+        kind.allows_container_children(),
+        children,
+        &prepared,
+        &mut child_payloads,
+        &mut child_bounds,
+        &mut lut_rows,
+        &mut scope_dirty,
+    )? {
+        return Ok(None);
     }
 
     let Some(scope_bounds) = context.state.clip_pass_bounds(scope_dirty) else {
@@ -103,6 +74,107 @@ where
     }))
 }
 
+#[allow(clippy::too_many_arguments)]
+fn append_scope_child_events<'a, P>(
+    context: &StreamingExecutionContext<'_, '_, P>,
+    target_origin: (i32, i32),
+    allow_container_child: bool,
+    children: &'a [GpuNormalStackSource],
+    prepared: &[PreparedSiloSource],
+    payloads: &mut Vec<TileEventPayload>,
+    event_bounds: &mut Vec<CanvasRect>,
+    lut_rows: &mut Vec<&'a [u8]>,
+    scope_dirty: &mut Option<CanvasRect>,
+) -> Result<bool, P::Error>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    for child in children {
+        match child {
+            GpuNormalStackSource::Raster(raster) => {
+                for prepared_source in prepared.iter().filter(|item| item.source == *raster) {
+                    payloads.push(TileEventPayload::Raster(raster_payload(prepared_source)));
+                    event_bounds.push(prepared_source.local_bounds);
+                    *scope_dirty = union_optional(*scope_dirty, Some(prepared_source.bounds));
+                }
+            }
+            GpuNormalStackSource::Container {
+                children,
+                opacity,
+                mask_key,
+                blend_mode,
+            } if allow_container_child => {
+                if *opacity <= 0.0 || mask_key.is_some() || children.is_empty() {
+                    return Ok(false);
+                }
+                let mut nested_payloads = Vec::new();
+                let mut nested_bounds = Vec::new();
+                let mut nested_dirty = None;
+                if !append_scope_child_events(
+                    context,
+                    target_origin,
+                    false,
+                    children,
+                    prepared,
+                    &mut nested_payloads,
+                    &mut nested_bounds,
+                    lut_rows,
+                    &mut nested_dirty,
+                )? {
+                    return Ok(false);
+                }
+                let Some(nested_scope_bounds) = context.state.clip_pass_bounds(nested_dirty) else {
+                    continue;
+                };
+                let local_scope_bounds = local_pass_bounds(nested_scope_bounds, target_origin);
+                let (begin_scope, end_scope) = ScopeProgramKind::Container {
+                    opacity: *opacity,
+                    blend_mode: *blend_mode,
+                }
+                .payloads(local_scope_bounds);
+                payloads.push(begin_scope);
+                event_bounds.push(local_scope_bounds);
+                payloads.extend(nested_payloads);
+                event_bounds.extend(nested_bounds);
+                payloads.push(end_scope);
+                event_bounds.push(local_scope_bounds);
+                *scope_dirty = union_optional(*scope_dirty, Some(nested_scope_bounds));
+            }
+            GpuNormalStackSource::LutFilter {
+                lut_rgba,
+                opacity,
+                mask_key,
+                filter_mode,
+            } => {
+                if !filter_mask_can_lower(context.provider, *mask_key)
+                    || *opacity <= 0.0
+                    || lut_rgba.len() != 256 * 4
+                {
+                    return Ok(false);
+                }
+                let Some(filter_bounds) = context.state.clip_pass_bounds(*scope_dirty) else {
+                    return Ok(false);
+                };
+                let local_bounds = local_pass_bounds(filter_bounds, target_origin);
+                let lut_row = u32::try_from(lut_rows.len())
+                    .map_err(|_| GpuRenderError::TextureSizeOverflow)
+                    .map_err(P::Error::from)?;
+                payloads.push(TileEventPayload::PointFilter(PointFilterTileEventPayload {
+                    lut_row,
+                    opacity: *opacity,
+                    filter_mode: *filter_mode,
+                    local_bounds,
+                }));
+                event_bounds.push(local_bounds);
+                lut_rows.push(lut_rgba.as_slice());
+                *scope_dirty = Some(filter_bounds);
+            }
+            _ => return Ok(false),
+        }
+    }
+    Ok(true)
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum ScopeProgramKind {
     Container {
@@ -115,6 +187,10 @@ pub(crate) enum ScopeProgramKind {
 }
 
 impl ScopeProgramKind {
+    fn allows_container_children(self) -> bool {
+        matches!(self, Self::Through { .. })
+    }
+
     fn payloads(self, local_bounds: CanvasRect) -> (TileEventPayload, TileEventPayload) {
         match self {
             Self::Container {
@@ -149,13 +225,26 @@ impl ScopeProgramKind {
 pub(crate) fn raster_sources_from_scope_children(
     children: &[GpuNormalStackSource],
 ) -> Vec<GpuNormalStackSource> {
-    children
-        .iter()
-        .filter_map(|child| match child {
-            GpuNormalStackSource::Raster(raster) => Some(GpuNormalStackSource::Raster(*raster)),
-            _ => None,
-        })
-        .collect()
+    let mut sources = Vec::new();
+    append_raster_sources(children, &mut sources);
+    sources
+}
+
+fn append_raster_sources(
+    children: &[GpuNormalStackSource],
+    sources: &mut Vec<GpuNormalStackSource>,
+) {
+    for child in children {
+        match child {
+            GpuNormalStackSource::Raster(raster) => {
+                sources.push(GpuNormalStackSource::Raster(*raster));
+            }
+            GpuNormalStackSource::Container { children, .. } => {
+                append_raster_sources(children, sources);
+            }
+            _ => {}
+        }
+    }
 }
 
 pub(crate) fn raster_sources_have_masks(sources: &[GpuNormalStackSource]) -> bool {
