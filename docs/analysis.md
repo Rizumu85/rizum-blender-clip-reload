@@ -4183,6 +4183,31 @@ itself is healthy for MXL: `Ref_MXL_Idol1.clip --blender-render-rgba/--json`
 writes the expected `5877x8326` / `195727608`-byte payload and metadata without
 the historical max-texture import failure.
 
+Additional 2026-06-18 MXL follow-up rejects a broader masked-Multiply
+rounding rule. A temporary shader spike that floored the final writeback for
+all masked partial-alpha Multiply sources improved MXL from
+`raw_visible_px=474022` / `premul_visible_px=473627` to
+`raw_visible_px=225868` / `premul_visible_px=225607`, but it regressed the
+Terra guard from `premul_visible_px=13501` to `18246`. A narrower low-alpha
+gate (`src.a < 0.5`) still left Terra worse at `premul_visible_px=14475` while
+only improving MXL to `premul_visible_px=269763`. `Test_Mask` remained exact
+and `Test_AddGlowMultiply` stayed at visible `0`, so the spike is specifically
+too broad for real masked Multiply stacks rather than a general shader
+failure. Do not condition Multiply writeback on `has_mask` or simple source
+alpha thresholds without native dispatch evidence.
+
+The same follow-up also rules out nearby metadata explanations. MXL has
+`LayerCompManager.AppliedLayerCompIndex = -1`; parsed `LayerComp.CompLayerInfo`
+records mirror the visible layer state instead of overriding the `black socks`
+or `leg shadow` layers. The canvas has no source/destination ICC profile or
+colour-adjustment payload. `LayerMasking=32` appears on every folder/root entry,
+so `leg base` is not a special masked group. Layers `309`, `310`, `312`, and
+`313` have no palette/layer-colour/filter/offset payloads beyond ordinary
+raster or masked-raster fields, and their `LayerRenderMipmap` values correctly
+resolve through the `Mipmap.BaseMipmapInfo -> MipmapInfo.Offscreen` chain. These
+checks leave the MXL stocking delta as an unresolved low-level CSP raster
+resolve/detail, not a safe current renderer change.
+
 Gradient Map fixed-point interpolation spike: replacing the current float
 gradient color interpolation with the recovered `0x10000` fixed-point truncation
 model lowered `Test_Gradiation` max only from `10` to `9`, but expanded visible
