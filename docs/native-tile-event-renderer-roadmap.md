@@ -1214,11 +1214,19 @@ events inside the nested THROUGH scope. Clipping runs inside a container nested
 under a THROUGH scope still fail closed, preserving the narrower faithful
 subset until that extra scope relationship is modelled.
 
+Thirty-seventh form: container scopes nested under THROUGH now carry
+raster-only clipping runs as tile events. The same `DirectOnly` clipping-run
+policy now propagates through nested containers while inside a THROUGH scope,
+so `ThroughGroup -> Container -> ClippingRun` lowers in the render-program
+planner, the main tile-silo scope program, the sparse affected-window runtime
+lowering, and the sparse atlas executor. This still accepts only clipping runs
+whose base and clipped siblings are atlas-eligible rasters; clipped
+container/folder siblings remain a barrier.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  clipped container/folder siblings and clipping runs inside container scopes
-  nested under THROUGH
+  clipped container/folder siblings
 
 ## Correctness Policy
 

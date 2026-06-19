@@ -29,7 +29,8 @@ impl ClippingRunPolicy {
     fn for_nested_container(self) -> Self {
         match self {
             Self::NestedContainers => Self::NestedContainers,
-            Self::DirectOnly | Self::None => Self::None,
+            Self::DirectOnly => Self::DirectOnly,
+            Self::None => Self::None,
         }
     }
 }

@@ -288,33 +288,6 @@ fn simple_container_scope_with_nested_container_clipping_run_lowers_ordered_tile
 }
 
 #[test]
-fn simple_through_scope_with_nested_container_clipping_run_is_not_lowered() {
-    let plan = sparse_atlas_raster_event_plan(
-        &diff_with_segment(segment("SimpleThroughScope")),
-        &reload_with_slots(vec![
-            slot("raster", 10, 1, 0, 12, 34),
-            slot("raster", 11, 2, 1, 12, 34),
-        ]),
-        &[clip_gpu::GpuNormalStackSource::ThroughGroup {
-            children: vec![clip_gpu::GpuNormalStackSource::Container {
-                children: vec![clipping_run_source()],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
-            }],
-            opacity: 1.0,
-            mask_key: None,
-        }],
-    );
-
-    assert!(plan.segments.is_empty());
-    assert_eq!(
-        plan.skipped_segments[0].reason,
-        SparseAtlasRasterEventSkipReason::NonRasterRun
-    );
-}
-
-#[test]
 fn simple_container_scope_with_too_deep_nested_scope_is_not_lowered() {
     let leaf = clip_gpu::GpuNormalStackSource::Raster(raster_source(
         10,

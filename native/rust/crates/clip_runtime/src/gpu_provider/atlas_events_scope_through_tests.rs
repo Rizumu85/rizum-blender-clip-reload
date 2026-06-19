@@ -1,4 +1,4 @@
-use super::atlas_events::{SparseAtlasRasterEventSkipReason, sparse_atlas_raster_event_plan};
+use super::atlas_events::sparse_atlas_raster_event_plan;
 use super::atlas_events_test_support::*;
 
 #[test]
@@ -53,7 +53,7 @@ fn simple_through_scope_with_nested_through_clipping_run_lowers_ordered_tile_eve
 }
 
 #[test]
-fn simple_through_scope_with_nested_container_clipping_run_still_is_not_lowered() {
+fn simple_through_scope_with_nested_container_clipping_run_lowers_ordered_tile_events() {
     let plan = sparse_atlas_raster_event_plan(
         &diff_with_segment(segment("SimpleThroughScope")),
         &reload_with_slots(vec![
@@ -72,11 +72,36 @@ fn simple_through_scope_with_nested_container_clipping_run_still_is_not_lowered(
         }],
     );
 
-    assert!(plan.segments.is_empty());
-    assert_eq!(
-        plan.skipped_segments[0].reason,
-        SparseAtlasRasterEventSkipReason::NonRasterRun
-    );
+    assert!(plan.skipped_segments.is_empty());
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(batch.events.len(), 2);
+    assert_eq!(batch.tile_events.len(), 6);
+    assert!(matches!(
+        batch.tile_events[0],
+        clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope)
+            if scope.kind == clip_gpu::GpuSparseAtlasScopeEventKind::Container
+    ));
+    assert!(matches!(
+        batch.tile_events[1],
+        clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[2],
+        clip_gpu::GpuSparseAtlasTileEvent::ClipBaseRaster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[3],
+        clip_gpu::GpuSparseAtlasTileEvent::ClippedRaster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[4],
+        clip_gpu::GpuSparseAtlasTileEvent::ResolveClipBase(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[5],
+        clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope)
+            if scope.kind == clip_gpu::GpuSparseAtlasScopeEventKind::Container
+    ));
 }
 
 fn clipping_run_source() -> clip_gpu::GpuNormalStackSource {
