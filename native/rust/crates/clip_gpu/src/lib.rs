@@ -62,7 +62,8 @@ pub use stream::{
 pub use stream_program::RenderProgramStats;
 pub use stream_program_barriers::{RenderProgramBarrierCounts, RenderProgramBarrierReason};
 pub use stream_program_inspect::{
-    RenderProgramInspection, RenderProgramSegmentInfo, inspect_normal_stack_render_program,
+    RenderProgramInspection, RenderProgramResourceKind, RenderProgramResourceRef,
+    RenderProgramSegmentInfo, inspect_normal_stack_render_program,
     inspect_normal_stack_render_program_detail,
 };
 pub use stream_tile_event::TILE_EVENT_ABI_VERSION;

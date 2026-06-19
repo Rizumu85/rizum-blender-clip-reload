@@ -222,6 +222,13 @@ fn reload_plan_metadata(
         "reason": plan.reason,
         "payload_bytes": payload_bytes,
         "rects": plan.dirty_rects,
+        "dirty_segments": plan.dirty_segments.iter().map(|segment| {
+            json!({
+                "ordinal": segment.ordinal,
+                "dirty_tile_count": segment.dirty_tile_count,
+                "dirty_resource_count": segment.dirty_resource_count,
+            })
+        }).collect::<Vec<_>>(),
         "manifest": plan.manifest,
     })
 }

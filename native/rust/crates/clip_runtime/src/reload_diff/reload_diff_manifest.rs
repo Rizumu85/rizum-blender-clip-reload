@@ -3,7 +3,8 @@ use clip_model::CanvasSize;
 
 use crate::RuntimeError;
 use crate::reload_diff::{
-    RELOAD_TILE_SIZE, ReloadDiffSegment, ReloadDiffSource, ReloadDiffTile, ReloadPatchRect,
+    RELOAD_TILE_SIZE, ReloadDiffSegment, ReloadDiffSegmentResource, ReloadDiffSegmentTileRef,
+    ReloadDiffSource, ReloadDiffTile, ReloadPatchRect,
 };
 
 pub(crate) fn raster_source_manifest(
@@ -198,10 +199,21 @@ pub(crate) fn node_signature(node: &clip_graph::RenderNode) -> u64 {
 
 pub(crate) fn render_segment_manifest(
     segment: &clip_gpu::RenderProgramSegmentInfo,
+    sources: &[ReloadDiffSource],
 ) -> ReloadDiffSegment {
     let barrier_reason = segment
         .barrier_reason
         .map(|reason| reason.as_str().to_string());
+    let resources = segment
+        .resources
+        .iter()
+        .map(|resource| ReloadDiffSegmentResource {
+            kind: resource.kind.as_str().to_string(),
+            layer_id: resource.layer_id,
+            resource_id: resource.resource_id,
+        })
+        .collect::<Vec<_>>();
+    let work_list = render_segment_tile_work_list(segment, sources);
     ReloadDiffSegment {
         ordinal: segment.ordinal,
         depth: segment.depth,
@@ -212,7 +224,69 @@ pub(crate) fn render_segment_manifest(
         expected_passes: segment.expected_passes,
         tile_events: segment.tile_events,
         legacy_sources: segment.legacy_sources,
+        resources,
+        tile_work_list_source_count: work_list.source_count,
+        tile_work_list_tile_count: work_list.tile_count,
+        tile_work_list_signature: work_list.signature,
+        tile_work_list: work_list.tiles,
         signature: render_segment_signature(segment),
+    }
+}
+
+struct SegmentTileWorkList {
+    source_count: u32,
+    tile_count: u32,
+    signature: u64,
+    tiles: Vec<ReloadDiffSegmentTileRef>,
+}
+
+fn render_segment_tile_work_list(
+    segment: &clip_gpu::RenderProgramSegmentInfo,
+    sources: &[ReloadDiffSource],
+) -> SegmentTileWorkList {
+    let mut hash = Hash64::new();
+    hash.u32(clip_gpu::TILE_EVENT_ABI_VERSION);
+    hash.u32(segment.ordinal);
+    hash.u16(segment.depth);
+    let mut tiles = Vec::new();
+    let mut source_count = 0u32;
+    let mut tile_count = 0u32;
+    for resource in &segment.resources {
+        hash.str(resource.kind.as_str());
+        hash.u32(resource.layer_id);
+        hash.u32(resource.resource_id);
+        if let Some(source) = sources.iter().find(|source| {
+            source.kind == resource.kind.as_str()
+                && source.layer_id == resource.layer_id
+                && source.resource_id == resource.resource_id
+        }) {
+            source_count = source_count.saturating_add(1);
+            hash.u32(usize_to_u32(source.tiles.len()));
+            for tile in &source.tiles {
+                hash.u32(tile.tile_x);
+                hash.u32(tile.tile_y);
+                hash.u32(tile.x);
+                hash.u32(tile.y);
+                hash.u32(tile.width);
+                hash.u32(tile.height);
+                tiles.push(ReloadDiffSegmentTileRef {
+                    kind: source.kind.clone(),
+                    layer_id: source.layer_id,
+                    resource_id: source.resource_id,
+                    tile_x: tile.tile_x,
+                    tile_y: tile.tile_y,
+                });
+            }
+            tile_count = tile_count.saturating_add(usize_to_u32(source.tiles.len()));
+        } else {
+            hash.u32(0);
+        }
+    }
+    SegmentTileWorkList {
+        source_count,
+        tile_count,
+        signature: hash.finish(),
+        tiles,
     }
 }
 
@@ -229,6 +303,10 @@ fn render_segment_signature(segment: &clip_gpu::RenderProgramSegmentInfo) -> u64
     hash.u32(segment.tile_events);
     hash.u32(segment.legacy_sources);
     hash.finish()
+}
+
+fn usize_to_u32(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
 }
 
 fn raster_source_signature(source: &clip_file::metadata::RasterLayerSource) -> u64 {

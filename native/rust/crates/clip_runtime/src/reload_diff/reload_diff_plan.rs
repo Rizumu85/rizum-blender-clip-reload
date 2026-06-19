@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::reload_diff::{
     FULL_DIRTY_AREA_RATIO, MANIFEST_ABI, MAX_PATCH_RECTS, ReloadDiffManifest, ReloadDiffMode,
     ReloadDiffNode, ReloadDiffPlan, ReloadDiffSegment, ReloadDiffSource, ReloadDiffTile,
-    ReloadPatchRect,
+    ReloadDirtySegment, ReloadPatchRect,
 };
 
 pub(crate) fn plan_reload_diff(
@@ -33,12 +33,17 @@ pub(crate) fn plan_reload_diff(
     }
 
     let mut dirty = Vec::new();
+    let mut dirty_layers = BTreeSet::new();
+    let mut dirty_resources = BTreeSet::new();
+    let mut dirty_tiles = BTreeSet::new();
     for (old_node, new_node) in previous.nodes.iter().zip(&manifest.nodes) {
         if old_node.signature == new_node.signature {
             continue;
         }
         match new_node.kind.as_str() {
             "Raster" => {
+                dirty_layers.insert(old_node.layer_id);
+                dirty_layers.insert(new_node.layer_id);
                 dirty.extend(source_bounds_for_layer(previous, old_node.layer_id));
                 dirty.extend(source_bounds_for_layer(&manifest, new_node.layer_id));
             }
@@ -57,25 +62,39 @@ pub(crate) fn plan_reload_diff(
         match (previous_sources.get(&key), current_sources.get(&key)) {
             (Some(old_source), Some(new_source)) => {
                 if old_source.signature != new_source.signature {
+                    dirty_resources.insert(source_key(old_source));
+                    dirty_resources.insert(source_key(new_source));
                     dirty.extend(source_bounds(previous, old_source));
                     dirty.extend(source_bounds(&manifest, new_source));
                     continue;
                 }
-                dirty.extend(changed_tile_rects(old_source, new_source));
+                for change in changed_tile_refs(old_source, new_source) {
+                    dirty.push(change.rect);
+                    dirty_tiles.insert(change.tile);
+                }
             }
-            (Some(old_source), None) => dirty.extend(source_bounds(previous, old_source)),
-            (None, Some(new_source)) => dirty.extend(source_bounds(&manifest, new_source)),
+            (Some(old_source), None) => {
+                dirty_resources.insert(source_key(old_source));
+                dirty.extend(source_bounds(previous, old_source));
+            }
+            (None, Some(new_source)) => {
+                dirty_resources.insert(source_key(new_source));
+                dirty.extend(source_bounds(&manifest, new_source));
+            }
             (None, None) => {}
         }
     }
 
     let dirty = coalesce_dirty_rects(dirty);
+    let dirty_segments =
+        dirty_segments_for_changes(&manifest, &dirty_layers, &dirty_resources, &dirty_tiles);
     if dirty.is_empty() {
         return ReloadDiffPlan {
             manifest,
             mode: ReloadDiffMode::NoChange,
             reason: "reload manifest is unchanged".to_string(),
             dirty_rects: Vec::new(),
+            dirty_segments: Vec::new(),
         };
     }
     if should_promote_to_full(&manifest, &dirty) {
@@ -86,6 +105,7 @@ pub(crate) fn plan_reload_diff(
         mode: ReloadDiffMode::Patch,
         reason: "source tile payload or metadata changed".to_string(),
         dirty_rects: dirty,
+        dirty_segments,
     }
 }
 
@@ -117,14 +137,34 @@ fn source_map(manifest: &ReloadDiffManifest) -> BTreeMap<String, &ReloadDiffSour
         .collect()
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct SourceKey {
+    kind: String,
+    layer_id: u32,
+    resource_id: u32,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct TileKey {
+    source: SourceKey,
+    tile_x: u32,
+    tile_y: u32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ChangedTileRef {
+    tile: TileKey,
+    rect: ReloadPatchRect,
+}
+
 fn source_identity(source: &ReloadDiffSource) -> String {
     format!("{}:{}", source.kind, source.layer_id)
 }
 
-fn changed_tile_rects(
+fn changed_tile_refs(
     previous: &ReloadDiffSource,
     current: &ReloadDiffSource,
-) -> Vec<ReloadPatchRect> {
+) -> Vec<ChangedTileRef> {
     let old_tiles = tile_map(previous);
     let new_tiles = tile_map(current);
     old_tiles
@@ -140,14 +180,36 @@ fn changed_tile_rects(
                 {
                     Vec::new()
                 } else {
-                    vec![tile_rect(**old_tile), tile_rect(**new_tile)]
+                    vec![
+                        changed_tile_ref(previous, **old_tile),
+                        changed_tile_ref(current, **new_tile),
+                    ]
                 }
             }
-            (Some(old_tile), None) => vec![tile_rect(**old_tile)],
-            (None, Some(new_tile)) => vec![tile_rect(**new_tile)],
+            (Some(old_tile), None) => vec![changed_tile_ref(previous, **old_tile)],
+            (None, Some(new_tile)) => vec![changed_tile_ref(current, **new_tile)],
             (None, None) => Vec::new(),
         })
         .collect()
+}
+
+fn changed_tile_ref(source: &ReloadDiffSource, tile: ReloadDiffTile) -> ChangedTileRef {
+    ChangedTileRef {
+        tile: TileKey {
+            source: source_key(source),
+            tile_x: tile.tile_x,
+            tile_y: tile.tile_y,
+        },
+        rect: tile_rect(tile),
+    }
+}
+
+fn source_key(source: &ReloadDiffSource) -> SourceKey {
+    SourceKey {
+        kind: source.kind.clone(),
+        layer_id: source.layer_id,
+        resource_id: source.resource_id,
+    }
 }
 
 fn tile_map(source: &ReloadDiffSource) -> BTreeMap<(u32, u32), &ReloadDiffTile> {
@@ -185,6 +247,59 @@ fn source_bounds(
         width: u32::try_from(x1 - x0).ok()?,
         height: u32::try_from(y1 - y0).ok()?,
     })
+}
+
+fn dirty_segments_for_changes(
+    manifest: &ReloadDiffManifest,
+    dirty_layers: &BTreeSet<u32>,
+    dirty_resources: &BTreeSet<SourceKey>,
+    dirty_tiles: &BTreeSet<TileKey>,
+) -> Vec<ReloadDirtySegment> {
+    manifest
+        .segments
+        .iter()
+        .filter_map(|segment| {
+            let dirty_resource_count = usize_to_u32(
+                segment
+                    .resources
+                    .iter()
+                    .filter(|resource| {
+                        dirty_layers.contains(&resource.layer_id)
+                            || dirty_resources.contains(&SourceKey {
+                                kind: resource.kind.clone(),
+                                layer_id: resource.layer_id,
+                                resource_id: resource.resource_id,
+                            })
+                    })
+                    .count(),
+            );
+            let dirty_tile_count = usize_to_u32(
+                segment
+                    .tile_work_list
+                    .iter()
+                    .filter(|tile| {
+                        dirty_tiles.contains(&TileKey {
+                            source: SourceKey {
+                                kind: tile.kind.clone(),
+                                layer_id: tile.layer_id,
+                                resource_id: tile.resource_id,
+                            },
+                            tile_x: tile.tile_x,
+                            tile_y: tile.tile_y,
+                        })
+                    })
+                    .count(),
+            );
+            if dirty_resource_count == 0 && dirty_tile_count == 0 {
+                return None;
+            }
+            Some(ReloadDirtySegment {
+                ordinal: segment.ordinal,
+                dirty_tile_count,
+                dirty_resource_count,
+            })
+        })
+        .collect()
 }
 
 fn tile_rect(tile: ReloadDiffTile) -> ReloadPatchRect {
@@ -269,5 +384,10 @@ pub(crate) fn full_plan(manifest: ReloadDiffManifest, reason: &str) -> ReloadDif
         mode: ReloadDiffMode::Full,
         reason: reason.to_string(),
         dirty_rects: vec![rect],
+        dirty_segments: Vec::new(),
     }
+}
+
+fn usize_to_u32(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
 }

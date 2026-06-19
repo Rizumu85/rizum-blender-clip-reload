@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
@@ -6,7 +8,10 @@ use crate::stream_program::{
     plan_render_program,
 };
 use crate::stream_program_barriers::RenderProgramBarrierReason;
-use crate::{GpuClippedStackSource, GpuNormalStackSource};
+use crate::{
+    GpuClippedStackSource, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
+    GpuRasterResourceKey,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RenderProgramInspection {
@@ -14,7 +19,7 @@ pub struct RenderProgramInspection {
     pub segments: Vec<RenderProgramSegmentInfo>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RenderProgramSegmentInfo {
     pub ordinal: u32,
     pub depth: u16,
@@ -25,6 +30,29 @@ pub struct RenderProgramSegmentInfo {
     pub expected_passes: u32,
     pub tile_events: u32,
     pub legacy_sources: u32,
+    pub resources: Vec<RenderProgramResourceRef>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct RenderProgramResourceRef {
+    pub kind: RenderProgramResourceKind,
+    pub layer_id: u32,
+    pub resource_id: u32,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum RenderProgramResourceKind {
+    Raster,
+    Mask,
+}
+
+impl RenderProgramResourceKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Raster => "raster",
+            Self::Mask => "mask",
+        }
+    }
 }
 
 pub fn inspect_normal_stack_render_program<P>(
@@ -87,9 +115,13 @@ where
         segments: Vec::with_capacity(program.segments().len()),
     };
     for segment in program.segments() {
-        inspection
-            .segments
-            .push(render_segment_info(segment, depth, *next_ordinal));
+        let resources = resources_for_source_range(segment, sources);
+        inspection.segments.push(render_segment_info(
+            segment,
+            depth,
+            *next_ordinal,
+            resources,
+        ));
         *next_ordinal = next_ordinal.saturating_add(1);
     }
     for source in sources {
@@ -111,6 +143,7 @@ fn render_segment_info(
     segment: &RenderSegment,
     depth: u16,
     ordinal: u32,
+    resources: Vec<RenderProgramResourceRef>,
 ) -> RenderProgramSegmentInfo {
     let (kind, barrier_reason) = match segment.kind {
         RenderSegmentKind::TileLocal(kind) => (tile_program_kind_name(kind), None),
@@ -128,6 +161,7 @@ fn render_segment_info(
         expected_passes: segment.cost_hint.expected_passes,
         tile_events: segment.cost_hint.tile_events,
         legacy_sources: segment.cost_hint.legacy_sources,
+        resources,
     }
 }
 
@@ -260,6 +294,112 @@ fn tile_program_kind_name(kind: TileProgramKind) -> &'static str {
         TileProgramKind::PointFilterRun => "PointFilterRun",
         TileProgramKind::SimpleContainerScope => "SimpleContainerScope",
         TileProgramKind::SimpleThroughScope => "SimpleThroughScope",
+    }
+}
+
+fn resources_for_source_range(
+    segment: &RenderSegment,
+    sources: &[GpuNormalStackSource],
+) -> Vec<RenderProgramResourceRef> {
+    let mut resources = BTreeSet::new();
+    for source in &sources[segment.source_range.clone()] {
+        collect_source_resources(source, &mut resources);
+    }
+    resources.into_iter().collect()
+}
+
+fn collect_source_resources(
+    source: &GpuNormalStackSource,
+    resources: &mut BTreeSet<RenderProgramResourceRef>,
+) {
+    match source {
+        GpuNormalStackSource::Raster(raster) => collect_raster_resources(*raster, resources),
+        GpuNormalStackSource::ClippingRun { base, clipped } => {
+            collect_raster_resources(*base, resources);
+            collect_clipped_resources(clipped, resources);
+        }
+        GpuNormalStackSource::ContainerClippingRun {
+            children,
+            mask_key,
+            clipped,
+            ..
+        } => {
+            collect_optional_mask_resource(*mask_key, resources);
+            collect_stack_resources(children, resources);
+            collect_clipped_resources(clipped, resources);
+        }
+        GpuNormalStackSource::Container {
+            children, mask_key, ..
+        }
+        | GpuNormalStackSource::ThroughGroup {
+            children, mask_key, ..
+        } => {
+            collect_optional_mask_resource(*mask_key, resources);
+            collect_stack_resources(children, resources);
+        }
+        GpuNormalStackSource::LutFilter { mask_key, .. } => {
+            collect_optional_mask_resource(*mask_key, resources);
+        }
+        GpuNormalStackSource::SolidColor { .. } => {}
+    }
+}
+
+fn collect_stack_resources(
+    sources: &[GpuNormalStackSource],
+    resources: &mut BTreeSet<RenderProgramResourceRef>,
+) {
+    for source in sources {
+        collect_source_resources(source, resources);
+    }
+}
+
+fn collect_clipped_resources(
+    clipped: &[GpuClippedStackSource],
+    resources: &mut BTreeSet<RenderProgramResourceRef>,
+) {
+    for source in clipped {
+        match source {
+            GpuClippedStackSource::Raster(raster) => collect_raster_resources(*raster, resources),
+            GpuClippedStackSource::Container {
+                children, mask_key, ..
+            } => {
+                collect_optional_mask_resource(*mask_key, resources);
+                collect_stack_resources(children, resources);
+            }
+        }
+    }
+}
+
+fn collect_raster_resources(
+    raster: GpuNormalRasterSource,
+    resources: &mut BTreeSet<RenderProgramResourceRef>,
+) {
+    resources.insert(raster_resource_ref(raster.key));
+    collect_optional_mask_resource(raster.mask_key, resources);
+}
+
+fn collect_optional_mask_resource(
+    mask_key: Option<GpuMaskResourceKey>,
+    resources: &mut BTreeSet<RenderProgramResourceRef>,
+) {
+    if let Some(mask_key) = mask_key {
+        resources.insert(mask_resource_ref(mask_key));
+    }
+}
+
+fn raster_resource_ref(key: GpuRasterResourceKey) -> RenderProgramResourceRef {
+    RenderProgramResourceRef {
+        kind: RenderProgramResourceKind::Raster,
+        layer_id: key.layer_id.0,
+        resource_id: key.render_mipmap_id,
+    }
+}
+
+fn mask_resource_ref(key: GpuMaskResourceKey) -> RenderProgramResourceRef {
+    RenderProgramResourceRef {
+        kind: RenderProgramResourceKind::Mask,
+        layer_id: key.layer_id.0,
+        resource_id: key.mask_mipmap_id,
     }
 }
 

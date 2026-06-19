@@ -14,7 +14,7 @@ use reload_diff_manifest::{
 };
 use reload_diff_plan::{full_plan, plan_reload_diff};
 
-pub(crate) const MANIFEST_ABI: u32 = 2;
+pub(crate) const MANIFEST_ABI: u32 = 3;
 pub(crate) const RELOAD_TILE_SIZE: u32 = clip_file::tiles::TILE_SIZE as u32;
 pub(crate) const FULL_DIRTY_AREA_RATIO: f64 = 0.5;
 pub(crate) const MAX_PATCH_RECTS: usize = 256;
@@ -75,7 +75,33 @@ pub struct ReloadDiffSegment {
     pub expected_passes: u32,
     pub tile_events: u32,
     pub legacy_sources: u32,
+    #[serde(default)]
+    pub resources: Vec<ReloadDiffSegmentResource>,
+    #[serde(default)]
+    pub tile_work_list_source_count: u32,
+    #[serde(default)]
+    pub tile_work_list_tile_count: u32,
+    #[serde(default)]
+    pub tile_work_list_signature: u64,
+    #[serde(default)]
+    pub tile_work_list: Vec<ReloadDiffSegmentTileRef>,
     pub signature: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ReloadDiffSegmentResource {
+    pub kind: String,
+    pub layer_id: u32,
+    pub resource_id: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct ReloadDiffSegmentTileRef {
+    pub kind: String,
+    pub layer_id: u32,
+    pub resource_id: u32,
+    pub tile_x: u32,
+    pub tile_y: u32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -96,6 +122,14 @@ pub struct ReloadDiffPlan {
     pub mode: ReloadDiffMode,
     pub reason: String,
     pub dirty_rects: Vec<ReloadPatchRect>,
+    pub dirty_segments: Vec<ReloadDirtySegment>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ReloadDirtySegment {
+    pub ordinal: u32,
+    pub dirty_tile_count: u32,
+    pub dirty_resource_count: u32,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -174,7 +208,7 @@ impl ClipSession {
         let segments = inspection
             .segments
             .iter()
-            .map(render_segment_manifest)
+            .map(|segment| render_segment_manifest(segment, &sources))
             .collect();
 
         Ok(ReloadDiffManifest {

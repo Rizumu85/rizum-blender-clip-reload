@@ -713,10 +713,32 @@ This first form is not yet the session-level sparse atlas allocator. It does
 not reuse atlas slots across reloads, and it does not yet compute affected
 tile-event ranges from segment/resource differences.
 
+Second form: segment manifests now carry a compact tile work-list surface.
+`clip_gpu::stream_program_inspect` reports the raster and mask resources used
+by each segment. `clip_runtime` joins those resource refs against the existing
+compressed source-tile manifest and stores:
+
+- segment resource refs
+- tile work-list source count
+- tile work-list compressed tile count
+- tile work-list signature
+- compact source tile refs for the segment
+
+The reload planner now also emits `dirty_segments` for patch plans. A changed
+compressed source tile is matched to the segment work-list tile refs, while
+raster semantic/resource metadata changes mark segments through their resource
+refs. Product rendering still uses the existing dirty-rectangle patch path;
+`dirty_segments` is a planning diagnostic and the data seam future segment
+rerender/cache invalidation will consume.
+
+This second form still does not reuse atlas slots across reloads and does not
+yet rerun only affected segment/tile-event ranges. It makes the affected
+segment set explicit so the cache allocator and segment executor can be wired
+without re-deriving source/resource/tile ownership at the worker layer.
+
 Next Phase 6 work:
 
-- add tile work-list fingerprints to the segment manifest
-- map changed source tiles to affected segment/tile-event ranges
+- map dirty segments to concrete tile-event ranges inside each segment
 - introduce a session-level sparse atlas allocator keyed by compressed tile
   fingerprints
 - update changed atlas regions in place and rerun only affected segments when
