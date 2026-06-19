@@ -2,11 +2,12 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::target_canvas_bounds;
-use crate::stream_clipping_tile_silo::clipping_run_as_normal_sources;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_scope_silo_rules::{
-    scope_mask_can_lower, simple_scope_clipping_run_can_lower,
+    clipped_container_headers_can_lower, container_resolve_is_scope_eligible,
+    raster_sources_from_scope_clipping_run, scope_mask_can_lower,
+    simple_scope_clipping_run_event_count,
 };
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
@@ -338,12 +339,17 @@ where
                 saw_raster = true;
             }
             GpuNormalStackSource::ClippingRun { base, clipped } => {
-                if !clipping_run_policy.allows_current()
-                    || !simple_scope_clipping_run_can_lower(clipped)
-                {
+                if !clipping_run_policy.allows_current() {
                     return Err(SimpleScopeReject::NotSimple);
                 }
-                let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) else {
+                if !clipped_container_headers_can_lower(provider, clipped) {
+                    return Err(SimpleScopeReject::NotSimple);
+                }
+                let Some(normal_sources) = raster_sources_from_scope_clipping_run(*base, clipped)
+                else {
+                    return Err(SimpleScopeReject::NotSimple);
+                };
+                let Some(run_event_count) = simple_scope_clipping_run_event_count(clipped) else {
                     return Err(SimpleScopeReject::NotSimple);
                 };
                 if !normal_sources.iter().all(|source| {
@@ -358,7 +364,7 @@ where
                     return Err(SimpleScopeReject::NotSimple);
                 }
                 count = add_scope_events(count, 2)?;
-                count = add_scope_events(count, normal_sources.len())?;
+                count = add_scope_events(count, run_event_count)?;
                 saw_raster = true;
             }
             GpuNormalStackSource::LutFilter {
@@ -382,39 +388,6 @@ where
         Ok(count)
     } else {
         Err(SimpleScopeReject::NotSimple)
-    }
-}
-
-fn container_resolve_is_scope_eligible(blend_mode: GpuRasterBlendMode) -> bool {
-    match blend_mode {
-        GpuRasterBlendMode::Normal
-        | GpuRasterBlendMode::Add
-        | GpuRasterBlendMode::AddGlow
-        | GpuRasterBlendMode::ColorDodge
-        | GpuRasterBlendMode::ColorBurn
-        | GpuRasterBlendMode::Darken
-        | GpuRasterBlendMode::DarkerColor
-        | GpuRasterBlendMode::Difference
-        | GpuRasterBlendMode::Divide
-        | GpuRasterBlendMode::Exclusion
-        | GpuRasterBlendMode::GlowDodge
-        | GpuRasterBlendMode::HardMix
-        | GpuRasterBlendMode::HardLight
-        | GpuRasterBlendMode::Hue
-        | GpuRasterBlendMode::Lighten
-        | GpuRasterBlendMode::LighterColor
-        | GpuRasterBlendMode::LinearBurn
-        | GpuRasterBlendMode::LinearLight
-        | GpuRasterBlendMode::Multiply
-        | GpuRasterBlendMode::Overlay
-        | GpuRasterBlendMode::PinLight
-        | GpuRasterBlendMode::Saturation
-        | GpuRasterBlendMode::Brightness
-        | GpuRasterBlendMode::Color
-        | GpuRasterBlendMode::SoftLight
-        | GpuRasterBlendMode::Screen
-        | GpuRasterBlendMode::Subtract
-        | GpuRasterBlendMode::VividLight => true,
     }
 }
 

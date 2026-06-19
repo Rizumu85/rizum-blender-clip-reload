@@ -2,13 +2,13 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
-use crate::stream_clipping_tile_silo::clipping_run_as_normal_sources;
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_tile_event::{
     PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
 };
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
 use crate::stream_tile_mask_atlas_plan::MaskAtlasPlan;
+use crate::stream_tile_scope_clipped::append_clipped_sibling_events;
 use crate::stream_tile_scope_silo_plan::{
     SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT,
 };
@@ -324,9 +324,6 @@ where
                 {
                     return Ok(false);
                 }
-                let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) else {
-                    return Ok(false);
-                };
                 let base_prepared: Vec<_> = prepared
                     .iter()
                     .filter(|item| item.source.key == base.key)
@@ -353,16 +350,16 @@ where
                     )));
                     event_bounds.push(prepared_source.local_bounds);
                 }
-                for source in normal_sources.iter().skip(1) {
-                    let GpuNormalStackSource::Raster(raster) = source else {
-                        return Ok(false);
-                    };
-                    for prepared_source in prepared.iter().filter(|item| item.source == *raster) {
-                        payloads.push(TileEventPayload::ClippedRaster(raster_payload(
-                            prepared_source,
-                        )));
-                        event_bounds.push(prepared_source.local_bounds);
-                    }
+                if !append_clipped_sibling_events(
+                    context,
+                    target_origin,
+                    clipped,
+                    prepared,
+                    payloads,
+                    event_bounds,
+                    mask_plan,
+                )? {
+                    return Ok(false);
                 }
                 payloads.push(TileEventPayload::ResolveClipBase(clip_scope));
                 event_bounds.push(local_clip_bounds);

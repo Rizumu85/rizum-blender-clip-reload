@@ -438,16 +438,18 @@ barriers.
 
 Add tile-local scope coverage in this order:
 
-1. clipped container or folder siblings
+1. clipped container or folder siblings beyond the first direct-raster-child
+   subset
 2. deeper simple container nesting when the scope-depth limit allows it
 3. nested THROUGH cases with explicit before/after accumulator semantics
 4. scope masks that span resident R8 mask slots
 5. mixed scope children containing filters and raster-only clipping runs
 
-The current next high-value item is clipped container/folder siblings. This
-needs a faithful tile-local model for rendering the clipped folder/container as
-a source, then applying it to the clip base with preserve-alpha writeback. Do
-not solve it by only relaxing eligibility checks.
+The current clipped container/folder support is the first faithful
+direct-raster-child subset. The remaining work is broader clipped
+container/folder subtrees: nested scopes, point filters, clipping runs, THROUGH
+children, and other non-direct-raster children. Do not solve those by only
+relaxing eligibility checks.
 
 ### Phase 6: Add Session Atlas and Dirty Segment Reuse After Semantics Stabilize
 

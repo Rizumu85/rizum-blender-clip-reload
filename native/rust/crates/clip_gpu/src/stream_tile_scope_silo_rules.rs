@@ -1,6 +1,5 @@
 use crate::stream::GpuNormalStackResourceProvider;
-use crate::stream_clipping_tile_silo::clipping_run_as_normal_sources;
-use crate::{GpuClippedStackSource, GpuMaskResourceKey, GpuNormalStackSource};
+use crate::{GpuClippedStackSource, GpuMaskResourceKey, GpuNormalStackSource, GpuRasterBlendMode};
 
 pub(crate) fn scope_mask_can_lower<P>(provider: &P, mask_key: Option<GpuMaskResourceKey>) -> bool
 where
@@ -16,9 +15,126 @@ where
 }
 
 pub(crate) fn simple_scope_clipping_run_can_lower(clipped: &[GpuClippedStackSource]) -> bool {
-    clipped
+    simple_scope_clipping_run_event_count(clipped).is_some()
+}
+
+pub(crate) fn simple_scope_clipping_run_event_count(
+    clipped: &[GpuClippedStackSource],
+) -> Option<usize> {
+    let mut count = 1usize;
+    for source in clipped {
+        match source {
+            GpuClippedStackSource::Raster(_) => count = count.checked_add(1)?,
+            GpuClippedStackSource::Container { children, .. } => {
+                let child_count = direct_raster_child_count(children)?;
+                count = count.checked_add(2)?.checked_add(child_count)?;
+            }
+        }
+    }
+    Some(count)
+}
+
+pub(crate) fn raster_sources_from_scope_clipping_run(
+    base: crate::GpuNormalRasterSource,
+    clipped: &[GpuClippedStackSource],
+) -> Option<Vec<GpuNormalStackSource>> {
+    let mut sources = vec![GpuNormalStackSource::Raster(base)];
+    for source in clipped {
+        match source {
+            GpuClippedStackSource::Raster(raster) => {
+                sources.push(GpuNormalStackSource::Raster(*raster));
+            }
+            GpuClippedStackSource::Container { children, .. } => {
+                append_direct_raster_children(children, &mut sources)?;
+            }
+        }
+    }
+    Some(sources)
+}
+
+fn direct_raster_child_count(children: &[GpuNormalStackSource]) -> Option<usize> {
+    if children.is_empty() {
+        return None;
+    }
+    children
         .iter()
-        .all(|source| matches!(source, GpuClippedStackSource::Raster(_)))
+        .try_fold(0usize, |count, child| match child {
+            GpuNormalStackSource::Raster(_) => count.checked_add(1),
+            _ => None,
+        })
+}
+
+fn append_direct_raster_children(
+    children: &[GpuNormalStackSource],
+    sources: &mut Vec<GpuNormalStackSource>,
+) -> Option<()> {
+    if children.is_empty() {
+        return None;
+    }
+    for child in children {
+        let GpuNormalStackSource::Raster(raster) = child else {
+            return None;
+        };
+        sources.push(GpuNormalStackSource::Raster(*raster));
+    }
+    Some(())
+}
+
+pub(crate) fn clipped_container_headers_can_lower<P>(
+    provider: &P,
+    clipped: &[GpuClippedStackSource],
+) -> bool
+where
+    P: GpuNormalStackResourceProvider,
+{
+    clipped.iter().all(|source| match source {
+        GpuClippedStackSource::Raster(_) => true,
+        GpuClippedStackSource::Container {
+            children,
+            opacity,
+            mask_key,
+            blend_mode,
+            ..
+        } => {
+            *opacity > 0.0
+                && !children.is_empty()
+                && scope_mask_can_lower(provider, *mask_key)
+                && container_resolve_is_scope_eligible(*blend_mode)
+        }
+    })
+}
+
+pub(crate) fn container_resolve_is_scope_eligible(blend_mode: GpuRasterBlendMode) -> bool {
+    match blend_mode {
+        GpuRasterBlendMode::Normal
+        | GpuRasterBlendMode::Add
+        | GpuRasterBlendMode::AddGlow
+        | GpuRasterBlendMode::ColorDodge
+        | GpuRasterBlendMode::ColorBurn
+        | GpuRasterBlendMode::Darken
+        | GpuRasterBlendMode::DarkerColor
+        | GpuRasterBlendMode::Difference
+        | GpuRasterBlendMode::Divide
+        | GpuRasterBlendMode::Exclusion
+        | GpuRasterBlendMode::GlowDodge
+        | GpuRasterBlendMode::HardMix
+        | GpuRasterBlendMode::HardLight
+        | GpuRasterBlendMode::Hue
+        | GpuRasterBlendMode::Lighten
+        | GpuRasterBlendMode::LighterColor
+        | GpuRasterBlendMode::LinearBurn
+        | GpuRasterBlendMode::LinearLight
+        | GpuRasterBlendMode::Multiply
+        | GpuRasterBlendMode::Overlay
+        | GpuRasterBlendMode::PinLight
+        | GpuRasterBlendMode::Saturation
+        | GpuRasterBlendMode::Brightness
+        | GpuRasterBlendMode::Color
+        | GpuRasterBlendMode::SoftLight
+        | GpuRasterBlendMode::Screen
+        | GpuRasterBlendMode::Subtract
+        | GpuRasterBlendMode::VividLight => true,
+    }
 }
 
 pub(crate) fn raster_sources_from_scope_children(
@@ -45,7 +161,8 @@ fn append_raster_sources(
                 append_raster_sources(children, sources);
             }
             GpuNormalStackSource::ClippingRun { base, clipped } => {
-                if let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) {
+                if let Some(normal_sources) = raster_sources_from_scope_clipping_run(*base, clipped)
+                {
                     sources.extend(normal_sources);
                 }
             }

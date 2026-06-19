@@ -48,9 +48,12 @@ mod stream_state;
 mod stream_tests;
 mod stream_through;
 mod stream_tile_event;
+#[cfg(test)]
+mod stream_tile_event_tests;
 mod stream_tile_filter_program;
 mod stream_tile_filter_silo;
 mod stream_tile_mask_atlas_plan;
+mod stream_tile_scope_clipped;
 mod stream_tile_scope_silo;
 mod stream_tile_scope_silo_plan;
 mod stream_tile_scope_silo_program;

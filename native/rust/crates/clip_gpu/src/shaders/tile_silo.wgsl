@@ -59,6 +59,7 @@ const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
 const TILE_EVENT_KIND_BEGIN_THROUGH: u32 = 9u;
 const TILE_EVENT_KIND_END_THROUGH: u32 = 10u;
 const TILE_EVENT_FLAG_CLIP_BASE_RASTER: u32 = 1u;
+const TILE_EVENT_FLAG_CLIPPED_SCOPE: u32 = 2u;
 const MODE_NORMAL: u32 = 0u;
 const MODE_PRESERVE_ALPHA: u32 = 1u;
 const MODE_CLIPPING_RUN: u32 = 2u;
@@ -341,6 +342,30 @@ fn resolve_container_scope(event_index: u32, scope_dst: vec4<f32>, dst: vec4<f32
         return dst;
     }
     return apply_standard(src, dst, blend_kind);
+}
+
+fn scope_source_alpha_byte(src: vec4<f32>, event_index: u32, mask_value: f32) -> i32 {
+    var src_a = to_u8(src.a);
+    if (scope_word(event_index, 6u) != NO_MASK_ATLAS_COORD) {
+        src_a = div255(src_a * to_u8(mask_value));
+    }
+    return (src_a * opacity_to_u8(clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0))) / 256;
+}
+
+fn resolve_clipped_container_scope(event_index: u32, scope_dst: vec4<f32>, clip_dst: vec4<f32>, mask_value: f32) -> vec4<f32> {
+    let blend_kind = scope_word(event_index, 1u);
+    if (is_byte_domain_special_blend(blend_kind)) {
+        return apply_byte_preserve_alpha(scope_dst, clip_dst, scope_source_alpha_byte(scope_dst, event_index, mask_value), blend_kind);
+    }
+    var src = scope_dst;
+    src.a = clamp(src.a * clamp(bitcast<f32>(scope_word(event_index, 0u)), 0.0, 1.0), 0.0, 1.0);
+    if (scope_word(event_index, 6u) != NO_MASK_ATLAS_COORD) {
+        src.a = src.a * mask_value;
+    }
+    if (src.a <= 0.0 || clip_dst.a <= 0.0) {
+        return clip_dst;
+    }
+    return apply_preserve(src, clip_dst, blend_kind);
 }
 
 fn resolve_through_scope(event_index: u32, before: vec4<f32>, after: vec4<f32>, mask_value: f32) -> vec4<f32> {
@@ -1193,6 +1218,30 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         if (kind == TILE_EVENT_KIND_END_CONTAINER) {
             if (scope_contains(event_index, local_texel)) {
                 let scope_mask = load_scope_mask(event_index, local_texel);
+                if ((event_flags(event_index) & TILE_EVENT_FLAG_CLIPPED_SCOPE) != 0u) {
+                    if (scope_depth == 4u) {
+                        if (local_clip_active) {
+                            local_clip_dst = resolve_clipped_container_scope(event_index, scope3_dst, local_clip_dst, scope_mask);
+                        }
+                        scope_depth = 3u;
+                    } else if (scope_depth == 3u) {
+                        if (local_clip_active) {
+                            local_clip_dst = resolve_clipped_container_scope(event_index, scope2_dst, local_clip_dst, scope_mask);
+                        }
+                        scope_depth = 2u;
+                    } else if (scope_depth == 2u) {
+                        if (local_clip_active) {
+                            local_clip_dst = resolve_clipped_container_scope(event_index, scope1_dst, local_clip_dst, scope_mask);
+                        }
+                        scope_depth = 1u;
+                    } else if (scope_depth == 1u) {
+                        if (local_clip_active) {
+                            local_clip_dst = resolve_clipped_container_scope(event_index, scope0_dst, local_clip_dst, scope_mask);
+                        }
+                        scope_depth = 0u;
+                    }
+                    continue;
+                }
                 if (scope_depth == 4u) {
                     scope2_dst = resolve_container_scope(event_index, scope3_dst, scope2_dst, scope_mask);
                     scope_depth = 3u;

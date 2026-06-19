@@ -180,6 +180,30 @@ pub(crate) fn append_scope_marker(
     Ok(())
 }
 
+pub(crate) fn append_clipped_scope_marker(
+    output_size: CanvasSize,
+    scope: GpuSparseAtlasScopeEvent,
+    begin: bool,
+    payloads: &mut Vec<TileEventPayload>,
+    bounds: &mut Vec<CanvasRect>,
+) -> Result<(), GpuRenderError> {
+    validate_scope_event(output_size, &scope)?;
+    let (_, _, bounds_rect) = scope_payloads(scope);
+    let payload = ScopeTileEventPayload {
+        opacity: scope.opacity,
+        blend_mode: scope.blend_mode,
+        local_bounds: bounds_rect,
+        mask_atlas_origin: scope.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+    };
+    bounds.push(bounds_rect);
+    payloads.push(if begin {
+        TileEventPayload::BeginClippedContainer(payload)
+    } else {
+        TileEventPayload::EndClippedContainer(payload)
+    });
+    Ok(())
+}
+
 pub(crate) fn scope_payloads(
     scope: GpuSparseAtlasScopeEvent,
 ) -> (TileEventPayload, TileEventPayload, CanvasRect) {

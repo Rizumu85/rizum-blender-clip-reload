@@ -4,12 +4,14 @@ use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 8;
+pub const TILE_EVENT_ABI_VERSION: u32 = 9;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const POINT_FILTER_PAYLOAD_WORDS: usize = 12;
 const SCOPE_PAYLOAD_WORDS: usize = 8;
 const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
+pub(crate) const TILE_EVENT_FLAG_CLIP_BASE_RASTER: u32 = 1;
+pub(crate) const TILE_EVENT_FLAG_CLIPPED_SCOPE: u32 = 2;
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -159,6 +161,8 @@ pub(crate) enum TileEventPayload {
     ResolveClipBase(ScopeTileEventPayload),
     BeginContainer(ScopeTileEventPayload),
     EndContainer(ScopeTileEventPayload),
+    BeginClippedContainer(ScopeTileEventPayload),
+    EndClippedContainer(ScopeTileEventPayload),
     BeginThrough(ScopeTileEventPayload),
     EndThrough(ScopeTileEventPayload),
     PointFilter(PointFilterTileEventPayload),
@@ -166,8 +170,8 @@ pub(crate) enum TileEventPayload {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct TileEventProgram {
-    abi_version: u32,
-    headers: Vec<TileEventHeader>,
+    pub(crate) abi_version: u32,
+    pub(crate) headers: Vec<TileEventHeader>,
     raster_payloads: Vec<RasterTileEventPayload>,
     filter_payloads: Vec<PointFilterTileEventPayload>,
     scope_payloads: Vec<ScopeTileEventPayload>,
@@ -199,7 +203,7 @@ impl TileEventProgram {
                 TileEventPayload::ClipBaseRaster(payload) => {
                     headers.push(TileEventHeader {
                         kind: TileEventKind::Raster,
-                        flags: 1,
+                        flags: TILE_EVENT_FLAG_CLIP_BASE_RASTER,
                         payload_offset: u32::try_from(raster_payloads.len()).unwrap_or(u32::MAX),
                         payload_len: 1,
                     });
@@ -245,6 +249,24 @@ impl TileEventProgram {
                     headers.push(TileEventHeader {
                         kind: TileEventKind::EndContainer,
                         flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
+                }
+                TileEventPayload::BeginClippedContainer(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::BeginContainer,
+                        flags: TILE_EVENT_FLAG_CLIPPED_SCOPE,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
+                }
+                TileEventPayload::EndClippedContainer(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::EndContainer,
+                        flags: TILE_EVENT_FLAG_CLIPPED_SCOPE,
                         payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
                         payload_len: 1,
                     });
@@ -323,258 +345,4 @@ impl TileEventProgram {
 
 fn i32_bits(value: i32) -> u32 {
     u32::from_ne_bytes(value.to_ne_bytes())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn builds_typed_raster_events_with_shader_words() {
-        let program = TileEventProgram::from_raster_payloads([RasterTileEventPayload {
-            atlas_origin: (11, 12),
-            source_size: CanvasSize::new(31, 32),
-            source_offset: (-7, 8),
-            opacity: 0.5,
-            blend_mode: GpuRasterBlendMode::Multiply,
-            mask_atlas_origin: Some((41, 42)),
-        }]);
-
-        assert_eq!(program.abi_version, TILE_EVENT_ABI_VERSION);
-        assert_eq!(
-            program.headers,
-            [TileEventHeader {
-                kind: TileEventKind::Raster,
-                flags: 0,
-                payload_offset: 0,
-                payload_len: 1,
-            }]
-        );
-        assert_eq!(
-            program.header_words(),
-            vec![TileEventKind::Raster as u32, 0, 0, 1]
-        );
-        assert_eq!(
-            program.raster_payload_words(),
-            vec![
-                11,
-                12,
-                31,
-                32,
-                i32_bits(-7),
-                i32_bits(8),
-                0.5f32.to_bits(),
-                2,
-                41,
-                42,
-            ]
-        );
-    }
-
-    #[test]
-    fn marks_byte_domain_rasters_as_special_blend_events() {
-        let program = TileEventProgram::from_raster_payloads([RasterTileEventPayload {
-            atlas_origin: (1, 2),
-            source_size: CanvasSize::new(3, 4),
-            source_offset: (0, 0),
-            opacity: 1.0,
-            blend_mode: GpuRasterBlendMode::AddGlow,
-            mask_atlas_origin: None,
-        }]);
-
-        assert_eq!(
-            program.headers,
-            [TileEventHeader {
-                kind: TileEventKind::SpecialBlendRaster,
-                flags: 0,
-                payload_offset: 0,
-                payload_len: 1,
-            }]
-        );
-        assert_eq!(
-            program.header_words(),
-            vec![TileEventKind::SpecialBlendRaster as u32, 0, 0, 1]
-        );
-    }
-
-    #[test]
-    fn builds_typed_point_filter_events() {
-        let program = TileEventProgram::from_payloads([TileEventPayload::PointFilter(
-            PointFilterTileEventPayload {
-                lut_row: 3,
-                opacity: 0.25,
-                filter_mode: GpuLutFilterMode::ThresholdLum,
-                local_bounds: CanvasRect {
-                    x: 1,
-                    y: 2,
-                    width: 31,
-                    height: 32,
-                },
-                mask_atlas_origin: Some((41, 42)),
-            },
-        )]);
-
-        assert_eq!(
-            program.header_words(),
-            vec![TileEventKind::PointFilter as u32, 0, 0, 1]
-        );
-        assert_eq!(
-            program.filter_payload_words(),
-            vec![
-                3,
-                0.25f32.to_bits(),
-                2,
-                0.0f32.to_bits(),
-                0.0f32.to_bits(),
-                0.0f32.to_bits(),
-                1,
-                2,
-                31,
-                32,
-                41,
-                42,
-            ]
-        );
-    }
-
-    #[test]
-    fn builds_typed_container_scope_events() {
-        let scope = ScopeTileEventPayload {
-            opacity: 1.0,
-            blend_mode: GpuRasterBlendMode::Normal,
-            local_bounds: CanvasRect {
-                x: 4,
-                y: 5,
-                width: 6,
-                height: 7,
-            },
-            mask_atlas_origin: Some((8, 9)),
-        };
-        let program = TileEventProgram::from_payloads([
-            TileEventPayload::BeginContainer(scope),
-            TileEventPayload::EndContainer(scope),
-        ]);
-
-        assert_eq!(
-            program.header_words(),
-            vec![
-                TileEventKind::BeginContainer as u32,
-                0,
-                0,
-                1,
-                TileEventKind::EndContainer as u32,
-                0,
-                1,
-                1,
-            ]
-        );
-        assert_eq!(
-            program.scope_payload_words(),
-            vec![
-                1.0f32.to_bits(),
-                0,
-                4,
-                5,
-                6,
-                7,
-                8,
-                9,
-                1.0f32.to_bits(),
-                0,
-                4,
-                5,
-                6,
-                7,
-                8,
-                9,
-            ]
-        );
-    }
-
-    #[test]
-    fn builds_typed_through_scope_events() {
-        let scope = ScopeTileEventPayload {
-            opacity: 0.5,
-            blend_mode: GpuRasterBlendMode::Normal,
-            local_bounds: CanvasRect {
-                x: 4,
-                y: 5,
-                width: 6,
-                height: 7,
-            },
-            mask_atlas_origin: None,
-        };
-        let program = TileEventProgram::from_payloads([
-            TileEventPayload::BeginThrough(scope),
-            TileEventPayload::EndThrough(scope),
-        ]);
-
-        assert_eq!(
-            program.header_words(),
-            vec![
-                TileEventKind::BeginThrough as u32,
-                0,
-                0,
-                1,
-                TileEventKind::EndThrough as u32,
-                0,
-                1,
-                1,
-            ]
-        );
-        assert_eq!(program.scope_payload_words().len(), 16);
-    }
-
-    #[test]
-    fn builds_typed_clipping_scope_events() {
-        let raster = RasterTileEventPayload {
-            atlas_origin: (1, 2),
-            source_size: CanvasSize::new(3, 4),
-            source_offset: (0, 0),
-            opacity: 1.0,
-            blend_mode: GpuRasterBlendMode::Multiply,
-            mask_atlas_origin: None,
-        };
-        let scope = ScopeTileEventPayload {
-            opacity: 1.0,
-            blend_mode: GpuRasterBlendMode::Multiply,
-            local_bounds: CanvasRect {
-                x: 0,
-                y: 0,
-                width: 3,
-                height: 4,
-            },
-            mask_atlas_origin: None,
-        };
-        let program = TileEventProgram::from_payloads([
-            TileEventPayload::BeginClipBase(scope),
-            TileEventPayload::ClipBaseRaster(raster),
-            TileEventPayload::ClippedRaster(raster),
-            TileEventPayload::ResolveClipBase(scope),
-        ]);
-
-        assert_eq!(
-            program.header_words(),
-            vec![
-                TileEventKind::BeginClipBase as u32,
-                0,
-                0,
-                1,
-                TileEventKind::Raster as u32,
-                1,
-                0,
-                1,
-                TileEventKind::ClippedRaster as u32,
-                0,
-                1,
-                1,
-                TileEventKind::ResolveClipBase as u32,
-                0,
-                1,
-                1,
-            ]
-        );
-        assert_eq!(program.raster_payload_words().len(), 20);
-        assert_eq!(program.scope_payload_words().len(), 16);
-    }
 }

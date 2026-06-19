@@ -325,8 +325,8 @@ clipping-run children also execute inside the sparse scope through ordered
 `BeginClipBase` / `ClipBaseRaster` / `ClippedRaster` / `ResolveClipBase`
 events, including direct raster-only clipping runs inside nested THROUGH child
 scopes and container scopes nested under THROUGH. Missing filter/scope mask
-coverage and clipped container/folder children still remain explicit
-sparse-patch barriers.
+coverage and clipped container/folder children whose contents are not direct
+atlas-eligible raster children still remain explicit sparse-patch barriers.
 
 ## Implementation Order
 
@@ -342,7 +342,8 @@ sparse-patch barriers.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
 7. Expand affected-window simple container/THROUGH scopes beyond the current
-   sparse-scope subsets by adding clipped container/folder siblings.
+   sparse-scope subsets by broadening clipped container/folder sibling support
+   past the first direct-raster-child form.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

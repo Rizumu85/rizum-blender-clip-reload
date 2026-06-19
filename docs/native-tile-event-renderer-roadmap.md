@@ -441,6 +441,17 @@ when there is only one source in the segment. This removes the old
 atlas-eligible rasters and makes tile events the default execution model for
 ordinary rasters, not only for multi-source raster runs.
 
+Tenth form: clipped container/folder sibling scope markers now allow the VM to
+express the first clipped-container subset inside a clipping run. The event ABI
+is `9`. A clipped container sibling whose children are direct atlas-eligible
+rasters is emitted as `BeginContainer` / child raster events / `EndContainer`
+with a clipped-scope flag; the shader resolves that container scope into the
+local clip-base accumulator through the same preserve-alpha rule used by the
+faithful clipped-container pass. Pixels outside the active clip base drop the
+clipped container scope instead of resolving it to the parent accumulator.
+Planner, main tile-silo, sparse affected-window lowering, and sparse atlas
+executor tests cover this first form.
+
 Remaining Phase 2 work:
 
 - add explicit typed event readers for additional clipping/THROUGH payloads
@@ -1224,10 +1235,21 @@ lowering, and the sparse atlas executor. This still accepts only clipping runs
 whose base and clipped siblings are atlas-eligible rasters; clipped
 container/folder siblings remain a barrier.
 
+Thirty-eighth form: simple scope clipping runs now lower the first clipped
+container/folder sibling subset. When the clipped sibling is a container/folder
+whose children are direct atlas-eligible rasters, the main scope planner counts
+it as tile-local, the main tile-silo program emits clipped-container scope
+events, the sparse affected-window runtime lowering emits matching
+`BeginClippedScope` / `EndClippedScope` events, and the sparse atlas executor
+draws those events through the same tile VM. This covers positive-opacity
+containers with supported resolve blend modes and supported scope masks; child
+subtrees beyond direct rasters still fail closed.
+
 Next Phase 6 work:
 
-- expand sparse affected-window simple scopes beyond direct raster children:
-  clipped container/folder siblings
+- expand clipped container/folder siblings beyond direct raster children:
+  nested child scopes, point filters, clipping runs, THROUGH children, and other
+  non-direct-raster subtrees
 
 ## Correctness Policy
 

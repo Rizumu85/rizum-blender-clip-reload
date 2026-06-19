@@ -2,8 +2,8 @@ use clip_model::CanvasSize;
 
 use crate::sparse_atlas_prepare_payloads::{
     append_clip_base_raster_payload, append_clip_scope_marker, append_clipped_raster_payload,
-    append_filter_payload, append_raster_payload, append_scope_marker, scope_payloads,
-    validate_scope_event, validate_sparse_atlas_format, validate_tile_ref,
+    append_clipped_scope_marker, append_filter_payload, append_raster_payload, append_scope_marker,
+    scope_payloads, validate_scope_event, validate_sparse_atlas_format, validate_tile_ref,
 };
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_tile_event::TileEventPayload;
@@ -154,6 +154,22 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
                     GpuSparseAtlasTileEvent::EndScope(scope) => {
                         append_scope_marker(output_size, *scope, false, &mut payloads, &mut bounds)?
                     }
+                    GpuSparseAtlasTileEvent::BeginClippedScope(scope) => {
+                        append_clipped_scope_marker(
+                            output_size,
+                            *scope,
+                            true,
+                            &mut payloads,
+                            &mut bounds,
+                        )?
+                    }
+                    GpuSparseAtlasTileEvent::EndClippedScope(scope) => append_clipped_scope_marker(
+                        output_size,
+                        *scope,
+                        false,
+                        &mut payloads,
+                        &mut bounds,
+                    )?,
                     GpuSparseAtlasTileEvent::BeginClipBase(scope) => append_clip_scope_marker(
                         output_size,
                         *scope,
@@ -244,6 +260,8 @@ fn raster_events_for_prepare(
             GpuSparseAtlasTileEvent::PointFilter(_) => None,
             GpuSparseAtlasTileEvent::BeginScope(_)
             | GpuSparseAtlasTileEvent::EndScope(_)
+            | GpuSparseAtlasTileEvent::BeginClippedScope(_)
+            | GpuSparseAtlasTileEvent::EndClippedScope(_)
             | GpuSparseAtlasTileEvent::BeginClipBase(_)
             | GpuSparseAtlasTileEvent::ResolveClipBase(_) => None,
         })
@@ -288,6 +306,8 @@ fn common_mask_atlas_key(
                 GpuSparseAtlasTileEvent::PointFilter(filter) => filter.mask,
                 GpuSparseAtlasTileEvent::BeginScope(scope)
                 | GpuSparseAtlasTileEvent::EndScope(scope)
+                | GpuSparseAtlasTileEvent::BeginClippedScope(scope)
+                | GpuSparseAtlasTileEvent::EndClippedScope(scope)
                 | GpuSparseAtlasTileEvent::BeginClipBase(scope)
                 | GpuSparseAtlasTileEvent::ResolveClipBase(scope) => scope.mask,
             })

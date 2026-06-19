@@ -143,6 +143,16 @@ pub(super) fn clip_tile_events_to_bounds(
                     clipped.push(clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope));
                 }
             }
+            clip_gpu::GpuSparseAtlasTileEvent::BeginClippedScope(scope) => {
+                if let Some(scope) = clip_scope_event(*scope, bounds)? {
+                    clipped.push(clip_gpu::GpuSparseAtlasTileEvent::BeginClippedScope(scope));
+                }
+            }
+            clip_gpu::GpuSparseAtlasTileEvent::EndClippedScope(scope) => {
+                if let Some(scope) = clip_scope_event(*scope, bounds)? {
+                    clipped.push(clip_gpu::GpuSparseAtlasTileEvent::EndClippedScope(scope));
+                }
+            }
             clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(scope) => {
                 if let Some(scope) = clip_scope_event(*scope, bounds)? {
                     clipped.push(clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(scope));
