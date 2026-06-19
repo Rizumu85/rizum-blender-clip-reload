@@ -753,10 +753,24 @@ planner surface for the next implementation step: a segment executor that can
 rerun only affected event ranges after an atlas slot update when the segment
 graph is unchanged.
 
+Fourth form: `clip_runtime::gpu_provider::atlas_cache` now provides the first
+session-level sparse atlas allocator Interface. It is keyed by logical
+source-tile identity plus compressed tile fingerprints, so an unchanged tile
+reuses its atlas slot, a changed compressed payload updates the same slot, and
+unused tiles are reclaimed by generation. The planner entrypoint consumes the
+reload manifest's segment tile work-list when available, falling back to source
+tiles only for older or synthetic manifests. `RuntimeGpuRenderer` owns this
+allocator as session state, and the persistent Blender worker writes
+`sparse_atlas_cache` diagnostics with cached tile count, inserted/reused/
+changed/evicted tile counts, atlas count, resident bytes, and upload bytes.
+
+This fourth form still does not bind those atlas slots to GPU textures or use
+them for drawing. It is the planner/cache state seam required before the render
+executor can update atlas regions in place and rerun only dirty segment/event
+ranges.
+
 Next Phase 6 work:
 
-- introduce a session-level sparse atlas allocator keyed by compressed tile
-  fingerprints
 - map updated atlas slots plus dirty event ranges into rerunnable segment
   ranges
 - update changed atlas regions in place and rerun only affected segments when

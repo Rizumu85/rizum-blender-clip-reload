@@ -5,7 +5,8 @@ use clip_model::{LayerId, Rect, Rgba8};
 
 use crate::blend::StrictRasterBlendMode;
 use crate::gpu_provider::{
-    GpuResourcePlan, RuntimeGpuResourceProvider, cache::PersistentGpuTextureCache,
+    GpuResourcePlan, RuntimeGpuResourceProvider, atlas_cache::SparseAtlasCache,
+    cache::PersistentGpuTextureCache,
 };
 use crate::stack_plan::{
     GpuRenderStackSelection, PlannedDecodedRaster, StrictRasterStackDraw, StrictRasterStackOptions,
@@ -21,6 +22,7 @@ use crate::{
 pub struct RuntimeGpuRenderer {
     renderer: clip_gpu::GpuRenderer,
     texture_cache: RefCell<Option<PersistentGpuTextureCache>>,
+    sparse_atlas_cache: RefCell<SparseAtlasCache>,
 }
 
 impl RuntimeGpuRenderer {
@@ -28,6 +30,7 @@ impl RuntimeGpuRenderer {
         Ok(Self {
             renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
             texture_cache: RefCell::new(None),
+            sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
         })
     }
 
@@ -35,7 +38,19 @@ impl RuntimeGpuRenderer {
         Ok(Self {
             renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
             texture_cache: RefCell::new(Some(PersistentGpuTextureCache::new())),
+            sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
         })
+    }
+
+    pub fn plan_sparse_atlas_reload(
+        &self,
+        manifest: &crate::ReloadDiffManifest,
+    ) -> crate::GpuSparseAtlasCacheStats {
+        self.sparse_atlas_cache
+            .borrow_mut()
+            .plan_reload_manifest(manifest)
+            .stats
+            .into()
     }
 
     pub fn draw_normal_raster_stack(

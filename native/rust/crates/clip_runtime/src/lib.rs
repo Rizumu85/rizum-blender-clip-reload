@@ -36,12 +36,12 @@ pub use reload_diff::{
     ReloadDirtySegment, ReloadDirtySegmentEventRange, ReloadPatchRect,
 };
 pub use results::{
-    DrawRasterLayerGpuResult, GpuTextureCacheStats, NativePerformancePlanResult,
-    NativeTileSiloEstimateResult, NormalRasterStackGpuPatchResult, NormalRasterStackGpuResult,
-    NormalRasterStackPixelTraceInput, NormalRasterStackPixelTraceResult,
-    NormalRasterStackPixelTraceSample, NormalRasterStackResourceStats,
-    NormalRasterStackSupportResult, SimpleRasterStackGpuResult, SimpleRasterStackUnsupported,
-    SimpleRasterStackUnsupportedReason,
+    DrawRasterLayerGpuResult, GpuSparseAtlasCacheStats, GpuTextureCacheStats,
+    NativePerformancePlanResult, NativeTileSiloEstimateResult, NormalRasterStackGpuPatchResult,
+    NormalRasterStackGpuResult, NormalRasterStackPixelTraceInput,
+    NormalRasterStackPixelTraceResult, NormalRasterStackPixelTraceSample,
+    NormalRasterStackResourceStats, NormalRasterStackSupportResult, SimpleRasterStackGpuResult,
+    SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason,
 };
 
 #[cfg(test)]

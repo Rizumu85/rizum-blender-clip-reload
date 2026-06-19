@@ -44,6 +44,18 @@ pub struct GpuTextureCacheStats {
     pub cached_bytes: usize,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct GpuSparseAtlasCacheStats {
+    pub cached_tiles: usize,
+    pub cached_bytes: u64,
+    pub atlas_count: u32,
+    pub reused_tiles: usize,
+    pub inserted_tiles: usize,
+    pub changed_tiles: usize,
+    pub evicted_tiles: usize,
+    pub upload_bytes: u64,
+}
+
 #[derive(Debug)]
 pub struct NormalRasterStackSupportResult {
     pub source_count: usize,
