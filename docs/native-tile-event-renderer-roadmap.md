@@ -1078,10 +1078,29 @@ container/THROUGH scopes from sparse affected windows. The next improvement is
 to lower provider-backed R8 filter masks or start the first simple scope form,
 using the existing tile-silo shader semantics.
 
+Twenty-fifth form: sparse affected-window execution now supports the first
+provider-backed masked `PointFilterRun` subset. `atlas_events.rs` was split
+before adding the behavior: event result/skip types live in
+`atlas_events_types.rs`, point-filter lowering lives in
+`atlas_events_filter.rs`, and the main `atlas_events.rs` module now stays
+focused on orchestration plus raster/clipping lowering. Masked point filters
+lower when the dirty filter bounds are fully covered by one resident R8 mask
+slot; the filter payload's mask atlas origin is offset into that resident slot
+so the existing typed `PointFilter` shader samples mask alpha at the correct
+dirty-rect coordinates. Missing mask slots, cross-tile mask coverage, or
+malformed filter inputs still fail closed and preserve the region-render
+fallback.
+
+This twenty-fifth form still does not execute multi-slot masked point filters
+or simple container/THROUGH scopes from sparse affected windows. The next
+improvement is either to make filter mask payloads span multiple resident mask
+slots faithfully, or to start the first sparse affected-window simple scope
+form.
+
 Next Phase 6 work:
 
-- expand affected-window execution beyond unmasked `PointFilterRun` by
-  lowering provider-backed filter masks or simple scopes into executable sparse
+- expand affected-window execution beyond single-slot masked `PointFilterRun`
+  by lowering multi-slot filter masks or simple scopes into executable sparse
   atlas events
 
 ## Correctness Policy

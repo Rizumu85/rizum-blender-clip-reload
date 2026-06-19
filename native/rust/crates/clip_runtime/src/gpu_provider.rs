@@ -11,12 +11,14 @@ mod atlas_cache_tests;
 pub(crate) mod atlas_events;
 #[cfg(test)]
 mod atlas_events_clipping_tests;
+mod atlas_events_filter;
 #[cfg(test)]
 mod atlas_events_filter_tests;
 #[cfg(test)]
 mod atlas_events_test_support;
 #[cfg(test)]
 mod atlas_events_tests;
+mod atlas_events_types;
 mod atlas_rerun;
 #[cfg(test)]
 mod atlas_rerun_tests;
