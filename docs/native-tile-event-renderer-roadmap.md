@@ -1267,16 +1267,28 @@ through the same preserve-alpha clip-base rule as the direct raster and
 filtered forms. Main planner tests lock the event count, the main GPU test
 compares tile-event output against the existing legacy pass path, sparse
 runtime tests lock event ordering, and sparse executor tests lock the pixel
-result. Child clipping runs and THROUGH children inside a clipped sibling are
-explicitly disallowed for now: targeted GPU comparisons showed mismatches, so
-those shapes stay as barriers until their clip-base and THROUGH accumulator
-semantics are modeled faithfully.
+result. This form still disallowed child clipping runs and THROUGH children
+inside a clipped sibling until their accumulator semantics were modeled
+faithfully.
+
+Forty-first form: clipped container/folder sibling child streams now lower
+raster-only child clipping runs. The tile VM gained a second local clip-base
+accumulator so an inner `BeginClipBase` no longer overwrites the outer clipped
+sibling's clip-base cache; resolving the inner child clipping run writes into
+the currently active clipped-scope accumulator, and the outer
+`EndClippedScope` still resolves that clipped scope into the outer clip-base
+accumulator. The supported subset is direct raster base plus raster clipped
+siblings inside the clipped container/folder child stream; THROUGH children and
+more complex non-raster clipped children remain barriers. Planner tests lock
+the lowered event count, main GPU tests compare against the existing legacy
+pass path, sparse runtime tests lock the nested `BeginClipBase` /
+`ResolveClipBase` event order, and sparse executor tests lock the pixel result.
 
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
-  stream: child clipping-run semantics, THROUGH child semantics, broader
-  nested positions, and other non-direct-raster subtrees
+  stream: THROUGH child semantics, broader nested positions, and other
+  non-direct-raster subtrees
 
 ## Correctness Policy
 

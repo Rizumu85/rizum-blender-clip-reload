@@ -410,7 +410,7 @@ where
                     target_origin,
                     container_depth_remaining - 1,
                     0,
-                    ClippingRunPolicy::None,
+                    ClippingRunPolicy::DirectOnly,
                     children,
                     prepared,
                     &mut child_payloads,

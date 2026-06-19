@@ -511,7 +511,7 @@ where
                     children,
                     container_depth_remaining - 1,
                     ThroughBudget::Disallowed,
-                    ClippingRunPolicy::None,
+                    ClippingRunPolicy::DirectOnly,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;

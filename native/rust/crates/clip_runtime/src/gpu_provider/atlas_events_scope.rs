@@ -360,7 +360,7 @@ fn push_clipped_container_tile_events(
         segment,
         children,
         parent_scope_depth + 1,
-        ClippingRunPolicy::None,
+        ClippingRunPolicy::DirectOnly,
         false,
     )?;
     if let Some(mask_key) = mask_key {

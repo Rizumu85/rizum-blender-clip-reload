@@ -1130,7 +1130,9 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     var dst = textureLoad(dest_texture, local_texel, 0);
     var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var local_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var nested_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var local_clip_active = false;
+    var nested_clip_active = false;
     var scope0_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope1_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
@@ -1266,13 +1268,18 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         }
         if (kind == TILE_EVENT_KIND_BEGIN_CLIP_BASE) {
             if (scope_contains(event_index, local_texel)) {
-                local_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
-                local_clip_active = true;
+                if (local_clip_active) {
+                    nested_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    nested_clip_active = true;
+                } else {
+                    local_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    local_clip_active = true;
+                }
             }
             continue;
         }
         if (kind == TILE_EVENT_KIND_RESOLVE_CLIP_BASE) {
-            if (local_clip_active && scope_contains(event_index, local_texel)) {
+            if ((local_clip_active || nested_clip_active) && scope_contains(event_index, local_texel)) {
                 var active_through_target_scope_depth = 0u;
                 if (through_depth == 2u) {
                     active_through_target_scope_depth = through1_target_scope_depth;
@@ -1280,24 +1287,45 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     active_through_target_scope_depth = through0_target_scope_depth;
                 }
                 let clip_blend_kind = scope_word(event_index, 1u);
-                let resolved_clip_src = quantize_u8(local_clip_dst);
-                if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
-                    scope3_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope3_dst, clip_blend_kind);
-                } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
-                    scope2_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope2_dst, clip_blend_kind);
-                } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
-                    scope1_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope1_dst, clip_blend_kind);
-                } else if (scope_depth == 1u && scope_depth > active_through_target_scope_depth) {
-                    scope0_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope0_dst, clip_blend_kind);
-                } else if (through_depth == 2u) {
-                    through1_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through1_after, clip_blend_kind);
-                    through1_has_clipping_resolve = true;
-                } else if (through_depth == 1u) {
-                    through0_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through0_after, clip_blend_kind);
+                if (nested_clip_active) {
+                    let resolved_clip_src = quantize_u8(nested_clip_dst);
+                    if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
+                        scope3_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope3_dst, clip_blend_kind);
+                    } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
+                        scope2_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope2_dst, clip_blend_kind);
+                    } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
+                        scope1_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope1_dst, clip_blend_kind);
+                    } else if (scope_depth == 1u && scope_depth > active_through_target_scope_depth) {
+                        scope0_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope0_dst, clip_blend_kind);
+                    } else if (through_depth == 2u) {
+                        through1_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through1_after, clip_blend_kind);
+                        through1_has_clipping_resolve = true;
+                    } else if (through_depth == 1u) {
+                        through0_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through0_after, clip_blend_kind);
+                    } else {
+                        dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, dst, clip_blend_kind);
+                    }
+                    nested_clip_active = false;
                 } else {
-                    dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, dst, clip_blend_kind);
+                    let resolved_clip_src = quantize_u8(local_clip_dst);
+                    if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
+                        scope3_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope3_dst, clip_blend_kind);
+                    } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
+                        scope2_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope2_dst, clip_blend_kind);
+                    } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
+                        scope1_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope1_dst, clip_blend_kind);
+                    } else if (scope_depth == 1u && scope_depth > active_through_target_scope_depth) {
+                        scope0_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope0_dst, clip_blend_kind);
+                    } else if (through_depth == 2u) {
+                        through1_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through1_after, clip_blend_kind);
+                        through1_has_clipping_resolve = true;
+                    } else if (through_depth == 1u) {
+                        through0_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through0_after, clip_blend_kind);
+                    } else {
+                        dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, dst, clip_blend_kind);
+                    }
+                    local_clip_active = false;
                 }
-                local_clip_active = false;
             }
             continue;
         }
@@ -1336,22 +1364,35 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         var src = load_source_at(event_index, source_texel);
         let blend_kind = event_word(event_index, 7u);
         let mask_value = load_event_mask(event_index, source_texel);
-        if (local_clip_active && event_flags(event_index) == TILE_EVENT_FLAG_CLIP_BASE_RASTER) {
+        if ((local_clip_active || nested_clip_active) && event_flags(event_index) == TILE_EVENT_FLAG_CLIP_BASE_RASTER) {
+            if (nested_clip_active) {
+                nested_clip_dst = apply_normal(src, nested_clip_dst, event_index, mask_value);
+                continue;
+            }
             local_clip_dst = apply_normal(src, local_clip_dst, event_index, mask_value);
             continue;
         }
         if (kind == TILE_EVENT_KIND_CLIPPED_RASTER) {
-            if (local_clip_active) {
+            if (local_clip_active || nested_clip_active) {
                 if (is_byte_domain_special_blend(blend_kind)) {
-                    local_clip_dst = apply_byte_preserve(src, local_clip_dst, event_index, mask_value, blend_kind);
+                    if (nested_clip_active) {
+                        nested_clip_dst = apply_byte_preserve(src, nested_clip_dst, event_index, mask_value, blend_kind);
+                    } else {
+                        local_clip_dst = apply_byte_preserve(src, local_clip_dst, event_index, mask_value, blend_kind);
+                    }
                     continue;
                 }
                 src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
                 if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
                     src.a = src.a * mask_value;
                 }
-                if (src.a <= 0.0 || local_clip_dst.a <= 0.0) { continue; }
-                local_clip_dst = apply_preserve(src, local_clip_dst, blend_kind);
+                if (nested_clip_active) {
+                    if (src.a <= 0.0 || nested_clip_dst.a <= 0.0) { continue; }
+                    nested_clip_dst = apply_preserve(src, nested_clip_dst, blend_kind);
+                } else {
+                    if (src.a <= 0.0 || local_clip_dst.a <= 0.0) { continue; }
+                    local_clip_dst = apply_preserve(src, local_clip_dst, blend_kind);
+                }
             }
             continue;
         }
