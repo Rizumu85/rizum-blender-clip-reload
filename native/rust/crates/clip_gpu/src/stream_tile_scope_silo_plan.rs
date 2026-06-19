@@ -7,7 +7,6 @@ use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_scope_silo_rules::{
     clipped_container_headers_can_lower, container_resolve_is_scope_eligible,
     raster_sources_from_scope_clipping_run, scope_mask_can_lower,
-    simple_scope_clipping_run_event_count,
 };
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
@@ -349,9 +348,16 @@ where
                 else {
                     return Err(SimpleScopeReject::NotSimple);
                 };
-                let Some(run_event_count) = simple_scope_clipping_run_event_count(clipped) else {
-                    return Err(SimpleScopeReject::NotSimple);
-                };
+                let run_event_count = simple_scope_clipping_run_event_count_result(
+                    provider,
+                    output_size,
+                    target_origin,
+                    target_size,
+                    clipped,
+                    container_depth_remaining,
+                    through_budget,
+                    clipping_run_policy,
+                )?;
                 if !normal_sources.iter().all(|source| {
                     source_is_silo_eligible(
                         provider,
@@ -439,6 +445,78 @@ where
         return Err(SimpleScopeReject::NotSimple);
     }
     Ok(())
+}
+
+fn simple_scope_clipping_run_event_count_result<P>(
+    provider: &P,
+    output_size: CanvasSize,
+    target_origin: (i32, i32),
+    target_size: CanvasSize,
+    clipped: &[crate::GpuClippedStackSource],
+    container_depth_remaining: usize,
+    through_budget: ThroughBudget,
+    clipping_run_policy: ClippingRunPolicy,
+) -> Result<usize, SimpleScopeReject>
+where
+    P: GpuNormalStackResourceProvider,
+{
+    let mut count = 1usize;
+    for source in clipped {
+        match source {
+            crate::GpuClippedStackSource::Raster(_) => {
+                count = add_scope_events(count, 1)?;
+            }
+            crate::GpuClippedStackSource::Container {
+                children,
+                opacity,
+                mask_key,
+                blend_mode,
+                ..
+            } => {
+                if container_depth_remaining == 0 {
+                    ensure_container_scope_header(
+                        provider,
+                        *opacity,
+                        *mask_key,
+                        children,
+                        *blend_mode,
+                    )?;
+                    return Err(SimpleScopeReject::ScopeDepthLimitExceeded);
+                }
+                ensure_container_scope_header(
+                    provider,
+                    *opacity,
+                    *mask_key,
+                    children,
+                    *blend_mode,
+                )?;
+                let KnownStackBounds::Bounded(bounds) =
+                    known_stack_bounds(provider, children, output_size)
+                else {
+                    return Err(SimpleScopeReject::NotSimple);
+                };
+                let _ = bounds
+                    .intersection(
+                        target_canvas_bounds(target_origin, target_size)
+                            .ok_or(SimpleScopeReject::NotSimple)?,
+                    )
+                    .ok_or(SimpleScopeReject::NotSimple)?;
+                let child_count = simple_scope_children_event_count(
+                    provider,
+                    output_size,
+                    target_origin,
+                    target_size,
+                    children,
+                    container_depth_remaining - 1,
+                    through_budget,
+                    clipping_run_policy.for_nested_container(),
+                )?;
+                count = add_scope_events(count, 2)?;
+                count = add_scope_events(count, child_count)?;
+            }
+        }
+    }
+    Ok(count)
 }
 
 fn checked_scope_event_count(base: usize, child_count: usize) -> Result<usize, SimpleScopeReject> {

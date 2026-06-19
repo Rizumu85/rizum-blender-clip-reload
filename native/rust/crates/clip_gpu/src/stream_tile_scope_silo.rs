@@ -5,12 +5,11 @@ use crate::stream_bounds::CanvasRect;
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_tile_event::TileEventProgram;
 use crate::stream_tile_filter_silo::upload_raster_sources;
+use crate::stream_tile_scope_children::ScopeProgramKind;
 use crate::stream_tile_scope_silo_plan::{
     simple_container_scope_event_count, simple_through_scope_event_count,
 };
-use crate::stream_tile_scope_silo_program::{
-    ScopeProgramInputs, ScopeProgramKind, build_scope_event_program_inputs,
-};
+use crate::stream_tile_scope_silo_program::{ScopeProgramInputs, build_scope_event_program_inputs};
 use crate::stream_tile_scope_silo_rules::{
     raster_sources_from_scope_children, raster_sources_have_masks,
 };

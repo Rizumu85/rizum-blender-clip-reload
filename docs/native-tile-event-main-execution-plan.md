@@ -310,12 +310,12 @@ executable when the dirty filter bounds are fully covered by one resident R8
 mask slot; the filter payload points into that slot with the dirty-rect offset.
 Multi-slot provider-backed masked point filters are now represented by split
 `PointFilter` events whose local bounds intersect resident R8 mask slots, with
-full dirty-bounds coverage required before lowering. The next target is
-expanding affected-window simple container/THROUGH scope execution beyond the
-first direct-raster subset. Direct-raster `SimpleContainerScope` and
-`SimpleThroughScope` segments already lower into sparse atlas batches by
-wrapping resident raster events in typed scope begin/end events. Scope-level
-masks lower through complete resident R8 mask-slot coverage, including
+full dirty-bounds coverage required before lowering. Affected-window simple
+container/THROUGH scope execution already goes beyond the first direct-raster
+subset: supported `SimpleContainerScope` and `SimpleThroughScope` segments
+lower into sparse atlas batches by wrapping ordered child tile events in typed
+scope begin/end events. Scope-level masks lower through complete resident R8
+mask-slot coverage, including
 multi-slot masks on outer scopes and nested simple scopes. Runtime lowering
 splits those scopes into clipped per-mask-slot event windows so masked child
 events cannot leak outside the covered sub-rect. Scope batches now preserve
@@ -324,9 +324,13 @@ content execute inside the scope with the accumulated scope bounds. Raster-only
 clipping-run children also execute inside the sparse scope through ordered
 `BeginClipBase` / `ClipBaseRaster` / `ClippedRaster` / `ResolveClipBase`
 events, including direct raster-only clipping runs inside nested THROUGH child
-scopes and container scopes nested under THROUGH. Missing filter/scope mask
-coverage and clipped container/folder children whose contents are not direct
-atlas-eligible raster children still remain explicit sparse-patch barriers.
+scopes and container scopes nested under THROUGH. Clipped container/folder
+siblings now reuse the same ordered simple-scope child stream for raster
+children followed by pointwise filters, so filtered clipped siblings can remain
+in the sparse affected-window path when their raster and mask resources are
+resident. Missing filter/scope mask coverage and clipped container/folder
+children whose contents are beyond the current simple child stream still remain
+explicit sparse-patch barriers.
 
 ## Implementation Order
 
@@ -343,7 +347,7 @@ atlas-eligible raster children still remain explicit sparse-patch barriers.
    path.
 7. Expand affected-window simple container/THROUGH scopes beyond the current
    sparse-scope subsets by broadening clipped container/folder sibling support
-   past the first direct-raster-child form.
+   past the current filtered simple-child-stream form.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

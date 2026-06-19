@@ -14,26 +14,6 @@ where
     }
 }
 
-pub(crate) fn simple_scope_clipping_run_can_lower(clipped: &[GpuClippedStackSource]) -> bool {
-    simple_scope_clipping_run_event_count(clipped).is_some()
-}
-
-pub(crate) fn simple_scope_clipping_run_event_count(
-    clipped: &[GpuClippedStackSource],
-) -> Option<usize> {
-    let mut count = 1usize;
-    for source in clipped {
-        match source {
-            GpuClippedStackSource::Raster(_) => count = count.checked_add(1)?,
-            GpuClippedStackSource::Container { children, .. } => {
-                let child_count = direct_raster_child_count(children)?;
-                count = count.checked_add(2)?.checked_add(child_count)?;
-            }
-        }
-    }
-    Some(count)
-}
-
 pub(crate) fn raster_sources_from_scope_clipping_run(
     base: crate::GpuNormalRasterSource,
     clipped: &[GpuClippedStackSource],
@@ -45,39 +25,14 @@ pub(crate) fn raster_sources_from_scope_clipping_run(
                 sources.push(GpuNormalStackSource::Raster(*raster));
             }
             GpuClippedStackSource::Container { children, .. } => {
-                append_direct_raster_children(children, &mut sources)?;
+                if children.is_empty() {
+                    return None;
+                }
+                append_raster_sources(children, &mut sources);
             }
         }
     }
     Some(sources)
-}
-
-fn direct_raster_child_count(children: &[GpuNormalStackSource]) -> Option<usize> {
-    if children.is_empty() {
-        return None;
-    }
-    children
-        .iter()
-        .try_fold(0usize, |count, child| match child {
-            GpuNormalStackSource::Raster(_) => count.checked_add(1),
-            _ => None,
-        })
-}
-
-fn append_direct_raster_children(
-    children: &[GpuNormalStackSource],
-    sources: &mut Vec<GpuNormalStackSource>,
-) -> Option<()> {
-    if children.is_empty() {
-        return None;
-    }
-    for child in children {
-        let GpuNormalStackSource::Raster(raster) = child else {
-            return None;
-        };
-        sources.push(GpuNormalStackSource::Raster(*raster));
-    }
-    Some(())
 }
 
 pub(crate) fn clipped_container_headers_can_lower<P>(

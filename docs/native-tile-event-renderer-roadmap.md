@@ -443,14 +443,14 @@ ordinary rasters, not only for multi-source raster runs.
 
 Tenth form: clipped container/folder sibling scope markers now allow the VM to
 express the first clipped-container subset inside a clipping run. The event ABI
-is `9`. A clipped container sibling whose children are direct atlas-eligible
-rasters is emitted as `BeginContainer` / child raster events / `EndContainer`
-with a clipped-scope flag; the shader resolves that container scope into the
-local clip-base accumulator through the same preserve-alpha rule used by the
-faithful clipped-container pass. Pixels outside the active clip base drop the
-clipped container scope instead of resolving it to the parent accumulator.
-Planner, main tile-silo, sparse affected-window lowering, and sparse atlas
-executor tests cover this first form.
+is `9`. The first form emitted clipped container siblings with direct
+atlas-eligible raster children as `BeginContainer` / child raster events /
+`EndContainer` with a clipped-scope flag; the shader resolves that container
+scope into the local clip-base accumulator through the same preserve-alpha rule
+used by the faithful clipped-container pass. Pixels outside the active clip
+base drop the clipped container scope instead of resolving it to the parent
+accumulator. Planner, main tile-silo, sparse affected-window lowering, and
+sparse atlas executor tests covered that first form.
 
 Remaining Phase 2 work:
 
@@ -1243,13 +1243,28 @@ events, the sparse affected-window runtime lowering emits matching
 `BeginClippedScope` / `EndClippedScope` events, and the sparse atlas executor
 draws those events through the same tile VM. This covers positive-opacity
 containers with supported resolve blend modes and supported scope masks; child
-subtrees beyond direct rasters still fail closed.
+subtrees beyond direct rasters failed closed in this form. The thirty-ninth
+form supersedes that direct-raster-only child limit for filtered simple child
+streams.
+
+Thirty-ninth form: clipped container/folder sibling child streams now reuse the
+simple-scope child event builder instead of a direct-raster-only helper. The
+main planner, main tile-silo encoder, sparse affected-window lowering, and
+sparse atlas executor can now lower a clipped container/folder sibling whose
+children include raster content followed by pointwise filters with absent,
+proven-opaque, or provider-backed masks. The same shared child stream also
+keeps the path aligned with already-supported simple nested scopes and
+raster-only clipping-run children, while unsupported or over-depth subtrees
+still fail closed through the existing scope-depth, filter-mask, or legacy
+barrier reasons. Tests cover planner event counts, legacy-vs-tile GPU output,
+sparse affected-window event ordering, and sparse executor pixels for a
+filtered clipped container sibling.
 
 Next Phase 6 work:
 
-- expand clipped container/folder siblings beyond direct raster children:
-  nested child scopes, point filters, clipping runs, THROUGH children, and other
-  non-direct-raster subtrees
+- expand clipped container/folder siblings beyond the current simple child
+  stream: broader nested child scopes, raster-only clipping runs in more
+  positions, THROUGH children, and other non-direct-raster subtrees
 
 ## Correctness Policy
 
