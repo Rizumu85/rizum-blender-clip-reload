@@ -2,6 +2,7 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
+use crate::stream_clipping_tile_silo::clipping_run_as_normal_sources;
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_tile_event::{
     PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
@@ -9,7 +10,9 @@ use crate::stream_tile_event::{
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
 use crate::stream_tile_mask_atlas_plan::MaskAtlasPlan;
 use crate::stream_tile_scope_silo_plan::{
-    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT, scope_mask_can_lower,
+    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT,
+    container_scope_allows_clipping_runs, scope_mask_can_lower,
+    simple_scope_clipping_run_can_lower,
 };
 use crate::stream_tile_silo_plan::PreparedSiloSource;
 use crate::stream_utils::local_pass_bounds;
@@ -52,6 +55,7 @@ where
         target_origin,
         kind.container_depth_remaining(),
         kind.through_depth_remaining(),
+        kind.allows_clipping_runs(),
         children,
         &prepared,
         &mut child_payloads,
@@ -109,6 +113,7 @@ fn append_scope_child_events<'a, P>(
     target_origin: (i32, i32),
     container_depth_remaining: usize,
     through_depth_remaining: usize,
+    allow_clipping_runs: bool,
     children: &'a [GpuNormalStackSource],
     prepared: &[PreparedSiloSource],
     payloads: &mut Vec<TileEventPayload>,
@@ -144,11 +149,14 @@ where
                 let mut nested_payloads = Vec::new();
                 let mut nested_bounds = Vec::new();
                 let mut nested_dirty = None;
+                let child_allow_clipping_runs = allow_clipping_runs
+                    && container_scope_allows_clipping_runs(*opacity, *mask_key, *blend_mode);
                 if !append_scope_child_events(
                     context,
                     target_origin,
                     container_depth_remaining - 1,
                     through_depth_remaining,
+                    child_allow_clipping_runs,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -208,6 +216,7 @@ where
                     target_origin,
                     container_depth_remaining,
                     through_depth_remaining - 1,
+                    false,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -289,6 +298,54 @@ where
                 lut_rows.push(lut_rgba.as_slice());
                 *scope_dirty = Some(filter_bounds);
             }
+            GpuNormalStackSource::ClippingRun { base, clipped } => {
+                if !allow_clipping_runs || !simple_scope_clipping_run_can_lower(*base, clipped) {
+                    return Ok(false);
+                }
+                let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) else {
+                    return Ok(false);
+                };
+                let base_prepared: Vec<_> = prepared
+                    .iter()
+                    .filter(|item| item.source.key == base.key)
+                    .collect();
+                let Some(base_bounds) = base_prepared
+                    .iter()
+                    .map(|source| source.bounds)
+                    .reduce(CanvasRect::union)
+                else {
+                    return Ok(false);
+                };
+                let local_clip_bounds = local_pass_bounds(base_bounds, target_origin);
+                let clip_scope = ScopeTileEventPayload {
+                    opacity: 1.0,
+                    blend_mode: base.blend_mode,
+                    local_bounds: local_clip_bounds,
+                    mask_atlas_origin: None,
+                };
+                payloads.push(TileEventPayload::BeginClipBase(clip_scope));
+                event_bounds.push(local_clip_bounds);
+                for prepared_source in base_prepared {
+                    payloads.push(TileEventPayload::ClipBaseRaster(raster_payload(
+                        prepared_source,
+                    )));
+                    event_bounds.push(prepared_source.local_bounds);
+                }
+                for source in normal_sources.iter().skip(1) {
+                    let GpuNormalStackSource::Raster(raster) = source else {
+                        return Ok(false);
+                    };
+                    for prepared_source in prepared.iter().filter(|item| item.source == *raster) {
+                        payloads.push(TileEventPayload::ClippedRaster(raster_payload(
+                            prepared_source,
+                        )));
+                        event_bounds.push(prepared_source.local_bounds);
+                    }
+                }
+                payloads.push(TileEventPayload::ResolveClipBase(clip_scope));
+                event_bounds.push(local_clip_bounds);
+                *scope_dirty = union_optional(*scope_dirty, Some(base_bounds));
+            }
             _ => return Ok(false),
         }
     }
@@ -320,6 +377,17 @@ impl ScopeProgramKind {
         match self {
             Self::Container { .. } => 1,
             Self::Through { .. } => SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT - 1,
+        }
+    }
+
+    fn allows_clipping_runs(self) -> bool {
+        match self {
+            Self::Container {
+                opacity,
+                blend_mode,
+                mask_key,
+            } => container_scope_allows_clipping_runs(opacity, mask_key, blend_mode),
+            Self::Through { .. } => false,
         }
     }
 
@@ -389,6 +457,11 @@ fn append_raster_sources(
             }
             GpuNormalStackSource::ThroughGroup { children, .. } => {
                 append_raster_sources(children, sources);
+            }
+            GpuNormalStackSource::ClippingRun { base, clipped } => {
+                if let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) {
+                    sources.extend(normal_sources);
+                }
             }
             _ => {}
         }

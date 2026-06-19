@@ -6,11 +6,12 @@ use clip_model::CanvasSize;
 use super::common::*;
 use crate::stream_tile_silo::raster_silo_run_len;
 use crate::{
-    GpuDeviceConfig, GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuMaskResourceCache,
-    GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackResourceProvider,
-    GpuNormalStackSource, GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk,
-    GpuRasterAtlasTilePixels, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo,
-    GpuRasterResourceKey, GpuRenderError, GpuRenderer,
+    GpuClippedStackSource, GpuDeviceConfig, GpuMaskAtlasSource, GpuMaskAtlasTileChunk,
+    GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
+    GpuNormalStackResourceProvider, GpuNormalStackSource, GpuRasterAtlasPixels,
+    GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels, GpuRasterBlendMode,
+    GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey, GpuRenderError,
+    GpuRenderer,
 };
 
 #[test]
@@ -652,6 +653,92 @@ fn streamed_tile_silo_resolves_through_inside_nested_container_like_legacy_pass(
     let output = renderer
         .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
         .expect("draw provider-backed through inside nested container scope");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
+fn streamed_tile_silo_resolves_clipping_run_inside_container_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let base_key = raster_key(171);
+    let clipped_key = raster_key(172);
+    let mut clipped = raster_source_at(clipped_key, 1, 1);
+    clipped.blend_mode = GpuRasterBlendMode::Multiply;
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 40,
+                g: 80,
+                b: 120,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Container {
+            children: vec![GpuNormalStackSource::ClippingRun {
+                base: raster_source_at(base_key, 1, 1),
+                clipped: vec![GpuClippedStackSource::Raster(clipped)],
+            }],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        },
+    ];
+
+    let rasters = vec![
+        (
+            base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(171),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![200, 120, 80, 160],
+            },
+        ),
+        (
+            clipped_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(172),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![80, 200, 255, 255],
+            },
+        ),
+    ];
+    let mut reference_provider = InlineProvider::new(rasters);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy clipping run inside container reference");
+
+    let mut provider = AtlasInlineProvider::new(vec![
+        (
+            base_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(171),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![200, 120, 80, 160],
+            },
+        ),
+        (
+            clipped_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(172),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![80, 200, 255, 255],
+            },
+        ),
+    ]);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw provider-backed clipping run inside container scope");
 
     assert_eq!(output.pixels, reference.pixels);
     assert_eq!(provider.atlas_requests, 1);

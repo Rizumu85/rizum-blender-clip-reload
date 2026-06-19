@@ -667,6 +667,77 @@ fn planner_lowers_through_inside_nested_container_scope() {
 }
 
 #[test]
+fn planner_lowers_clipping_run_inside_simple_container_scope() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Raster(raster_source(2))],
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments(),
+        &[RenderSegment {
+            source_range: 0..1,
+            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
+            cost_hint: SegmentCostHint {
+                expected_passes: 1,
+                tile_events: 6,
+                legacy_sources: 0,
+            },
+        }]
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 1);
+}
+
+#[test]
+fn planner_keeps_clipping_run_inside_simple_through_scope_as_barrier() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::ThroughGroup {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Raster(raster_source(2))],
+        }],
+        opacity: 0.5,
+        mask_key: None,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::ThroughGroupNotLowered,
+        ))
+    );
+    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 1);
+}
+
+#[test]
 fn planner_keeps_through_child_container_beyond_scope_depth_as_barrier() {
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
     let sources = vec![GpuNormalStackSource::Container {

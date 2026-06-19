@@ -4,7 +4,7 @@ use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 7;
+pub const TILE_EVENT_ABI_VERSION: u32 = 8;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const POINT_FILTER_PAYLOAD_WORDS: usize = 12;
@@ -15,6 +15,9 @@ const NO_MASK_ATLAS_COORD: u32 = u32::MAX;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum TileEventKind {
     Raster = 1,
+    BeginClipBase = 2,
+    ClippedRaster = 3,
+    ResolveClipBase = 4,
     BeginContainer = 5,
     EndContainer = 6,
     PointFilter = 7,
@@ -150,6 +153,10 @@ impl ScopeTileEventPayload {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum TileEventPayload {
     Raster(RasterTileEventPayload),
+    ClipBaseRaster(RasterTileEventPayload),
+    ClippedRaster(RasterTileEventPayload),
+    BeginClipBase(ScopeTileEventPayload),
+    ResolveClipBase(ScopeTileEventPayload),
     BeginContainer(ScopeTileEventPayload),
     EndContainer(ScopeTileEventPayload),
     BeginThrough(ScopeTileEventPayload),
@@ -188,6 +195,42 @@ impl TileEventProgram {
                         payload_len: 1,
                     });
                     raster_payloads.push(payload);
+                }
+                TileEventPayload::ClipBaseRaster(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::Raster,
+                        flags: 1,
+                        payload_offset: u32::try_from(raster_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    raster_payloads.push(payload);
+                }
+                TileEventPayload::ClippedRaster(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::ClippedRaster,
+                        flags: 0,
+                        payload_offset: u32::try_from(raster_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    raster_payloads.push(payload);
+                }
+                TileEventPayload::BeginClipBase(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::BeginClipBase,
+                        flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
+                }
+                TileEventPayload::ResolveClipBase(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::ResolveClipBase,
+                        flags: 0,
+                        payload_offset: u32::try_from(scope_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    scope_payloads.push(payload);
                 }
                 TileEventPayload::BeginContainer(payload) => {
                     headers.push(TileEventHeader {
@@ -479,6 +522,59 @@ mod tests {
                 1,
             ]
         );
+        assert_eq!(program.scope_payload_words().len(), 16);
+    }
+
+    #[test]
+    fn builds_typed_clipping_scope_events() {
+        let raster = RasterTileEventPayload {
+            atlas_origin: (1, 2),
+            source_size: CanvasSize::new(3, 4),
+            source_offset: (0, 0),
+            opacity: 1.0,
+            blend_mode: GpuRasterBlendMode::Multiply,
+            mask_atlas_origin: None,
+        };
+        let scope = ScopeTileEventPayload {
+            opacity: 1.0,
+            blend_mode: GpuRasterBlendMode::Multiply,
+            local_bounds: CanvasRect {
+                x: 0,
+                y: 0,
+                width: 3,
+                height: 4,
+            },
+            mask_atlas_origin: None,
+        };
+        let program = TileEventProgram::from_payloads([
+            TileEventPayload::BeginClipBase(scope),
+            TileEventPayload::ClipBaseRaster(raster),
+            TileEventPayload::ClippedRaster(raster),
+            TileEventPayload::ResolveClipBase(scope),
+        ]);
+
+        assert_eq!(
+            program.header_words(),
+            vec![
+                TileEventKind::BeginClipBase as u32,
+                0,
+                0,
+                1,
+                TileEventKind::Raster as u32,
+                1,
+                0,
+                1,
+                TileEventKind::ClippedRaster as u32,
+                0,
+                1,
+                1,
+                TileEventKind::ResolveClipBase as u32,
+                0,
+                1,
+                1,
+            ]
+        );
+        assert_eq!(program.raster_payload_words().len(), 20);
         assert_eq!(program.scope_payload_words().len(), 16);
     }
 }

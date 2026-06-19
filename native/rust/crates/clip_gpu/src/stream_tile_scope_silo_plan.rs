@@ -2,6 +2,7 @@ use clip_model::CanvasSize;
 
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::target_canvas_bounds;
+use crate::stream_clipping_tile_silo::clipping_run_as_normal_sources;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
@@ -147,6 +148,7 @@ where
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
         ThroughBudget::Remaining(1),
+        container_scope_allows_clipping_runs(*opacity, *mask_key, *blend_mode),
     )?;
     checked_scope_event_count(2, child_count)
 }
@@ -188,6 +190,7 @@ where
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
         ThroughBudget::Remaining(SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT - 1),
+        false,
     )?;
     checked_scope_event_count(2, child_count)
 }
@@ -200,6 +203,7 @@ fn simple_scope_children_event_count<P>(
     children: &[GpuNormalStackSource],
     container_depth_remaining: usize,
     through_budget: ThroughBudget,
+    allow_clipping_runs: bool,
 ) -> Result<usize, SimpleScopeReject>
 where
     P: GpuNormalStackResourceProvider,
@@ -255,6 +259,8 @@ where
                             .ok_or(SimpleScopeReject::NotSimple)?,
                     )
                     .ok_or(SimpleScopeReject::NotSimple)?;
+                let child_allow_clipping_runs = allow_clipping_runs
+                    && container_scope_allows_clipping_runs(*opacity, *mask_key, *blend_mode);
                 let child_count = simple_scope_children_event_count(
                     provider,
                     output_size,
@@ -263,6 +269,7 @@ where
                     children,
                     container_depth_remaining - 1,
                     through_budget,
+                    child_allow_clipping_runs,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
@@ -302,9 +309,32 @@ where
                     children,
                     container_depth_remaining,
                     ThroughBudget::Remaining(through_depth_remaining - 1),
+                    false,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
+                saw_raster = true;
+            }
+            GpuNormalStackSource::ClippingRun { base, clipped } => {
+                if !allow_clipping_runs || !simple_scope_clipping_run_can_lower(*base, clipped) {
+                    return Err(SimpleScopeReject::NotSimple);
+                }
+                let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) else {
+                    return Err(SimpleScopeReject::NotSimple);
+                };
+                if !normal_sources.iter().all(|source| {
+                    source_is_silo_eligible(
+                        provider,
+                        output_size,
+                        target_origin,
+                        target_size,
+                        source,
+                    )
+                }) {
+                    return Err(SimpleScopeReject::NotSimple);
+                }
+                count = add_scope_events(count, 2)?;
+                count = add_scope_events(count, normal_sources.len())?;
                 saw_raster = true;
             }
             GpuNormalStackSource::LutFilter {
@@ -412,6 +442,29 @@ where
         return Err(SimpleScopeReject::NotSimple);
     }
     Ok(())
+}
+
+pub(crate) fn simple_scope_clipping_run_can_lower(
+    base: crate::GpuNormalRasterSource,
+    clipped: &[crate::GpuClippedStackSource],
+) -> bool {
+    base.blend_mode == GpuRasterBlendMode::Normal
+        && base.opacity == 1.0
+        && base.mask_key.is_none()
+        && clipped.iter().all(|source| match source {
+            crate::GpuClippedStackSource::Raster(raster) => {
+                raster.opacity == 1.0 && raster.mask_key.is_none()
+            }
+            crate::GpuClippedStackSource::Container { .. } => false,
+        })
+}
+
+pub(crate) fn container_scope_allows_clipping_runs(
+    opacity: f32,
+    mask_key: Option<crate::GpuMaskResourceKey>,
+    blend_mode: GpuRasterBlendMode,
+) -> bool {
+    opacity == 1.0 && mask_key.is_none() && blend_mode == GpuRasterBlendMode::Normal
 }
 
 fn checked_scope_event_count(base: usize, child_count: usize) -> Result<usize, SimpleScopeReject> {

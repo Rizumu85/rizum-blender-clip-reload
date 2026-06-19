@@ -327,7 +327,7 @@ where
     Ok(true)
 }
 
-fn clipping_run_as_normal_sources(
+pub(crate) fn clipping_run_as_normal_sources(
     base: GpuNormalRasterSource,
     clipped: &[GpuClippedStackSource],
 ) -> Option<Vec<GpuNormalStackSource>> {

@@ -542,7 +542,7 @@ including provider-backed non-opaque scope masks:
   scope-mask support, plus pointwise filters whose masks are absent, proven
   fully opaque, or available through provider-backed R8 mask atlas chunks, plus
   simple THROUGH scope children within the remaining scope depth budget.
-- `stream_tile_event.rs` now uses tile event ABI `7`; `BeginContainer` /
+- `stream_tile_event.rs` now uses tile event ABI `8`; `BeginContainer` /
   `EndContainer` scope payloads carry optional R8 mask atlas coordinates in
   payload words 6/7, and `PointFilter` payloads carry optional filter mask
   atlas coordinates in payload words 10/11.
@@ -561,9 +561,16 @@ including provider-backed non-opaque scope masks:
   THROUGH children into `after`, then resolves back into the same container
   accumulator. THROUGH children inherit the current remaining container
   scope-depth budget instead of resetting it.
+- A narrow raster-only clipping run child can lower inside a Normal,
+  opacity-1, unmasked container chain. The tile VM uses `BeginClipBase`, local
+  clip-base raster events, `ClippedRaster` preserve events, and
+  `ResolveClipBase` to resolve the completed local clipping cache back into
+  the active container accumulator. Masked clipping runs, non-Normal or
+  non-1-opacity clipping bases, clipped container/folder siblings, and clipping
+  runs inside THROUGH scopes remain barriers.
 - Unsupported scope shapes remain barriers: container depth beyond the fixed
-  limit, clipping runs, solid colors, unavailable masked containers, and
-  provider-unavailable or unknown filter masks.
+  limit, broader clipping-run shapes, solid colors, unavailable masked
+  containers, and provider-unavailable or unknown filter masks.
 
 Verification after this milestone:
 
@@ -584,6 +591,9 @@ Verification after this milestone:
   scope against the existing legacy source path, and planner coverage locks
   THROUGH-child containers beyond the fixed scope depth as
   `ScopeDepthLimitExceeded`.
+- New GPU unit coverage compares a raster-only clipping run inside a supported
+  Normal container scope against the existing legacy source path, and planner
+  coverage keeps clipping runs inside THROUGH scopes as `ThroughGroupNotLowered`.
 - New GPU unit coverage compares non-opaque masked container scope resolve
   against the existing legacy source path.
 - New GPU unit coverage compares a provider-backed non-opaque masked filter
@@ -610,7 +620,7 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   scopes with the same scope-mask support, plus pointwise filters whose masks
   are absent, proven fully opaque, or available through provider-backed R8 mask
   atlas chunks.
-- `stream_tile_event.rs` uses tile event ABI `7`, with scope payload words 6/7
+- `stream_tile_event.rs` uses tile event ABI `8`, with scope payload words 6/7
   as optional R8 mask atlas coordinates for container and THROUGH scope
   resolves, and point-filter payload words 10/11 as optional R8 mask atlas
   coordinates for masked pointwise filters.
@@ -658,7 +668,7 @@ Verification after this milestone:
   barriers are measurable instead of collapsing into generic container or
   THROUGH barriers.
 - `Test_FolderNested.clip --performance-plan-json` reports
-  `simple_through_scope_segments: 1` and `tile_event_abi_version: 7`.
+  `simple_through_scope_segments: 1` and `tile_event_abi_version: 8`.
 - Guard comparisons remain stable: `Test_Clipping` exact,
   `Test_ClippingEdge` exact, `Test_FolderNested` exact, `Test_ToneCurve` exact,
   and `Test_AddGlowMultiply` remains at the existing one-LSB invisible

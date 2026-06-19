@@ -49,12 +49,16 @@ const POINT_FILTER_PAYLOAD_WORDS: u32 = 12u;
 const SCOPE_PAYLOAD_WORDS: u32 = 8u;
 const NO_MASK_ATLAS_COORD: u32 = 0xffffffffu;
 const TILE_EVENT_KIND_RASTER: u32 = 1u;
+const TILE_EVENT_KIND_BEGIN_CLIP_BASE: u32 = 2u;
+const TILE_EVENT_KIND_CLIPPED_RASTER: u32 = 3u;
+const TILE_EVENT_KIND_RESOLVE_CLIP_BASE: u32 = 4u;
 const TILE_EVENT_KIND_BEGIN_CONTAINER: u32 = 5u;
 const TILE_EVENT_KIND_END_CONTAINER: u32 = 6u;
 const TILE_EVENT_KIND_POINT_FILTER: u32 = 7u;
 const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
 const TILE_EVENT_KIND_BEGIN_THROUGH: u32 = 9u;
 const TILE_EVENT_KIND_END_THROUGH: u32 = 10u;
+const TILE_EVENT_FLAG_CLIP_BASE_RASTER: u32 = 1u;
 const MODE_NORMAL: u32 = 0u;
 const MODE_PRESERVE_ALPHA: u32 = 1u;
 const MODE_CLIPPING_RUN: u32 = 2u;
@@ -82,6 +86,10 @@ fn event_word(event_index: u32, word_index: u32) -> u32 {
 
 fn event_kind(event_index: u32) -> u32 {
     return event_headers[event_index * EVENT_HEADER_WORDS];
+}
+
+fn event_flags(event_index: u32) -> u32 {
+    return event_headers[event_index * EVENT_HEADER_WORDS + 1u];
 }
 
 fn filter_word(event_index: u32, word_index: u32) -> u32 {
@@ -1047,17 +1055,21 @@ fn apply_preserve(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> 
     return quantize_u8(out);
 }
 
-fn apply_clipping_run_resolve(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+fn apply_clipping_run_resolve_with_blend(src: vec4<f32>, dst: vec4<f32>, blend_kind: u32) -> vec4<f32> {
     if (src.a <= 0.0) {
         return dst;
     }
-    if (params.resolve_blend_kind == 0u) {
+    if (blend_kind == 0u) {
         return apply_normal_alpha(src, dst, to_u8(src.a));
     }
-    if (is_byte_domain_special_blend(params.resolve_blend_kind)) {
-        return apply_byte_standard_alpha(src, dst, to_u8(src.a), params.resolve_blend_kind);
+    if (is_byte_domain_special_blend(blend_kind)) {
+        return apply_byte_standard_alpha(src, dst, to_u8(src.a), blend_kind);
     }
-    return apply_standard(src, dst, params.resolve_blend_kind);
+    return apply_standard(src, dst, blend_kind);
+}
+
+fn apply_clipping_run_resolve(src: vec4<f32>, dst: vec4<f32>) -> vec4<f32> {
+    return apply_clipping_run_resolve_with_blend(src, dst, params.resolve_blend_kind);
 }
 
 fn apply_raster_event_to_accumulator(src_input: vec4<f32>, accumulator: vec4<f32>, event_index: u32, mask_value: f32, blend_kind: u32) -> vec4<f32> {
@@ -1088,6 +1100,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     let span_count = tile_spans[span_base + 1u];
     var dst = textureLoad(dest_texture, local_texel, 0);
     var clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var local_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var local_clip_active = false;
     var scope0_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope1_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
@@ -1180,6 +1194,40 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             }
             continue;
         }
+        if (kind == TILE_EVENT_KIND_BEGIN_CLIP_BASE) {
+            if (scope_contains(event_index, local_texel)) {
+                local_clip_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                local_clip_active = true;
+            }
+            continue;
+        }
+        if (kind == TILE_EVENT_KIND_RESOLVE_CLIP_BASE) {
+            if (local_clip_active && scope_contains(event_index, local_texel)) {
+                var active_through_target_scope_depth = 0u;
+                if (through_depth == 2u) {
+                    active_through_target_scope_depth = through1_target_scope_depth;
+                } else if (through_depth == 1u) {
+                    active_through_target_scope_depth = through0_target_scope_depth;
+                }
+                let clip_blend_kind = scope_word(event_index, 1u);
+                let resolved_clip_src = quantize_u8(local_clip_dst);
+                if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
+                    scope2_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope2_dst, clip_blend_kind);
+                } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
+                    scope1_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope1_dst, clip_blend_kind);
+                } else if (scope_depth == 1u && scope_depth > active_through_target_scope_depth) {
+                    scope0_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope0_dst, clip_blend_kind);
+                } else if (through_depth == 2u) {
+                    through1_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through1_after, clip_blend_kind);
+                } else if (through_depth == 1u) {
+                    through0_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through0_after, clip_blend_kind);
+                } else {
+                    dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, dst, clip_blend_kind);
+                }
+                local_clip_active = false;
+            }
+            continue;
+        }
         if (kind == TILE_EVENT_KIND_POINT_FILTER) {
             if (filter_contains(event_index, local_texel)) {
                 var active_through_target_scope_depth = 0u;
@@ -1213,6 +1261,28 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         var src = load_source_at(event_index, source_texel);
         let blend_kind = event_word(event_index, 7u);
         let mask_value = load_event_mask(event_index, source_texel);
+        if (local_clip_active && event_flags(event_index) == TILE_EVENT_FLAG_CLIP_BASE_RASTER) {
+            local_clip_dst = apply_normal(src, local_clip_dst, event_index, mask_value);
+            continue;
+        }
+        if (kind == TILE_EVENT_KIND_CLIPPED_RASTER) {
+            if (local_clip_active) {
+                if (is_byte_domain_special_blend(blend_kind)) {
+                    local_clip_dst = apply_byte_preserve(src, local_clip_dst, event_index, mask_value, blend_kind);
+                    continue;
+                }
+                src.a = clamp(src.a * bitcast<f32>(event_word(event_index, 6u)), 0.0, 1.0);
+                if (event_word(event_index, 8u) != NO_MASK_ATLAS_COORD) {
+                    src.a = src.a * mask_value;
+                }
+                if (src.a <= 0.0 || local_clip_dst.a <= 0.0) { continue; }
+                local_clip_dst = apply_preserve(src, local_clip_dst, blend_kind);
+            }
+            continue;
+        }
+        if (event_flags(event_index) == TILE_EVENT_FLAG_CLIP_BASE_RASTER) {
+            continue;
+        }
         var active_through_target_scope_depth = 0u;
         if (through_depth == 2u) {
             active_through_target_scope_depth = through1_target_scope_depth;

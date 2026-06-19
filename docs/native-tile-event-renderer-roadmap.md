@@ -416,6 +416,17 @@ origin for container and THROUGH scope resolves. `TILE_EVENT_ABI_VERSION` is
 container resolve source alpha by the mask, and multiplies THROUGH resolve
 strength by the mask, matching the existing faithful pass shaders.
 
+Eighth form: `TileEventKind::BeginClipBase`,
+`TileEventKind::ClippedRaster`, and `TileEventKind::ResolveClipBase` now allow
+the VM to express a narrow raster-only clipping run inside a scope-local event
+stream. `TILE_EVENT_ABI_VERSION` is `8`. The implemented planner subset only
+uses these events for clipping runs inside a Normal, opacity-1, unmasked
+container scope, with a Normal opacity-1 unmasked raster base and opacity-1
+unmasked raster clipped siblings. Masked clipping runs, non-Normal or
+non-1-opacity clipping bases, clipped container/folder siblings, and clipping
+runs inside THROUGH scopes remain barriers until their cache-writeback
+semantics are modelled and guarded.
+
 Remaining Phase 2 work:
 
 - add explicit typed event readers for additional clipping/THROUGH payloads
@@ -525,7 +536,10 @@ Implemented subset:
   `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise filters whose masks are
   absent, proven fully opaque, or available through provider-backed R8 mask
   atlas chunks, plus simple THROUGH scope children within the remaining scope
-  depth budget.
+  depth budget, plus a narrow raster-only clipping-run child subset when the
+  active container chain is Normal, opacity 1, unmasked, the clipping base is a
+  Normal, opacity-1, unmasked raster, and every clipped sibling is an
+  opacity-1, unmasked raster.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
@@ -540,9 +554,14 @@ Implemented subset:
   pair, rendering THROUGH children into `after`, then resolving back into that
   same container accumulator. THROUGH children inherit the current remaining
   container scope-depth budget instead of resetting it.
-- Clipping runs, solid colors, unavailable container masks, and
-  provider-unavailable or unknown filter masks still remain explicit legacy
-  barriers.
+- A simple raster-only clipping run child inside the supported Normal
+  container chain lowers as `BeginClipBase`, clip-base raster events,
+  clipped-raster preserve events, and `ResolveClipBase`, resolving back into
+  the active container accumulator.
+- Clipping runs inside THROUGH scopes, masked clipping runs, non-Normal or
+  non-1-opacity clipping bases, clipped container/folder siblings, solid
+  colors, unavailable container masks, and provider-unavailable or unknown
+  filter masks still remain explicit legacy barriers.
 
 Implemented THROUGH subset:
 
@@ -591,6 +610,9 @@ Verification:
   against the existing legacy source path, and planner tests lock
   THROUGH-child containers beyond the fixed scope depth as
   `ScopeDepthLimitExceeded`.
+- GPU unit tests compare a raster-only clipping run inside a supported Normal
+  container scope against the existing legacy source path, and planner tests
+  keep clipping runs inside THROUGH scopes as `ThroughGroupNotLowered`.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
   existing legacy source path for THROUGH opacity and child blend execution.
 - GPU unit tests compare a simple container inside a THROUGH scope against the
@@ -611,7 +633,7 @@ Verification:
   as `ScopeDepthLimitExceeded`, and scope programs whose event count exceeds
   `MAX_SILO_EVENTS` as `TileEventLimitExceeded`.
 - `Test_FolderNested.clip --performance-plan-json` reports
-  `simple_through_scope_segments: 1` and `tile_event_abi_version: 7`.
+  `simple_through_scope_segments: 1` and `tile_event_abi_version: 8`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
   and `Test_AddGlowMultiply` remain stable.
 
@@ -619,7 +641,8 @@ Next scope-stack work:
 
 - nested/complex container and THROUGH subtrees that still hit depth or shape
   barriers
-- clipping runs and clipped container/folder siblings inside scope stacks
+- broader clipping-run shapes and clipped container/folder siblings inside
+  scope stacks
 
 Then extend the same scope-stack model to each remaining scope shape once it
 has focused parity tests.
