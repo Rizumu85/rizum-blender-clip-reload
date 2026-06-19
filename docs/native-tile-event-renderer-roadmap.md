@@ -946,12 +946,28 @@ General dirty segment reload still requires a persisted or reconstructed
 segment-before checkpoint; the initial-accumulator route is intentionally only
 the safe suffix subset.
 
+Sixteenth form: `RuntimeGpuRenderer::draw_sparse_atlas_reconstructed_suffix_patches()`
+now adds the first reconstructed checkpoint route. For patch reloads whose
+dirty suffix is entirely `RasterRun` segments but starts after source index
+0, the runtime renders the unchanged source prefix through the existing
+faithful GPU provider to reconstruct the segment-before RGBA8 accumulator,
+then executes the resident sparse-atlas suffix event batches over that
+checkpoint and reads back only the requested dirty rect payload. The Blender
+worker tries this after the initial-accumulator route and records
+`reload_diff.patch_renderer` as `sparse_atlas_reconstructed_suffix` when it is
+used.
+
+This is a correctness seam, not the final performance shape: reconstructing
+the prefix is still full-canvas prefix work. The next milestone is to persist
+or cheaply reconstruct selected segment-before checkpoints across reloads, so
+the same suffix executor can avoid rerendering unchanged prefixes.
+
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
-- store or reconstruct valid segment-before checkpoints for dirty segment
-  reruns
+- persist or cheaply reconstruct valid segment-before checkpoints for dirty
+  segment reruns
 - route Blender patch reload through sparse segment rerun when every dirty
   segment has a valid checkpoint and executable raster-event plan
 

@@ -67,11 +67,18 @@ pub(crate) fn write_blender_render_files_with_renderer(
             if let Some((render, sparse_atlas)) = sparse_patch {
                 (render, sparse_atlas, "sparse_atlas_initial_suffix")
             } else {
-                let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
-                let render = renderer
-                    .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
+                let sparse_patch = renderer
+                    .draw_sparse_atlas_reconstructed_suffix_patches(session, &reload_plan)
                     .map_err(|err| err.to_string())?;
-                (render, sparse_atlas, "region")
+                if let Some((render, sparse_atlas)) = sparse_patch {
+                    (render, sparse_atlas, "sparse_atlas_reconstructed_suffix")
+                } else {
+                    let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
+                    let render = renderer
+                        .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
+                        .map_err(|err| err.to_string())?;
+                    (render, sparse_atlas, "region")
+                }
             };
         if !render.unsupported.is_empty() {
             return Err(RuntimeError::UnsupportedRenderPlan {

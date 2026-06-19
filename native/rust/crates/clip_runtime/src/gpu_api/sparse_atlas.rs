@@ -1,7 +1,9 @@
 use super::RuntimeGpuRenderer;
 use crate::gpu_provider::{
+    GpuResourcePlan, RuntimeGpuResourceProvider,
     atlas_events::{sparse_atlas_raster_event_plan, sparse_atlas_raster_suffix_event_plan},
     atlas_upload::sparse_atlas_texture_pool_updates,
+    cache::PersistentGpuTextureCache,
 };
 use crate::{
     ClipSession, GpuTextureCacheStats, NormalRasterStackGpuPatchResult, RuntimeError,
@@ -97,11 +99,6 @@ impl RuntimeGpuRenderer {
         let resource_stats = resource_plan.resource_stats();
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let sparse_atlas = reload.clone().into();
-        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
-        if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
-            return Ok(None);
-        }
-
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
         self.renderer
             .update_sparse_atlas_texture_pool(
@@ -109,6 +106,10 @@ impl RuntimeGpuRenderer {
                 &updates,
             )
             .map_err(RuntimeError::from)?;
+        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
+        if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
+            return Ok(None);
+        }
         let batches = event_plan
             .segments
             .iter()
@@ -141,6 +142,162 @@ impl RuntimeGpuRenderer {
             },
             sparse_atlas,
         )))
+    }
+
+    pub fn draw_sparse_atlas_reconstructed_suffix_patches(
+        &self,
+        session: &ClipSession,
+        plan: &crate::ReloadDiffPlan,
+    ) -> Result<
+        Option<(
+            NormalRasterStackGpuPatchResult,
+            crate::GpuSparseAtlasReloadPlan,
+        )>,
+        RuntimeError,
+    > {
+        if plan.mode != crate::ReloadDiffMode::Patch
+            || plan.dirty_rects.is_empty()
+            || !suffix_manifest_is_raster_only(plan)
+        {
+            return Ok(None);
+        }
+        let Some(checkpoint_source_start) = suffix_checkpoint_source_start(plan) else {
+            return Ok(None);
+        };
+        if checkpoint_source_start == 0 {
+            return Ok(None);
+        }
+
+        let selection =
+            session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        let GpuRenderStackSelection {
+            sources,
+            resource_plan,
+            unsupported,
+        } = selection;
+        if !unsupported.is_empty() {
+            return Ok(None);
+        }
+        let checkpoint_source_start = usize::try_from(checkpoint_source_start)
+            .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+        if checkpoint_source_start > sources.len() {
+            return Ok(None);
+        }
+        let source_count = sources.len();
+        let resource_stats = resource_plan.resource_stats();
+        let (base, texture_cache_stats, drawn_resources, mask_resources) = self
+            .reconstruct_prefix_checkpoint_rgba8(
+                session,
+                &sources[..checkpoint_source_start],
+                resource_plan,
+            )?;
+
+        let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
+        let sparse_atlas = reload.clone().into();
+        let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        self.renderer
+            .update_sparse_atlas_texture_pool(
+                &mut self.sparse_atlas_textures.borrow_mut(),
+                &updates,
+            )
+            .map_err(RuntimeError::from)?;
+        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
+        if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
+            return Ok(None);
+        }
+
+        let batches = event_plan
+            .segments
+            .iter()
+            .flat_map(|segment| segment.batches.iter().cloned())
+            .collect::<Vec<_>>();
+        let rects = plan
+            .dirty_rects
+            .iter()
+            .map(|rect| clip_model::Rect::new(rect.x, rect.y, rect.width, rect.height))
+            .collect::<Vec<_>>();
+        let output = self
+            .renderer
+            .draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
+                session.summary.canvas,
+                &self.sparse_atlas_textures.borrow(),
+                &batches,
+                &base,
+                &rects,
+            )?;
+        Ok(Some((
+            NormalRasterStackGpuPatchResult {
+                payload: output.payload,
+                source_count,
+                resource_stats,
+                texture_cache_stats,
+                drawn_resources,
+                mask_resources,
+                unsupported: Vec::new(),
+            },
+            sparse_atlas,
+        )))
+    }
+
+    fn reconstruct_prefix_checkpoint_rgba8(
+        &self,
+        session: &ClipSession,
+        sources: &[clip_gpu::GpuNormalStackSource],
+        resource_plan: GpuResourcePlan,
+    ) -> Result<
+        (
+            Vec<u8>,
+            GpuTextureCacheStats,
+            Vec<clip_gpu::GpuRasterResourceInfo>,
+            Vec<clip_gpu::GpuMaskResourceInfo>,
+        ),
+        RuntimeError,
+    > {
+        if sources.is_empty() {
+            return initial_transparent_rgba8(session.summary.canvas).map(|pixels| {
+                (
+                    pixels,
+                    GpuTextureCacheStats::default(),
+                    Vec::new(),
+                    Vec::new(),
+                )
+            });
+        }
+
+        let mut texture_cache = self.texture_cache.borrow_mut();
+        let mut provider = match texture_cache.as_mut() {
+            Some(cache) => {
+                cache.begin_frame();
+                RuntimeGpuResourceProvider::with_texture_cache(
+                    &session.container,
+                    session.summary.canvas,
+                    resource_plan,
+                    cache,
+                )?
+            }
+            None => RuntimeGpuResourceProvider::new(
+                &session.container,
+                session.summary.canvas,
+                resource_plan,
+            )?,
+        };
+        let output = self.renderer.draw_normal_stack_with_provider_to_rgba8(
+            session.summary.canvas,
+            sources,
+            &mut provider,
+        )?;
+        let mask_resources = std::mem::take(&mut provider.mask_resources);
+        drop(provider);
+        let texture_cache_stats = texture_cache
+            .as_ref()
+            .map(PersistentGpuTextureCache::frame_stats)
+            .unwrap_or_default();
+        Ok((
+            output.pixels,
+            texture_cache_stats,
+            output.drawn_resources,
+            mask_resources,
+        ))
     }
 
     pub fn prepare_sparse_atlas_textures(
@@ -223,19 +380,20 @@ impl RuntimeGpuRenderer {
 }
 
 fn suffix_starts_at_initial_accumulator(plan: &crate::ReloadDiffPlan) -> bool {
-    let Some(first_dirty_ordinal) = plan
+    suffix_checkpoint_source_start(plan).is_some_and(|source_start| source_start == 0)
+}
+
+fn suffix_checkpoint_source_start(plan: &crate::ReloadDiffPlan) -> Option<u32> {
+    let first_dirty_ordinal = plan
         .dirty_segments
         .iter()
         .map(|segment| segment.ordinal)
-        .min()
-    else {
-        return false;
-    };
+        .min()?;
     plan.manifest
         .segments
         .iter()
         .find(|segment| segment.ordinal == first_dirty_ordinal)
-        .is_some_and(|segment| segment.source_start == 0)
+        .map(|segment| segment.source_start)
 }
 
 fn suffix_manifest_is_raster_only(plan: &crate::ReloadDiffPlan) -> bool {
@@ -272,7 +430,7 @@ fn initial_transparent_rgba8(size: clip_model::CanvasSize) -> Result<Vec<u8>, Ru
 #[cfg(test)]
 mod tests {
     use super::{
-        initial_transparent_rgba8, suffix_manifest_is_raster_only,
+        initial_transparent_rgba8, suffix_checkpoint_source_start, suffix_manifest_is_raster_only,
         suffix_starts_at_initial_accumulator,
     };
 
@@ -291,6 +449,7 @@ mod tests {
 
         plan.manifest.segments[0].source_start = 1;
         assert!(!suffix_starts_at_initial_accumulator(&plan));
+        assert_eq!(suffix_checkpoint_source_start(&plan), Some(1));
     }
 
     #[test]

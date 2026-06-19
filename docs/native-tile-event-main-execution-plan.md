@@ -268,11 +268,19 @@ Reload rules:
 - container structure changed -> rebuild segment graph and promote to full or
   subtree render when needed
 
-Current safe product subset: if the dirty suffix starts at source index `0` and
-every suffix segment is a `RasterRun`, the Blender worker may rerun the suffix
-over the initial transparent-white accumulator and return dirty-rect patch
-payloads. Arbitrary dirty segment rerun still requires a valid segment-before
-checkpoint.
+Current safe product subsets:
+
+- if the dirty suffix starts at source index `0` and every suffix segment is a
+  `RasterRun`, the Blender worker may rerun the suffix over the initial
+  transparent-white accumulator and return dirty-rect patch payloads
+- if the dirty suffix starts after source index `0` and every suffix segment is
+  a `RasterRun`, the runtime may reconstruct the segment-before checkpoint by
+  rendering the unchanged source prefix through the faithful GPU provider, then
+  execute the sparse-atlas suffix over that checkpoint
+
+The reconstructed-prefix path is a correctness seam, not the final performance
+shape. It still performs full-canvas prefix work. The next target is persisted
+or cheaply reconstructed segment-before checkpoints across reloads.
 
 ## Implementation Order
 
@@ -287,7 +295,7 @@ checkpoint.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Add segment-before checkpoint storage or reconstruction.
+7. Add persisted or cheaply reconstructed segment-before checkpoints.
 8. Route general dirty segment reload through sparse atlas event reruns.
 9. Keep the pass-heavy renderer as a test oracle and debug backend, not as a
    product fallback.
@@ -299,4 +307,3 @@ checkpoint.
 - No global full-canvas layer texture cache.
 - No vector, text, bubble/frame, or animation renderer scope in this repo.
 - No dual production renderer path that hides tile-event coverage gaps.
-
