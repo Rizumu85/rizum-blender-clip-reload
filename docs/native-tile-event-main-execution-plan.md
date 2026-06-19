@@ -310,13 +310,16 @@ expanding affected-window simple container/THROUGH scope execution beyond the
 first direct-raster subset. Direct-raster `SimpleContainerScope` and
 `SimpleThroughScope` segments already lower into sparse atlas batches by
 wrapping resident raster events in typed scope begin/end events. Scope-level
-masks lower when the dirty scope bounds are fully covered by one resident R8
-mask slot. Scope batches now preserve ordered child tile events, so unmasked
-point-filter children after raster content execute inside the scope with the
-accumulated scope bounds. Raster-only clipping-run children also execute inside
-the sparse scope through ordered `BeginClipBase` / `ClipBaseRaster` /
-`ClippedRaster` / `ResolveClipBase` events. Multi-slot scope masks, filter
-masks, nested child scopes, and clipped container/folder children still remain
+masks lower through complete resident R8 mask-slot coverage, including
+multi-slot masks on outer scopes and nested simple scopes. Runtime lowering
+splits those scopes into clipped per-mask-slot event windows so masked child
+events cannot leak outside the covered sub-rect. Scope batches now preserve
+ordered child tile events, so unmasked point-filter children after raster
+content execute inside the scope with the accumulated scope bounds. Raster-only
+clipping-run children also execute inside the sparse scope through ordered
+`BeginClipBase` / `ClipBaseRaster` / `ClippedRaster` / `ResolveClipBase`
+events. Missing filter/scope mask coverage, clipping runs nested through
+THROUGH child scopes, and clipped container/folder children still remain
 explicit sparse-patch barriers.
 
 ## Implementation Order
@@ -332,9 +335,9 @@ explicit sparse-patch barriers.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Expand affected-window simple container/THROUGH scopes beyond direct raster
-   children by adding multi-slot scope masks, filter masks, nested simple
-   scopes, and clipped container/folder siblings.
+7. Expand affected-window simple container/THROUGH scopes beyond the current
+   sparse-scope subsets by adding clipping runs nested through THROUGH child
+   scopes and clipped container/folder siblings.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

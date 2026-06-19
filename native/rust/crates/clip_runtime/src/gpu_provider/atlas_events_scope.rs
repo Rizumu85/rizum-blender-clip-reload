@@ -1,12 +1,15 @@
-use clip_model::{CanvasSize, Rect};
+use clip_model::Rect;
 
 use super::atlas_events::{
     events_share_executor_atlases, push_raster_events_for_source, segment_source_span,
 };
 use super::atlas_events_filter::point_filter_events_for_source;
-use super::atlas_events_scope_split::{container_scope_batches, through_scope_batches};
+use super::atlas_events_scope_split::{
+    clip_tile_events_to_bounds, container_scope_batches, scope_mask_tile_refs_for_bounds,
+    through_scope_batches,
+};
 use super::atlas_events_types::{SparseAtlasRasterEventSegment, SparseAtlasRasterEventSkipReason};
-use super::atlas_rerun::{SparseAtlasRerunSegment, SparseAtlasRerunSlot};
+use super::atlas_rerun::SparseAtlasRerunSegment;
 use crate::reload_diff::ReloadDiffSegment;
 
 const SPARSE_SCOPE_STACK_LIMIT: usize = 4;
@@ -91,46 +94,6 @@ pub(super) fn lower_simple_scope_segment(
         event_ranges: rerun_segment.event_ranges.clone(),
         batches,
     })
-}
-
-fn scope_mask_tile_ref_for_bounds(
-    segment: &SparseAtlasRerunSegment,
-    mask_key: Option<clip_gpu::GpuMaskResourceKey>,
-    bounds: Rect,
-) -> Result<Option<clip_gpu::GpuSparseAtlasTileRef>, SparseAtlasRasterEventSkipReason> {
-    let Some(mask_key) = mask_key else {
-        return Ok(None);
-    };
-    let Some(slot) = segment.resident_slots.iter().find(|slot| {
-        slot.kind == "mask"
-            && slot.layer_id == mask_key.layer_id.0
-            && slot.resource_id == mask_key.mask_mipmap_id
-            && slot_covers_bounds(slot, bounds)
-    }) else {
-        return Err(SparseAtlasRasterEventSkipReason::ScopeMaskNotLowered {
-            layer_id: mask_key.layer_id.0,
-            resource_id: mask_key.mask_mipmap_id,
-        });
-    };
-    let atlas_x = slot
-        .slot
-        .x
-        .checked_add(bounds.x.saturating_sub(slot.canvas_x))
-        .ok_or(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange)?;
-    let atlas_y = slot
-        .slot
-        .y
-        .checked_add(bounds.y.saturating_sub(slot.canvas_y))
-        .ok_or(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange)?;
-    Ok(Some(clip_gpu::GpuSparseAtlasTileRef {
-        key: clip_gpu::GpuSparseAtlasTextureKey {
-            format: slot.format,
-            atlas_id: slot.slot.atlas_id,
-        },
-        atlas_x,
-        atlas_y,
-        size: CanvasSize::new(bounds.width, bounds.height),
-    }))
 }
 
 fn scope_child_tile_events(
@@ -267,17 +230,41 @@ fn nested_scope_tile_events(
         parent_scope_depth + 1,
         clipping_run_policy,
     )?;
-    let scope = clip_gpu::GpuSparseAtlasScopeEvent {
-        kind,
-        opacity,
-        blend_mode,
-        local_bounds: bounds,
-        mask: scope_mask_tile_ref_for_bounds(segment, mask_key, bounds)?,
-    };
-    let mut tile_events = Vec::with_capacity(child_events.len() + 2);
-    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope));
-    tile_events.extend(child_events);
-    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope));
+    let mut tile_events = Vec::new();
+    if let Some(mask_key) = mask_key {
+        let mask_refs = scope_mask_tile_refs_for_bounds(segment, mask_key, bounds)?;
+        for mask_ref in mask_refs {
+            let clipped_events = clip_tile_events_to_bounds(&child_events, mask_ref.local_bounds)?;
+            if clipped_events.is_empty() {
+                continue;
+            }
+            let scope = clip_gpu::GpuSparseAtlasScopeEvent {
+                kind,
+                opacity,
+                blend_mode,
+                local_bounds: mask_ref.local_bounds,
+                mask: Some(mask_ref.tile_ref),
+            };
+            tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope));
+            tile_events.extend(clipped_events);
+            tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope));
+        }
+    } else {
+        let scope = clip_gpu::GpuSparseAtlasScopeEvent {
+            kind,
+            opacity,
+            blend_mode,
+            local_bounds: bounds,
+            mask: None,
+        };
+        tile_events.reserve(child_events.len() + 2);
+        tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope));
+        tile_events.extend(child_events);
+        tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope));
+    }
+    if tile_events.is_empty() {
+        return Err(SparseAtlasRasterEventSkipReason::EmptyRasterSlots);
+    }
     Ok((tile_events, bounds))
 }
 
@@ -407,23 +394,4 @@ fn tile_event_mask(
         | clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(scope)
         | clip_gpu::GpuSparseAtlasTileEvent::ResolveClipBase(scope) => scope.mask,
     }
-}
-
-fn slot_covers_bounds(slot: &SparseAtlasRerunSlot, bounds: Rect) -> bool {
-    let Some(slot_right) = slot.canvas_x.checked_add(slot.slot.width) else {
-        return false;
-    };
-    let Some(slot_bottom) = slot.canvas_y.checked_add(slot.slot.height) else {
-        return false;
-    };
-    let Some(bounds_right) = bounds.x.checked_add(bounds.width) else {
-        return false;
-    };
-    let Some(bounds_bottom) = bounds.y.checked_add(bounds.height) else {
-        return false;
-    };
-    slot.canvas_x <= bounds.x
-        && slot.canvas_y <= bounds.y
-        && bounds_right <= slot_right
-        && bounds_bottom <= slot_bottom
 }

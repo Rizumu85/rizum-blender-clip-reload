@@ -1195,14 +1195,21 @@ multiple resident R8 mask slots, runtime lowering splits the scope into one
 executor batch per mask slot and clips the child tile events to that slot's
 canvas bounds before resolving the scope. This keeps child raster/filter/clip
 events from leaking into the parent accumulator outside the masked sub-rect.
-Nested scope masks still require a single resident R8 slot and fail closed when
-their bounds span multiple mask slots.
+
+Thirty-fifth form: nested simple scope masks now use the same multi-slot R8
+mask lowering. When a nested `BeginScope` / `EndScope` child has a mask whose
+child bounds span multiple resident R8 slots, runtime lowering emits one nested
+scope pair per mask slot and clips that nested scope's child events to the
+slot's canvas bounds. The parent scope still sees the full nested child bounds
+for accumulated scope bounds, while pixels outside each mask slot sub-rect
+cannot leak into the parent accumulator. Missing nested mask coverage still
+fails closed to the region renderer.
 
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  nested multi-slot scope masks, clipping runs nested through THROUGH child
-  scopes, and clipped container/folder siblings
+  clipping runs nested through THROUGH child scopes and clipped
+  container/folder siblings
 
 ## Correctness Policy
 
