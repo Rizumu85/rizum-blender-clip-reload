@@ -102,7 +102,7 @@ fn scope_child_tile_events(
     children: &[clip_gpu::GpuNormalStackSource],
     clipping_run_policy: ClippingRunPolicy,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
-    scope_child_tile_events_at_depth(segment, children, 1, clipping_run_policy)
+    scope_child_tile_events_at_depth(segment, children, 1, clipping_run_policy, true)
 }
 
 fn scope_child_tile_events_at_depth(
@@ -110,6 +110,7 @@ fn scope_child_tile_events_at_depth(
     children: &[clip_gpu::GpuNormalStackSource],
     scope_depth: usize,
     clipping_run_policy: ClippingRunPolicy,
+    allow_through_children: bool,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     let mut tile_events = Vec::new();
     let mut current_bounds = None;
@@ -181,6 +182,7 @@ fn scope_child_tile_events_at_depth(
                     *mask_key,
                     clip_gpu::GpuSparseAtlasScopeEventKind::Container,
                     clipping_run_policy.for_nested_container(),
+                    allow_through_children,
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),
@@ -193,6 +195,9 @@ fn scope_child_tile_events_at_depth(
                 opacity,
                 mask_key,
             } => {
+                if !allow_through_children {
+                    return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);
+                }
                 let (scope_events, bounds) = nested_scope_tile_events(
                     segment,
                     children,
@@ -202,6 +207,7 @@ fn scope_child_tile_events_at_depth(
                     *mask_key,
                     clip_gpu::GpuSparseAtlasScopeEventKind::Through,
                     ClippingRunPolicy::DirectOnly,
+                    true,
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),
@@ -227,6 +233,7 @@ fn nested_scope_tile_events(
     mask_key: Option<clip_gpu::GpuMaskResourceKey>,
     kind: clip_gpu::GpuSparseAtlasScopeEventKind,
     clipping_run_policy: ClippingRunPolicy,
+    allow_through_children: bool,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     if parent_scope_depth >= SPARSE_SCOPE_STACK_LIMIT {
         return Err(SparseAtlasRasterEventSkipReason::ScopeDepthLimitExceeded);
@@ -236,6 +243,7 @@ fn nested_scope_tile_events(
         children,
         parent_scope_depth + 1,
         clipping_run_policy,
+        allow_through_children,
     )?;
     let mut tile_events = Vec::new();
     if let Some(mask_key) = mask_key {
@@ -280,7 +288,7 @@ fn push_clipping_run_tile_events(
     base: clip_gpu::GpuNormalRasterSource,
     clipped: &[clip_gpu::GpuClippedStackSource],
     scope_depth: usize,
-    clipping_run_policy: ClippingRunPolicy,
+    _clipping_run_policy: ClippingRunPolicy,
     tile_events: &mut Vec<clip_gpu::GpuSparseAtlasTileEvent>,
 ) -> Result<Rect, SparseAtlasRasterEventSkipReason> {
     let mut base_events = Vec::new();
@@ -323,7 +331,6 @@ fn push_clipping_run_tile_events(
                 *mask_key,
                 *blend_mode,
                 scope_depth,
-                clipping_run_policy.for_nested_container(),
                 tile_events,
             )?,
         }
@@ -341,7 +348,6 @@ fn push_clipped_container_tile_events(
     mask_key: Option<clip_gpu::GpuMaskResourceKey>,
     blend_mode: clip_gpu::GpuRasterBlendMode,
     parent_scope_depth: usize,
-    clipping_run_policy: ClippingRunPolicy,
     tile_events: &mut Vec<clip_gpu::GpuSparseAtlasTileEvent>,
 ) -> Result<(), SparseAtlasRasterEventSkipReason> {
     if opacity <= 0.0 || children.is_empty() {
@@ -354,7 +360,8 @@ fn push_clipped_container_tile_events(
         segment,
         children,
         parent_scope_depth + 1,
-        clipping_run_policy,
+        ClippingRunPolicy::None,
+        false,
     )?;
     if let Some(mask_key) = mask_key {
         for mask_ref in scope_mask_tile_refs_for_bounds(segment, mask_key, bounds)? {

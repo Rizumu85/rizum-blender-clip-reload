@@ -1244,27 +1244,39 @@ events, the sparse affected-window runtime lowering emits matching
 draws those events through the same tile VM. This covers positive-opacity
 containers with supported resolve blend modes and supported scope masks; child
 subtrees beyond direct rasters failed closed in this form. The thirty-ninth
-form supersedes that direct-raster-only child limit for filtered simple child
-streams.
+and fortieth forms supersede that direct-raster-only child limit for filtered
+and nested-container simple child streams.
 
 Thirty-ninth form: clipped container/folder sibling child streams now reuse the
 simple-scope child event builder instead of a direct-raster-only helper. The
 main planner, main tile-silo encoder, sparse affected-window lowering, and
 sparse atlas executor can now lower a clipped container/folder sibling whose
 children include raster content followed by pointwise filters with absent,
-proven-opaque, or provider-backed masks. The same shared child stream also
-keeps the path aligned with already-supported simple nested scopes and
-raster-only clipping-run children, while unsupported or over-depth subtrees
+proven-opaque, or provider-backed masks. Unsupported or over-depth subtrees
 still fail closed through the existing scope-depth, filter-mask, or legacy
 barrier reasons. Tests cover planner event counts, legacy-vs-tile GPU output,
 sparse affected-window event ordering, and sparse executor pixels for a
 filtered clipped container sibling.
 
+Fortieth form: clipped container/folder sibling child streams now also lower
+nested simple containers. The emitted event order is
+`BeginClipBase` / clip-base raster events / `BeginClippedScope` / nested
+`BeginScope` / child raster events / nested `EndScope` / `EndClippedScope` /
+`ResolveClipBase`, so the clipped sibling's local accumulator is resolved
+through the same preserve-alpha clip-base rule as the direct raster and
+filtered forms. Main planner tests lock the event count, the main GPU test
+compares tile-event output against the existing legacy pass path, sparse
+runtime tests lock event ordering, and sparse executor tests lock the pixel
+result. Child clipping runs and THROUGH children inside a clipped sibling are
+explicitly disallowed for now: targeted GPU comparisons showed mismatches, so
+those shapes stay as barriers until their clip-base and THROUGH accumulator
+semantics are modeled faithfully.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
-  stream: broader nested child scopes, raster-only clipping runs in more
-  positions, THROUGH children, and other non-direct-raster subtrees
+  stream: child clipping-run semantics, THROUGH child semantics, broader
+  nested positions, and other non-direct-raster subtrees
 
 ## Correctness Policy
 

@@ -326,11 +326,13 @@ clipping-run children also execute inside the sparse scope through ordered
 events, including direct raster-only clipping runs inside nested THROUGH child
 scopes and container scopes nested under THROUGH. Clipped container/folder
 siblings now reuse the same ordered simple-scope child stream for raster
-children followed by pointwise filters, so filtered clipped siblings can remain
-in the sparse affected-window path when their raster and mask resources are
-resident. Missing filter/scope mask coverage and clipped container/folder
-children whose contents are beyond the current simple child stream still remain
-explicit sparse-patch barriers.
+children followed by pointwise filters and for nested simple container
+children, so those clipped siblings can remain in the sparse affected-window
+path when their raster and mask resources are resident. Missing filter/scope
+mask coverage, child clipping runs inside clipped siblings, THROUGH children
+inside clipped siblings, and clipped container/folder children whose contents
+are beyond the current simple child stream still remain explicit sparse-patch
+barriers.
 
 ## Implementation Order
 
@@ -347,7 +349,7 @@ explicit sparse-patch barriers.
    path.
 7. Expand affected-window simple container/THROUGH scopes beyond the current
    sparse-scope subsets by broadening clipped container/folder sibling support
-   past the current filtered simple-child-stream form.
+   past the current filtered and nested-container simple-child-stream forms.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

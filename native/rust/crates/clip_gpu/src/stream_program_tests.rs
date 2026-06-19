@@ -880,6 +880,195 @@ fn planner_lowers_clipped_container_sibling_with_point_filter() {
 }
 
 #[test]
+fn planner_lowers_clipped_container_sibling_with_nested_container() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Container {
+                layer_id: LayerId(8),
+                children: vec![GpuNormalStackSource::Container {
+                    children: vec![GpuNormalStackSource::Raster(raster_source(2))],
+                    opacity: 1.0,
+                    mask_key: None,
+                    blend_mode: GpuRasterBlendMode::Normal,
+                }],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: GpuRasterBlendMode::Normal,
+            }],
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments(),
+        &[RenderSegment {
+            source_range: 0..1,
+            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
+            cost_hint: SegmentCostHint {
+                expected_passes: 1,
+                tile_events: 10,
+                legacy_sources: 0,
+            },
+        }]
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 1);
+}
+
+#[test]
+fn planner_keeps_clipped_container_sibling_with_child_clipping_run_as_barrier() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+        (raster_key(3), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Container {
+                layer_id: LayerId(8),
+                children: vec![GpuNormalStackSource::ClippingRun {
+                    base: raster_source(2),
+                    clipped: vec![GpuClippedStackSource::Raster(raster_source(3))],
+                }],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: GpuRasterBlendMode::Normal,
+            }],
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+        ))
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 0);
+}
+
+#[test]
+fn planner_keeps_clipped_container_sibling_with_through_child_as_barrier() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Container {
+                layer_id: LayerId(8),
+                children: vec![GpuNormalStackSource::ThroughGroup {
+                    children: vec![GpuNormalStackSource::Raster(raster_source(2))],
+                    opacity: 0.5,
+                    mask_key: None,
+                }],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: GpuRasterBlendMode::Normal,
+            }],
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+        ))
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 0);
+}
+
+#[test]
+fn planner_keeps_clipped_container_sibling_mixed_with_child_clipping_run_as_barrier() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+        (raster_key(3), CanvasSize::new(4, 4)),
+        (raster_key(4), CanvasSize::new(4, 4)),
+        (raster_key(5), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Container {
+                layer_id: LayerId(8),
+                children: vec![
+                    GpuNormalStackSource::Container {
+                        children: vec![GpuNormalStackSource::Raster(raster_source(2))],
+                        opacity: 1.0,
+                        mask_key: None,
+                        blend_mode: GpuRasterBlendMode::Normal,
+                    },
+                    GpuNormalStackSource::ClippingRun {
+                        base: raster_source(3),
+                        clipped: vec![GpuClippedStackSource::Raster(raster_source(4))],
+                    },
+                ],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: GpuRasterBlendMode::Normal,
+            }],
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments()[0].kind,
+        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+            RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+        ))
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 0);
+}
+
+#[test]
 fn planner_lowers_direct_clipping_run_inside_simple_through_scope() {
     let provider = PlannerProvider::new([
         (raster_key(1), CanvasSize::new(4, 4)),

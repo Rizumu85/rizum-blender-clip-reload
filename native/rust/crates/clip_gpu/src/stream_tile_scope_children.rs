@@ -19,6 +19,7 @@ use crate::{
 
 #[derive(Clone, Copy)]
 pub(crate) enum ClippingRunPolicy {
+    None,
     DirectOnly,
     NestedContainers,
 }
@@ -32,6 +33,7 @@ impl ClippingRunPolicy {
         match self {
             Self::NestedContainers => Self::NestedContainers,
             Self::DirectOnly => Self::DirectOnly,
+            Self::None => Self::None,
         }
     }
 }
@@ -268,7 +270,6 @@ where
                     context,
                     target_origin,
                     container_depth_remaining,
-                    through_depth_remaining,
                     clipping_run_policy,
                     clipped,
                     prepared,
@@ -362,8 +363,7 @@ fn append_clipped_sibling_events<'a, P>(
     context: &StreamingExecutionContext<'_, '_, P>,
     target_origin: (i32, i32),
     container_depth_remaining: usize,
-    through_depth_remaining: usize,
-    clipping_run_policy: ClippingRunPolicy,
+    _clipping_run_policy: ClippingRunPolicy,
     clipped: &'a [GpuClippedStackSource],
     prepared: &[PreparedSiloSource],
     payloads: &mut Vec<TileEventPayload>,
@@ -409,8 +409,8 @@ where
                     context,
                     target_origin,
                     container_depth_remaining - 1,
-                    through_depth_remaining,
-                    clipping_run_policy.for_nested_container(),
+                    0,
+                    ClippingRunPolicy::None,
                     children,
                     prepared,
                     &mut child_payloads,
