@@ -664,7 +664,13 @@ fn streamed_tile_silo_resolves_clipping_run_inside_container_like_legacy_pass() 
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let base_key = raster_key(171);
     let clipped_key = raster_key(172);
+    let base_mask_key = mask_key(171);
+    let clipped_mask_key = mask_key(172);
+    let mut base = raster_source_at_with_mask(base_key, base_mask_key, 1, 1);
+    base.opacity = 0.8;
+    base.blend_mode = GpuRasterBlendMode::Multiply;
     let mut clipped = raster_source_at(clipped_key, 1, 1);
+    clipped.mask_key = Some(clipped_mask_key);
     clipped.blend_mode = GpuRasterBlendMode::Multiply;
     let sources = vec![
         GpuNormalStackSource::SolidColor {
@@ -678,10 +684,10 @@ fn streamed_tile_silo_resolves_clipping_run_inside_container_like_legacy_pass() 
         },
         GpuNormalStackSource::Container {
             children: vec![GpuNormalStackSource::ClippingRun {
-                base: raster_source_at(base_key, 1, 1),
+                base,
                 clipped: vec![GpuClippedStackSource::Raster(clipped)],
             }],
-            opacity: 1.0,
+            opacity: 0.75,
             mask_key: None,
             blend_mode: GpuRasterBlendMode::Normal,
         },
@@ -707,7 +713,28 @@ fn streamed_tile_silo_resolves_clipping_run_inside_container_like_legacy_pass() 
             },
         ),
     ];
-    let mut reference_provider = InlineProvider::new(rasters);
+    let mut reference_provider = InlineProvider::new(rasters).with_masks(vec![
+        (
+            base_mask_key,
+            InlineMask {
+                render_node_id: RenderNodeId(271),
+                size: CanvasSize::new(1, 1),
+                origin: (1, 1),
+                fill_value: 0,
+                pixels: vec![180],
+            },
+        ),
+        (
+            clipped_mask_key,
+            InlineMask {
+                render_node_id: RenderNodeId(272),
+                size: CanvasSize::new(1, 1),
+                origin: (1, 1),
+                fill_value: 0,
+                pixels: vec![220],
+            },
+        ),
+    ]);
     let reference = renderer
         .draw_normal_stack_with_provider_to_rgba8(
             CanvasSize::new(3, 3),
@@ -733,6 +760,26 @@ fn streamed_tile_silo_resolves_clipping_run_inside_container_like_legacy_pass() 
                 size: CanvasSize::new(1, 1),
                 offset: (1, 1),
                 pixels: vec![80, 200, 255, 255],
+            },
+        ),
+    ])
+    .with_masks(vec![
+        (
+            base_mask_key,
+            AtlasInlineMask {
+                size: CanvasSize::new(1, 1),
+                origin: (1, 1),
+                fill_value: 0,
+                pixels: vec![180],
+            },
+        ),
+        (
+            clipped_mask_key,
+            AtlasInlineMask {
+                size: CanvasSize::new(1, 1),
+                origin: (1, 1),
+                fill_value: 0,
+                pixels: vec![220],
             },
         ),
     ]);

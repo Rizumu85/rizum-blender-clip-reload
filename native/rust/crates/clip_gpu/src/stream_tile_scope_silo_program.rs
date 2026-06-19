@@ -10,8 +10,7 @@ use crate::stream_tile_event::{
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
 use crate::stream_tile_mask_atlas_plan::MaskAtlasPlan;
 use crate::stream_tile_scope_silo_plan::{
-    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT,
-    container_scope_allows_clipping_runs, scope_mask_can_lower,
+    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT, scope_mask_can_lower,
     simple_scope_clipping_run_can_lower,
 };
 use crate::stream_tile_silo_plan::PreparedSiloSource;
@@ -149,14 +148,12 @@ where
                 let mut nested_payloads = Vec::new();
                 let mut nested_bounds = Vec::new();
                 let mut nested_dirty = None;
-                let child_allow_clipping_runs = allow_clipping_runs
-                    && container_scope_allows_clipping_runs(*opacity, *mask_key, *blend_mode);
                 if !append_scope_child_events(
                     context,
                     target_origin,
                     container_depth_remaining - 1,
                     through_depth_remaining,
-                    child_allow_clipping_runs,
+                    allow_clipping_runs,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -382,11 +379,7 @@ impl ScopeProgramKind {
 
     fn allows_clipping_runs(self) -> bool {
         match self {
-            Self::Container {
-                opacity,
-                blend_mode,
-                mask_key,
-            } => container_scope_allows_clipping_runs(opacity, mask_key, blend_mode),
+            Self::Container { .. } => true,
             Self::Through { .. } => false,
         }
     }

@@ -561,16 +561,19 @@ including provider-backed non-opaque scope masks:
   THROUGH children into `after`, then resolves back into the same container
   accumulator. THROUGH children inherit the current remaining container
   scope-depth budget instead of resetting it.
-- A narrow raster-only clipping run child can lower inside a Normal,
-  opacity-1, unmasked container chain. The tile VM uses `BeginClipBase`, local
-  clip-base raster events, `ClippedRaster` preserve events, and
-  `ResolveClipBase` to resolve the completed local clipping cache back into
-  the active container accumulator. Masked clipping runs, non-Normal or
-  non-1-opacity clipping bases, clipped container/folder siblings, and clipping
-  runs inside THROUGH scopes remain barriers.
+- A raster-only clipping run child can lower inside simple container scopes
+  when the clipping base and clipped siblings are atlas-eligible rasters. The
+  tile VM uses `BeginClipBase`, local clip-base raster events,
+  `ClippedRaster` preserve events, and `ResolveClipBase` to resolve the
+  completed local clipping cache back into the active container accumulator.
+  Masked rasters, layer opacity, and non-Normal clipping-base blend modes are
+  covered by the same byte-domain Normal alpha arithmetic as the faithful
+  legacy pass. Clipped container/folder siblings and clipping runs inside
+  THROUGH scopes remain barriers.
 - Unsupported scope shapes remain barriers: container depth beyond the fixed
-  limit, broader clipping-run shapes, solid colors, unavailable masked
-  containers, and provider-unavailable or unknown filter masks.
+  limit, clipping runs inside THROUGH scopes, clipped container/folder
+  siblings, solid colors, unavailable masked containers, and
+  provider-unavailable or unknown filter masks.
 
 Verification after this milestone:
 
@@ -591,9 +594,10 @@ Verification after this milestone:
   scope against the existing legacy source path, and planner coverage locks
   THROUGH-child containers beyond the fixed scope depth as
   `ScopeDepthLimitExceeded`.
-- New GPU unit coverage compares a raster-only clipping run inside a supported
-  Normal container scope against the existing legacy source path, and planner
-  coverage keeps clipping runs inside THROUGH scopes as `ThroughGroupNotLowered`.
+- New GPU unit coverage compares a masked, non-1-opacity, non-Normal-base
+  raster-only clipping run inside a container scope against the existing
+  legacy source path, and planner coverage keeps clipping runs inside THROUGH
+  scopes as `ThroughGroupNotLowered`.
 - New GPU unit coverage compares non-opaque masked container scope resolve
   against the existing legacy source path.
 - New GPU unit coverage compares a provider-backed non-opaque masked filter

@@ -148,7 +148,7 @@ where
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
         ThroughBudget::Remaining(1),
-        container_scope_allows_clipping_runs(*opacity, *mask_key, *blend_mode),
+        true,
     )?;
     checked_scope_event_count(2, child_count)
 }
@@ -259,8 +259,6 @@ where
                             .ok_or(SimpleScopeReject::NotSimple)?,
                     )
                     .ok_or(SimpleScopeReject::NotSimple)?;
-                let child_allow_clipping_runs = allow_clipping_runs
-                    && container_scope_allows_clipping_runs(*opacity, *mask_key, *blend_mode);
                 let child_count = simple_scope_children_event_count(
                     provider,
                     output_size,
@@ -269,7 +267,7 @@ where
                     children,
                     container_depth_remaining - 1,
                     through_budget,
-                    child_allow_clipping_runs,
+                    allow_clipping_runs,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
@@ -445,26 +443,12 @@ where
 }
 
 pub(crate) fn simple_scope_clipping_run_can_lower(
-    base: crate::GpuNormalRasterSource,
+    _base: crate::GpuNormalRasterSource,
     clipped: &[crate::GpuClippedStackSource],
 ) -> bool {
-    base.blend_mode == GpuRasterBlendMode::Normal
-        && base.opacity == 1.0
-        && base.mask_key.is_none()
-        && clipped.iter().all(|source| match source {
-            crate::GpuClippedStackSource::Raster(raster) => {
-                raster.opacity == 1.0 && raster.mask_key.is_none()
-            }
-            crate::GpuClippedStackSource::Container { .. } => false,
-        })
-}
-
-pub(crate) fn container_scope_allows_clipping_runs(
-    opacity: f32,
-    mask_key: Option<crate::GpuMaskResourceKey>,
-    blend_mode: GpuRasterBlendMode,
-) -> bool {
-    opacity == 1.0 && mask_key.is_none() && blend_mode == GpuRasterBlendMode::Normal
+    clipped
+        .iter()
+        .all(|source| matches!(source, crate::GpuClippedStackSource::Raster(_)))
 }
 
 fn checked_scope_event_count(base: usize, child_count: usize) -> Result<usize, SimpleScopeReject> {

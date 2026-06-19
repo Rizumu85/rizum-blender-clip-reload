@@ -418,12 +418,13 @@ strength by the mask, matching the existing faithful pass shaders.
 
 Eighth form: `TileEventKind::BeginClipBase`,
 `TileEventKind::ClippedRaster`, and `TileEventKind::ResolveClipBase` now allow
-the VM to express a narrow raster-only clipping run inside a scope-local event
-stream. `TILE_EVENT_ABI_VERSION` is `8`. The implemented planner subset only
-uses these events for clipping runs inside a Normal, opacity-1, unmasked
-container scope, with a Normal opacity-1 unmasked raster base and opacity-1
-unmasked raster clipped siblings. Masked clipping runs, non-Normal or
-non-1-opacity clipping bases, clipped container/folder siblings, and clipping
+the VM to express a raster-only clipping run inside a scope-local event stream.
+`TILE_EVENT_ABI_VERSION` is `8`. The implemented planner subset uses these
+events for clipping runs inside simple container scopes when the clipping base
+and clipped siblings are atlas-eligible rasters. This includes raster masks,
+layer opacity, and non-Normal clipping-base blend modes because the VM's Normal
+raster alpha path now follows the same byte-domain opacity and mask arithmetic
+as the faithful legacy pass. Clipped container/folder siblings and clipping
 runs inside THROUGH scopes remain barriers until their cache-writeback
 semantics are modelled and guarded.
 
@@ -536,10 +537,8 @@ Implemented subset:
   `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT`, plus pointwise filters whose masks are
   absent, proven fully opaque, or available through provider-backed R8 mask
   atlas chunks, plus simple THROUGH scope children within the remaining scope
-  depth budget, plus a narrow raster-only clipping-run child subset when the
-  active container chain is Normal, opacity 1, unmasked, the clipping base is a
-  Normal, opacity-1, unmasked raster, and every clipped sibling is an
-  opacity-1, unmasked raster.
+  depth budget, plus raster-only clipping-run child subsets whose base and
+  clipped siblings are atlas-eligible rasters.
 - The shader handles `BeginContainer` / `EndContainer` events by rendering
   child events into a transparent-white local accumulator, then resolving that
   local result into the parent accumulator through the same Normal,
@@ -554,12 +553,12 @@ Implemented subset:
   pair, rendering THROUGH children into `after`, then resolving back into that
   same container accumulator. THROUGH children inherit the current remaining
   container scope-depth budget instead of resetting it.
-- A simple raster-only clipping run child inside the supported Normal
-  container chain lowers as `BeginClipBase`, clip-base raster events,
-  clipped-raster preserve events, and `ResolveClipBase`, resolving back into
-  the active container accumulator.
-- Clipping runs inside THROUGH scopes, masked clipping runs, non-Normal or
-  non-1-opacity clipping bases, clipped container/folder siblings, solid
+- A simple raster-only clipping run child lowers as `BeginClipBase`,
+  clip-base raster events, clipped-raster preserve events, and
+  `ResolveClipBase`, resolving back into the active container accumulator.
+  Masked rasters, layer opacity, and non-Normal clipping-base blend modes can
+  lower when the provider can supply the needed atlas/mask tiles.
+- Clipping runs inside THROUGH scopes, clipped container/folder siblings, solid
   colors, unavailable container masks, and provider-unavailable or unknown
   filter masks still remain explicit legacy barriers.
 

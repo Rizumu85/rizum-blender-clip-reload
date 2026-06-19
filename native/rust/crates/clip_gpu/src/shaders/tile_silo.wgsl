@@ -841,7 +841,7 @@ fn event_source_alpha_byte(src: vec4<f32>, event_index: u32, mask_value: f32) ->
 }
 
 fn apply_normal(src: vec4<f32>, dst: vec4<f32>, event_index: u32, mask_value: f32) -> vec4<f32> {
-    return apply_normal_alpha(src, dst, event_source_alpha(src, event_index, mask_value));
+    return apply_normal_alpha(src, dst, event_source_alpha_byte(src, event_index, mask_value));
 }
 
 fn apply_add_glow_standard_alpha(src: vec4<f32>, dst: vec4<f32>, src_a: i32) -> vec4<f32> {
