@@ -91,4 +91,27 @@ impl RuntimeGpuRenderer {
             pixels: output.pixels,
         })
     }
+
+    pub fn draw_sparse_atlas_raster_event_segment_patches_over_rgba8(
+        &self,
+        session: &ClipSession,
+        segment: &crate::GpuSparseAtlasRasterEventSegment,
+        base_pixels: &[u8],
+        rects: &[crate::ReloadPatchRect],
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let rects = rects
+            .iter()
+            .map(|rect| clip_model::Rect::new(rect.x, rect.y, rect.width, rect.height))
+            .collect::<Vec<_>>();
+        let output = self
+            .renderer
+            .draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
+                session.summary.canvas,
+                &self.sparse_atlas_textures.borrow(),
+                &segment.batches,
+                base_pixels,
+                &rects,
+            )?;
+        Ok(output.payload)
+    }
 }

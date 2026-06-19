@@ -20,6 +20,12 @@ pub struct GpuRasterStackOutput {
 }
 
 #[derive(Debug)]
+pub struct GpuRasterPatchOutput {
+    pub size: CanvasSize,
+    pub payload: Vec<u8>,
+}
+
+#[derive(Debug)]
 pub struct GpuNormalStackChunk {
     pub raster_cache: GpuRasterResourceCache,
     pub mask_cache: Option<GpuMaskResourceCache>,

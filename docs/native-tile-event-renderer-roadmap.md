@@ -884,13 +884,31 @@ back only dirty output tiles. It provides the faithful executor primitive that
 the product patch path needs before it can rerun dirty raster segments without
 falling back to full output recomposition.
 
+Thirteenth form: `clip_gpu::readback` now owns RGBA8 texture readback layout
+and exposes region readback for internal GPU paths. The sparse-atlas executor
+uses that seam through
+`GpuRenderer::draw_sparse_atlas_raster_event_batch_patches_over_rgba8()`, which
+draws prepared sparse-atlas raster batches over a supplied segment-before RGBA8
+base accumulator and copies only the requested dirty rects back to CPU memory.
+Empty batch input returns the same dirty rect payload cut from the supplied
+base accumulator, preserving patch protocol semantics without launching a GPU
+pass. `RuntimeGpuRenderer::draw_sparse_atlas_raster_event_segment_patches_over_rgba8()`
+exposes the same dirty-payload adapter to runtime callers.
+
+This thirteenth form still does not decide or persist the valid
+segment-before checkpoint. It only proves the executor/readback half of dirty
+segment reload: once a checkpoint exists, a dirty raster segment can produce the
+same patch payload shape the Blender worker already consumes without reading
+back the full canvas.
+
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
 - store or reconstruct valid segment-before checkpoints for dirty segment
   reruns
-- read back only the updated output tiles for Blender patch reload
+- route Blender patch reload through sparse segment rerun when every dirty
+  segment has a valid checkpoint and executable raster-event plan
 
 ## Correctness Policy
 

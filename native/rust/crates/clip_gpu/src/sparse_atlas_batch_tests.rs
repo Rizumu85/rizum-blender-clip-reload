@@ -1,4 +1,4 @@
-use clip_model::CanvasSize;
+use clip_model::{CanvasSize, Rect};
 
 use crate::{
     GpuDeviceConfig, GpuRasterBlendMode, GpuRenderError, GpuRenderer, GpuSparseAtlasFormat,
@@ -167,6 +167,60 @@ fn sparse_atlas_batch_executor_rejects_wrong_base_size() {
             actual: 4,
         }
     );
+}
+
+#[test]
+fn sparse_atlas_batch_executor_reads_dirty_patches_over_base_accumulator() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let mut pool = GpuSparseAtlasTexturePool::default();
+    let raster = GpuSparseAtlasTextureKey {
+        format: GpuSparseAtlasFormat::Rgba8,
+        atlas_id: 14,
+    };
+    renderer
+        .update_sparse_atlas_texture_pool(&mut pool, &[one_pixel_update(raster, [255, 0, 0, 255])])
+        .expect("prepare sparse atlas pool");
+    let batches = split_sparse_atlas_raster_event_batches(&[sparse_event(raster, None, 1, 0)]);
+    let base = vec![
+        0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 10, 20, 30, 255, 40, 50, 60, 255, 70, 80,
+        90, 255,
+    ];
+
+    let output = renderer
+        .draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
+            CanvasSize::new(3, 2),
+            &pool,
+            &batches,
+            &base,
+            &[Rect::new(1, 0, 1, 1), Rect::new(0, 1, 3, 1)],
+        )
+        .expect("draw sparse atlas dirty patches over base");
+
+    assert_eq!(output.size, CanvasSize::new(3, 2));
+    assert_eq!(
+        output.payload,
+        vec![
+            255, 0, 0, 255, 10, 20, 30, 255, 40, 50, 60, 255, 70, 80, 90, 255,
+        ]
+    );
+}
+
+#[test]
+fn sparse_atlas_batch_executor_reads_base_patches_when_batches_are_empty() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let base = vec![1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255];
+
+    let output = renderer
+        .draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
+            CanvasSize::new(3, 1),
+            &GpuSparseAtlasTexturePool::default(),
+            &[],
+            &base,
+            &[Rect::new(1, 0, 2, 1)],
+        )
+        .expect("empty sparse atlas event batches keep base patches");
+
+    assert_eq!(output.payload, vec![4, 5, 6, 255, 7, 8, 9, 255]);
 }
 
 fn one_pixel_update(

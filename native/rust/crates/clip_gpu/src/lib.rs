@@ -4,6 +4,7 @@ mod blend;
 pub mod device;
 mod lut_filter;
 pub mod pass;
+mod readback;
 pub mod renderer;
 pub mod resource;
 mod shaders;
@@ -14,6 +15,7 @@ mod sparse_atlas_batch_tests;
 mod sparse_atlas_batches;
 mod sparse_atlas_executor;
 mod sparse_atlas_prepare;
+mod sparse_atlas_targets;
 #[cfg(test)]
 mod sparse_atlas_tests;
 pub mod stream;
@@ -87,5 +89,5 @@ pub use stream_tile_event::TILE_EVENT_ABI_VERSION;
 pub use types::{
     GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,
     GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput,
-    GpuRasterStackOutput,
+    GpuRasterPatchOutput, GpuRasterStackOutput,
 };

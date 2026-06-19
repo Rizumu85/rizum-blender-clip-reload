@@ -1,8 +1,12 @@
-use clip_model::CanvasSize;
+use clip_model::{CanvasSize, Rect};
 
-use crate::pass::{WHITE_TRANSPARENT, create_rgba8_texture};
+use crate::pass::create_rgba8_texture;
 use crate::sparse_atlas_prepare::{
     PreparedSparseAtlasRasterEvents, prepare_sparse_atlas_raster_events,
+};
+use crate::sparse_atlas_targets::{
+    SparseAtlasRenderedTextures, initialize_sparse_atlas_executor_targets, rgba8_patch_pixels,
+    rgba8_texture_byte_len,
 };
 use crate::stream_bounds::CanvasRect;
 use crate::stream_tile_event::TileEventProgram;
@@ -12,7 +16,7 @@ use crate::stream_tile_silo_buffers::{
 use crate::stream_tile_silo_pipeline::TileSiloPipeline;
 use crate::stream_tile_silo_upload::{upload_lut_atlas_texture, upload_mask_atlas_tile_texture};
 use crate::{
-    GpuRasterBlendMode, GpuRasterStackOutput, GpuRenderError, GpuRenderer,
+    GpuRasterBlendMode, GpuRasterPatchOutput, GpuRasterStackOutput, GpuRenderError, GpuRenderer,
     GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
 };
 
@@ -122,12 +126,93 @@ impl GpuRenderer {
         )
     }
 
+    pub fn draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
+        &self,
+        output_size: CanvasSize,
+        pool: &GpuSparseAtlasTexturePool,
+        batches: &[GpuSparseAtlasRasterEventBatch],
+        base_pixels: &[u8],
+        rects: &[Rect],
+    ) -> Result<GpuRasterPatchOutput, GpuRenderError> {
+        if output_size.width == 0 || output_size.height == 0 {
+            return Err(GpuRenderError::InvalidImageSize);
+        }
+        let expected_len = rgba8_texture_byte_len(output_size)?;
+        if base_pixels.len() != expected_len {
+            return Err(GpuRenderError::InputBufferSizeMismatch {
+                expected: expected_len,
+                actual: base_pixels.len(),
+            });
+        }
+        let prepared_batches = batches
+            .iter()
+            .filter(|batch| !batch.events.is_empty())
+            .map(|batch| prepare_sparse_atlas_raster_events(output_size, pool, &batch.events))
+            .collect::<Result<Vec<_>, _>>()?;
+        if prepared_batches.is_empty() {
+            return Ok(GpuRasterPatchOutput {
+                size: output_size,
+                payload: rgba8_patch_pixels(output_size, base_pixels, rects)?,
+            });
+        }
+
+        self.draw_prepared_sparse_atlas_raster_batch_patches_over_rgba8(
+            output_size,
+            &prepared_batches,
+            base_pixels,
+            rects,
+        )
+    }
+
     fn draw_prepared_sparse_atlas_raster_batches_to_rgba8(
         &self,
         output_size: CanvasSize,
         prepared_batches: &[PreparedSparseAtlasRasterEvents<'_>],
         base_pixels: Option<&[u8]>,
     ) -> Result<GpuRasterStackOutput, GpuRenderError> {
+        let rendered = self.render_prepared_sparse_atlas_raster_batches(
+            output_size,
+            prepared_batches,
+            base_pixels,
+        )?;
+        let pixels = self.read_texture_rgba8(
+            rendered.final_texture(),
+            output_size.width,
+            output_size.height,
+        )?;
+        Ok(GpuRasterStackOutput {
+            drawn_resources: Vec::new(),
+            size: output_size,
+            pixels,
+        })
+    }
+
+    fn draw_prepared_sparse_atlas_raster_batch_patches_over_rgba8(
+        &self,
+        output_size: CanvasSize,
+        prepared_batches: &[PreparedSparseAtlasRasterEvents<'_>],
+        base_pixels: &[u8],
+        rects: &[Rect],
+    ) -> Result<GpuRasterPatchOutput, GpuRenderError> {
+        let rendered = self.render_prepared_sparse_atlas_raster_batches(
+            output_size,
+            prepared_batches,
+            Some(base_pixels),
+        )?;
+        let payload =
+            self.read_texture_rgba8_regions(rendered.final_texture(), output_size, rects)?;
+        Ok(GpuRasterPatchOutput {
+            size: output_size,
+            payload,
+        })
+    }
+
+    fn render_prepared_sparse_atlas_raster_batches(
+        &self,
+        output_size: CanvasSize,
+        prepared_batches: &[PreparedSparseAtlasRasterEvents<'_>],
+        base_pixels: Option<&[u8]>,
+    ) -> Result<SparseAtlasRenderedTextures, GpuRenderError> {
         let usage = wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::TEXTURE_BINDING
             | wgpu::TextureUsages::COPY_SRC
@@ -161,7 +246,7 @@ impl GpuRenderer {
             &output_view,
             output_size,
             base_pixels,
-        )?;
+        );
 
         let drawable_batches = prepared_batches
             .iter()
@@ -188,18 +273,11 @@ impl GpuRenderer {
         }
 
         self.context.queue.submit([encoder.finish()]);
-        let final_texture = if drawable_batches.len() % 2 == 0 {
-            &previous
-        } else {
-            &output
-        };
-        let pixels =
-            self.read_texture_rgba8(final_texture, output_size.width, output_size.height)?;
-        Ok(GpuRasterStackOutput {
-            drawn_resources: Vec::new(),
-            size: output_size,
-            pixels,
-        })
+        Ok(SparseAtlasRenderedTextures::new(
+            previous,
+            output,
+            drawable_batches.len(),
+        ))
     }
 
     fn encode_sparse_atlas_raster_events(
@@ -331,109 +409,4 @@ impl GpuRenderer {
         pass.draw(0..3, 0..1);
         Ok(())
     }
-}
-
-fn rgba8_texture_byte_len(size: CanvasSize) -> Result<usize, GpuRenderError> {
-    if size.width == 0 || size.height == 0 {
-        return Err(GpuRenderError::InvalidImageSize);
-    }
-    usize::try_from(
-        u64::from(size.width)
-            .checked_mul(u64::from(size.height))
-            .and_then(|pixels| pixels.checked_mul(4))
-            .ok_or(GpuRenderError::TextureSizeOverflow)?,
-    )
-    .map_err(|_| GpuRenderError::TextureSizeOverflow)
-}
-
-fn initialize_sparse_atlas_executor_targets(
-    renderer: &GpuRenderer,
-    encoder: &mut wgpu::CommandEncoder,
-    previous: &wgpu::Texture,
-    previous_view: &wgpu::TextureView,
-    output_view: &wgpu::TextureView,
-    output_size: CanvasSize,
-    base_pixels: Option<&[u8]>,
-) -> Result<(), GpuRenderError> {
-    if let Some(base_pixels) = base_pixels {
-        renderer.context.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: previous,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            base_pixels,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(output_size.width * 4),
-                rows_per_image: Some(output_size.height),
-            },
-            wgpu::Extent3d {
-                width: output_size.width,
-                height: output_size.height,
-                depth_or_array_layers: 1,
-            },
-        );
-        clear_sparse_atlas_executor_output_target(encoder, output_view);
-    } else {
-        clear_sparse_atlas_executor_targets(encoder, previous_view, output_view);
-    }
-    Ok(())
-}
-
-fn clear_sparse_atlas_executor_output_target(
-    encoder: &mut wgpu::CommandEncoder,
-    output_view: &wgpu::TextureView,
-) {
-    let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("rizum_clip_sparse_atlas_clear_output"),
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view: output_view,
-            resolve_target: None,
-            ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
-                store: wgpu::StoreOp::Store,
-            },
-            depth_slice: None,
-        })],
-        depth_stencil_attachment: None,
-        occlusion_query_set: None,
-        timestamp_writes: None,
-        multiview_mask: None,
-    });
-}
-
-fn clear_sparse_atlas_executor_targets(
-    encoder: &mut wgpu::CommandEncoder,
-    previous_view: &wgpu::TextureView,
-    output_view: &wgpu::TextureView,
-) {
-    let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some("rizum_clip_sparse_atlas_clear"),
-        color_attachments: &[
-            Some(wgpu::RenderPassColorAttachment {
-                view: previous_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
-                    store: wgpu::StoreOp::Store,
-                },
-                depth_slice: None,
-            }),
-            Some(wgpu::RenderPassColorAttachment {
-                view: output_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
-                    store: wgpu::StoreOp::Store,
-                },
-                depth_slice: None,
-            }),
-        ],
-        depth_stencil_attachment: None,
-        occlusion_query_set: None,
-        timestamp_writes: None,
-        multiview_mask: None,
-    });
 }

@@ -1,4 +1,3 @@
-use std::sync::mpsc;
 use std::{error::Error, fmt};
 
 use clip_graph::RenderPlan;
@@ -73,6 +72,12 @@ pub enum GpuRenderError {
         origin_x: u32,
         origin_y: u32,
         upload_size: clip_model::CanvasSize,
+    },
+    ReadbackRegionOutOfBounds {
+        texture_size: clip_model::CanvasSize,
+        origin_x: u32,
+        origin_y: u32,
+        read_size: clip_model::CanvasSize,
     },
     MapFailed(String),
     PollFailed(String),
@@ -192,6 +197,21 @@ impl fmt::Display for GpuRenderError {
                 texture_size.width,
                 texture_size.height,
             ),
+            Self::ReadbackRegionOutOfBounds {
+                texture_size,
+                origin_x,
+                origin_y,
+                read_size,
+            } => write!(
+                f,
+                "GPU readback region {}x{} at {},{} exceeds texture {}x{}",
+                read_size.width,
+                read_size.height,
+                origin_x,
+                origin_y,
+                texture_size.width,
+                texture_size.height,
+            ),
             Self::MapFailed(err) => write!(f, "GPU readback map failed: {err}"),
             Self::PollFailed(err) => write!(f, "GPU poll failed: {err}"),
             Self::NotImplemented => f.write_str("GPU renderer operation is not implemented"),
@@ -230,10 +250,10 @@ impl GpuRenderer {
         height: u32,
         pixels: &[u8],
     ) -> Result<Vec<u8>, GpuRenderError> {
-        let layout = RgbaReadbackLayout::new(width, height)?;
-        if pixels.len() != layout.unpadded_len {
+        let expected_len = crate::readback::rgba8_unpadded_len(width, height)?;
+        if pixels.len() != expected_len {
             return Err(GpuRenderError::InputBufferSizeMismatch {
-                expected: layout.unpadded_len,
+                expected: expected_len,
                 actual: pixels.len(),
             });
         }
@@ -265,7 +285,7 @@ impl GpuRenderer {
             pixels,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(layout.unpadded_bytes_per_row),
+                bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
             },
             wgpu::Extent3d {
@@ -278,75 +298,6 @@ impl GpuRenderer {
         self.read_texture_rgba8(&texture, width, height)
     }
 
-    pub(crate) fn read_texture_rgba8(
-        &self,
-        texture: &wgpu::Texture,
-        width: u32,
-        height: u32,
-    ) -> Result<Vec<u8>, GpuRenderError> {
-        let layout = RgbaReadbackLayout::new(width, height)?;
-        let readback = self.context.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("rizum_clip_roundtrip_rgba8_readback"),
-            size: layout.padded_len as wgpu::BufferAddress,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-        let mut encoder =
-            self.context
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("rizum_clip_roundtrip_rgba8_encoder"),
-                });
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &readback,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(layout.padded_bytes_per_row),
-                    rows_per_image: Some(height),
-                },
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-        self.context.queue.submit([encoder.finish()]);
-
-        let slice = readback.slice(..);
-        let (tx, rx) = mpsc::channel();
-        slice.map_async(wgpu::MapMode::Read, move |result| {
-            let _ = tx.send(result.map_err(|err| err.to_string()));
-        });
-        self.context
-            .device
-            .poll(wgpu::PollType::wait_indefinitely())
-            .map_err(|err| GpuRenderError::PollFailed(err.to_string()))?;
-        rx.recv()
-            .map_err(|err| GpuRenderError::MapFailed(err.to_string()))?
-            .map_err(GpuRenderError::MapFailed)?;
-
-        let mapped = slice.get_mapped_range();
-        let mut output = vec![0u8; layout.unpadded_len];
-        for row in 0..height as usize {
-            let src_start = row * layout.padded_bytes_per_row as usize;
-            let src_end = src_start + layout.unpadded_bytes_per_row as usize;
-            let dst_start = row * layout.unpadded_bytes_per_row as usize;
-            let dst_end = dst_start + layout.unpadded_bytes_per_row as usize;
-            output[dst_start..dst_end].copy_from_slice(&mapped[src_start..src_end]);
-        }
-        drop(mapped);
-        readback.unmap();
-        Ok(output)
-    }
-
     pub fn read_rgba8_region(
         &self,
         _plan: &RenderPlan,
@@ -354,75 +305,5 @@ impl GpuRenderer {
         _out: &mut [u8],
     ) -> Result<(), GpuRenderError> {
         Err(GpuRenderError::NotImplemented)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct RgbaReadbackLayout {
-    unpadded_bytes_per_row: u32,
-    padded_bytes_per_row: u32,
-    unpadded_len: usize,
-    padded_len: usize,
-}
-
-impl RgbaReadbackLayout {
-    fn new(width: u32, height: u32) -> Result<Self, GpuRenderError> {
-        if width == 0 || height == 0 {
-            return Err(GpuRenderError::InvalidImageSize);
-        }
-        let unpadded_bytes_per_row = width
-            .checked_mul(4)
-            .ok_or(GpuRenderError::ReadbackSizeOverflow)?;
-        let padded_bytes_per_row =
-            align_u32(unpadded_bytes_per_row, wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)?;
-        let unpadded_len = usize::try_from(
-            u64::from(unpadded_bytes_per_row)
-                .checked_mul(u64::from(height))
-                .ok_or(GpuRenderError::ReadbackSizeOverflow)?,
-        )
-        .map_err(|_| GpuRenderError::ReadbackSizeOverflow)?;
-        let padded_len = usize::try_from(
-            u64::from(padded_bytes_per_row)
-                .checked_mul(u64::from(height))
-                .ok_or(GpuRenderError::ReadbackSizeOverflow)?,
-        )
-        .map_err(|_| GpuRenderError::ReadbackSizeOverflow)?;
-        Ok(Self {
-            unpadded_bytes_per_row,
-            padded_bytes_per_row,
-            unpadded_len,
-            padded_len,
-        })
-    }
-}
-
-fn align_u32(value: u32, alignment: u32) -> Result<u32, GpuRenderError> {
-    let mask = alignment
-        .checked_sub(1)
-        .ok_or(GpuRenderError::ReadbackSizeOverflow)?;
-    value
-        .checked_add(mask)
-        .map(|value| value & !mask)
-        .ok_or(GpuRenderError::ReadbackSizeOverflow)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{RgbaReadbackLayout, align_u32};
-
-    #[test]
-    fn readback_layout_pads_rows_to_wgpu_alignment() {
-        let layout = RgbaReadbackLayout::new(62, 3).unwrap();
-
-        assert_eq!(layout.unpadded_bytes_per_row, 248);
-        assert_eq!(layout.padded_bytes_per_row, 256);
-        assert_eq!(layout.unpadded_len, 744);
-        assert_eq!(layout.padded_len, 768);
-    }
-
-    #[test]
-    fn align_u32_keeps_aligned_values() {
-        assert_eq!(align_u32(256, 256).unwrap(), 256);
-        assert_eq!(align_u32(257, 256).unwrap(), 512);
     }
 }
