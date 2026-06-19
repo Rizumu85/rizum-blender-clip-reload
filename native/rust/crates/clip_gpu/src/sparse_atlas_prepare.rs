@@ -1,19 +1,23 @@
 use clip_model::CanvasSize;
 
 use crate::stream_bounds::{CanvasRect, union_optional};
-use crate::stream_tile_event::RasterTileEventPayload;
+use crate::stream_tile_event::{
+    PointFilterTileEventPayload, RasterTileEventPayload, TileEventPayload,
+};
 use crate::stream_tile_silo_plan::{TILE_SIZE, tile_work_lists_for_bounds};
 use crate::{
-    GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasRasterEvent,
-    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind, GpuSparseAtlasTexture,
-    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTileRef,
+    GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent,
+    GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind,
+    GpuSparseAtlasTexture, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
+    GpuSparseAtlasTileRef,
 };
 
 pub(crate) struct PreparedSparseAtlasRasterEvents<'a> {
     pub(crate) kind: GpuSparseAtlasRasterEventBatchKind,
-    pub(crate) atlas: &'a GpuSparseAtlasTexture,
+    pub(crate) atlas: Option<&'a GpuSparseAtlasTexture>,
     pub(crate) mask_atlas: Option<&'a GpuSparseAtlasTexture>,
-    pub(crate) payloads: Vec<RasterTileEventPayload>,
+    pub(crate) payloads: Vec<TileEventPayload>,
+    pub(crate) lut_rows: Vec<&'a [u8]>,
     pub(crate) work_indices: Vec<u32>,
     pub(crate) tile_spans: Vec<u32>,
     pub(crate) tile_cols: u32,
@@ -30,15 +34,22 @@ pub(crate) fn prepare_sparse_atlas_raster_events<'a>(
         pool,
         GpuSparseAtlasRasterEventBatchKind::RasterRun,
         events,
+        &[],
     )
 }
 
 pub(crate) fn prepare_sparse_atlas_raster_event_batch<'a>(
     output_size: CanvasSize,
     pool: &'a GpuSparseAtlasTexturePool,
-    batch: &GpuSparseAtlasRasterEventBatch,
+    batch: &'a GpuSparseAtlasRasterEventBatch,
 ) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
-    prepare_sparse_atlas_raster_events_with_kind(output_size, pool, batch.kind, &batch.events)
+    prepare_sparse_atlas_raster_events_with_kind(
+        output_size,
+        pool,
+        batch.kind,
+        &batch.events,
+        &batch.filters,
+    )
 }
 
 fn prepare_sparse_atlas_raster_events_with_kind<'a>(
@@ -46,13 +57,19 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
     pool: &'a GpuSparseAtlasTexturePool,
     kind: GpuSparseAtlasRasterEventBatchKind,
     events: &[GpuSparseAtlasRasterEvent],
+    filters: &'a [GpuSparseAtlasPointFilterEvent],
 ) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
-    let raster_key = common_raster_atlas_key(events)?;
-    let atlas = pool
-        .texture(raster_key)
-        .ok_or(GpuRenderError::MissingSparseAtlasTexture { key: raster_key })?;
-    validate_sparse_atlas_format(atlas, GpuSparseAtlasFormat::Rgba8)?;
-    let mask_key = common_mask_atlas_key(events)?;
+    let atlas = if events.is_empty() {
+        None
+    } else {
+        let raster_key = common_raster_atlas_key(events)?;
+        let atlas = pool
+            .texture(raster_key)
+            .ok_or(GpuRenderError::MissingSparseAtlasTexture { key: raster_key })?;
+        validate_sparse_atlas_format(atlas, GpuSparseAtlasFormat::Rgba8)?;
+        Some(atlas)
+    };
+    let mask_key = common_mask_atlas_key(events, filters)?;
     let mask_atlas = match mask_key {
         Some(key) => {
             let atlas = pool
@@ -65,9 +82,11 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
     };
 
     let mut payloads = Vec::new();
+    let mut lut_rows = Vec::new();
     let mut bounds = Vec::new();
     let mut pass_bounds = None;
     for event in events {
+        let atlas = atlas.expect("raster events must have an atlas");
         validate_tile_ref(atlas, event.raster)?;
         if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
             validate_tile_ref(mask_atlas, mask)?;
@@ -82,14 +101,38 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
         };
         pass_bounds = union_optional(pass_bounds, Some(source_bounds));
         bounds.push(source_bounds);
-        payloads.push(RasterTileEventPayload {
+        payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
             atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
             source_size: event.raster.size,
             source_offset: (event.source_offset_x, event.source_offset_y),
             opacity: event.opacity,
             blend_mode: event.blend_mode,
             mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
-        });
+        }));
+    }
+    for filter in filters {
+        validate_filter_event(output_size, filter)?;
+        if let (Some(mask_atlas), Some(mask)) = (mask_atlas, filter.mask) {
+            validate_tile_ref(mask_atlas, mask)?;
+        }
+        let bounds_rect = CanvasRect {
+            x: filter.local_bounds.x,
+            y: filter.local_bounds.y,
+            width: filter.local_bounds.width,
+            height: filter.local_bounds.height,
+        };
+        pass_bounds = union_optional(pass_bounds, Some(bounds_rect));
+        bounds.push(bounds_rect);
+        let lut_row =
+            u32::try_from(lut_rows.len()).map_err(|_| GpuRenderError::TextureSizeOverflow)?;
+        payloads.push(TileEventPayload::PointFilter(PointFilterTileEventPayload {
+            lut_row,
+            opacity: filter.opacity,
+            filter_mode: filter.filter_mode,
+            local_bounds: bounds_rect,
+            mask_atlas_origin: filter.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+        }));
+        lut_rows.push(filter.lut_rgba.as_slice());
     }
     let pass_bounds = match pass_bounds {
         Some(bounds) => bounds,
@@ -105,6 +148,7 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
         atlas,
         mask_atlas,
         payloads,
+        lut_rows,
         work_indices,
         tile_spans,
         tile_cols,
@@ -130,9 +174,14 @@ fn common_raster_atlas_key(
 
 fn common_mask_atlas_key(
     events: &[GpuSparseAtlasRasterEvent],
+    filters: &[GpuSparseAtlasPointFilterEvent],
 ) -> Result<Option<GpuSparseAtlasTextureKey>, GpuRenderError> {
     let mut key = None;
-    for mask in events.iter().filter_map(|event| event.mask) {
+    for mask in events
+        .iter()
+        .filter_map(|event| event.mask)
+        .chain(filters.iter().filter_map(|filter| filter.mask))
+    {
         if mask.key.format != GpuSparseAtlasFormat::R8 {
             return Err(GpuRenderError::SparseAtlasFormatMismatch {
                 expected: GpuSparseAtlasFormat::R8,
@@ -148,6 +197,37 @@ fn common_mask_atlas_key(
         }
     }
     Ok(key)
+}
+
+fn validate_filter_event(
+    output_size: CanvasSize,
+    filter: &GpuSparseAtlasPointFilterEvent,
+) -> Result<(), GpuRenderError> {
+    if filter.lut_rgba.len() != 256 * 4 {
+        return Err(GpuRenderError::InputBufferSizeMismatch {
+            expected: 256 * 4,
+            actual: filter.lut_rgba.len(),
+        });
+    }
+    let right = filter
+        .local_bounds
+        .x
+        .checked_add(filter.local_bounds.width)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    let bottom = filter
+        .local_bounds
+        .y
+        .checked_add(filter.local_bounds.height)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    if filter.local_bounds.is_empty() || right > output_size.width || bottom > output_size.height {
+        return Err(GpuRenderError::ReadbackRegionOutOfBounds {
+            texture_size: output_size,
+            origin_x: filter.local_bounds.x,
+            origin_y: filter.local_bounds.y,
+            read_size: CanvasSize::new(filter.local_bounds.width, filter.local_bounds.height),
+        });
+    }
+    Ok(())
 }
 
 fn validate_sparse_atlas_format(

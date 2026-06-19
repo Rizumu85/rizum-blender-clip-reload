@@ -298,8 +298,10 @@ evict under count or memory budget pressure, with LRU retained as the
 equal-priority tie-breaker. Affected-window execution now also lowers the
 raster-only `RasterClippingRun` form into sparse atlas executor batches by
 running the existing tile-silo clipping-run shader mode over resident atlas
-slots. The next target is expanding affected-window execution beyond
-`RasterRun` / `RasterClippingRun` by lowering pointwise filters and simple
+slots. It also lowers unmasked `PointFilterRun` segments into filter-only
+sparse atlas batches with uploaded LUT rows and the existing typed point-filter
+shader path. The next target is expanding affected-window execution beyond
+unmasked point filters by lowering provider-backed filter masks or simple
 scopes into executable sparse atlas events.
 
 ## Implementation Order
@@ -315,9 +317,9 @@ scopes into executable sparse atlas events.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Expand affected-window execution beyond `RasterRun` / `RasterClippingRun`
-   by lowering pointwise filters and simple scopes into executable sparse atlas
-   events.
+7. Expand affected-window execution beyond unmasked `PointFilterRun` by
+   lowering provider-backed filter masks or simple scopes into executable
+   sparse atlas events.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

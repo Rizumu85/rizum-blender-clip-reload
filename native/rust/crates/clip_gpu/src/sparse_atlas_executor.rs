@@ -45,6 +45,15 @@ pub struct GpuSparseAtlasRasterEvent {
     pub mask: Option<GpuSparseAtlasTileRef>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuSparseAtlasPointFilterEvent {
+    pub lut_rgba: Vec<u8>,
+    pub opacity: f32,
+    pub filter_mode: crate::GpuLutFilterMode,
+    pub local_bounds: Rect,
+    pub mask: Option<GpuSparseAtlasTileRef>,
+}
+
 impl GpuRenderer {
     pub fn draw_sparse_atlas_raster_events_to_rgba8(
         &self,
@@ -82,7 +91,7 @@ impl GpuRenderer {
         }
         let prepared_batches = batches
             .iter()
-            .filter(|batch| !batch.events.is_empty())
+            .filter(|batch| !batch.is_empty())
             .map(|batch| prepare_sparse_atlas_raster_event_batch(output_size, pool, batch))
             .collect::<Result<Vec<_>, _>>()?;
         if prepared_batches.is_empty() {
@@ -115,7 +124,7 @@ impl GpuRenderer {
         }
         let prepared_batches = batches
             .iter()
-            .filter(|batch| !batch.events.is_empty())
+            .filter(|batch| !batch.is_empty())
             .map(|batch| prepare_sparse_atlas_raster_event_batch(output_size, pool, batch))
             .collect::<Result<Vec<_>, _>>()?;
         if prepared_batches.is_empty() {
@@ -153,7 +162,7 @@ impl GpuRenderer {
         }
         let prepared_batches = batches
             .iter()
-            .filter(|batch| !batch.events.is_empty())
+            .filter(|batch| !batch.is_empty())
             .map(|batch| prepare_sparse_atlas_raster_event_batch(output_size, pool, batch))
             .collect::<Result<Vec<_>, _>>()?;
         if prepared_batches.is_empty() {
@@ -295,10 +304,20 @@ impl GpuRenderer {
         output_view: &wgpu::TextureView,
         pass_bounds: CanvasRect,
     ) -> Result<(), GpuRenderError> {
-        let atlas_view = prepared
-            .atlas
-            .texture()
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let (owned_atlas, atlas_view) = match prepared.atlas {
+            Some(atlas) => (
+                None,
+                atlas
+                    .texture()
+                    .create_view(&wgpu::TextureViewDescriptor::default()),
+            ),
+            None => {
+                let (texture, _) = upload_lut_atlas_texture(self, &[])?;
+                let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+                (Some(texture), view)
+            }
+        };
+        let _owned_atlas = owned_atlas;
         let (owned_mask_atlas, mask_atlas_view) = match prepared.mask_atlas {
             Some(mask_atlas) => (
                 None,
@@ -314,9 +333,9 @@ impl GpuRenderer {
             }
         };
         let _owned_mask_atlas = owned_mask_atlas;
-        let (lut_atlas, _) = upload_lut_atlas_texture(self, &[])?;
+        let (lut_atlas, _) = upload_lut_atlas_texture(self, &prepared.lut_rows)?;
         let lut_atlas_view = lut_atlas.create_view(&wgpu::TextureViewDescriptor::default());
-        let event_program = TileEventProgram::from_raster_payloads(prepared.payloads.clone());
+        let event_program = TileEventProgram::from_payloads(prepared.payloads.clone());
         let event_buffers = create_tile_event_storage_buffers(
             &self.context.device,
             "rizum_clip_sparse_atlas_event_headers",
@@ -440,5 +459,6 @@ fn sparse_atlas_batch_tile_silo_params(
             blend_kind(resolve_blend_mode),
             base_event_count,
         ),
+        GpuSparseAtlasRasterEventBatchKind::PointFilterRun => (TILE_SILO_MODE_NORMAL, 0, 0),
     }
 }

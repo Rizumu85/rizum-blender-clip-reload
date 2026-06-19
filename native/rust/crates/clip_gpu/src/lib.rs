@@ -74,7 +74,9 @@ pub use sparse_atlas_batches::{
     GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind,
     split_sparse_atlas_raster_event_batches,
 };
-pub use sparse_atlas_executor::{GpuSparseAtlasRasterEvent, GpuSparseAtlasTileRef};
+pub use sparse_atlas_executor::{
+    GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent, GpuSparseAtlasTileRef,
+};
 pub use stream::{
     GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider,
     GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,

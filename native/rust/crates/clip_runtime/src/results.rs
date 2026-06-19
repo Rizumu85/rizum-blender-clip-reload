@@ -103,6 +103,11 @@ pub enum GpuSparseAtlasRasterEventSkipReason {
         canvas_x: u32,
         canvas_y: u32,
     },
+    FilterMaskNotLowered {
+        layer_id: u32,
+        resource_id: u32,
+    },
+    InvalidPointFilter,
     MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
 }

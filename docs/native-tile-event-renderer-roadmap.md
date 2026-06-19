@@ -1061,17 +1061,28 @@ preserve the existing region-render fallback. This moves affected-window
 reload beyond plain `RasterRun` without creating a second compositor path or
 approximating clipping semantics.
 
-This twenty-third form still does not execute pointwise filters or simple
+Twenty-fourth form: sparse affected-window execution now supports unmasked
+`PointFilterRun` segments. `GpuSparseAtlasRasterEventBatch` can carry
+filter-only payloads and LUT rows in addition to raster events; the sparse
+atlas executor binds a dummy RGBA atlas when a batch has no raster events,
+uploads the batch LUT rows, and runs the same typed `PointFilter` shader path
+used by the main tile-silo renderer. Runtime lowering accepts only faithful
+point-filter segments: positive opacity, a 256-entry RGBA LUT, no filter mask,
+and a dirty-rect-bounded local filter area. Masked point filters fail closed
+with `FilterMaskNotLowered`, and malformed filter payloads fail closed with
+`InvalidPointFilter`. This lets dirty raster windows continue through
+unmasked adjustment/filter layers without falling back to the region renderer.
+
+This twenty-fourth form still does not execute masked point filters or simple
 container/THROUGH scopes from sparse affected windows. The next improvement is
-to lower those remaining tile-local segment kinds into executable sparse atlas
-events, starting with the filter/scope forms that already have faithful
-tile-silo shader semantics.
+to lower provider-backed R8 filter masks or start the first simple scope form,
+using the existing tile-silo shader semantics.
 
 Next Phase 6 work:
 
-- expand affected-window execution beyond `RasterRun` / `RasterClippingRun`
-  by lowering pointwise filters and simple scopes into executable sparse atlas
-  events
+- expand affected-window execution beyond unmasked `PointFilterRun` by
+  lowering provider-backed filter masks or simple scopes into executable sparse
+  atlas events
 
 ## Correctness Policy
 

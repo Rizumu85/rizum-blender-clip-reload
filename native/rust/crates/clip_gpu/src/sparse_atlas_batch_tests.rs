@@ -1,10 +1,11 @@
 use clip_model::{CanvasSize, Rect};
 
 use crate::{
-    GpuDeviceConfig, GpuRasterBlendMode, GpuRenderError, GpuRenderer, GpuSparseAtlasFormat,
-    GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTextureKey,
-    GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolUpdate, GpuSparseAtlasTileRef,
-    GpuSparseAtlasUpdateChunk, split_sparse_atlas_raster_event_batches,
+    GpuDeviceConfig, GpuLutFilterMode, GpuRasterBlendMode, GpuRenderError, GpuRenderer,
+    GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent,
+    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
+    GpuSparseAtlasTexturePoolUpdate, GpuSparseAtlasTileRef, GpuSparseAtlasUpdateChunk,
+    split_sparse_atlas_raster_event_batches,
 };
 
 #[test]
@@ -251,6 +252,31 @@ fn sparse_atlas_batch_executor_draws_clipping_run_batch() {
     assert_eq!(output.pixels, vec![255, 255, 255, 0]);
 }
 
+#[test]
+fn sparse_atlas_batch_executor_draws_point_filter_batch_over_base() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let batch =
+        GpuSparseAtlasRasterEventBatch::point_filter_run(vec![GpuSparseAtlasPointFilterEvent {
+            lut_rgba: invert_lut(),
+            opacity: 1.0,
+            filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            local_bounds: Rect::new(0, 0, 1, 1),
+            mask: None,
+        }]);
+    let base = vec![10, 20, 30, 255];
+
+    let output = renderer
+        .draw_sparse_atlas_raster_event_batches_over_rgba8(
+            CanvasSize::new(1, 1),
+            &GpuSparseAtlasTexturePool::default(),
+            &[batch],
+            &base,
+        )
+        .expect("draw point filter sparse atlas event batch");
+
+    assert_eq!(output.pixels, vec![245, 235, 225, 255]);
+}
+
 fn one_pixel_update(
     key: GpuSparseAtlasTextureKey,
     rgba: [u8; 4],
@@ -329,4 +355,13 @@ fn sparse_event_atlas_x(
         blend_mode: GpuRasterBlendMode::Normal,
         mask: None,
     }
+}
+
+fn invert_lut() -> Vec<u8> {
+    let mut lut = Vec::with_capacity(256 * 4);
+    for value in 0..=255u8 {
+        let mapped = 255 - value;
+        lut.extend_from_slice(&[mapped, mapped, mapped, 255]);
+    }
+    lut
 }

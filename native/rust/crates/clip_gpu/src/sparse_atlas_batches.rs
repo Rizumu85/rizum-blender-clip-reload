@@ -1,4 +1,7 @@
-use crate::{GpuRasterBlendMode, GpuSparseAtlasRasterEvent, GpuSparseAtlasTextureKey};
+use crate::{
+    GpuRasterBlendMode, GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent,
+    GpuSparseAtlasTextureKey,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GpuSparseAtlasRasterEventBatchKind {
@@ -7,15 +10,21 @@ pub enum GpuSparseAtlasRasterEventBatchKind {
         base_event_count: u32,
         resolve_blend_mode: GpuRasterBlendMode,
     },
+    PointFilterRun,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GpuSparseAtlasRasterEventBatch {
     pub kind: GpuSparseAtlasRasterEventBatchKind,
     pub events: Vec<GpuSparseAtlasRasterEvent>,
+    pub filters: Vec<GpuSparseAtlasPointFilterEvent>,
 }
 
 impl GpuSparseAtlasRasterEventBatch {
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty() && self.filters.is_empty()
+    }
+
     pub fn raster_clipping_run(
         events: Vec<GpuSparseAtlasRasterEvent>,
         base_event_count: u32,
@@ -27,6 +36,15 @@ impl GpuSparseAtlasRasterEventBatch {
                 resolve_blend_mode,
             },
             events,
+            filters: Vec::new(),
+        }
+    }
+
+    pub fn point_filter_run(filters: Vec<GpuSparseAtlasPointFilterEvent>) -> Self {
+        Self {
+            kind: GpuSparseAtlasRasterEventBatchKind::PointFilterRun,
+            events: Vec::new(),
+            filters,
         }
     }
 }
@@ -84,6 +102,7 @@ impl CurrentSparseAtlasBatch {
         GpuSparseAtlasRasterEventBatch {
             kind: GpuSparseAtlasRasterEventBatchKind::RasterRun,
             events,
+            filters: Vec::new(),
         }
     }
 }
