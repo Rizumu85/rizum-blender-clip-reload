@@ -1,9 +1,8 @@
 use super::RuntimeGpuRenderer;
+use super::checkpoint::initial_transparent_rgba8;
 use crate::gpu_provider::{
-    GpuResourcePlan, RuntimeGpuResourceProvider,
     atlas_events::{sparse_atlas_raster_event_plan, sparse_atlas_raster_suffix_event_plan},
     atlas_upload::sparse_atlas_texture_pool_updates,
-    cache::PersistentGpuTextureCache,
 };
 use crate::{
     ClipSession, GpuTextureCacheStats, NormalRasterStackGpuPatchResult, RuntimeError,
@@ -185,15 +184,21 @@ impl RuntimeGpuRenderer {
         }
         let source_count = sources.len();
         let resource_stats = resource_plan.resource_stats();
-        let (base, texture_cache_stats, drawn_resources, mask_resources) = self
-            .reconstruct_prefix_checkpoint_rgba8(
-                session,
-                &sources[..checkpoint_source_start],
-                resource_plan,
-            )?;
-
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let sparse_atlas = reload.clone().into();
+        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
+        if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
+            return Ok(None);
+        }
+
+        let checkpoint = self.prefix_checkpoint_rgba8(
+            session,
+            plan,
+            u32::try_from(checkpoint_source_start)
+                .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?,
+            &sources[..checkpoint_source_start],
+            resource_plan,
+        )?;
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
         self.renderer
             .update_sparse_atlas_texture_pool(
@@ -201,10 +206,6 @@ impl RuntimeGpuRenderer {
                 &updates,
             )
             .map_err(RuntimeError::from)?;
-        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
-        if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
-            return Ok(None);
-        }
 
         let batches = event_plan
             .segments
@@ -222,7 +223,7 @@ impl RuntimeGpuRenderer {
                 session.summary.canvas,
                 &self.sparse_atlas_textures.borrow(),
                 &batches,
-                &base,
+                &checkpoint.pixels,
                 &rects,
             )?;
         Ok(Some((
@@ -230,74 +231,13 @@ impl RuntimeGpuRenderer {
                 payload: output.payload,
                 source_count,
                 resource_stats,
-                texture_cache_stats,
-                drawn_resources,
-                mask_resources,
+                texture_cache_stats: checkpoint.texture_cache_stats,
+                drawn_resources: checkpoint.drawn_resources,
+                mask_resources: checkpoint.mask_resources,
                 unsupported: Vec::new(),
             },
             sparse_atlas,
         )))
-    }
-
-    fn reconstruct_prefix_checkpoint_rgba8(
-        &self,
-        session: &ClipSession,
-        sources: &[clip_gpu::GpuNormalStackSource],
-        resource_plan: GpuResourcePlan,
-    ) -> Result<
-        (
-            Vec<u8>,
-            GpuTextureCacheStats,
-            Vec<clip_gpu::GpuRasterResourceInfo>,
-            Vec<clip_gpu::GpuMaskResourceInfo>,
-        ),
-        RuntimeError,
-    > {
-        if sources.is_empty() {
-            return initial_transparent_rgba8(session.summary.canvas).map(|pixels| {
-                (
-                    pixels,
-                    GpuTextureCacheStats::default(),
-                    Vec::new(),
-                    Vec::new(),
-                )
-            });
-        }
-
-        let mut texture_cache = self.texture_cache.borrow_mut();
-        let mut provider = match texture_cache.as_mut() {
-            Some(cache) => {
-                cache.begin_frame();
-                RuntimeGpuResourceProvider::with_texture_cache(
-                    &session.container,
-                    session.summary.canvas,
-                    resource_plan,
-                    cache,
-                )?
-            }
-            None => RuntimeGpuResourceProvider::new(
-                &session.container,
-                session.summary.canvas,
-                resource_plan,
-            )?,
-        };
-        let output = self.renderer.draw_normal_stack_with_provider_to_rgba8(
-            session.summary.canvas,
-            sources,
-            &mut provider,
-        )?;
-        let mask_resources = std::mem::take(&mut provider.mask_resources);
-        drop(provider);
-        let texture_cache_stats = texture_cache
-            .as_ref()
-            .map(PersistentGpuTextureCache::frame_stats)
-            .unwrap_or_default();
-        Ok((
-            output.pixels,
-            texture_cache_stats,
-            output.drawn_resources,
-            mask_resources,
-        ))
     }
 
     pub fn prepare_sparse_atlas_textures(
@@ -412,35 +352,12 @@ fn suffix_manifest_is_raster_only(plan: &crate::ReloadDiffPlan) -> bool {
         .all(|segment| segment.kind == "RasterRun")
 }
 
-fn initial_transparent_rgba8(size: clip_model::CanvasSize) -> Result<Vec<u8>, RuntimeError> {
-    let len = usize::try_from(
-        u64::from(size.width)
-            .checked_mul(u64::from(size.height))
-            .and_then(|pixels| pixels.checked_mul(4))
-            .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?,
-    )
-    .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
-    let mut pixels = vec![0u8; len];
-    for pixel in pixels.chunks_exact_mut(4) {
-        pixel.copy_from_slice(&[255, 255, 255, 0]);
-    }
-    Ok(pixels)
-}
-
 #[cfg(test)]
 mod tests {
     use super::{
-        initial_transparent_rgba8, suffix_checkpoint_source_start, suffix_manifest_is_raster_only,
+        suffix_checkpoint_source_start, suffix_manifest_is_raster_only,
         suffix_starts_at_initial_accumulator,
     };
-
-    #[test]
-    fn initial_transparent_base_uses_white_rgb_zero_alpha() {
-        let pixels =
-            initial_transparent_rgba8(clip_model::CanvasSize::new(2, 1)).expect("base pixels");
-
-        assert_eq!(pixels, vec![255, 255, 255, 0, 255, 255, 255, 0]);
-    }
 
     #[test]
     fn suffix_initial_base_requires_first_dirty_segment_at_source_zero() {

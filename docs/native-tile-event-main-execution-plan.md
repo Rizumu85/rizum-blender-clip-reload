@@ -279,8 +279,11 @@ Current safe product subsets:
   execute the sparse-atlas suffix over that checkpoint
 
 The reconstructed-prefix path is a correctness seam, not the final performance
-shape. It still performs full-canvas prefix work. The next target is persisted
-or cheaply reconstructed segment-before checkpoints across reloads.
+shape when there is no cache hit. The runtime now has a session single-entry
+segment-before checkpoint cache keyed by the current reload manifest prefix, so
+repeated dirty suffix reloads can reuse the selected RGBA8 checkpoint when the
+prefix is unchanged. The next target is explicit checkpoint selection plus a
+small budgeted set of persisted checkpoints.
 
 ## Implementation Order
 
@@ -295,7 +298,7 @@ or cheaply reconstructed segment-before checkpoints across reloads.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Add persisted or cheaply reconstructed segment-before checkpoints.
+7. Add explicit checkpoint selection plus a budgeted checkpoint cache.
 8. Route general dirty segment reload through sparse atlas event reruns.
 9. Keep the pass-heavy renderer as a test oracle and debug backend, not as a
    product fallback.

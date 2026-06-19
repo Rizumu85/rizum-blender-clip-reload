@@ -19,6 +19,7 @@ use crate::{
     SimpleRasterStackUnsupported,
 };
 
+mod checkpoint;
 mod sparse_atlas;
 
 pub struct RuntimeGpuRenderer {
@@ -26,6 +27,7 @@ pub struct RuntimeGpuRenderer {
     texture_cache: RefCell<Option<PersistentGpuTextureCache>>,
     sparse_atlas_cache: RefCell<SparseAtlasCache>,
     sparse_atlas_textures: RefCell<clip_gpu::GpuSparseAtlasTexturePool>,
+    segment_checkpoint_cache: RefCell<checkpoint::SegmentCheckpointCache>,
 }
 
 impl RuntimeGpuRenderer {
@@ -35,6 +37,7 @@ impl RuntimeGpuRenderer {
             texture_cache: RefCell::new(None),
             sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
             sparse_atlas_textures: RefCell::new(clip_gpu::GpuSparseAtlasTexturePool::default()),
+            segment_checkpoint_cache: RefCell::new(checkpoint::SegmentCheckpointCache::default()),
         })
     }
 
@@ -44,6 +47,7 @@ impl RuntimeGpuRenderer {
             texture_cache: RefCell::new(Some(PersistentGpuTextureCache::new())),
             sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
             sparse_atlas_textures: RefCell::new(clip_gpu::GpuSparseAtlasTexturePool::default()),
+            segment_checkpoint_cache: RefCell::new(checkpoint::SegmentCheckpointCache::default()),
         })
     }
 

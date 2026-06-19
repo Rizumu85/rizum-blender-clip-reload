@@ -962,12 +962,30 @@ the prefix is still full-canvas prefix work. The next milestone is to persist
 or cheaply reconstruct selected segment-before checkpoints across reloads, so
 the same suffix executor can avoid rerendering unchanged prefixes.
 
+Seventeenth form: `clip_runtime::gpu_api::checkpoint` now owns segment-before
+checkpoint reconstruction and caching. `RuntimeGpuRenderer` keeps a session
+single-entry checkpoint cache keyed by the current reload manifest's canvas,
+root layer, tile-event ABI, checkpoint `source_start`, all node signatures,
+and the prefix segment signatures up to that source boundary. A changed suffix
+tile work-list does not invalidate the prefix checkpoint key, while a changed
+prefix segment does. The reconstructed sparse suffix route now asks this module
+for the checkpoint; on a key hit it reuses the cached RGBA8 accumulator instead
+of rendering the unchanged prefix again. This is deliberately a selected
+segment-before accumulator cache, not a global per-layer full-canvas texture
+cache.
+
+This seventeenth form is still CPU RGBA checkpoint storage and stores only one
+checkpoint. The next improvement is to make checkpoint selection explicit in
+the render program and cache one or a small budgeted set of useful
+segment-before checkpoints, then move toward GPU-resident checkpoints where
+that is safe and measurable.
+
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
-- persist or cheaply reconstruct valid segment-before checkpoints for dirty
-  segment reruns
+- choose and persist a budgeted set of valid segment-before checkpoints for
+  dirty segment reruns
 - route Blender patch reload through sparse segment rerun when every dirty
   segment has a valid checkpoint and executable raster-event plan
 
