@@ -70,7 +70,13 @@ pub(crate) fn affected_rerun_segments(
         .filter(|segment| segment.ordinal >= first_dirty_ordinal)
         .filter(|segment| segment_affects_dirty_rects(segment, &source_tiles, &plan.dirty_rects))
         .map(|segment| {
-            let resident_slots = if segment_has_unknown_work_tile(segment, &source_tiles) {
+            let unknown_work_tile = segment_has_unknown_work_tile(segment, &source_tiles);
+            let event_ranges = if unknown_work_tile {
+                full_segment_event_range(segment.tile_events)
+            } else {
+                affected_tile_event_ranges(segment, &source_tiles, &plan.dirty_rects)
+            };
+            let resident_slots = if unknown_work_tile {
                 Vec::new()
             } else {
                 let affecting_tiles =
@@ -80,7 +86,7 @@ pub(crate) fn affected_rerun_segments(
             let updated_slots = updated_slots_from_resident(&resident_slots);
             SparseAtlasRerunSegment {
                 ordinal: segment.ordinal,
-                event_ranges: full_segment_event_range(segment.tile_events),
+                event_ranges,
                 resident_slots,
                 updated_slots,
             }
@@ -187,6 +193,26 @@ fn tiles_affecting_dirty_rects<'a>(
         .filter(move |tile| tile_affects_dirty_rects(tile, source_tiles, dirty_rects))
 }
 
+fn affected_tile_event_ranges(
+    segment: &ReloadDiffSegment,
+    source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
+    dirty_rects: &[ReloadPatchRect],
+) -> Vec<ReloadDirtySegmentEventRange> {
+    if segment.tile_work_list.is_empty() {
+        return full_segment_event_range(segment.tile_events);
+    }
+    let ranges = segment
+        .tile_work_list
+        .iter()
+        .filter(|tile| tile_affects_dirty_rects(tile, source_tiles, dirty_rects))
+        .map(|tile| ReloadDirtySegmentEventRange {
+            start: tile.event_start,
+            end: tile.event_end,
+        })
+        .collect::<Vec<_>>();
+    coalesce_event_ranges(ranges)
+}
+
 fn tile_affects_dirty_rects(
     tile: &ReloadDiffSegmentTileRef,
     source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
@@ -231,6 +257,24 @@ fn full_segment_event_range(tile_events: u32) -> Vec<ReloadDirtySegmentEventRang
         })
         .into_iter()
         .collect()
+}
+
+fn coalesce_event_ranges(
+    mut ranges: Vec<ReloadDirtySegmentEventRange>,
+) -> Vec<ReloadDirtySegmentEventRange> {
+    ranges.retain(|range| range.end > range.start);
+    ranges.sort_by_key(|range| (range.start, range.end));
+    let mut output: Vec<ReloadDirtySegmentEventRange> = Vec::with_capacity(ranges.len());
+    for range in ranges {
+        if let Some(last) = output.last_mut()
+            && range.start <= last.end
+        {
+            last.end = last.end.max(range.end);
+            continue;
+        }
+        output.push(range);
+    }
+    output
 }
 
 fn source_tile_lookup(manifest: &ReloadDiffManifest) -> HashMap<AtlasTileKey, ReloadDiffTile> {

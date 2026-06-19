@@ -280,6 +280,9 @@ Current safe product subsets:
 - later segments whose tile work-list does not intersect the dirty rectangles
   can be skipped; later overlapping non-raster or unknown-work segments are
   explicit skipped segments and force the region-render fallback
+- affected raster windows report coalesced event ranges from only the
+  work-list tiles whose canvas bounds intersect the dirty rectangles; unknown
+  work-list tiles keep a full segment range and force fallback
 
 The reconstructed-prefix path is a correctness seam, not the final performance
 shape when there is no cache hit. The runtime now has a small session
@@ -292,9 +295,9 @@ as top-level source boundaries. Candidate ranking now exists as
 `checkpoint_priority` in render inspection and reload manifests; the session
 checkpoint cache uses that priority when choosing which cached checkpoint to
 evict under count or memory budget pressure, with LRU retained as the
-equal-priority tie-breaker. The next target is narrowing affected raster
-windows to event ranges only after event ownership can prove every contributor
-that overlaps a dirty rect.
+equal-priority tie-breaker. The next target is expanding affected-window
+execution beyond plain `RasterRun` by lowering more pointwise filters, simple
+scopes, and clipping relationships into executable sparse atlas events.
 
 ## Implementation Order
 
@@ -309,8 +312,9 @@ that overlaps a dirty rect.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Narrow affected raster segment windows toward event-range execution once the
-   planner can prove all contributors for dirty rectangles.
+7. Expand affected-window execution beyond plain `RasterRun` by lowering more
+   pointwise filters, simple scopes, and clipping relationships into executable
+   sparse atlas events.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

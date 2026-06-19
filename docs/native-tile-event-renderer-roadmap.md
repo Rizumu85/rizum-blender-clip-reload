@@ -1038,10 +1038,24 @@ segments and force the worker back to the region renderer. This moves dirty
 reload from "raster-only suffix" toward "only segments that can affect the
 patch" without introducing approximate compositing.
 
+Twenty-second form: affected raster windows now carry narrowed event ranges.
+When all work-list tiles for an affected segment are known, `atlas_rerun`
+coalesces the `event_start` / `event_end` ranges only from tiles whose
+canvas-space bounds intersect the dirty patch rectangles. Unknown work-list
+tiles still fail closed: they mark the segment as affecting the patch, keep a
+full segment event range, produce no resident slots, and force the event
+lowerer to skip the segment so the worker falls back to the region renderer.
+This keeps diagnostics and future executor scheduling aligned with the actual
+affected tile events without claiming a narrower range for unknown work.
+
+This twenty-second form still executes raster event batches for the affected
+resident slots only; it does not yet support non-raster affected contributors.
+The next improvement is to expand affected-window execution beyond plain
+`RasterRun` by lowering more pointwise filters, simple scopes, and clipping
+relationships into executable sparse atlas events.
+
 Next Phase 6 work:
 
-- narrow affected raster windows further to event ranges once event ownership
-  can prove all overlapping contributors for a dirty rect
 - expand affected-window execution beyond plain `RasterRun` by lowering more
   pointwise filters, simple scopes, and clipping relationships into executable
   sparse atlas events
