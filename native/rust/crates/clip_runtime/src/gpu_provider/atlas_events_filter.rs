@@ -49,7 +49,7 @@ pub(crate) fn lower_point_filter_run_segment(
     })
 }
 
-fn point_filter_events_for_source(
+pub(super) fn point_filter_events_for_source(
     segment: &SparseAtlasRerunSegment,
     mask_key: Option<clip_gpu::GpuMaskResourceKey>,
     local_bounds: &[Rect],

@@ -3,6 +3,7 @@ use clip_model::{CanvasSize, Rect};
 use super::atlas_events::{
     events_share_executor_atlases, push_raster_events_for_source, segment_source_span,
 };
+use super::atlas_events_filter::point_filter_events_for_source;
 use super::atlas_events_types::{SparseAtlasRasterEventSegment, SparseAtlasRasterEventSkipReason};
 use super::atlas_rerun::{SparseAtlasRerunSegment, SparseAtlasRerunSlot};
 use crate::reload_diff::ReloadDiffSegment;
@@ -146,21 +147,16 @@ fn scope_child_tile_events(
                 if *opacity <= 0.0 || lut_rgba.len() != 256 * 4 {
                     return Err(SparseAtlasRasterEventSkipReason::InvalidPointFilter);
                 }
-                if let Some(mask_key) = mask_key {
-                    return Err(SparseAtlasRasterEventSkipReason::FilterMaskNotLowered {
-                        layer_id: mask_key.layer_id.0,
-                        resource_id: mask_key.mask_mipmap_id,
-                    });
+                for filter in point_filter_events_for_source(
+                    segment,
+                    *mask_key,
+                    &[bounds],
+                    lut_rgba,
+                    *opacity,
+                    *filter_mode,
+                )? {
+                    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::PointFilter(filter));
                 }
-                tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::PointFilter(
-                    clip_gpu::GpuSparseAtlasPointFilterEvent {
-                        lut_rgba: lut_rgba.clone(),
-                        opacity: *opacity,
-                        filter_mode: *filter_mode,
-                        local_bounds: bounds,
-                        mask: None,
-                    },
-                ));
             }
             _ => return Err(SparseAtlasRasterEventSkipReason::NonRasterRun),
         }

@@ -1159,15 +1159,24 @@ typed tile-silo clip-base payloads. Runtime lowering accepts `ClippingRun`
 children when the base and every clipped sibling are raster sources with
 resident atlas slots, preserving the base resolve blend mode and output bounds
 used by the main scope tile-silo renderer. Clipped container/folder siblings,
-clipping runs nested through another child scope, filter masks inside sparse
-scopes, multi-slot scope masks, and nested simple scopes still fail closed and
+clipping runs nested through another child scope, multi-slot scope masks, and
+nested simple scopes still fail closed and
 keep the region-render fallback.
+
+Thirty-first form: sparse affected-window simple scopes now support
+provider-backed point-filter masks. The runtime lowering reuses the same
+coverage-checked R8 mask-slot lowering used by top-level `PointFilterRun`
+segments, so a masked filter child can emit one or more disjoint
+`PointFilter` tile events over the accumulated scope bounds. Missing mask
+coverage still fails closed with `FilterMaskNotLowered`, and the sparse
+executor continues to use the existing typed filter payload and mask-atlas
+sampling path rather than a separate scope-filter compositor.
 
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  multi-slot scope masks, filter masks, nested simple scopes, and clipped
-  container/folder siblings
+  multi-slot scope masks, nested simple scopes, clipping runs nested through
+  another child scope, and clipped container/folder siblings
 
 ## Correctness Policy
 
