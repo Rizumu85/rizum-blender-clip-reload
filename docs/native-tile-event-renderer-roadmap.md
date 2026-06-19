@@ -1306,11 +1306,21 @@ one tile-local stream. Planner, main GPU legacy-compare, sparse runtime event
 order, and sparse executor tests cover this position. This does not yet claim
 arbitrary deeper THROUGH nesting or unsupported non-raster children.
 
+Forty-fourth form: clipped container/folder sibling child streams now also keep
+pointwise filters after a simple THROUGH child inside the same tile-local
+stream. The ordered child program resolves `EndThrough` into the clipped
+sibling's active scope accumulator, then applies `PointFilter` to that
+accumulated scope before `EndClippedScope` resolves through the clip-base
+preserve-alpha rule. Planner, main GPU legacy-compare, sparse runtime event
+order, and sparse executor tests cover this filtered-through child stream with
+provider-backed or absent filter masks following the existing point-filter
+rules. Unsupported filter masks and deeper THROUGH nesting remain barriers.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
-  stream: deeper THROUGH nesting, unsupported non-raster child subtrees, and
-  remaining over-depth/over-limit cases
+  stream: deeper THROUGH nesting, unsupported masked filters/non-raster child
+  subtrees, and remaining over-depth/over-limit cases
 
 ## Correctness Policy
 
