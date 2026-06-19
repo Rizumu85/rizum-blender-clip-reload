@@ -1028,6 +1028,60 @@ fn planner_lowers_clipped_container_sibling_with_through_child() {
 }
 
 #[test]
+fn planner_lowers_clipped_container_sibling_with_nested_container_through_child() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::ClippingRun {
+            base: raster_source(1),
+            clipped: vec![GpuClippedStackSource::Container {
+                layer_id: LayerId(8),
+                children: vec![GpuNormalStackSource::Container {
+                    children: vec![GpuNormalStackSource::ThroughGroup {
+                        children: vec![GpuNormalStackSource::Raster(raster_source(2))],
+                        opacity: 0.5,
+                        mask_key: None,
+                    }],
+                    opacity: 0.75,
+                    mask_key: None,
+                    blend_mode: GpuRasterBlendMode::Normal,
+                }],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: GpuRasterBlendMode::Normal,
+            }],
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments(),
+        &[RenderSegment {
+            source_range: 0..1,
+            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
+            cost_hint: SegmentCostHint {
+                expected_passes: 1,
+                tile_events: 12,
+                legacy_sources: 0,
+            },
+        }]
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 1);
+}
+
+#[test]
 fn planner_lowers_clipped_container_sibling_mixed_with_child_clipping_run() {
     let provider = PlannerProvider::new([
         (raster_key(1), CanvasSize::new(4, 4)),

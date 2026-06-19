@@ -1297,11 +1297,20 @@ pass path, sparse runtime tests lock the ordered THROUGH events inside the
 clipped scope, and sparse executor tests lock the pixel result. Broader nested
 THROUGH positions and unsupported non-raster children remain barriers.
 
+Forty-third form: that simple THROUGH child can now be guarded in a nested
+container position inside a clipped container/folder sibling. The already-shared
+child stream propagates the one remaining THROUGH budget through nested simple
+containers, so `BeginClippedScope` / nested `BeginScope` / `BeginThrough` /
+child events / `EndThrough` / nested `EndScope` / `EndClippedScope` executes as
+one tile-local stream. Planner, main GPU legacy-compare, sparse runtime event
+order, and sparse executor tests cover this position. This does not yet claim
+arbitrary deeper THROUGH nesting or unsupported non-raster children.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
-  stream: broader nested THROUGH positions, unsupported non-raster child
-  subtrees, and remaining over-depth/over-limit cases
+  stream: deeper THROUGH nesting, unsupported non-raster child subtrees, and
+  remaining over-depth/over-limit cases
 
 ## Correctness Policy
 
