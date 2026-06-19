@@ -1316,6 +1316,18 @@ order, and sparse executor tests cover this filtered-through child stream with
 provider-backed or absent filter masks following the existing point-filter
 rules. Unsupported filter masks and deeper THROUGH nesting remain barriers.
 
+Forty-fifth form: a simple THROUGH child inside a clipped container/folder
+sibling can now contain a direct raster-only clipping run. The outer clipped
+sibling owns the first local clip-base accumulator, the THROUGH child resolves
+its before/after accumulator back into the clipped sibling scope, and the child
+clipping run uses the nested local clip-base accumulator inside the THROUGH
+`after` path before `EndThrough`. Planner tests lock the 13-event segment cost,
+main GPU tests compare against the existing legacy pass path, sparse runtime
+tests lock the ordered `BeginThrough` plus inner `BeginClipBase` /
+`ResolveClipBase` event sequence, and sparse executor tests lock the pixel
+result. Deeper THROUGH nesting, unsupported masked filters, and unsupported
+non-raster child subtrees remain barriers.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child

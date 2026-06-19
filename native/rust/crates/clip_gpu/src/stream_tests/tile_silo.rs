@@ -1426,6 +1426,133 @@ fn streamed_tile_silo_resolves_clipped_container_through_filter_child_like_legac
 }
 
 #[test]
+fn streamed_tile_silo_resolves_clipped_container_through_clipping_run_child_like_legacy_pass() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let outer_base_key = raster_key(201);
+    let inner_base_key = raster_key(202);
+    let inner_clipped_key = raster_key(203);
+
+    let mut outer_base = raster_source_at(outer_base_key, 1, 1);
+    outer_base.opacity = 0.85;
+    let mut inner_base = raster_source_at(inner_base_key, 1, 1);
+    inner_base.opacity = 0.8;
+    inner_base.blend_mode = GpuRasterBlendMode::Multiply;
+    let mut inner_clipped = raster_source_at(inner_clipped_key, 1, 1);
+    inner_clipped.opacity = 0.7;
+    inner_clipped.blend_mode = GpuRasterBlendMode::Screen;
+
+    let sources = vec![
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 40,
+                g: 80,
+                b: 120,
+                a: 255,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Container {
+            children: vec![GpuNormalStackSource::ClippingRun {
+                base: outer_base,
+                clipped: vec![GpuClippedStackSource::Container {
+                    layer_id: clip_model::LayerId(201),
+                    children: vec![GpuNormalStackSource::ThroughGroup {
+                        children: vec![GpuNormalStackSource::ClippingRun {
+                            base: inner_base,
+                            clipped: vec![GpuClippedStackSource::Raster(inner_clipped)],
+                        }],
+                        opacity: 0.65,
+                        mask_key: None,
+                    }],
+                    opacity: 0.75,
+                    mask_key: None,
+                    blend_mode: GpuRasterBlendMode::Multiply,
+                }],
+            }],
+            opacity: 0.8,
+            mask_key: None,
+            blend_mode: GpuRasterBlendMode::Normal,
+        },
+    ];
+
+    let inline_rasters = vec![
+        (
+            outer_base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(201),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![200, 120, 80, 180],
+            },
+        ),
+        (
+            inner_base_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(202),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![100, 160, 200, 190],
+            },
+        ),
+        (
+            inner_clipped_key,
+            InlineRaster {
+                render_node_id: RenderNodeId(203),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![80, 200, 255, 210],
+            },
+        ),
+    ];
+    let mut reference_provider = InlineProvider::new(inline_rasters);
+    let reference = renderer
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(3, 3),
+            &sources,
+            &mut reference_provider,
+        )
+        .expect("draw legacy through clipping-run clipped container reference");
+
+    let atlas_rasters = vec![
+        (
+            outer_base_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(201),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![200, 120, 80, 180],
+            },
+        ),
+        (
+            inner_base_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(202),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![100, 160, 200, 190],
+            },
+        ),
+        (
+            inner_clipped_key,
+            AtlasInlineRaster {
+                render_node_id: RenderNodeId(203),
+                size: CanvasSize::new(1, 1),
+                offset: (1, 1),
+                pixels: vec![80, 200, 255, 210],
+            },
+        ),
+    ];
+    let mut provider = AtlasInlineProvider::new(atlas_rasters);
+    let output = renderer
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
+        .expect("draw tile-event through clipping-run clipped container stream");
+
+    assert_eq!(output.pixels, reference.pixels);
+    assert_eq!(provider.atlas_requests, 1);
+    assert_eq!(provider.raster_requests, 0);
+}
+
+#[test]
 fn streamed_tile_silo_resolves_clipped_container_nested_through_child_like_legacy_pass() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let outer_base_key = raster_key(197);

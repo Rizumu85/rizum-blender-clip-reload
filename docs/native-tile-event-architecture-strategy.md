@@ -441,7 +441,8 @@ Add tile-local scope coverage in this order:
 1. clipped container or folder siblings beyond the current filtered,
    nested-container, raster-only child clipping-run, and simple THROUGH
    child-stream subset, including the nested-container/simple-THROUGH position
-   and pointwise filters after simple THROUGH children
+   and pointwise filters or direct raster-only clipping runs inside simple
+   THROUGH children
 2. deeper simple container nesting when the scope-depth limit allows it
 3. nested THROUGH cases with explicit before/after accumulator semantics
 4. scope masks that span resident R8 mask slots
@@ -455,8 +456,10 @@ clipped siblings now reuse the existing before/after THROUGH accumulator and
 resolve into the clipped sibling's active scope accumulator, including when the
 simple THROUGH child is inside one nested simple container. Pointwise filters
 after a simple THROUGH child remain tile-local by applying to the resolved
-THROUGH accumulator before clipped-scope resolve. Unsupported or over-depth
-child subtrees stay explicit barriers. The remaining work is broader clipped
+THROUGH accumulator before clipped-scope resolve, and direct raster-only
+clipping runs inside a simple THROUGH child use the nested local clip-base
+accumulator inside the THROUGH `after` path. Unsupported or over-depth child
+subtrees stay explicit barriers. The remaining work is broader clipped
 container/folder subtrees: deeper THROUGH nesting, unsupported masked filters,
 more nested scope positions, and other non-direct-raster children. Do not solve
 those by only relaxing eligibility checks.
