@@ -10,8 +10,8 @@ use crate::stream_tile_silo_buffers::{
 };
 pub(crate) use crate::stream_tile_silo_plan::raster_silo_run_len;
 use crate::stream_tile_silo_plan::{
-    MIN_SILO_RUN_LEN, PreparedSiloSource, TILE_SIZE, plan_atlas_layout, source_bounds,
-    source_local_bounds, tile_event_program, tile_work_lists,
+    PreparedSiloSource, TILE_SIZE, plan_atlas_layout, source_bounds, source_local_bounds,
+    tile_event_program, tile_work_lists,
 };
 use crate::stream_tile_silo_upload::{
     copy_sources_to_atlas, create_atlas_texture, rgba8_texture_byte_len, upload_atlas_texture,
@@ -36,7 +36,7 @@ pub(crate) fn encode_raster_silo_run_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
-    if sources.len() < MIN_SILO_RUN_LEN {
+    if sources.is_empty() {
         return Ok(false);
     }
 

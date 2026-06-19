@@ -134,7 +134,7 @@ where
 
     let raster_run_len =
         raster_silo_run_len(provider, output_size, target_origin, target_size, sources);
-    if raster_run_len >= 2 {
+    if raster_run_len > 0 {
         return LoweringDecision::TileLocal(TileLocalLowering {
             source_len: raster_run_len,
             kind: TileProgramKind::RasterRun,

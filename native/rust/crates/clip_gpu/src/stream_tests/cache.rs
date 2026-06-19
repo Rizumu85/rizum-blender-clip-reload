@@ -306,8 +306,8 @@ fn streamed_clipping_run_tile_silo_resolves_base_blend_to_parent() {
         }
     }
     assert_eq!(output.pixels, expected);
-    assert_eq!(provider.atlas_requests, 1);
-    assert_eq!(provider.raster_request_count(background_key), 1);
+    assert_eq!(provider.atlas_requests, 2);
+    assert_eq!(provider.raster_request_count(background_key), 0);
     assert_eq!(provider.raster_request_count(base_key), 0);
     assert_eq!(provider.raster_request_count(clipped_key), 0);
 }

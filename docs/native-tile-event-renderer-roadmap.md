@@ -428,6 +428,12 @@ as the faithful legacy pass. Clipped container/folder siblings and clipping
 runs inside THROUGH scopes remain barriers until their cache-writeback
 semantics are modelled and guarded.
 
+Ninth form: eligible pure raster sources lower to `TileEventKind::Raster` even
+when there is only one source in the segment. This removes the old
+`RasterRunTooShort` optimisation gate from the product render plan for
+atlas-eligible rasters and makes tile events the default execution model for
+ordinary rasters, not only for multi-source raster runs.
+
 Remaining Phase 2 work:
 
 - add explicit typed event readers for additional clipping/THROUGH payloads

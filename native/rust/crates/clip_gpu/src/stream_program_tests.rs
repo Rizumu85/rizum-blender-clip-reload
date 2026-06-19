@@ -117,6 +117,34 @@ fn planner_groups_tile_local_runs_before_barriers() {
 }
 
 #[test]
+fn planner_lowers_single_eligible_raster_as_tile_local() {
+    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
+    let sources = vec![GpuNormalStackSource::Raster(raster_source(1))];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments(),
+        &[RenderSegment {
+            source_range: 0..1,
+            kind: RenderSegmentKind::TileLocal(TileProgramKind::RasterRun),
+            cost_hint: SegmentCostHint {
+                expected_passes: 1,
+                tile_events: 1,
+                legacy_sources: 0,
+            },
+        }]
+    );
+    assert_eq!(program.stats().barrier_reasons.raster_run_too_short, 0);
+}
+
+#[test]
 fn planner_keeps_clipped_container_as_barrier() {
     let provider = PlannerProvider::new([
         (raster_key(1), CanvasSize::new(4, 4)),

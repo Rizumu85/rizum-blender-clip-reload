@@ -678,6 +678,35 @@ Verification after this milestone:
   and `Test_AddGlowMultiply` remains at the existing one-LSB invisible
   residual (`raw_max=1`, `premul_max=1`, visible `0`).
 
+## Single Raster Tile Events
+
+The renderer now treats an eligible single raster source as a tile-local raster
+program instead of falling back to a legacy source pass because the raster run
+length is below the old optimisation threshold.
+
+This is a model change, not a new CSP semantic: the same typed raster event VM
+handles the single source, and unsupported rasters still report explicit
+barrier reasons. It removes `RasterRunTooShort` from current
+`--performance-plan-json` output for atlas-eligible rasters.
+
+Current `Ref_Terra404_Live2D.clip --performance-plan-json` after this change:
+
+- `planned_passes=481`
+- `tile_local_segments=402`
+- `barrier_segments=79`
+- `tile_event_abi_version=8`
+- remaining barriers:
+  - `ThroughGroupNotLowered=70`
+  - `IsolatedContainerRequiresIntermediate=4`
+  - `ScopeDepthLimitExceeded=3`
+  - `ClippingRunNotLowered=2`
+
+Guard comparisons remain stable after the planner/executor change:
+`Test_ClippingEdge` exact, `Test_ToneCurve` exact, `Test_AddGlowMultiply`
+`raw_max=1` / `premul_max=1` / visible `0`, `Test_RealArt` unchanged at
+`premul_visible_px=28`, and `Ref_Terra404_Live2D` unchanged at
+`premul_visible_px=13501`.
+
 ## Compressed Occupancy Planner
 
 The tile-silo diagnostic now has the first Silicate-shaped planner input:
