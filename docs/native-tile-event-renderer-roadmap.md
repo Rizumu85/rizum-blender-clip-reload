@@ -1097,11 +1097,26 @@ improvement is either to make filter mask payloads span multiple resident mask
 slots faithfully, or to start the first sparse affected-window simple scope
 form.
 
+Twenty-sixth form: sparse affected-window execution now supports multi-slot
+provider-backed masked `PointFilterRun` lowering. Masked filter dirty bounds
+are represented by one or more non-overlapping `PointFilter` events, each
+covering the intersection between the dirty filter bounds and a resident R8
+mask slot. The lowering verifies that resident mask-slot intersections fully
+cover the dirty filter bounds before emitting events; gaps, missing tiles, or
+provider-unavailable masks still fail closed and keep the region-render
+fallback. The GPU sparse atlas executor already accepted multiple filter
+events with different mask atlas origins, and now has coverage for split mask
+events in `sparse_atlas_batch_tests`.
+
+This twenty-sixth form still does not execute simple container/THROUGH scopes
+from sparse affected windows. The next improvement is to start the first
+sparse affected-window simple scope form, reusing the typed scope events that
+the main tile-silo renderer already executes.
+
 Next Phase 6 work:
 
-- expand affected-window execution beyond single-slot masked `PointFilterRun`
-  by lowering multi-slot filter masks or simple scopes into executable sparse
-  atlas events
+- expand affected-window execution into simple container/THROUGH scopes using
+  executable sparse atlas events
 
 ## Correctness Policy
 

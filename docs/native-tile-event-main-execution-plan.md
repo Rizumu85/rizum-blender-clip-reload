@@ -303,9 +303,11 @@ sparse atlas batches with uploaded LUT rows and the existing typed point-filter
 shader path. The first provider-backed masked `PointFilterRun` subset is also
 executable when the dirty filter bounds are fully covered by one resident R8
 mask slot; the filter payload points into that slot with the dirty-rect offset.
-The next target is expanding affected-window execution beyond single-slot
-masked point filters by lowering multi-slot filter masks or simple scopes into
-executable sparse atlas events.
+Multi-slot provider-backed masked point filters are now represented by split
+`PointFilter` events whose local bounds intersect resident R8 mask slots, with
+full dirty-bounds coverage required before lowering. The next target is
+expanding affected-window execution into simple container/THROUGH scopes using
+the typed scope event path.
 
 ## Implementation Order
 
@@ -320,9 +322,8 @@ executable sparse atlas events.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Expand affected-window execution beyond single-slot masked `PointFilterRun`
-   by lowering multi-slot filter masks or simple scopes into executable sparse
-   atlas events.
+7. Expand affected-window execution into simple container/THROUGH scopes using
+   executable sparse atlas events.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

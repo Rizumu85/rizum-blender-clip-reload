@@ -27,14 +27,14 @@ pub(crate) fn lower_point_filter_run_segment(
         if *opacity <= 0.0 || lut_rgba.len() != 256 * 4 {
             return Err(SparseAtlasRasterEventSkipReason::InvalidPointFilter);
         }
-        let mask = filter_mask_tile_ref_for_bounds(rerun_segment, *mask_key, local_bounds)?;
-        filters.push(clip_gpu::GpuSparseAtlasPointFilterEvent {
-            lut_rgba: lut_rgba.clone(),
-            opacity: *opacity,
-            filter_mode: *filter_mode,
-            local_bounds,
-            mask,
-        });
+        filters.extend(point_filter_events_for_source(
+            rerun_segment,
+            *mask_key,
+            &local_bounds,
+            lut_rgba,
+            *opacity,
+            *filter_mode,
+        )?);
     }
     if filters.is_empty() {
         return Err(SparseAtlasRasterEventSkipReason::InvalidPointFilter);
@@ -49,25 +49,82 @@ pub(crate) fn lower_point_filter_run_segment(
     })
 }
 
-fn filter_mask_tile_ref_for_bounds(
+fn point_filter_events_for_source(
     segment: &SparseAtlasRerunSegment,
     mask_key: Option<clip_gpu::GpuMaskResourceKey>,
-    bounds: Rect,
-) -> Result<Option<clip_gpu::GpuSparseAtlasTileRef>, SparseAtlasRasterEventSkipReason> {
+    local_bounds: &[Rect],
+    lut_rgba: &[u8],
+    opacity: f32,
+    filter_mode: clip_gpu::GpuLutFilterMode,
+) -> Result<Vec<clip_gpu::GpuSparseAtlasPointFilterEvent>, SparseAtlasRasterEventSkipReason> {
     let Some(mask_key) = mask_key else {
-        return Ok(None);
+        return Ok(local_bounds
+            .iter()
+            .copied()
+            .map(|local_bounds| clip_gpu::GpuSparseAtlasPointFilterEvent {
+                lut_rgba: lut_rgba.to_vec(),
+                opacity,
+                filter_mode,
+                local_bounds,
+                mask: None,
+            })
+            .collect());
     };
-    let Some(slot) = segment.resident_slots.iter().find(|slot| {
+
+    let mut output = Vec::new();
+    for bounds in local_bounds.iter().copied() {
+        let refs = filter_mask_tile_refs_for_bounds(segment, mask_key, bounds)?;
+        output.extend(
+            refs.into_iter()
+                .map(|mask| clip_gpu::GpuSparseAtlasPointFilterEvent {
+                    lut_rgba: lut_rgba.to_vec(),
+                    opacity,
+                    filter_mode,
+                    local_bounds: mask.local_bounds,
+                    mask: Some(mask.tile_ref),
+                }),
+        );
+    }
+    Ok(output)
+}
+
+struct FilterMaskEventRef {
+    local_bounds: Rect,
+    tile_ref: clip_gpu::GpuSparseAtlasTileRef,
+}
+
+fn filter_mask_tile_refs_for_bounds(
+    segment: &SparseAtlasRerunSegment,
+    mask_key: clip_gpu::GpuMaskResourceKey,
+    bounds: Rect,
+) -> Result<Vec<FilterMaskEventRef>, SparseAtlasRasterEventSkipReason> {
+    let mut refs = Vec::new();
+    for slot in segment.resident_slots.iter().filter(|slot| {
         slot.kind == "mask"
             && slot.layer_id == mask_key.layer_id.0
             && slot.resource_id == mask_key.mask_mipmap_id
-            && slot_covers_bounds(slot, bounds)
-    }) else {
+    }) {
+        if let Some(intersection) = rect_intersection(bounds, slot_canvas_rect(slot)) {
+            refs.push(FilterMaskEventRef {
+                local_bounds: intersection,
+                tile_ref: mask_tile_ref_for_bounds(slot, intersection)?,
+            });
+        }
+    }
+    if refs.is_empty() || !rects_cover_bounds(&refs, bounds) {
         return Err(SparseAtlasRasterEventSkipReason::FilterMaskNotLowered {
             layer_id: mask_key.layer_id.0,
             resource_id: mask_key.mask_mipmap_id,
         });
-    };
+    }
+    refs.sort_by_key(|entry| (entry.local_bounds.y, entry.local_bounds.x));
+    Ok(refs)
+}
+
+fn mask_tile_ref_for_bounds(
+    slot: &SparseAtlasRerunSlot,
+    bounds: Rect,
+) -> Result<clip_gpu::GpuSparseAtlasTileRef, SparseAtlasRasterEventSkipReason> {
     let atlas_x = slot
         .slot
         .x
@@ -78,7 +135,7 @@ fn filter_mask_tile_ref_for_bounds(
         .y
         .checked_add(bounds.y.saturating_sub(slot.canvas_y))
         .ok_or(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange)?;
-    Ok(Some(clip_gpu::GpuSparseAtlasTileRef {
+    Ok(clip_gpu::GpuSparseAtlasTileRef {
         key: clip_gpu::GpuSparseAtlasTextureKey {
             format: slot.format,
             atlas_id: slot.slot.atlas_id,
@@ -86,36 +143,53 @@ fn filter_mask_tile_ref_for_bounds(
         atlas_x,
         atlas_y,
         size: clip_model::CanvasSize::new(bounds.width, bounds.height),
-    }))
+    })
 }
 
-fn slot_covers_bounds(slot: &SparseAtlasRerunSlot, bounds: Rect) -> bool {
-    let Some(slot_right) = slot.canvas_x.checked_add(slot.slot.width) else {
-        return false;
-    };
-    let Some(slot_bottom) = slot.canvas_y.checked_add(slot.slot.height) else {
-        return false;
-    };
-    let Some(bounds_right) = bounds.x.checked_add(bounds.width) else {
-        return false;
-    };
-    let Some(bounds_bottom) = bounds.y.checked_add(bounds.height) else {
-        return false;
-    };
-    slot.canvas_x <= bounds.x
-        && slot.canvas_y <= bounds.y
-        && bounds_right <= slot_right
-        && bounds_bottom <= slot_bottom
+fn rect_intersection(left: Rect, right: Rect) -> Option<Rect> {
+    let x0 = left.x.max(right.x);
+    let y0 = left.y.max(right.y);
+    let x1 = left
+        .x
+        .checked_add(left.width)?
+        .min(right.x.checked_add(right.width)?);
+    let y1 = left
+        .y
+        .checked_add(left.height)?
+        .min(right.y.checked_add(right.height)?);
+    (x1 > x0 && y1 > y0).then(|| Rect::new(x0, y0, x1 - x0, y1 - y0))
+}
+
+fn slot_canvas_rect(slot: &SparseAtlasRerunSlot) -> Rect {
+    Rect::new(
+        slot.canvas_x,
+        slot.canvas_y,
+        slot.slot.width,
+        slot.slot.height,
+    )
+}
+
+fn rects_cover_bounds(refs: &[FilterMaskEventRef], bounds: Rect) -> bool {
+    let area = u64::from(bounds.width) * u64::from(bounds.height);
+    let covered = refs.iter().fold(0u64, |total, entry| {
+        total + u64::from(entry.local_bounds.width) * u64::from(entry.local_bounds.height)
+    });
+    covered == area
 }
 
 fn point_filter_local_bounds(
     diff: &ReloadDiffPlan,
-) -> Result<Rect, SparseAtlasRasterEventSkipReason> {
+) -> Result<Vec<Rect>, SparseAtlasRasterEventSkipReason> {
     if diff.dirty_rects.is_empty() {
         if diff.manifest.width == 0 || diff.manifest.height == 0 {
             return Err(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange);
         }
-        return Ok(Rect::new(0, 0, diff.manifest.width, diff.manifest.height));
+        return Ok(vec![Rect::new(
+            0,
+            0,
+            diff.manifest.width,
+            diff.manifest.height,
+        )]);
     }
 
     let mut x0 = u32::MAX;
@@ -131,13 +205,20 @@ fn point_filter_local_bounds(
             .y
             .checked_add(rect.height)
             .ok_or(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange)?;
+        if rect.width == 0
+            || rect.height == 0
+            || right > diff.manifest.width
+            || bottom > diff.manifest.height
+        {
+            return Err(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange);
+        }
         x0 = x0.min(rect.x);
         y0 = y0.min(rect.y);
         x1 = x1.max(right);
         y1 = y1.max(bottom);
     }
-    if x1 <= x0 || y1 <= y0 || x1 > diff.manifest.width || y1 > diff.manifest.height {
+    if x1 <= x0 || y1 <= y0 {
         return Err(SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange);
     }
-    Ok(Rect::new(x0, y0, x1 - x0, y1 - y0))
+    Ok(vec![Rect::new(x0, y0, x1 - x0, y1 - y0)])
 }

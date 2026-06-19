@@ -315,6 +315,57 @@ fn sparse_atlas_batch_executor_applies_point_filter_mask() {
     assert_eq!(output.pixels, vec![128, 128, 128, 255]);
 }
 
+#[test]
+fn sparse_atlas_batch_executor_applies_split_point_filter_masks() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let mask = GpuSparseAtlasTextureKey {
+        format: GpuSparseAtlasFormat::R8,
+        atlas_id: 17,
+    };
+    let mut pool = GpuSparseAtlasTexturePool::default();
+    renderer
+        .update_sparse_atlas_texture_pool(&mut pool, &[two_pixel_mask_update(mask, 128, 255)])
+        .expect("prepare sparse atlas mask pool");
+    let batch = GpuSparseAtlasRasterEventBatch::point_filter_run(vec![
+        GpuSparseAtlasPointFilterEvent {
+            lut_rgba: invert_lut(),
+            opacity: 1.0,
+            filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            local_bounds: Rect::new(0, 0, 1, 1),
+            mask: Some(GpuSparseAtlasTileRef {
+                key: mask,
+                atlas_x: 0,
+                atlas_y: 0,
+                size: CanvasSize::new(1, 1),
+            }),
+        },
+        GpuSparseAtlasPointFilterEvent {
+            lut_rgba: invert_lut(),
+            opacity: 1.0,
+            filter_mode: GpuLutFilterMode::ToneCurveRgb,
+            local_bounds: Rect::new(1, 0, 1, 1),
+            mask: Some(GpuSparseAtlasTileRef {
+                key: mask,
+                atlas_x: 1,
+                atlas_y: 0,
+                size: CanvasSize::new(1, 1),
+            }),
+        },
+    ]);
+    let base = vec![10, 20, 30, 255, 10, 20, 30, 255];
+
+    let output = renderer
+        .draw_sparse_atlas_raster_event_batches_over_rgba8(
+            CanvasSize::new(2, 1),
+            &pool,
+            &[batch],
+            &base,
+        )
+        .expect("draw split masked point filter sparse atlas event batch");
+
+    assert_eq!(output.pixels, vec![128, 128, 128, 255, 245, 235, 225, 255]);
+}
+
 fn one_pixel_update(
     key: GpuSparseAtlasTextureKey,
     rgba: [u8; 4],
@@ -343,6 +394,23 @@ fn one_pixel_mask_update(
             atlas_y: 0,
             size: CanvasSize::new(1, 1),
             pixels: vec![alpha],
+        }],
+    }
+}
+
+fn two_pixel_mask_update(
+    key: GpuSparseAtlasTextureKey,
+    left: u8,
+    right: u8,
+) -> GpuSparseAtlasTexturePoolUpdate {
+    GpuSparseAtlasTexturePoolUpdate {
+        key,
+        atlas_size: CanvasSize::new(2, 1),
+        chunks: vec![GpuSparseAtlasUpdateChunk {
+            atlas_x: 0,
+            atlas_y: 0,
+            size: CanvasSize::new(2, 1),
+            pixels: vec![left, right],
         }],
     }
 }

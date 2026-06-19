@@ -71,6 +71,42 @@ fn masked_point_filter_run_lowers_when_resident_mask_slot_covers_dirty_bounds() 
     assert_eq!(mask.size, clip_model::CanvasSize::new(10, 8));
 }
 
+#[test]
+fn masked_point_filter_run_splits_across_resident_mask_slots() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segments_and_rects(
+            vec![segment("PointFilterRun")],
+            Vec::new(),
+            Vec::new(),
+            vec![crate::ReloadPatchRect {
+                x: 20,
+                y: 40,
+                width: 80,
+                height: 8,
+            }],
+        ),
+        &reload_with_slots(vec![
+            slot("mask", 10, 9, 0, 12, 34),
+            slot("mask", 10, 9, 1, 76, 34),
+        ]),
+        &[point_filter_source(Some(9))],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let filters = &plan.segments[0].batches[0].filters;
+    assert_eq!(filters.len(), 2);
+    assert_eq!(
+        filters[0].local_bounds,
+        clip_model::Rect::new(20, 40, 56, 8)
+    );
+    assert_eq!(
+        filters[1].local_bounds,
+        clip_model::Rect::new(76, 40, 24, 8)
+    );
+    assert_eq!(filters[0].mask.expect("first mask").atlas_x, 24);
+    assert_eq!(filters[1].mask.expect("second mask").atlas_x, 80);
+}
+
 fn point_filter_source(mask_mipmap_id: Option<u32>) -> clip_gpu::GpuNormalStackSource {
     clip_gpu::GpuNormalStackSource::LutFilter {
         lut_rgba: identity_lut(),
