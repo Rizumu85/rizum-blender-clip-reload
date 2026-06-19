@@ -126,6 +126,31 @@ fn reload_manifest_prefers_segment_tile_work_list() {
     assert_eq!(plan.updates[0].fingerprint.tile.tile_x, 1);
 }
 
+#[test]
+fn source_rect_comes_from_canvas_rect_and_source_offset() {
+    let mut source = source("raster", 10, 1, 100);
+    source.offset_x = -32;
+    source.offset_y = -16;
+    let tile = ReloadDiffTile {
+        tile_x: 0,
+        tile_y: 0,
+        x: 0,
+        y: 0,
+        width: 224,
+        height: 240,
+        compressed_bytes: 1234,
+        compressed_hash: 100,
+    };
+
+    let fingerprint = SparseAtlasFingerprint::from_reload_source_tile(&source, &tile)
+        .expect("supported cache source kind");
+
+    assert_eq!(fingerprint.source_x, 32);
+    assert_eq!(fingerprint.source_y, 16);
+    assert_eq!(fingerprint.width, 224);
+    assert_eq!(fingerprint.height, 240);
+}
+
 fn fingerprint(
     kind: &str,
     layer_id: u32,

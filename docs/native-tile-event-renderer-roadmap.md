@@ -797,9 +797,25 @@ chunks, bind pooled atlas textures in the tile-silo pass, rerun the mapped
 segment event ranges, or read back only those updated output tiles. It is the
 GPU resource layer required by that executor step.
 
+Seventh form: `clip_runtime::gpu_provider::atlas_upload` now decodes
+non-reused sparse atlas cache updates into `GpuSparseAtlasTexturePoolUpdate`
+values and can feed them into the GPU sparse atlas texture pool through
+`RuntimeGpuRenderer::prepare_sparse_atlas_textures()`. Raster updates decode the
+visible source rect into RGBA8 chunks; mask updates decode the visible source
+rect into R8 chunks. The source rect is derived from the reload manifest's
+canvas-space tile rect plus the source offset, not only from tile index, so
+off-canvas tiles update the correct source sub-rectangle. This path is covered
+by tests for full-cache warmup, no-change reuse, patch update upload, and
+off-canvas source rect recovery.
+
+This seventh form is intentionally not called by the Blender worker product
+path yet. It proves the decoded update stream can populate the resident GPU
+pool, but the renderer still needs a tile-local executor path that binds pooled
+atlas textures and reruns mapped event ranges before the product reload path can
+use it without extra unused work.
+
 Next Phase 6 work:
 
-- feed decoded changed atlas-slot chunks into the sparse atlas texture pool
 - bind pooled atlas textures in the tile-local segment executor
 - rerun only affected segments and event ranges when the segment graph is
   unchanged

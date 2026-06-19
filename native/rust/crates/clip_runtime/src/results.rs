@@ -82,6 +82,8 @@ pub struct GpuSparseAtlasUpdatedSlot {
     pub resource_id: u32,
     pub tile_x: u32,
     pub tile_y: u32,
+    pub source_x: u32,
+    pub source_y: u32,
     pub action: String,
     pub format: String,
     pub atlas_width: u32,

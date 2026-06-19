@@ -217,6 +217,8 @@ fn base_metadata(
                             "resource_id": slot.resource_id,
                             "tile_x": slot.tile_x,
                             "tile_y": slot.tile_y,
+                            "source_x": slot.source_x,
+                            "source_y": slot.source_y,
                             "action": slot.action,
                             "format": slot.format,
                             "atlas_width": slot.atlas_width,

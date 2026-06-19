@@ -72,6 +72,8 @@ impl SparseAtlasFingerprint {
         source: &ReloadDiffSource,
         tile: &ReloadDiffTile,
     ) -> Option<Self> {
+        let source_x = u32::try_from(i64::from(tile.x) - i64::from(source.offset_x)).ok()?;
+        let source_y = u32::try_from(i64::from(tile.y) - i64::from(source.offset_y)).ok()?;
         Some(Self {
             tile: SparseAtlasTileId {
                 kind: SparseAtlasResourceKind::from_reload_kind(&source.kind)?,
@@ -82,8 +84,8 @@ impl SparseAtlasFingerprint {
                 tile_x: tile.tile_x,
                 tile_y: tile.tile_y,
             },
-            source_x: tile.tile_x.saturating_mul(DEFAULT_ATLAS_TILE_SIZE),
-            source_y: tile.tile_y.saturating_mul(DEFAULT_ATLAS_TILE_SIZE),
+            source_x,
+            source_y,
             width: tile.width,
             height: tile.height,
             compressed_bytes: tile.compressed_bytes,

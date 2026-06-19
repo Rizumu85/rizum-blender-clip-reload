@@ -4,7 +4,7 @@ use clip_model::CanvasSize;
 
 use crate::{GpuRenderError, GpuRenderer};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum GpuSparseAtlasFormat {
     Rgba8,
     R8,

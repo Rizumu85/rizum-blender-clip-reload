@@ -6,7 +6,7 @@ use clip_model::{LayerId, Rect, Rgba8};
 use crate::blend::StrictRasterBlendMode;
 use crate::gpu_provider::{
     GpuResourcePlan, RuntimeGpuResourceProvider, atlas_cache::SparseAtlasCache,
-    cache::PersistentGpuTextureCache,
+    atlas_upload::sparse_atlas_texture_pool_updates, cache::PersistentGpuTextureCache,
 };
 use crate::stack_plan::{
     GpuRenderStackSelection, PlannedDecodedRaster, StrictRasterStackDraw, StrictRasterStackOptions,
@@ -23,6 +23,7 @@ pub struct RuntimeGpuRenderer {
     renderer: clip_gpu::GpuRenderer,
     texture_cache: RefCell<Option<PersistentGpuTextureCache>>,
     sparse_atlas_cache: RefCell<SparseAtlasCache>,
+    sparse_atlas_textures: RefCell<clip_gpu::GpuSparseAtlasTexturePool>,
 }
 
 impl RuntimeGpuRenderer {
@@ -31,6 +32,7 @@ impl RuntimeGpuRenderer {
             renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
             texture_cache: RefCell::new(None),
             sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
+            sparse_atlas_textures: RefCell::new(clip_gpu::GpuSparseAtlasTexturePool::default()),
         })
     }
 
@@ -39,6 +41,7 @@ impl RuntimeGpuRenderer {
             renderer: clip_gpu::GpuRenderer::new(clip_gpu::GpuDeviceConfig::default())?,
             texture_cache: RefCell::new(Some(PersistentGpuTextureCache::new())),
             sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
+            sparse_atlas_textures: RefCell::new(clip_gpu::GpuSparseAtlasTexturePool::default()),
         })
     }
 
@@ -50,6 +53,21 @@ impl RuntimeGpuRenderer {
             .borrow_mut()
             .plan_reload_diff(plan)
             .into()
+    }
+
+    pub fn prepare_sparse_atlas_textures(
+        &self,
+        session: &ClipSession,
+        plan: &crate::ReloadDiffPlan,
+    ) -> Result<clip_gpu::GpuSparseAtlasTexturePoolStats, RuntimeError> {
+        let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
+        let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        self.renderer
+            .update_sparse_atlas_texture_pool(
+                &mut self.sparse_atlas_textures.borrow_mut(),
+                &updates,
+            )
+            .map_err(RuntimeError::from)
     }
 
     pub fn draw_normal_raster_stack(

@@ -12,6 +12,9 @@ mod atlas_rerun;
 #[cfg(test)]
 mod atlas_rerun_tests;
 mod atlas_run;
+pub(crate) mod atlas_upload;
+#[cfg(test)]
+mod atlas_upload_tests;
 pub(crate) mod cache;
 mod sparse;
 
