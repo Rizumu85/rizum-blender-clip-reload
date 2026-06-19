@@ -34,6 +34,9 @@ fn changed_tile_update_maps_to_rerunnable_segment_slot() {
         segment.event_ranges,
         vec![ReloadDirtySegmentEventRange { start: 2, end: 3 }]
     );
+    assert_eq!(segment.resident_slots.len(), 1);
+    assert_eq!(segment.resident_slots[0].tile_x, 0);
+    assert_eq!(segment.resident_slots[0].action.as_str(), "upload_changed");
     assert_eq!(segment.updated_slots.len(), 1);
     assert_eq!(segment.updated_slots[0].tile_x, 0);
     assert_eq!(segment.updated_slots[0].action.as_str(), "upload_changed");
@@ -70,6 +73,13 @@ fn resource_dirty_segment_can_rerun_without_atlas_upload() {
 
     assert_eq!(reload.cache.stats.reused_tiles, 1);
     assert_eq!(reload.rerunnable_segments.len(), 1);
+    assert_eq!(reload.rerunnable_segments[0].resident_slots.len(), 1);
+    assert_eq!(
+        reload.rerunnable_segments[0].resident_slots[0]
+            .action
+            .as_str(),
+        "reuse"
+    );
     assert_eq!(reload.rerunnable_segments[0].updated_slots.len(), 0);
     assert_eq!(
         reload.rerunnable_segments[0].event_ranges,

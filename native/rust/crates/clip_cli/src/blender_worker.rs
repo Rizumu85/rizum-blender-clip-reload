@@ -7,6 +7,8 @@ use clip_runtime::{
 };
 use serde_json::json;
 
+use crate::blender_worker_sparse::sparse_atlas_metadata;
+
 pub(crate) fn write_blender_render_files(
     session: &mut ClipSession,
     rgba_path: &Path,
@@ -192,47 +194,7 @@ fn base_metadata(
             "cached_masks": texture_cache.cached_masks,
             "cached_bytes": texture_cache.cached_bytes,
         },
-        "sparse_atlas_cache": {
-            "cached_tiles": sparse_atlas.cache_stats.cached_tiles,
-            "cached_bytes": sparse_atlas.cache_stats.cached_bytes,
-            "atlas_count": sparse_atlas.cache_stats.atlas_count,
-            "reused_tiles": sparse_atlas.cache_stats.reused_tiles,
-            "inserted_tiles": sparse_atlas.cache_stats.inserted_tiles,
-            "changed_tiles": sparse_atlas.cache_stats.changed_tiles,
-            "evicted_tiles": sparse_atlas.cache_stats.evicted_tiles,
-            "upload_bytes": sparse_atlas.cache_stats.upload_bytes,
-            "rerunnable_segments": sparse_atlas.rerunnable_segments.iter().map(|segment| {
-                json!({
-                    "ordinal": segment.ordinal,
-                    "event_ranges": segment.event_ranges.iter().map(|range| {
-                        json!({
-                            "start": range.start,
-                            "end": range.end,
-                        })
-                    }).collect::<Vec<_>>(),
-                    "updated_slots": segment.updated_slots.iter().map(|slot| {
-                        json!({
-                            "kind": slot.kind,
-                            "layer_id": slot.layer_id,
-                            "resource_id": slot.resource_id,
-                            "tile_x": slot.tile_x,
-                            "tile_y": slot.tile_y,
-                            "source_x": slot.source_x,
-                            "source_y": slot.source_y,
-                            "action": slot.action,
-                            "format": slot.format,
-                            "atlas_width": slot.atlas_width,
-                            "atlas_height": slot.atlas_height,
-                            "atlas_id": slot.atlas_id,
-                            "atlas_x": slot.atlas_x,
-                            "atlas_y": slot.atlas_y,
-                            "width": slot.width,
-                            "height": slot.height,
-                        })
-                    }).collect::<Vec<_>>(),
-                })
-            }).collect::<Vec<_>>(),
-        },
+        "sparse_atlas_cache": sparse_atlas_metadata(&sparse_atlas),
         "support": {
             "source_count": source_count,
             "unsupported_count": unsupported_items.len(),
@@ -500,6 +462,12 @@ mod tests {
         );
         assert!(
             !metadata["sparse_atlas_cache"]["rerunnable_segments"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            !metadata["sparse_atlas_cache"]["rerunnable_segments"][0]["resident_slots"]
                 .as_array()
                 .unwrap()
                 .is_empty()

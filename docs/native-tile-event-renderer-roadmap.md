@@ -814,9 +814,20 @@ pool, but the renderer still needs a tile-local executor path that binds pooled
 atlas textures and reruns mapped event ranges before the product reload path can
 use it without extra unused work.
 
+Eighth form: rerunnable segment planning now exposes the full resident sparse
+atlas slot surface for each dirty event range, not only the non-reused slots
+that need upload. `resident_slots` includes reused, changed, and inserted
+raster/mask slots intersecting the segment's dirty event ranges; `updated_slots`
+remains the upload-only subset. This is the executor Interface needed to build
+tile-event payloads from long-lived atlas slots while updating only changed
+regions in the GPU pool. The Blender worker sparse-atlas diagnostics are
+formatted through a small `blender_worker_sparse` Module and now include
+`resident_slots` beside `updated_slots`.
+
 Next Phase 6 work:
 
-- bind pooled atlas textures in the tile-local segment executor
+- bind resident sparse-atlas slots and pooled atlas textures in the tile-local
+  segment executor
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
 - read back only the updated output tiles for Blender patch reload

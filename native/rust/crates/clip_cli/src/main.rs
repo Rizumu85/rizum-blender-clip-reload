@@ -5,6 +5,7 @@ use std::process;
 
 mod blender_server;
 mod blender_worker;
+mod blender_worker_sparse;
 mod compare_png;
 mod layer_labels;
 mod layer_window;

@@ -9,7 +9,7 @@ use crate::reload_diff::{
 };
 use crate::{
     GpuSparseAtlasEventRange, GpuSparseAtlasReloadPlan, GpuSparseAtlasRerunSegment,
-    GpuSparseAtlasUpdatedSlot,
+    GpuSparseAtlasSlot,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -22,6 +22,7 @@ pub(crate) struct SparseAtlasReloadPlan {
 pub(crate) struct SparseAtlasRerunSegment {
     pub ordinal: u32,
     pub event_ranges: Vec<ReloadDirtySegmentEventRange>,
+    pub resident_slots: Vec<SparseAtlasRerunSlot>,
     pub updated_slots: Vec<SparseAtlasRerunSlot>,
 }
 
@@ -68,19 +69,25 @@ fn rerunnable_segments(
                 .segments
                 .iter()
                 .find(|segment| segment.ordinal == dirty.ordinal)?;
-            let updated_slots = segment
+            let resident_slots = segment
                 .tile_work_list
                 .iter()
                 .filter(|tile| event_range_intersects_any(tile, &dirty.dirty_event_ranges))
                 .filter_map(|tile| {
                     updates
                         .get(&tile_key(tile))
-                        .and_then(|update| rerun_slot_for_update(tile, update, cache.atlas_size))
+                        .map(|update| rerun_slot_for_update(tile, update, cache.atlas_size))
                 })
                 .collect::<Vec<_>>();
+            let updated_slots = resident_slots
+                .iter()
+                .filter(|slot| slot.action != SparseAtlasUpdateAction::Reuse)
+                .cloned()
+                .collect();
             Some(SparseAtlasRerunSegment {
                 ordinal: dirty.ordinal,
                 event_ranges: dirty.dirty_event_ranges.clone(),
+                resident_slots,
                 updated_slots,
             })
         })
@@ -110,11 +117,8 @@ fn rerun_slot_for_update(
     tile: &ReloadDiffSegmentTileRef,
     update: &SparseAtlasTileUpdate,
     atlas_size: clip_model::CanvasSize,
-) -> Option<SparseAtlasRerunSlot> {
-    if update.action == SparseAtlasUpdateAction::Reuse {
-        return None;
-    }
-    Some(SparseAtlasRerunSlot {
+) -> SparseAtlasRerunSlot {
+    SparseAtlasRerunSlot {
         kind: tile.kind.clone(),
         layer_id: tile.layer_id,
         resource_id: tile.resource_id,
@@ -126,7 +130,7 @@ fn rerun_slot_for_update(
         format: update.fingerprint.tile.kind.atlas_format(),
         atlas_size,
         slot: update.slot,
-    })
+    }
 }
 
 fn event_range_intersects_any(
@@ -186,16 +190,21 @@ impl From<SparseAtlasRerunSegment> for GpuSparseAtlasRerunSegment {
                     end: range.end,
                 })
                 .collect(),
+            resident_slots: value
+                .resident_slots
+                .into_iter()
+                .map(GpuSparseAtlasSlot::from)
+                .collect(),
             updated_slots: value
                 .updated_slots
                 .into_iter()
-                .map(GpuSparseAtlasUpdatedSlot::from)
+                .map(GpuSparseAtlasSlot::from)
                 .collect(),
         }
     }
 }
 
-impl From<SparseAtlasRerunSlot> for GpuSparseAtlasUpdatedSlot {
+impl From<SparseAtlasRerunSlot> for GpuSparseAtlasSlot {
     fn from(value: SparseAtlasRerunSlot) -> Self {
         Self {
             kind: value.kind,

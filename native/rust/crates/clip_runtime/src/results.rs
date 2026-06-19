@@ -66,6 +66,7 @@ pub struct GpuSparseAtlasReloadPlan {
 pub struct GpuSparseAtlasRerunSegment {
     pub ordinal: u32,
     pub event_ranges: Vec<GpuSparseAtlasEventRange>,
+    pub resident_slots: Vec<GpuSparseAtlasSlot>,
     pub updated_slots: Vec<GpuSparseAtlasUpdatedSlot>,
 }
 
@@ -76,7 +77,7 @@ pub struct GpuSparseAtlasEventRange {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GpuSparseAtlasUpdatedSlot {
+pub struct GpuSparseAtlasSlot {
     pub kind: String,
     pub layer_id: u32,
     pub resource_id: u32,
@@ -94,6 +95,8 @@ pub struct GpuSparseAtlasUpdatedSlot {
     pub width: u32,
     pub height: u32,
 }
+
+pub type GpuSparseAtlasUpdatedSlot = GpuSparseAtlasSlot;
 
 #[derive(Debug)]
 pub struct NormalRasterStackSupportResult {
