@@ -9,8 +9,11 @@ pub mod resource;
 mod shaders;
 mod source_params;
 mod sparse_atlas;
+#[cfg(test)]
+mod sparse_atlas_batch_tests;
 mod sparse_atlas_batches;
 mod sparse_atlas_executor;
+mod sparse_atlas_prepare;
 #[cfg(test)]
 mod sparse_atlas_tests;
 pub mod stream;

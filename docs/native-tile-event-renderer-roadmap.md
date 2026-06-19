@@ -868,10 +868,28 @@ ping-pong pair. Multi-batch execution uses full-canvas passes so each batch
 copies the previous batch's pixels through `dest_texture` even outside the
 current batch's source bounds, avoiding loss of earlier atlas-key batches.
 
+Twelfth form: `GpuRenderer::draw_sparse_atlas_raster_event_batches_over_rgba8()`
+can now execute prepared sparse-atlas raster batches over a supplied RGBA8 base
+accumulator. The base is the segment-before checkpoint for the segment being
+rerun, not the old final image; using the old final image would double-compose
+the changed segment. The executor validates the base buffer size, writes it into
+the first ping-pong texture, clears the alternate target, and then runs every
+batch over full-canvas bounds so unchanged pixels from the base survive outside
+the dirty event bounds. Empty batch input returns the base pixels unchanged.
+`RuntimeGpuRenderer::draw_sparse_atlas_raster_event_segment_over_rgba8()` exposes
+the same seam to the runtime adapter.
+
+This twelfth form still does not persist segment-before checkpoints or read
+back only dirty output tiles. It provides the faithful executor primitive that
+the product patch path needs before it can rerun dirty raster segments without
+falling back to full output recomposition.
+
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
+- store or reconstruct valid segment-before checkpoints for dirty segment
+  reruns
 - read back only the updated output tiles for Blender patch reload
 
 ## Correctness Policy
