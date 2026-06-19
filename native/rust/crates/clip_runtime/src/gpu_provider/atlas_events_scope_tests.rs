@@ -131,6 +131,53 @@ fn simple_container_scope_with_point_filter_child_lowers_ordered_tile_events() {
 }
 
 #[test]
+fn simple_container_scope_with_raster_clipping_run_lowers_ordered_tile_events() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![
+            slot("raster", 10, 1, 0, 12, 34),
+            slot("raster", 11, 2, 1, 12, 34),
+        ]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![clip_gpu::GpuNormalStackSource::ClippingRun {
+                base: raster_source(10, 1, 1.0, clip_gpu::GpuRasterBlendMode::Normal, None),
+                clipped: vec![clip_gpu::GpuClippedStackSource::Raster(raster_source(
+                    11,
+                    2,
+                    1.0,
+                    clip_gpu::GpuRasterBlendMode::Multiply,
+                    None,
+                ))],
+            }],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(batch.events.len(), 2);
+    assert_eq!(batch.tile_events.len(), 4);
+    assert!(matches!(
+        batch.tile_events[0],
+        clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[1],
+        clip_gpu::GpuSparseAtlasTileEvent::ClipBaseRaster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[2],
+        clip_gpu::GpuSparseAtlasTileEvent::ClippedRaster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[3],
+        clip_gpu::GpuSparseAtlasTileEvent::ResolveClipBase(_)
+    ));
+}
+
+#[test]
 fn simple_scope_without_resident_scope_mask_is_not_lowered() {
     let plan = sparse_atlas_raster_event_plan(
         &diff_with_segment(segment("SimpleContainerScope")),

@@ -313,9 +313,11 @@ wrapping resident raster events in typed scope begin/end events. Scope-level
 masks lower when the dirty scope bounds are fully covered by one resident R8
 mask slot. Scope batches now preserve ordered child tile events, so unmasked
 point-filter children after raster content execute inside the scope with the
-accumulated scope bounds. Multi-slot scope masks, filter masks, nested child
-scopes, clipping-run children, and clipped container/folder children still
-remain explicit sparse-patch barriers.
+accumulated scope bounds. Raster-only clipping-run children also execute inside
+the sparse scope through ordered `BeginClipBase` / `ClipBaseRaster` /
+`ClippedRaster` / `ResolveClipBase` events. Multi-slot scope masks, filter
+masks, nested child scopes, and clipped container/folder children still remain
+explicit sparse-patch barriers.
 
 ## Implementation Order
 
@@ -332,7 +334,7 @@ remain explicit sparse-patch barriers.
    path.
 7. Expand affected-window simple container/THROUGH scopes beyond direct raster
    children by adding multi-slot scope masks, filter masks, nested simple
-   scopes, and raster-only clipping-run children.
+   scopes, and clipped container/folder siblings.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

@@ -15,6 +15,7 @@ mod sparse_atlas_batch_tests;
 mod sparse_atlas_batches;
 mod sparse_atlas_executor;
 mod sparse_atlas_prepare;
+mod sparse_atlas_prepare_payloads;
 #[cfg(test)]
 mod sparse_atlas_scope_tests;
 mod sparse_atlas_targets;

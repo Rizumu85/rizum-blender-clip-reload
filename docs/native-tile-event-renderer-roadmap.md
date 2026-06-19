@@ -1151,11 +1151,23 @@ matches the main tile-silo scope model. Filter masks inside sparse scopes,
 nested child scopes, raster-only clipping-run children, and clipped
 container/folder children still fail closed and keep the region-render fallback.
 
+Thirtieth form: sparse affected-window simple scopes now support raster-only
+clipping-run children. The ordered child event stream can express
+`BeginClipBase`, clip-base raster events, clipped raster events, and
+`ResolveClipBase`; GPU preparation maps those sparse events onto the existing
+typed tile-silo clip-base payloads. Runtime lowering accepts `ClippingRun`
+children when the base and every clipped sibling are raster sources with
+resident atlas slots, preserving the base resolve blend mode and output bounds
+used by the main scope tile-silo renderer. Clipped container/folder siblings,
+clipping runs nested through another child scope, filter masks inside sparse
+scopes, multi-slot scope masks, and nested simple scopes still fail closed and
+keep the region-render fallback.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  multi-slot scope masks, filter masks, nested simple scopes, and raster-only
-  clipping-run children
+  multi-slot scope masks, filter masks, nested simple scopes, and clipped
+  container/folder siblings
 
 ## Correctness Policy
 

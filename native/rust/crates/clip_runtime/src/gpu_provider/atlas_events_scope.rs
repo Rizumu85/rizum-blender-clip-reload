@@ -126,6 +126,14 @@ fn scope_child_tile_events(
                     tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::Raster(event));
                 }
             }
+            clip_gpu::GpuNormalStackSource::ClippingRun { base, clipped } => {
+                let bounds =
+                    push_clipping_run_tile_events(segment, *base, clipped, &mut tile_events)?;
+                current_bounds = Some(match current_bounds {
+                    Some(current) => union_rect(current, bounds),
+                    None => bounds,
+                });
+            }
             clip_gpu::GpuNormalStackSource::LutFilter {
                 lut_rgba,
                 opacity,
@@ -161,6 +169,46 @@ fn scope_child_tile_events(
         return Err(SparseAtlasRasterEventSkipReason::EmptyRasterSlots);
     };
     Ok((tile_events, bounds))
+}
+
+fn push_clipping_run_tile_events(
+    segment: &SparseAtlasRerunSegment,
+    base: clip_gpu::GpuNormalRasterSource,
+    clipped: &[clip_gpu::GpuClippedStackSource],
+    tile_events: &mut Vec<clip_gpu::GpuSparseAtlasTileEvent>,
+) -> Result<Rect, SparseAtlasRasterEventSkipReason> {
+    let mut base_events = Vec::new();
+    push_raster_events_for_source(segment, base, &mut base_events)?;
+    let base_bounds = raster_event_bounds(&base_events)?;
+    let clip_scope = clip_gpu::GpuSparseAtlasScopeEvent {
+        kind: clip_gpu::GpuSparseAtlasScopeEventKind::Container,
+        opacity: 1.0,
+        blend_mode: base.blend_mode,
+        local_bounds: base_bounds,
+        mask: None,
+    };
+    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(clip_scope));
+    tile_events.extend(
+        base_events
+            .into_iter()
+            .map(clip_gpu::GpuSparseAtlasTileEvent::ClipBaseRaster),
+    );
+    for clipped_source in clipped {
+        let clip_gpu::GpuClippedStackSource::Raster(raster) = clipped_source else {
+            return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);
+        };
+        let mut clipped_events = Vec::new();
+        push_raster_events_for_source(segment, *raster, &mut clipped_events)?;
+        tile_events.extend(
+            clipped_events
+                .into_iter()
+                .map(clip_gpu::GpuSparseAtlasTileEvent::ClippedRaster),
+        );
+    }
+    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::ResolveClipBase(
+        clip_scope,
+    ));
+    Ok(base_bounds)
 }
 
 fn raster_event_bounds(

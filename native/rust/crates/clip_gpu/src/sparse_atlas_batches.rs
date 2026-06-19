@@ -34,6 +34,10 @@ pub struct GpuSparseAtlasScopeEvent {
 pub enum GpuSparseAtlasTileEvent {
     Raster(GpuSparseAtlasRasterEvent),
     PointFilter(GpuSparseAtlasPointFilterEvent),
+    BeginClipBase(GpuSparseAtlasScopeEvent),
+    ClipBaseRaster(GpuSparseAtlasRasterEvent),
+    ClippedRaster(GpuSparseAtlasRasterEvent),
+    ResolveClipBase(GpuSparseAtlasScopeEvent),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -169,7 +173,11 @@ fn split_tile_events(
     for event in tile_events {
         match event {
             GpuSparseAtlasTileEvent::Raster(event) => events.push(*event),
+            GpuSparseAtlasTileEvent::ClipBaseRaster(event) => events.push(*event),
+            GpuSparseAtlasTileEvent::ClippedRaster(event) => events.push(*event),
             GpuSparseAtlasTileEvent::PointFilter(filter) => filters.push(filter.clone()),
+            GpuSparseAtlasTileEvent::BeginClipBase(_)
+            | GpuSparseAtlasTileEvent::ResolveClipBase(_) => {}
         }
     }
     (events, filters)
