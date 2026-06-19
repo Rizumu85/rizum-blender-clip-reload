@@ -37,13 +37,15 @@ pub use reload_diff::{
 };
 pub use results::{
     DrawRasterLayerGpuResult, GpuSparseAtlasCacheStats, GpuSparseAtlasEventRange,
-    GpuSparseAtlasReloadPlan, GpuSparseAtlasRerunSegment, GpuSparseAtlasSlot,
-    GpuSparseAtlasUpdatedSlot, GpuTextureCacheStats, NativePerformancePlanResult,
-    NativeTileSiloEstimateResult, NormalRasterStackGpuPatchResult, NormalRasterStackGpuResult,
-    NormalRasterStackPixelTraceInput, NormalRasterStackPixelTraceResult,
-    NormalRasterStackPixelTraceSample, NormalRasterStackResourceStats,
-    NormalRasterStackSupportResult, SimpleRasterStackGpuResult, SimpleRasterStackUnsupported,
-    SimpleRasterStackUnsupportedReason,
+    GpuSparseAtlasPreparedRasterEventPlan, GpuSparseAtlasRasterEventPlan,
+    GpuSparseAtlasRasterEventSegment, GpuSparseAtlasRasterEventSkip,
+    GpuSparseAtlasRasterEventSkipReason, GpuSparseAtlasReloadPlan, GpuSparseAtlasRerunSegment,
+    GpuSparseAtlasSlot, GpuSparseAtlasUpdatedSlot, GpuTextureCacheStats,
+    NativePerformancePlanResult, NativeTileSiloEstimateResult, NormalRasterStackGpuPatchResult,
+    NormalRasterStackGpuResult, NormalRasterStackPixelTraceInput,
+    NormalRasterStackPixelTraceResult, NormalRasterStackPixelTraceSample,
+    NormalRasterStackResourceStats, NormalRasterStackSupportResult, SimpleRasterStackGpuResult,
+    SimpleRasterStackUnsupported, SimpleRasterStackUnsupportedReason,
 };
 
 #[cfg(test)]

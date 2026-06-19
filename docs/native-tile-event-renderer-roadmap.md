@@ -835,10 +835,32 @@ current tile-silo bind layout exposes one RGBA atlas texture and one R8 mask
 atlas texture. Missing atlas textures, wrong atlas formats, and mixed atlas keys
 fail explicitly instead of falling back to the legacy renderer.
 
+Tenth form: runtime rerunnable slots now carry the executor coordinates needed
+to build actual tile events: `event_start`, `event_end`, `canvas_x`, and
+`canvas_y`, in addition to source rect, atlas rect, atlas format, and atlas
+texture size. `clip_runtime::gpu_provider::atlas_events` lowers dirty
+`RasterRun` resident slots plus the current selected `GpuNormalStackSource`
+metadata into `GpuSparseAtlasRasterEvent` values, preserving source opacity and
+blend mode. Masked raster events lower only when a matching resident R8 mask
+slot covers the same canvas rect as the raster slot; otherwise the segment is
+reported as an explicit skipped event-plan reason instead of silently dropping
+mask semantics. `RuntimeGpuRenderer::prepare_sparse_atlas_raster_event_plan()`
+performs one cache generation, decodes/uploads non-reused atlas chunks into the
+resident GPU pool, and returns the typed raster event plan. The companion
+`draw_sparse_atlas_raster_event_segment_to_rgba8()` adapter can execute one
+prepared raster event segment against the resident pool for the next rerun
+step.
+
+This tenth form still does not compose rerun segment output back into the
+previous full image, split mixed-atlas event segments into legal executor
+batches, or read back only dirty output tiles for Blender patch reload. It
+turns the Phase 6 data seam from diagnostics into executable event payloads,
+but product reload still uses the existing dirty-rectangle path.
+
 Next Phase 6 work:
 
-- connect reload `resident_slots` plus current segment source metadata to
-  `GpuSparseAtlasRasterEvent` construction
+- split prepared raster event segments by executor-compatible atlas keys when a
+  dirty segment spans multiple resident atlas textures
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
 - read back only the updated output tiles for Blender patch reload

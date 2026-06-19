@@ -62,6 +62,50 @@ pub struct GpuSparseAtlasReloadPlan {
     pub rerunnable_segments: Vec<GpuSparseAtlasRerunSegment>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuSparseAtlasPreparedRasterEventPlan {
+    pub texture_pool_stats: clip_gpu::GpuSparseAtlasTexturePoolStats,
+    pub event_plan: GpuSparseAtlasRasterEventPlan,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuSparseAtlasRasterEventPlan {
+    pub segments: Vec<GpuSparseAtlasRasterEventSegment>,
+    pub skipped_segments: Vec<GpuSparseAtlasRasterEventSkip>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GpuSparseAtlasRasterEventSegment {
+    pub ordinal: u32,
+    pub event_ranges: Vec<GpuSparseAtlasEventRange>,
+    pub events: Vec<clip_gpu::GpuSparseAtlasRasterEvent>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct GpuSparseAtlasRasterEventSkip {
+    pub ordinal: u32,
+    pub reason: GpuSparseAtlasRasterEventSkipReason,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum GpuSparseAtlasRasterEventSkipReason {
+    SegmentManifestMissing,
+    NonRasterRun,
+    EmptyRasterSlots,
+    SourceSpanOutOfRange,
+    RasterSourceMissing {
+        layer_id: u32,
+        resource_id: u32,
+    },
+    MaskSlotMissing {
+        layer_id: u32,
+        resource_id: u32,
+        canvas_x: u32,
+        canvas_y: u32,
+    },
+    CanvasCoordinateOutOfRange,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GpuSparseAtlasRerunSegment {
     pub ordinal: u32,
@@ -83,6 +127,10 @@ pub struct GpuSparseAtlasSlot {
     pub resource_id: u32,
     pub tile_x: u32,
     pub tile_y: u32,
+    pub event_start: u32,
+    pub event_end: u32,
+    pub canvas_x: u32,
+    pub canvas_y: u32,
     pub source_x: u32,
     pub source_y: u32,
     pub action: String,

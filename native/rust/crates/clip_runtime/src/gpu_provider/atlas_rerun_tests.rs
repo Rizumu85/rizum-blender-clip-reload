@@ -36,6 +36,10 @@ fn changed_tile_update_maps_to_rerunnable_segment_slot() {
     );
     assert_eq!(segment.resident_slots.len(), 1);
     assert_eq!(segment.resident_slots[0].tile_x, 0);
+    assert_eq!(segment.resident_slots[0].event_start, 2);
+    assert_eq!(segment.resident_slots[0].event_end, 3);
+    assert_eq!(segment.resident_slots[0].canvas_x, 0);
+    assert_eq!(segment.resident_slots[0].canvas_y, 0);
     assert_eq!(segment.resident_slots[0].action.as_str(), "upload_changed");
     assert_eq!(segment.updated_slots.len(), 1);
     assert_eq!(segment.updated_slots[0].tile_x, 0);
@@ -88,6 +92,36 @@ fn resource_dirty_segment_can_rerun_without_atlas_upload() {
 }
 
 #[test]
+fn resident_slot_keeps_canvas_rect_separate_from_source_rect() {
+    let mut cache = SparseAtlasCache::new(256, 2);
+    let previous = manifest_with_offset_tile(100, 100);
+    cache.plan_reload_manifest(&previous);
+
+    let plan = ReloadDiffPlan {
+        manifest: manifest_with_offset_tile(100, 200),
+        mode: ReloadDiffMode::Patch,
+        reason: "offset source tile changed".to_string(),
+        dirty_rects: vec![rect()],
+        dirty_segments: vec![ReloadDirtySegment {
+            ordinal: 7,
+            dirty_tile_count: 1,
+            dirty_resource_count: 0,
+            dirty_event_ranges: vec![ReloadDirtySegmentEventRange { start: 2, end: 3 }],
+        }],
+    };
+
+    let reload = cache.plan_reload_diff(&plan);
+
+    let slot = &reload.rerunnable_segments[0].resident_slots[0];
+    assert_eq!(slot.canvas_x, 0);
+    assert_eq!(slot.canvas_y, 20);
+    assert_eq!(slot.source_x, 10);
+    assert_eq!(slot.source_y, 15);
+    assert_eq!(slot.event_start, 2);
+    assert_eq!(slot.event_end, 3);
+}
+
+#[test]
 fn no_change_reload_keeps_cache_warm_without_rerunnable_segments() {
     let mut cache = SparseAtlasCache::new(256, 2);
     let manifest = manifest_with_tile(100, 100);
@@ -119,6 +153,15 @@ fn manifest_with_tile(source_signature: u64, compressed_hash: u64) -> ReloadDiff
         sources: vec![source(source_signature, compressed_hash)],
         segments: vec![segment()],
     }
+}
+
+fn manifest_with_offset_tile(source_signature: u64, compressed_hash: u64) -> ReloadDiffManifest {
+    let mut manifest = manifest_with_tile(source_signature, compressed_hash);
+    manifest.sources[0].offset_x = -10;
+    manifest.sources[0].offset_y = 5;
+    manifest.sources[0].tiles[0].x = 0;
+    manifest.sources[0].tiles[0].y = 20;
+    manifest
 }
 
 fn source(signature: u64, compressed_hash: u64) -> ReloadDiffSource {

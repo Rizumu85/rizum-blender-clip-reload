@@ -6,7 +6,7 @@ use clip_model::{LayerId, Rect, Rgba8};
 use crate::blend::StrictRasterBlendMode;
 use crate::gpu_provider::{
     GpuResourcePlan, RuntimeGpuResourceProvider, atlas_cache::SparseAtlasCache,
-    atlas_upload::sparse_atlas_texture_pool_updates, cache::PersistentGpuTextureCache,
+    cache::PersistentGpuTextureCache,
 };
 use crate::stack_plan::{
     GpuRenderStackSelection, PlannedDecodedRaster, StrictRasterStackDraw, StrictRasterStackOptions,
@@ -18,6 +18,8 @@ use crate::{
     NormalRasterStackPixelTraceSample, ReloadPatchRect, RuntimeError, SimpleRasterStackGpuResult,
     SimpleRasterStackUnsupported,
 };
+
+mod sparse_atlas;
 
 pub struct RuntimeGpuRenderer {
     renderer: clip_gpu::GpuRenderer,
@@ -43,31 +45,6 @@ impl RuntimeGpuRenderer {
             sparse_atlas_cache: RefCell::new(SparseAtlasCache::default()),
             sparse_atlas_textures: RefCell::new(clip_gpu::GpuSparseAtlasTexturePool::default()),
         })
-    }
-
-    pub fn plan_sparse_atlas_reload(
-        &self,
-        plan: &crate::ReloadDiffPlan,
-    ) -> crate::GpuSparseAtlasReloadPlan {
-        self.sparse_atlas_cache
-            .borrow_mut()
-            .plan_reload_diff(plan)
-            .into()
-    }
-
-    pub fn prepare_sparse_atlas_textures(
-        &self,
-        session: &ClipSession,
-        plan: &crate::ReloadDiffPlan,
-    ) -> Result<clip_gpu::GpuSparseAtlasTexturePoolStats, RuntimeError> {
-        let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
-        let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
-        self.renderer
-            .update_sparse_atlas_texture_pool(
-                &mut self.sparse_atlas_textures.borrow_mut(),
-                &updates,
-            )
-            .map_err(RuntimeError::from)
     }
 
     pub fn draw_normal_raster_stack(

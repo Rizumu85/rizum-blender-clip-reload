@@ -5,7 +5,8 @@ use super::atlas_cache::{
     SparseAtlasUpdatePlan,
 };
 use crate::reload_diff::{
-    ReloadDiffMode, ReloadDiffPlan, ReloadDiffSegmentTileRef, ReloadDirtySegmentEventRange,
+    ReloadDiffManifest, ReloadDiffMode, ReloadDiffPlan, ReloadDiffSegmentTileRef, ReloadDiffTile,
+    ReloadDirtySegmentEventRange,
 };
 use crate::{
     GpuSparseAtlasEventRange, GpuSparseAtlasReloadPlan, GpuSparseAtlasRerunSegment,
@@ -33,6 +34,10 @@ pub(crate) struct SparseAtlasRerunSlot {
     pub resource_id: u32,
     pub tile_x: u32,
     pub tile_y: u32,
+    pub event_start: u32,
+    pub event_end: u32,
+    pub canvas_x: u32,
+    pub canvas_y: u32,
     pub source_x: u32,
     pub source_y: u32,
     pub action: SparseAtlasUpdateAction,
@@ -61,6 +66,7 @@ fn rerunnable_segments(
     cache: &SparseAtlasUpdatePlan,
 ) -> Vec<SparseAtlasRerunSegment> {
     let updates = update_lookup(cache);
+    let source_tiles = source_tile_lookup(&plan.manifest);
     plan.dirty_segments
         .iter()
         .filter_map(|dirty| {
@@ -74,9 +80,11 @@ fn rerunnable_segments(
                 .iter()
                 .filter(|tile| event_range_intersects_any(tile, &dirty.dirty_event_ranges))
                 .filter_map(|tile| {
-                    updates
-                        .get(&tile_key(tile))
-                        .map(|update| rerun_slot_for_update(tile, update, cache.atlas_size))
+                    let key = tile_key(tile);
+                    let canvas_tile = source_tiles.get(&key)?;
+                    updates.get(&key).map(|update| {
+                        rerun_slot_for_update(tile, update, cache.atlas_size, canvas_tile)
+                    })
                 })
                 .collect::<Vec<_>>();
             let updated_slots = resident_slots
@@ -92,6 +100,25 @@ fn rerunnable_segments(
             })
         })
         .collect()
+}
+
+fn source_tile_lookup(manifest: &ReloadDiffManifest) -> HashMap<AtlasTileKey, ReloadDiffTile> {
+    let mut tiles = HashMap::new();
+    for source in &manifest.sources {
+        for tile in &source.tiles {
+            tiles.insert(
+                AtlasTileKey {
+                    kind: reload_kind(&source.kind),
+                    layer_id: source.layer_id,
+                    resource_id: source.resource_id,
+                    tile_x: tile.tile_x,
+                    tile_y: tile.tile_y,
+                },
+                *tile,
+            );
+        }
+    }
+    tiles
 }
 
 fn update_lookup(cache: &SparseAtlasUpdatePlan) -> HashMap<AtlasTileKey, &SparseAtlasTileUpdate> {
@@ -117,6 +144,7 @@ fn rerun_slot_for_update(
     tile: &ReloadDiffSegmentTileRef,
     update: &SparseAtlasTileUpdate,
     atlas_size: clip_model::CanvasSize,
+    canvas_tile: &ReloadDiffTile,
 ) -> SparseAtlasRerunSlot {
     SparseAtlasRerunSlot {
         kind: tile.kind.clone(),
@@ -124,6 +152,10 @@ fn rerun_slot_for_update(
         resource_id: tile.resource_id,
         tile_x: tile.tile_x,
         tile_y: tile.tile_y,
+        event_start: tile.event_start,
+        event_end: tile.event_end,
+        canvas_x: canvas_tile.x,
+        canvas_y: canvas_tile.y,
         source_x: update.fingerprint.source_x,
         source_y: update.fingerprint.source_y,
         action: update.action,
@@ -153,15 +185,19 @@ struct AtlasTileKey {
 
 fn tile_key(tile: &ReloadDiffSegmentTileRef) -> AtlasTileKey {
     AtlasTileKey {
-        kind: match tile.kind.as_str() {
-            "raster" => "raster",
-            "mask" => "mask",
-            _ => "unknown",
-        },
+        kind: reload_kind(&tile.kind),
         layer_id: tile.layer_id,
         resource_id: tile.resource_id,
         tile_x: tile.tile_x,
         tile_y: tile.tile_y,
+    }
+}
+
+fn reload_kind(kind: &str) -> &'static str {
+    match kind {
+        "raster" => "raster",
+        "mask" => "mask",
+        _ => "unknown",
     }
 }
 
@@ -212,6 +248,10 @@ impl From<SparseAtlasRerunSlot> for GpuSparseAtlasSlot {
             resource_id: value.resource_id,
             tile_x: value.tile_x,
             tile_y: value.tile_y,
+            event_start: value.event_start,
+            event_end: value.event_end,
+            canvas_x: value.canvas_x,
+            canvas_y: value.canvas_y,
             source_x: value.source_x,
             source_y: value.source_y,
             action: value.action.as_str().to_string(),
