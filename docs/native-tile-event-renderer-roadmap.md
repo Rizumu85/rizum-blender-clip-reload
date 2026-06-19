@@ -1,6 +1,6 @@
 # Native Tile-Event Renderer Roadmap
 
-Last updated: 2026-06-18
+Last updated: 2026-06-19
 
 ## Purpose
 
@@ -551,7 +551,7 @@ Implemented subset:
   local result into the parent accumulator through the same Normal,
   byte-domain special-blend, or standard blend helpers used by existing raster
   events.
-- Nested simple containers use a fixed three-level transparent-white local
+- Nested simple containers use a fixed four-level transparent-white local
   accumulator stack. Each inner container resolves into its parent accumulator
   before the outer container resolves to its parent. Container depth beyond the
   fixed limit remains a barrier.
@@ -611,16 +611,16 @@ Verification:
 - GPU unit tests compare the tile-scope path against the existing legacy
   source path for Normal container opacity, Multiply container resolve, and
   Multiply container resolve with non-1 opacity.
-- GPU unit tests compare direct and three-deep nested containers against the
-  existing legacy source path and assert nesting beyond the fixed limit remains
+- GPU unit tests compare direct, three-deep, and four-deep nested containers
+  against the existing legacy source path and assert five-deep nesting remains
   a barrier.
 - GPU unit tests compare a direct THROUGH child inside a container scope
   against the existing legacy source path, proving THROUGH resolves back into
   the container accumulator rather than the parent canvas.
 - GPU unit tests compare a THROUGH child inside a nested container scope
-  against the existing legacy source path, and planner tests lock
-  THROUGH-child containers beyond the fixed scope depth as
-  `ScopeDepthLimitExceeded`.
+  against the existing legacy source path. Planner tests lock a THROUGH child
+  at the fixed fourth container-scope depth as tile-local, while deeper stacks
+  remain `ScopeDepthLimitExceeded`.
 - GPU unit tests compare a raster-only clipping run inside a supported Normal
   container scope against the existing legacy source path.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
@@ -651,8 +651,8 @@ Verification:
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
   and `Test_AddGlowMultiply` remain stable.
 
-Current `Ref_Terra404_Live2D.clip --performance-plan-json` after direct
-THROUGH clipping-run lowering:
+Current `Ref_Terra404_Live2D.clip --performance-plan-json` after the four-level
+container scope stack:
 
 - `planned_passes=481`
 - `tile_local_segments=436`
@@ -663,6 +663,11 @@ THROUGH clipping-run lowering:
   - `IsolatedContainerRequiresIntermediate=4`
   - `ScopeDepthLimitExceeded=3`
   - `ClippingRunNotLowered=2`
+
+The four-level stack extends the faithful tile-local scope model and removes
+the previous synthetic fourth-container depth barrier, but it does not change
+Terra's current plan. Terra's remaining cost is still dominated by unsupported
+THROUGH shapes rather than ordinary four-deep isolated containers.
 
 Guard comparisons remain stable after the planner/executor change:
 `Test_ClippingEdge` exact, `Test_ToneCurve` exact, `Test_AddGlowMultiply`

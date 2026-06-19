@@ -361,8 +361,12 @@ fn active_scope_accumulator(
     scope0_dst: vec4<f32>,
     scope1_dst: vec4<f32>,
     scope2_dst: vec4<f32>,
+    scope3_dst: vec4<f32>,
     dst: vec4<f32>,
 ) -> vec4<f32> {
+    if (scope_depth == 4u) {
+        return scope3_dst;
+    }
     if (scope_depth == 3u) {
         return scope2_dst;
     }
@@ -1105,6 +1109,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     var scope0_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope1_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+    var scope3_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var scope_depth = 0u;
     var through0_before = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var through0_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
@@ -1120,7 +1125,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         if (kind == TILE_EVENT_KIND_BEGIN_THROUGH) {
             if (scope_contains(event_index, local_texel)) {
                 if (through_depth == 0u) {
-                    through0_before = active_scope_accumulator(scope_depth, scope0_dst, scope1_dst, scope2_dst, dst);
+                    through0_before = active_scope_accumulator(scope_depth, scope0_dst, scope1_dst, scope2_dst, scope3_dst, dst);
                     through0_after = through0_before;
                     through0_target_scope_depth = scope_depth;
                     through_depth = 1u;
@@ -1142,7 +1147,9 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     through_depth = 1u;
                 } else if (through_depth == 1u) {
                     let through_resolved = resolve_through_scope(event_index, through0_before, through0_after, scope_mask);
-                    if (through0_target_scope_depth == 3u) {
+                    if (through0_target_scope_depth == 4u) {
+                        scope3_dst = through_resolved;
+                    } else if (through0_target_scope_depth == 3u) {
                         scope2_dst = through_resolved;
                     } else if (through0_target_scope_depth == 2u) {
                         scope1_dst = through_resolved;
@@ -1168,6 +1175,9 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                 } else if (scope_depth == 2u) {
                     scope2_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
                     scope_depth = 3u;
+                } else if (scope_depth == 3u) {
+                    scope3_dst = vec4<f32>(1.0, 1.0, 1.0, 0.0);
+                    scope_depth = 4u;
                 }
             }
             continue;
@@ -1175,7 +1185,10 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
         if (kind == TILE_EVENT_KIND_END_CONTAINER) {
             if (scope_contains(event_index, local_texel)) {
                 let scope_mask = load_scope_mask(event_index, local_texel);
-                if (scope_depth == 3u) {
+                if (scope_depth == 4u) {
+                    scope2_dst = resolve_container_scope(event_index, scope3_dst, scope2_dst, scope_mask);
+                    scope_depth = 3u;
+                } else if (scope_depth == 3u) {
                     scope1_dst = resolve_container_scope(event_index, scope2_dst, scope1_dst, scope_mask);
                     scope_depth = 2u;
                 } else if (scope_depth == 2u) {
@@ -1211,7 +1224,9 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                 }
                 let clip_blend_kind = scope_word(event_index, 1u);
                 let resolved_clip_src = quantize_u8(local_clip_dst);
-                if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
+                if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
+                    scope3_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope3_dst, clip_blend_kind);
+                } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
                     scope2_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope2_dst, clip_blend_kind);
                 } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
                     scope1_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope1_dst, clip_blend_kind);
@@ -1238,6 +1253,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                 }
                 if (params.mode == MODE_CLIPPING_RUN) {
                     clip_dst = apply_point_filter_event(event_index, clip_dst, local_texel);
+                } else if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
+                    scope3_dst = apply_point_filter_event(event_index, scope3_dst, local_texel);
                 } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
                     scope2_dst = apply_point_filter_event(event_index, scope2_dst, local_texel);
                 } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
@@ -1315,6 +1332,8 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             }
             if (src.a <= 0.0 || dst.a <= 0.0) { continue; }
             dst = apply_preserve(src, dst, blend_kind);
+        } else if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
+            scope3_dst = apply_raster_event_to_accumulator(src, scope3_dst, event_index, mask_value, blend_kind);
         } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
             scope2_dst = apply_raster_event_to_accumulator(src, scope2_dst, event_index, mask_value, blend_kind);
         } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {

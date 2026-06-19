@@ -8,7 +8,7 @@ use crate::stream_tile_filter_silo::filter_mask_can_lower;
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
 
-pub(crate) const SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT: usize = 3;
+pub(crate) const SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT: usize = 4;
 pub(crate) const SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT: usize = 2;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
