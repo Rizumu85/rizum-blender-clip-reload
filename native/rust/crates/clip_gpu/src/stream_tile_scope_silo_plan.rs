@@ -508,7 +508,7 @@ where
                     target_size,
                     children,
                     container_depth_remaining - 1,
-                    ThroughBudget::Remaining(1),
+                    ThroughBudget::Remaining(SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT),
                     ClippingRunPolicy::DirectOnly,
                 )?;
                 count = add_scope_events(count, 2)?;

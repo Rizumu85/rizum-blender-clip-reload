@@ -1304,7 +1304,8 @@ containers, so `BeginClippedScope` / nested `BeginScope` / `BeginThrough` /
 child events / `EndThrough` / nested `EndScope` / `EndClippedScope` executes as
 one tile-local stream. Planner, main GPU legacy-compare, sparse runtime event
 order, and sparse executor tests cover this position. This does not yet claim
-arbitrary deeper THROUGH nesting or unsupported non-raster children.
+arbitrary THROUGH nesting beyond the two-level VM limit or unsupported
+non-raster children.
 
 Forty-fourth form: clipped container/folder sibling child streams now also keep
 pointwise filters after a simple THROUGH child inside the same tile-local
@@ -1314,7 +1315,8 @@ accumulated scope before `EndClippedScope` resolves through the clip-base
 preserve-alpha rule. Planner, main GPU legacy-compare, sparse runtime event
 order, and sparse executor tests cover this filtered-through child stream with
 provider-backed or absent filter masks following the existing point-filter
-rules. Unsupported filter masks and deeper THROUGH nesting remain barriers.
+rules. Unsupported filter masks and THROUGH nesting beyond the two-level VM
+limit remain barriers.
 
 Forty-fifth form: a simple THROUGH child inside a clipped container/folder
 sibling can now contain a direct raster-only clipping run. The outer clipped
@@ -1325,14 +1327,26 @@ clipping run uses the nested local clip-base accumulator inside the THROUGH
 main GPU tests compare against the existing legacy pass path, sparse runtime
 tests lock the ordered `BeginThrough` plus inner `BeginClipBase` /
 `ResolveClipBase` event sequence, and sparse executor tests lock the pixel
-result. Deeper THROUGH nesting, unsupported masked filters, and unsupported
-non-raster child subtrees remain barriers.
+result. THROUGH nesting beyond the two-level VM limit, unsupported masked
+filters, and unsupported non-raster child subtrees remain barriers.
+
+Forty-sixth form: clipped container/folder sibling child streams now allow a
+two-level simple THROUGH stack. The clipped sibling child builder passes the
+same `SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT` budget used by the tile VM's
+two-level THROUGH accumulator, so `BeginThrough` can nest once inside another
+`BeginThrough` before both resolve back into the clipped sibling's active
+scope accumulator. Planner tests lock the 12-event segment cost, main GPU
+tests compare against the existing legacy pass path, sparse runtime tests lock
+the nested `BeginScope(Through)` / `EndScope(Through)` order, and sparse
+executor tests lock the pixel result. THROUGH nesting beyond the two-level VM
+limit, unsupported masked filters, and unsupported non-raster child subtrees
+remain barriers.
 
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
-  stream: deeper THROUGH nesting, unsupported masked filters/non-raster child
-  subtrees, and remaining over-depth/over-limit cases
+  stream: THROUGH nesting beyond the two-level VM limit, unsupported masked
+  filters/non-raster child subtrees, and remaining over-depth/over-limit cases
 
 ## Correctness Policy
 

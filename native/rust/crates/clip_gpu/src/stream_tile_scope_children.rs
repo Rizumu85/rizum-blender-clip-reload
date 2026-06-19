@@ -409,7 +409,7 @@ where
                     context,
                     target_origin,
                     container_depth_remaining - 1,
-                    1,
+                    SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT,
                     ClippingRunPolicy::DirectOnly,
                     children,
                     prepared,

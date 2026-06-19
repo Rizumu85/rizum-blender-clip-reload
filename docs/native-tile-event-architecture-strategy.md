@@ -442,7 +442,7 @@ Add tile-local scope coverage in this order:
    nested-container, raster-only child clipping-run, and simple THROUGH
    child-stream subset, including the nested-container/simple-THROUGH position
    and pointwise filters or direct raster-only clipping runs inside simple
-   THROUGH children
+   THROUGH children, plus one nested simple THROUGH level
 2. deeper simple container nesting when the scope-depth limit allows it
 3. nested THROUGH cases with explicit before/after accumulator semantics
 4. scope masks that span resident R8 mask slots
@@ -458,11 +458,13 @@ simple THROUGH child is inside one nested simple container. Pointwise filters
 after a simple THROUGH child remain tile-local by applying to the resolved
 THROUGH accumulator before clipped-scope resolve, and direct raster-only
 clipping runs inside a simple THROUGH child use the nested local clip-base
-accumulator inside the THROUGH `after` path. Unsupported or over-depth child
-subtrees stay explicit barriers. The remaining work is broader clipped
-container/folder subtrees: deeper THROUGH nesting, unsupported masked filters,
-more nested scope positions, and other non-direct-raster children. Do not solve
-those by only relaxing eligibility checks.
+accumulator inside the THROUGH `after` path. The clipped sibling child stream
+now also accepts one nested simple THROUGH level, matching the tile VM's
+two-level THROUGH accumulator. Unsupported or over-depth child subtrees stay
+explicit barriers. The remaining work is broader clipped container/folder
+subtrees: THROUGH nesting beyond the two-level VM limit, unsupported masked
+filters, more nested scope positions, and other non-direct-raster children. Do
+not solve those by only relaxing eligibility checks.
 
 ### Phase 6: Add Session Atlas and Dirty Segment Reuse After Semantics Stabilize
 
