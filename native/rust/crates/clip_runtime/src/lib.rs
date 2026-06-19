@@ -33,7 +33,7 @@ pub use gpu_api::RuntimeGpuRenderer;
 pub use reload_diff::{
     ReloadDiffManifest, ReloadDiffMode, ReloadDiffNode, ReloadDiffPlan, ReloadDiffSegment,
     ReloadDiffSegmentResource, ReloadDiffSegmentTileRef, ReloadDiffSource, ReloadDiffTile,
-    ReloadDirtySegment, ReloadPatchRect,
+    ReloadDirtySegment, ReloadDirtySegmentEventRange, ReloadPatchRect,
 };
 pub use results::{
     DrawRasterLayerGpuResult, GpuTextureCacheStats, NativePerformancePlanResult,

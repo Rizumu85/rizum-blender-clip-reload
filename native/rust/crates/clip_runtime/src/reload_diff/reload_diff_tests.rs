@@ -1,6 +1,7 @@
 use super::{
     ReloadDiffManifest, ReloadDiffMode, ReloadDiffSegment, ReloadDiffSegmentResource,
-    ReloadDiffSegmentTileRef, ReloadDiffSource, ReloadDiffTile, ReloadPatchRect,
+    ReloadDiffSegmentTileRef, ReloadDiffSource, ReloadDiffTile, ReloadDirtySegmentEventRange,
+    ReloadPatchRect,
 };
 use crate::reload_diff::reload_diff_plan::{coalesce_dirty_rects, plan_reload_diff};
 
@@ -106,6 +107,7 @@ fn changed_tile_payload_marks_dirty_segment() {
             ordinal: 0,
             dirty_tile_count: 1,
             dirty_resource_count: 0,
+            dirty_event_ranges: vec![ReloadDirtySegmentEventRange { start: 2, end: 3 }],
         }]
     );
 }
@@ -189,6 +191,48 @@ fn older_segment_work_list_fields_default_when_parsing_json() {
     assert!(parsed.segments[0].resources.is_empty());
     assert_eq!(parsed.segments[0].tile_work_list_signature, 0);
     assert!(parsed.segments[0].tile_work_list.is_empty());
+}
+
+#[test]
+fn older_tile_ref_event_range_fields_default_when_parsing_json() {
+    let json = r#"{
+        "abi": 3,
+        "tile_size": 256,
+        "tile_event_abi_version": 8,
+        "width": 1,
+        "height": 1,
+        "root_layer_id": 2,
+        "nodes": [],
+        "sources": [],
+        "segments": [{
+            "ordinal": 0,
+            "depth": 0,
+            "source_start": 0,
+            "source_end": 1,
+            "kind": "RasterRun",
+            "barrier_reason": null,
+            "expected_passes": 1,
+            "tile_events": 1,
+            "legacy_sources": 0,
+            "resources": [],
+            "tile_work_list_source_count": 1,
+            "tile_work_list_tile_count": 1,
+            "tile_work_list_signature": 1,
+            "tile_work_list": [{
+                "kind": "raster",
+                "layer_id": 7,
+                "resource_id": 8,
+                "tile_x": 0,
+                "tile_y": 0
+            }],
+            "signature": 1
+        }]
+    }"#;
+    let parsed: ReloadDiffManifest = serde_json::from_str(json).expect("parse old tile refs");
+
+    assert_eq!(parsed.abi, 3);
+    assert_eq!(parsed.segments[0].tile_work_list[0].event_start, 0);
+    assert_eq!(parsed.segments[0].tile_work_list[0].event_end, 0);
 }
 
 #[test]
@@ -297,12 +341,15 @@ fn test_segment_with_mask_tile(signature: u64) -> ReloadDiffSegment {
         tile_work_list_source_count: 1,
         tile_work_list_tile_count: 1,
         tile_work_list_signature: 123,
+        tile_events: 4,
         tile_work_list: vec![ReloadDiffSegmentTileRef {
             kind: "mask".to_string(),
             layer_id: 7,
             resource_id: 8,
             tile_x: 0,
             tile_y: 0,
+            event_start: 2,
+            event_end: 3,
         }],
         ..test_segment(signature)
     }

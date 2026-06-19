@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::reload_diff::{
     FULL_DIRTY_AREA_RATIO, MANIFEST_ABI, MAX_PATCH_RECTS, ReloadDiffManifest, ReloadDiffMode,
     ReloadDiffNode, ReloadDiffPlan, ReloadDiffSegment, ReloadDiffSource, ReloadDiffTile,
-    ReloadDirtySegment, ReloadPatchRect,
+    ReloadDirtySegment, ReloadDirtySegmentEventRange, ReloadPatchRect,
 };
 
 pub(crate) fn plan_reload_diff(
@@ -259,47 +259,86 @@ fn dirty_segments_for_changes(
         .segments
         .iter()
         .filter_map(|segment| {
-            let dirty_resource_count = usize_to_u32(
-                segment
-                    .resources
-                    .iter()
-                    .filter(|resource| {
-                        dirty_layers.contains(&resource.layer_id)
-                            || dirty_resources.contains(&SourceKey {
-                                kind: resource.kind.clone(),
-                                layer_id: resource.layer_id,
-                                resource_id: resource.resource_id,
-                            })
-                    })
-                    .count(),
-            );
-            let dirty_tile_count = usize_to_u32(
-                segment
-                    .tile_work_list
-                    .iter()
-                    .filter(|tile| {
-                        dirty_tiles.contains(&TileKey {
-                            source: SourceKey {
-                                kind: tile.kind.clone(),
-                                layer_id: tile.layer_id,
-                                resource_id: tile.resource_id,
-                            },
-                            tile_x: tile.tile_x,
-                            tile_y: tile.tile_y,
+            let mut dirty_event_ranges = Vec::new();
+            let dirty_resource_count = segment
+                .resources
+                .iter()
+                .filter(|resource| {
+                    dirty_layers.contains(&resource.layer_id)
+                        || dirty_resources.contains(&SourceKey {
+                            kind: resource.kind.clone(),
+                            layer_id: resource.layer_id,
+                            resource_id: resource.resource_id,
                         })
-                    })
-                    .count(),
-            );
+                })
+                .count();
+            if dirty_resource_count > 0 {
+                dirty_event_ranges.push(segment_full_event_range(segment));
+            }
+            let dirty_tile_count = segment
+                .tile_work_list
+                .iter()
+                .filter(|tile| {
+                    let is_dirty = dirty_tiles.contains(&TileKey {
+                        source: SourceKey {
+                            kind: tile.kind.clone(),
+                            layer_id: tile.layer_id,
+                            resource_id: tile.resource_id,
+                        },
+                        tile_x: tile.tile_x,
+                        tile_y: tile.tile_y,
+                    });
+                    if is_dirty {
+                        dirty_event_ranges.push(tile_event_range(tile));
+                    }
+                    is_dirty
+                })
+                .count();
             if dirty_resource_count == 0 && dirty_tile_count == 0 {
                 return None;
             }
             Some(ReloadDirtySegment {
                 ordinal: segment.ordinal,
-                dirty_tile_count,
-                dirty_resource_count,
+                dirty_tile_count: usize_to_u32(dirty_tile_count),
+                dirty_resource_count: usize_to_u32(dirty_resource_count),
+                dirty_event_ranges: coalesce_event_ranges(dirty_event_ranges),
             })
         })
         .collect()
+}
+
+fn segment_full_event_range(segment: &ReloadDiffSegment) -> ReloadDirtySegmentEventRange {
+    ReloadDirtySegmentEventRange {
+        start: 0,
+        end: segment.tile_events,
+    }
+}
+
+fn tile_event_range(
+    tile: &crate::reload_diff::ReloadDiffSegmentTileRef,
+) -> ReloadDirtySegmentEventRange {
+    ReloadDirtySegmentEventRange {
+        start: tile.event_start,
+        end: tile.event_end,
+    }
+}
+
+fn coalesce_event_ranges(
+    mut ranges: Vec<ReloadDirtySegmentEventRange>,
+) -> Vec<ReloadDirtySegmentEventRange> {
+    ranges.retain(|range| range.end > range.start);
+    ranges.sort_by_key(|range| (range.start, range.end));
+    let mut output: Vec<ReloadDirtySegmentEventRange> = Vec::with_capacity(ranges.len());
+    for range in ranges {
+        if let Some(last) = output.last_mut()
+            && range.start <= last.end
+        {
+            last.end = last.end.max(range.end);
+            continue;
+        }
+        output.push(range);
+    }
+    output
 }
 
 fn tile_rect(tile: ReloadDiffTile) -> ReloadPatchRect {

@@ -227,6 +227,12 @@ fn reload_plan_metadata(
                 "ordinal": segment.ordinal,
                 "dirty_tile_count": segment.dirty_tile_count,
                 "dirty_resource_count": segment.dirty_resource_count,
+                "dirty_event_ranges": segment.dirty_event_ranges.iter().map(|range| {
+                    json!({
+                        "start": range.start,
+                        "end": range.end,
+                    })
+                }).collect::<Vec<_>>(),
             })
         }).collect::<Vec<_>>(),
         "manifest": plan.manifest,

@@ -251,6 +251,7 @@ fn render_segment_tile_work_list(
     let mut tiles = Vec::new();
     let mut source_count = 0u32;
     let mut tile_count = 0u32;
+    let mut next_source_event = 0u32;
     for resource in &segment.resources {
         hash.str(resource.kind.as_str());
         hash.u32(resource.layer_id);
@@ -269,12 +270,18 @@ fn render_segment_tile_work_list(
                 hash.u32(tile.y);
                 hash.u32(tile.width);
                 hash.u32(tile.height);
+                let (event_start, event_end) =
+                    tile_event_range(segment, source, &mut next_source_event);
+                hash.u32(event_start);
+                hash.u32(event_end);
                 tiles.push(ReloadDiffSegmentTileRef {
                     kind: source.kind.clone(),
                     layer_id: source.layer_id,
                     resource_id: source.resource_id,
                     tile_x: tile.tile_x,
                     tile_y: tile.tile_y,
+                    event_start,
+                    event_end,
                 });
             }
             tile_count = tile_count.saturating_add(usize_to_u32(source.tiles.len()));
@@ -288,6 +295,22 @@ fn render_segment_tile_work_list(
         signature: hash.finish(),
         tiles,
     }
+}
+
+fn tile_event_range(
+    segment: &clip_gpu::RenderProgramSegmentInfo,
+    source: &ReloadDiffSource,
+    next_source_event: &mut u32,
+) -> (u32, u32) {
+    if source.kind == "raster"
+        && matches!(segment.kind, "RasterRun" | "RasterClippingRun")
+        && *next_source_event < segment.tile_events
+    {
+        let start = *next_source_event;
+        *next_source_event = next_source_event.saturating_add(1);
+        return (start, start.saturating_add(1));
+    }
+    (0, segment.tile_events)
 }
 
 fn render_segment_signature(segment: &clip_gpu::RenderProgramSegmentInfo) -> u64 {

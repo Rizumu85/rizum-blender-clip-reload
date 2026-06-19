@@ -14,7 +14,7 @@ use reload_diff_manifest::{
 };
 use reload_diff_plan::{full_plan, plan_reload_diff};
 
-pub(crate) const MANIFEST_ABI: u32 = 3;
+pub(crate) const MANIFEST_ABI: u32 = 4;
 pub(crate) const RELOAD_TILE_SIZE: u32 = clip_file::tiles::TILE_SIZE as u32;
 pub(crate) const FULL_DIRTY_AREA_RATIO: f64 = 0.5;
 pub(crate) const MAX_PATCH_RECTS: usize = 256;
@@ -102,6 +102,10 @@ pub struct ReloadDiffSegmentTileRef {
     pub resource_id: u32,
     pub tile_x: u32,
     pub tile_y: u32,
+    #[serde(default)]
+    pub event_start: u32,
+    #[serde(default)]
+    pub event_end: u32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -125,11 +129,18 @@ pub struct ReloadDiffPlan {
     pub dirty_segments: Vec<ReloadDirtySegment>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReloadDirtySegment {
     pub ordinal: u32,
     pub dirty_tile_count: u32,
     pub dirty_resource_count: u32,
+    pub dirty_event_ranges: Vec<ReloadDirtySegmentEventRange>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ReloadDirtySegmentEventRange {
+    pub start: u32,
+    pub end: u32,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -736,11 +736,29 @@ yet rerun only affected segment/tile-event ranges. It makes the affected
 segment set explicit so the cache allocator and segment executor can be wired
 without re-deriving source/resource/tile ownership at the worker layer.
 
+Third form: tile work-list refs now carry event ranges. Reload manifest ABI `4`
+adds `event_start` / `event_end` to each compact segment tile ref, and patch
+plans include `dirty_event_ranges` for every dirty segment.
+
+The current range model is exact for the simple source-backed raster tile
+events in `RasterRun` and `RasterClippingRun` segments. For segment shapes where
+the manifest does not yet expose per-event ownership, such as scope, filter,
+or mask-driven invalidation, the range is deliberately conservative and covers
+the whole segment. This keeps the Interface executable for a future segment
+executor without claiming narrower invalidation than the current planner can
+prove.
+
+Product rendering still uses dirty rectangles. The added event ranges are the
+planner surface for the next implementation step: a segment executor that can
+rerun only affected event ranges after an atlas slot update when the segment
+graph is unchanged.
+
 Next Phase 6 work:
 
-- map dirty segments to concrete tile-event ranges inside each segment
 - introduce a session-level sparse atlas allocator keyed by compressed tile
   fingerprints
+- map updated atlas slots plus dirty event ranges into rerunnable segment
+  ranges
 - update changed atlas regions in place and rerun only affected segments when
   the segment graph is unchanged
 
