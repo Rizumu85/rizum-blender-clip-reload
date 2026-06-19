@@ -27,7 +27,6 @@ enum SimpleScopeReject {
 
 #[derive(Clone, Copy)]
 enum ThroughBudget {
-    Unsupported,
     Remaining(usize),
 }
 
@@ -263,7 +262,7 @@ where
                     target_size,
                     children,
                     container_depth_remaining - 1,
-                    ThroughBudget::Unsupported,
+                    through_budget,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
@@ -275,7 +274,6 @@ where
                 mask_key,
             } => {
                 let through_depth_remaining = match through_budget {
-                    ThroughBudget::Unsupported => return Err(SimpleScopeReject::NotSimple),
                     ThroughBudget::Remaining(0) => {
                         ensure_nested_through_scope_header(
                             provider, *opacity, *mask_key, children,
@@ -302,7 +300,7 @@ where
                     target_origin,
                     target_size,
                     children,
-                    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
+                    container_depth_remaining,
                     ThroughBudget::Remaining(through_depth_remaining - 1),
                 )?;
                 count = add_scope_events(count, 2)?;

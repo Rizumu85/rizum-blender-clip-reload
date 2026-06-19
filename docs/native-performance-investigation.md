@@ -541,7 +541,7 @@ including provider-backed non-opaque scope masks:
   to eligible raster events, one direct simple container scope with the same
   scope-mask support, plus pointwise filters whose masks are absent, proven
   fully opaque, or available through provider-backed R8 mask atlas chunks, plus
-  one direct simple THROUGH scope child.
+  simple THROUGH scope children within the remaining scope depth budget.
 - `stream_tile_event.rs` now uses tile event ABI `7`; `BeginContainer` /
   `EndContainer` scope payloads carry optional R8 mask atlas coordinates in
   payload words 6/7, and `PointFilter` payloads carry optional filter mask
@@ -555,15 +555,15 @@ including provider-backed non-opaque scope masks:
   `EndContainer` events up to `SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT == 3`. Inner
   accumulators resolve into their parent accumulator before the outer container
   resolves to its parent.
-- A direct THROUGH child inside a simple container can lower as
+- A simple THROUGH child inside a simple container stack can lower as
   `BeginThrough` / `EndThrough` events. The tile VM captures the active
   container accumulator as the THROUGH `before`/`after` pair, renders the
   THROUGH children into `after`, then resolves back into the same container
-  accumulator.
+  accumulator. THROUGH children inherit the current remaining container
+  scope-depth budget instead of resetting it.
 - Unsupported scope shapes remain barriers: container depth beyond the fixed
-  limit, nested/indirect THROUGH-in-container shapes, clipping runs, solid
-  colors, unavailable masked containers, and provider-unavailable or unknown
-  filter masks.
+  limit, clipping runs, solid colors, unavailable masked containers, and
+  provider-unavailable or unknown filter masks.
 
 Verification after this milestone:
 
@@ -580,6 +580,10 @@ Verification after this milestone:
   fixed limit as a barrier.
 - New GPU unit coverage compares a direct THROUGH child inside a simple
   container scope against the existing legacy source path.
+- New GPU unit coverage compares a THROUGH child inside a nested container
+  scope against the existing legacy source path, and planner coverage locks
+  THROUGH-child containers beyond the fixed scope depth as
+  `ScopeDepthLimitExceeded`.
 - New GPU unit coverage compares non-opaque masked container scope resolve
   against the existing legacy source path.
 - New GPU unit coverage compares a provider-backed non-opaque masked filter

@@ -148,7 +148,7 @@ where
                     context,
                     target_origin,
                     container_depth_remaining - 1,
-                    0,
+                    through_depth_remaining,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -206,7 +206,7 @@ where
                 if !append_scope_child_events(
                     context,
                     target_origin,
-                    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
+                    container_depth_remaining,
                     through_depth_remaining - 1,
                     children,
                     prepared,
