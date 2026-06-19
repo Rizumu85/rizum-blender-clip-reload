@@ -52,7 +52,44 @@ fn simple_container_scope_with_direct_rasters_lowers_to_scope_batch() {
 }
 
 #[test]
-fn simple_scope_with_scope_mask_is_not_lowered_yet() {
+fn simple_scope_with_resident_scope_mask_lowers_to_scope_batch() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![
+            slot("raster", 10, 1, 0, 12, 34),
+            slot("mask", 99, 5, 1, 12, 34),
+        ]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                10,
+                1,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            ))],
+            opacity: 1.0,
+            mask_key: Some(clip_gpu::GpuMaskResourceKey {
+                layer_id: LayerId(99),
+                mask_mipmap_id: 5,
+            }),
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let scope = plan.segments[0].batches[0]
+        .scope
+        .expect("container scope payload");
+    let mask = scope.mask.expect("scope mask tile ref");
+    assert_eq!(mask.key.format, clip_gpu::GpuSparseAtlasFormat::R8);
+    assert_eq!(mask.key.atlas_id, 3);
+    assert_eq!(mask.atlas_x, 80);
+    assert_eq!(mask.atlas_y, 32);
+    assert_eq!(mask.size, clip_model::CanvasSize::new(64, 32));
+}
+
+#[test]
+fn simple_scope_without_resident_scope_mask_is_not_lowered() {
     let plan = sparse_atlas_raster_event_plan(
         &diff_with_segment(segment("SimpleContainerScope")),
         &reload_with_slots(vec![slot("raster", 10, 1, 0, 12, 34)]),

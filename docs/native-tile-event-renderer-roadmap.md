@@ -1130,10 +1130,20 @@ windows can execute scope events from resident atlas slots, while leaving the
 broader simple-scope subset to be migrated piece by piece from the main
 tile-silo renderer.
 
+Twenty-eighth form: sparse affected-window direct-raster simple scopes now
+support the first scope-level mask subset. When a `SimpleContainerScope` or
+`SimpleThroughScope` segment has a scope mask and the current dirty scope bounds
+are fully covered by one resident R8 mask slot, lowering passes that atlas
+coordinate through the typed scope payload. The sparse executor already uses
+the same scope payload words as the main tile-silo renderer, so this change does
+not add a second mask compositor. Missing mask slots or scope mask coverage that
+spans multiple resident slots still fail closed and keep the region-render
+fallback.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  scope-level masks, nested simple scopes, point filters, and raster-only
+  multi-slot scope masks, nested simple scopes, point filters, and raster-only
   clipping-run children
 
 ## Correctness Policy

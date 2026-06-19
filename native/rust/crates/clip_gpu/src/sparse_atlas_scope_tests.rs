@@ -33,6 +33,47 @@ fn sparse_atlas_batch_executor_draws_simple_container_scope() {
     assert_eq!(output.pixels, vec![255, 0, 0, 255]);
 }
 
+#[test]
+fn sparse_atlas_batch_executor_applies_simple_container_scope_mask() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let mut pool = GpuSparseAtlasTexturePool::default();
+    let raster = GpuSparseAtlasTextureKey {
+        format: GpuSparseAtlasFormat::Rgba8,
+        atlas_id: 32,
+    };
+    let mask = GpuSparseAtlasTextureKey {
+        format: GpuSparseAtlasFormat::R8,
+        atlas_id: 33,
+    };
+    renderer
+        .update_sparse_atlas_texture_pool(
+            &mut pool,
+            &[
+                one_pixel_update(raster, [255, 0, 0, 255]),
+                one_pixel_mask_update(mask, 0),
+            ],
+        )
+        .expect("prepare sparse atlas pool");
+    let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope(
+        vec![sparse_event(raster)],
+        1.0,
+        GpuRasterBlendMode::Normal,
+        Rect::new(0, 0, 1, 1),
+        Some(GpuSparseAtlasTileRef {
+            key: mask,
+            atlas_x: 0,
+            atlas_y: 0,
+            size: CanvasSize::new(1, 1),
+        }),
+    );
+
+    let output = renderer
+        .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(1, 1), &pool, &[batch])
+        .expect("draw sparse atlas masked scope batch");
+
+    assert_eq!(output.pixels, vec![255, 255, 255, 0]);
+}
+
 fn one_pixel_update(
     key: GpuSparseAtlasTextureKey,
     rgba: [u8; 4],
@@ -45,6 +86,22 @@ fn one_pixel_update(
             atlas_y: 0,
             size: CanvasSize::new(1, 1),
             pixels: rgba.to_vec(),
+        }],
+    }
+}
+
+fn one_pixel_mask_update(
+    key: GpuSparseAtlasTextureKey,
+    alpha: u8,
+) -> GpuSparseAtlasTexturePoolUpdate {
+    GpuSparseAtlasTexturePoolUpdate {
+        key,
+        atlas_size: CanvasSize::new(1, 1),
+        chunks: vec![GpuSparseAtlasUpdateChunk {
+            atlas_x: 0,
+            atlas_y: 0,
+            size: CanvasSize::new(1, 1),
+            pixels: vec![alpha],
         }],
     }
 }

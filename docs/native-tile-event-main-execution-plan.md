@@ -310,8 +310,10 @@ expanding affected-window simple container/THROUGH scope execution beyond the
 first direct-raster subset. Direct-raster `SimpleContainerScope` and
 `SimpleThroughScope` segments already lower into sparse atlas batches by
 wrapping resident raster events in typed scope begin/end events. Scope-level
-masks, nested child scopes, point filters, clipping-run children, and clipped
-container/folder children still remain explicit sparse-patch barriers.
+masks lower when the dirty scope bounds are fully covered by one resident R8
+mask slot. Multi-slot scope masks, nested child scopes, point filters,
+clipping-run children, and clipped container/folder children still remain
+explicit sparse-patch barriers.
 
 ## Implementation Order
 
@@ -327,8 +329,8 @@ container/folder children still remain explicit sparse-patch barriers.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
 7. Expand affected-window simple container/THROUGH scopes beyond direct raster
-   children by adding scope-level masks, nested simple scopes, point filters,
-   and raster-only clipping-run children.
+   children by adding multi-slot scope masks, nested simple scopes, point
+   filters, and raster-only clipping-run children.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.
