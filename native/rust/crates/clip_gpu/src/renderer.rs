@@ -46,6 +46,10 @@ pub enum GpuRenderError {
         expected: clip_model::CanvasSize,
         actual: clip_model::CanvasSize,
     },
+    SparseAtlasSizeMismatch {
+        expected: clip_model::CanvasSize,
+        actual: clip_model::CanvasSize,
+    },
     RasterAtlasResourceCountMismatch {
         expected: usize,
         actual: usize,
@@ -131,6 +135,11 @@ impl fmt::Display for GpuRenderError {
             Self::RasterAtlasSizeMismatch { expected, actual } => write!(
                 f,
                 "GPU raster atlas has size {}x{}, expected {}x{}",
+                actual.width, actual.height, expected.width, expected.height,
+            ),
+            Self::SparseAtlasSizeMismatch { expected, actual } => write!(
+                f,
+                "GPU sparse atlas has size {}x{}, expected {}x{}",
                 actual.width, actual.height, expected.width, expected.height,
             ),
             Self::RasterAtlasResourceCountMismatch { expected, actual } => write!(

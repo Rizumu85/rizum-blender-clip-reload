@@ -33,6 +33,8 @@ pub(crate) struct SparseAtlasRerunSlot {
     pub tile_x: u32,
     pub tile_y: u32,
     pub action: SparseAtlasUpdateAction,
+    pub format: clip_gpu::GpuSparseAtlasFormat,
+    pub atlas_size: clip_model::CanvasSize,
     pub slot: SparseAtlasSlot,
 }
 
@@ -71,7 +73,7 @@ fn rerunnable_segments(
                 .filter_map(|tile| {
                     updates
                         .get(&tile_key(tile))
-                        .and_then(|update| rerun_slot_for_update(tile, update))
+                        .and_then(|update| rerun_slot_for_update(tile, update, cache.atlas_size))
                 })
                 .collect::<Vec<_>>();
             Some(SparseAtlasRerunSegment {
@@ -105,6 +107,7 @@ fn update_lookup(cache: &SparseAtlasUpdatePlan) -> HashMap<AtlasTileKey, &Sparse
 fn rerun_slot_for_update(
     tile: &ReloadDiffSegmentTileRef,
     update: &SparseAtlasTileUpdate,
+    atlas_size: clip_model::CanvasSize,
 ) -> Option<SparseAtlasRerunSlot> {
     if update.action == SparseAtlasUpdateAction::Reuse {
         return None;
@@ -116,6 +119,8 @@ fn rerun_slot_for_update(
         tile_x: tile.tile_x,
         tile_y: tile.tile_y,
         action: update.action,
+        format: update.fingerprint.tile.kind.atlas_format(),
+        atlas_size,
         slot: update.slot,
     })
 }
@@ -195,11 +200,21 @@ impl From<SparseAtlasRerunSlot> for GpuSparseAtlasUpdatedSlot {
             tile_x: value.tile_x,
             tile_y: value.tile_y,
             action: value.action.as_str().to_string(),
+            format: sparse_atlas_format_name(value.format).to_string(),
+            atlas_width: value.atlas_size.width,
+            atlas_height: value.atlas_size.height,
             atlas_id: value.slot.atlas_id,
             atlas_x: value.slot.x,
             atlas_y: value.slot.y,
             width: value.slot.width,
             height: value.slot.height,
         }
+    }
+}
+
+fn sparse_atlas_format_name(format: clip_gpu::GpuSparseAtlasFormat) -> &'static str {
+    match format {
+        clip_gpu::GpuSparseAtlasFormat::Rgba8 => "rgba8",
+        clip_gpu::GpuSparseAtlasFormat::R8 => "r8",
     }
 }

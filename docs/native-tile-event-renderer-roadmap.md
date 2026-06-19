@@ -783,10 +783,27 @@ segment/tile output. It is the executor Interface for the next step: updating
 changed atlas regions in place and using the mapped event ranges to rerun only
 the affected tile-local segment work when the segment graph is unchanged.
 
+Sixth form: `clip_gpu::sparse_atlas` now provides the first real GPU sparse
+atlas texture pool. The pool is keyed by atlas format plus atlas id, creates
+resident atlas textures on demand, validates chunk payload sizes and atlas
+bounds, and applies in-place region updates through `Queue::write_texture`.
+`GpuSparseAtlasTexturePoolStats` reports created atlas count, updated chunk
+count, upload bytes, resident atlas count, and resident bytes. Runtime
+rerunnable slot diagnostics now carry the atlas format and atlas texture size
+needed to feed this pool without re-deriving executor details from source kind.
+
+This sixth form still does not decode changed `.clip` chunks into pool update
+chunks, bind pooled atlas textures in the tile-silo pass, rerun the mapped
+segment event ranges, or read back only those updated output tiles. It is the
+GPU resource layer required by that executor step.
+
 Next Phase 6 work:
 
-- update changed atlas regions in place and rerun only affected segments when
-  the segment graph is unchanged
+- feed decoded changed atlas-slot chunks into the sparse atlas texture pool
+- bind pooled atlas textures in the tile-local segment executor
+- rerun only affected segments and event ranges when the segment graph is
+  unchanged
+- read back only the updated output tiles for Blender patch reload
 
 ## Correctness Policy
 

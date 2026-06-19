@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use clip_model::CanvasSize;
+
 use crate::GpuSparseAtlasCacheStats;
 use crate::reload_diff::{ReloadDiffManifest, ReloadDiffSource, ReloadDiffTile};
 
@@ -32,6 +34,13 @@ impl SparseAtlasResourceKind {
         match self {
             Self::Raster => 4,
             Self::Mask => 1,
+        }
+    }
+
+    pub(super) fn atlas_format(self) -> clip_gpu::GpuSparseAtlasFormat {
+        match self {
+            Self::Raster => clip_gpu::GpuSparseAtlasFormat::Rgba8,
+            Self::Mask => clip_gpu::GpuSparseAtlasFormat::R8,
         }
     }
 }
@@ -130,11 +139,23 @@ pub(crate) struct SparseAtlasTileUpdate {
     pub action: SparseAtlasUpdateAction,
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct SparseAtlasUpdatePlan {
     pub generation: u64,
+    pub atlas_size: CanvasSize,
     pub updates: Vec<SparseAtlasTileUpdate>,
     pub stats: SparseAtlasCacheStats,
+}
+
+impl Default for SparseAtlasUpdatePlan {
+    fn default() -> Self {
+        Self {
+            generation: 0,
+            atlas_size: CanvasSize::new(0, 0),
+            updates: Vec::new(),
+            stats: SparseAtlasCacheStats::default(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -263,6 +284,7 @@ impl SparseAtlasCache {
         self.fill_resident_stats(&mut stats);
         SparseAtlasUpdatePlan {
             generation,
+            atlas_size: self.atlas_size(),
             updates,
             stats,
         }
@@ -282,6 +304,13 @@ impl SparseAtlasCache {
             index
         });
         self.slot_for_index(index, width, height)
+    }
+
+    fn atlas_size(&self) -> CanvasSize {
+        CanvasSize::new(
+            self.tile_size.saturating_mul(self.atlas_tiles_per_side),
+            self.tile_size.saturating_mul(self.atlas_tiles_per_side),
+        )
     }
 
     fn slot_for_index(&self, index: u32, width: u32, height: u32) -> SparseAtlasSlot {

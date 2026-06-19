@@ -37,6 +37,14 @@ fn changed_tile_update_maps_to_rerunnable_segment_slot() {
     assert_eq!(segment.updated_slots.len(), 1);
     assert_eq!(segment.updated_slots[0].tile_x, 0);
     assert_eq!(segment.updated_slots[0].action.as_str(), "upload_changed");
+    assert_eq!(
+        segment.updated_slots[0].format,
+        clip_gpu::GpuSparseAtlasFormat::Rgba8
+    );
+    assert_eq!(
+        segment.updated_slots[0].atlas_size,
+        clip_model::CanvasSize::new(512, 512)
+    );
 }
 
 #[test]

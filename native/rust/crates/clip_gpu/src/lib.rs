@@ -8,6 +8,9 @@ pub mod renderer;
 pub mod resource;
 mod shaders;
 mod source_params;
+mod sparse_atlas;
+#[cfg(test)]
+mod sparse_atlas_tests;
 pub mod stream;
 mod stream_bounds;
 mod stream_clipped_tile_silo;
@@ -54,6 +57,11 @@ pub use resource::{
     GpuMaskResourceCache, GpuMaskResourceInfo, GpuMaskResourceKey, GpuMaskSamplingInfo,
     GpuMaskUpload, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey,
     GpuRasterUpload,
+};
+pub use sparse_atlas::{GpuSparseAtlasFormat, GpuSparseAtlasTexture, GpuSparseAtlasUpdateChunk};
+pub use sparse_atlas::{
+    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolStats,
+    GpuSparseAtlasTexturePoolUpdate,
 };
 pub use stream::{
     GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider,

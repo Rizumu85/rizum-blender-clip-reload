@@ -115,3 +115,18 @@ program without running a GPU render. It combines render-program segment stats,
 typed barrier reason counts, compressed tile occupancy, and sparse atlas upload
 estimates so native performance work can be compared by planner coverage rather
 than intuition.
+
+**Sparse atlas cache**
+
+Session-level native renderer state that maps logical raster or mask source
+tiles plus compressed tile fingerprints to sparse atlas slots. It decides which
+tiles can be reused, which atlas slots need updated payloads, and which stale
+slots can be reclaimed across reload generations.
+
+**Sparse atlas texture pool**
+
+The GPU-side pool of sparse atlas textures keyed by atlas format and atlas id.
+It creates resident atlas textures on demand and applies in-place region updates
+for changed atlas slots. Future dirty segment reload execution should feed this
+pool from the sparse atlas cache and bind the resulting textures in tile-local
+segment reruns.
