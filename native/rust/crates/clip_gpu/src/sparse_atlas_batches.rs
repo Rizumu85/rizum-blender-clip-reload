@@ -34,6 +34,8 @@ pub struct GpuSparseAtlasScopeEvent {
 pub enum GpuSparseAtlasTileEvent {
     Raster(GpuSparseAtlasRasterEvent),
     PointFilter(GpuSparseAtlasPointFilterEvent),
+    BeginScope(GpuSparseAtlasScopeEvent),
+    EndScope(GpuSparseAtlasScopeEvent),
     BeginClipBase(GpuSparseAtlasScopeEvent),
     ClipBaseRaster(GpuSparseAtlasRasterEvent),
     ClippedRaster(GpuSparseAtlasRasterEvent),
@@ -176,7 +178,9 @@ fn split_tile_events(
             GpuSparseAtlasTileEvent::ClipBaseRaster(event) => events.push(*event),
             GpuSparseAtlasTileEvent::ClippedRaster(event) => events.push(*event),
             GpuSparseAtlasTileEvent::PointFilter(filter) => filters.push(filter.clone()),
-            GpuSparseAtlasTileEvent::BeginClipBase(_)
+            GpuSparseAtlasTileEvent::BeginScope(_)
+            | GpuSparseAtlasTileEvent::EndScope(_)
+            | GpuSparseAtlasTileEvent::BeginClipBase(_)
             | GpuSparseAtlasTileEvent::ResolveClipBase(_) => {}
         }
     }

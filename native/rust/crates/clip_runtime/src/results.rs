@@ -112,6 +112,7 @@ pub enum GpuSparseAtlasRasterEventSkipReason {
         resource_id: u32,
     },
     InvalidPointFilter,
+    ScopeDepthLimitExceeded,
     MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
 }

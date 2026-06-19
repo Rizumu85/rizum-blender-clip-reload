@@ -166,6 +166,20 @@ pub(crate) fn append_clip_scope_marker(
     Ok(())
 }
 
+pub(crate) fn append_scope_marker(
+    output_size: CanvasSize,
+    scope: GpuSparseAtlasScopeEvent,
+    begin: bool,
+    payloads: &mut Vec<TileEventPayload>,
+    bounds: &mut Vec<CanvasRect>,
+) -> Result<(), GpuRenderError> {
+    validate_scope_event(output_size, &scope)?;
+    let (begin_payload, end_payload, bounds_rect) = scope_payloads(scope);
+    bounds.push(bounds_rect);
+    payloads.push(if begin { begin_payload } else { end_payload });
+    Ok(())
+}
+
 pub(crate) fn scope_payloads(
     scope: GpuSparseAtlasScopeEvent,
 ) -> (TileEventPayload, TileEventPayload, CanvasRect) {

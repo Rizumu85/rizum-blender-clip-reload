@@ -189,6 +189,120 @@ fn simple_container_scope_with_masked_point_filter_child_splits_filter_events() 
 }
 
 #[test]
+fn simple_container_scope_with_nested_container_child_lowers_ordered_tile_events() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![slot("raster", 10, 1, 0, 12, 34)]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![clip_gpu::GpuNormalStackSource::Container {
+                children: vec![clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                    10,
+                    1,
+                    1.0,
+                    clip_gpu::GpuRasterBlendMode::Normal,
+                    None,
+                ))],
+                opacity: 0.5,
+                mask_key: None,
+                blend_mode: clip_gpu::GpuRasterBlendMode::Screen,
+            }],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(batch.events.len(), 1);
+    assert_eq!(batch.tile_events.len(), 3);
+    let clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope) = batch.tile_events[0] else {
+        panic!("expected nested scope begin");
+    };
+    assert_eq!(
+        scope.kind,
+        clip_gpu::GpuSparseAtlasScopeEventKind::Container
+    );
+    assert_eq!(scope.opacity, 0.5);
+    assert_eq!(scope.blend_mode, clip_gpu::GpuRasterBlendMode::Screen);
+    assert_eq!(scope.local_bounds, clip_model::Rect::new(12, 34, 64, 32));
+    assert!(matches!(
+        batch.tile_events[1],
+        clip_gpu::GpuSparseAtlasTileEvent::Raster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[2],
+        clip_gpu::GpuSparseAtlasTileEvent::EndScope(_)
+    ));
+}
+
+#[test]
+fn simple_container_scope_with_nested_clipping_run_is_not_lowered() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![
+            slot("raster", 10, 1, 0, 12, 34),
+            slot("raster", 11, 2, 1, 12, 34),
+        ]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![clip_gpu::GpuNormalStackSource::Container {
+                children: vec![clip_gpu::GpuNormalStackSource::ClippingRun {
+                    base: raster_source(10, 1, 1.0, clip_gpu::GpuRasterBlendMode::Normal, None),
+                    clipped: vec![clip_gpu::GpuClippedStackSource::Raster(raster_source(
+                        11,
+                        2,
+                        1.0,
+                        clip_gpu::GpuRasterBlendMode::Multiply,
+                        None,
+                    ))],
+                }],
+                opacity: 1.0,
+                mask_key: None,
+                blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+            }],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.segments.is_empty());
+    assert_eq!(
+        plan.skipped_segments[0].reason,
+        SparseAtlasRasterEventSkipReason::NonRasterRun
+    );
+}
+
+#[test]
+fn simple_container_scope_with_too_deep_nested_scope_is_not_lowered() {
+    let leaf = clip_gpu::GpuNormalStackSource::Raster(raster_source(
+        10,
+        1,
+        1.0,
+        clip_gpu::GpuRasterBlendMode::Normal,
+        None,
+    ));
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![slot("raster", 10, 1, 0, 12, 34)]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![nested_container(vec![nested_container(vec![
+                nested_container(vec![nested_container(vec![leaf])]),
+            ])])],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.segments.is_empty());
+    assert_eq!(
+        plan.skipped_segments[0].reason,
+        SparseAtlasRasterEventSkipReason::ScopeDepthLimitExceeded
+    );
+}
+
+#[test]
 fn simple_container_scope_without_resident_filter_mask_is_not_lowered() {
     let plan = sparse_atlas_raster_event_plan(
         &diff_with_segment(segment("SimpleContainerScope")),
@@ -313,4 +427,15 @@ fn invert_lut() -> Vec<u8> {
         lut.extend_from_slice(&[255 - value, 255 - value, 255 - value, 255]);
     }
     lut
+}
+
+fn nested_container(
+    children: Vec<clip_gpu::GpuNormalStackSource>,
+) -> clip_gpu::GpuNormalStackSource {
+    clip_gpu::GpuNormalStackSource::Container {
+        children,
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+    }
 }

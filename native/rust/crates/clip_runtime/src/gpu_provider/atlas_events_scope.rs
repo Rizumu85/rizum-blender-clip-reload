@@ -8,6 +8,8 @@ use super::atlas_events_types::{SparseAtlasRasterEventSegment, SparseAtlasRaster
 use super::atlas_rerun::{SparseAtlasRerunSegment, SparseAtlasRerunSlot};
 use crate::reload_diff::ReloadDiffSegment;
 
+const SPARSE_SCOPE_STACK_LIMIT: usize = 4;
+
 pub(super) fn lower_simple_scope_segment(
     segment: &ReloadDiffSegment,
     rerun_segment: &SparseAtlasRerunSegment,
@@ -112,6 +114,15 @@ fn scope_child_tile_events(
     segment: &SparseAtlasRerunSegment,
     children: &[clip_gpu::GpuNormalStackSource],
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
+    scope_child_tile_events_at_depth(segment, children, 1, true)
+}
+
+fn scope_child_tile_events_at_depth(
+    segment: &SparseAtlasRerunSegment,
+    children: &[clip_gpu::GpuNormalStackSource],
+    scope_depth: usize,
+    allow_clipping_run: bool,
+) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     let mut tile_events = Vec::new();
     let mut current_bounds = None;
     for child in children {
@@ -128,6 +139,9 @@ fn scope_child_tile_events(
                 }
             }
             clip_gpu::GpuNormalStackSource::ClippingRun { base, clipped } => {
+                if !allow_clipping_run {
+                    return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);
+                }
                 let bounds =
                     push_clipping_run_tile_events(segment, *base, clipped, &mut tile_events)?;
                 current_bounds = Some(match current_bounds {
@@ -158,12 +172,81 @@ fn scope_child_tile_events(
                     tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::PointFilter(filter));
                 }
             }
+            clip_gpu::GpuNormalStackSource::Container {
+                children,
+                opacity,
+                mask_key,
+                blend_mode,
+            } => {
+                let (scope_events, bounds) = nested_scope_tile_events(
+                    segment,
+                    children,
+                    scope_depth,
+                    *opacity,
+                    *blend_mode,
+                    *mask_key,
+                    clip_gpu::GpuSparseAtlasScopeEventKind::Container,
+                )?;
+                current_bounds = Some(match current_bounds {
+                    Some(current) => union_rect(current, bounds),
+                    None => bounds,
+                });
+                tile_events.extend(scope_events);
+            }
+            clip_gpu::GpuNormalStackSource::ThroughGroup {
+                children,
+                opacity,
+                mask_key,
+            } => {
+                let (scope_events, bounds) = nested_scope_tile_events(
+                    segment,
+                    children,
+                    scope_depth,
+                    *opacity,
+                    clip_gpu::GpuRasterBlendMode::Normal,
+                    *mask_key,
+                    clip_gpu::GpuSparseAtlasScopeEventKind::Through,
+                )?;
+                current_bounds = Some(match current_bounds {
+                    Some(current) => union_rect(current, bounds),
+                    None => bounds,
+                });
+                tile_events.extend(scope_events);
+            }
             _ => return Err(SparseAtlasRasterEventSkipReason::NonRasterRun),
         }
     }
     let Some(bounds) = current_bounds else {
         return Err(SparseAtlasRasterEventSkipReason::EmptyRasterSlots);
     };
+    Ok((tile_events, bounds))
+}
+
+fn nested_scope_tile_events(
+    segment: &SparseAtlasRerunSegment,
+    children: &[clip_gpu::GpuNormalStackSource],
+    parent_scope_depth: usize,
+    opacity: f32,
+    blend_mode: clip_gpu::GpuRasterBlendMode,
+    mask_key: Option<clip_gpu::GpuMaskResourceKey>,
+    kind: clip_gpu::GpuSparseAtlasScopeEventKind,
+) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
+    if parent_scope_depth >= SPARSE_SCOPE_STACK_LIMIT {
+        return Err(SparseAtlasRasterEventSkipReason::ScopeDepthLimitExceeded);
+    }
+    let (child_events, bounds) =
+        scope_child_tile_events_at_depth(segment, children, parent_scope_depth + 1, false)?;
+    let scope = clip_gpu::GpuSparseAtlasScopeEvent {
+        kind,
+        opacity,
+        blend_mode,
+        local_bounds: bounds,
+        mask: scope_mask_tile_ref_for_bounds(segment, mask_key, bounds)?,
+    };
+    let mut tile_events = Vec::with_capacity(child_events.len() + 2);
+    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope));
+    tile_events.extend(child_events);
+    tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope));
     Ok((tile_events, bounds))
 }
 
@@ -266,6 +349,7 @@ fn batch_masks_share_executor_atlas(batch: &clip_gpu::GpuSparseAtlasRasterEventB
         .iter()
         .filter_map(|event| event.mask)
         .chain(batch.filters.iter().filter_map(|filter| filter.mask))
+        .chain(batch.tile_events.iter().filter_map(tile_event_mask))
         .chain(batch.scope.into_iter().filter_map(|scope| scope.mask))
     {
         if let Some(current) = key {
@@ -277,6 +361,21 @@ fn batch_masks_share_executor_atlas(batch: &clip_gpu::GpuSparseAtlasRasterEventB
         }
     }
     true
+}
+
+fn tile_event_mask(
+    event: &clip_gpu::GpuSparseAtlasTileEvent,
+) -> Option<clip_gpu::GpuSparseAtlasTileRef> {
+    match event {
+        clip_gpu::GpuSparseAtlasTileEvent::Raster(event)
+        | clip_gpu::GpuSparseAtlasTileEvent::ClipBaseRaster(event)
+        | clip_gpu::GpuSparseAtlasTileEvent::ClippedRaster(event) => event.mask,
+        clip_gpu::GpuSparseAtlasTileEvent::PointFilter(filter) => filter.mask,
+        clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope)
+        | clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope)
+        | clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(scope)
+        | clip_gpu::GpuSparseAtlasTileEvent::ResolveClipBase(scope) => scope.mask,
+    }
 }
 
 fn slot_covers_bounds(slot: &SparseAtlasRerunSlot, bounds: Rect) -> bool {

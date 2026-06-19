@@ -1172,11 +1172,20 @@ coverage still fails closed with `FilterMaskNotLowered`, and the sparse
 executor continues to use the existing typed filter payload and mask-atlas
 sampling path rather than a separate scope-filter compositor.
 
+Thirty-second form: sparse affected-window simple scopes now support nested
+simple container and THROUGH children. Sparse scope batches gained inner
+`BeginScope` / `EndScope` tile events, and GPU preparation maps those markers
+onto the same typed `BeginContainer` / `EndContainer` or `BeginThrough` /
+`EndThrough` payloads used by the main tile-silo renderer. Runtime lowering
+recursively lowers nested simple scope children within the bounded scope stack,
+while keeping nested clipping runs as explicit fail-closed cases until their
+cache/writeback semantics are modelled in that position.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  multi-slot scope masks, nested simple scopes, clipping runs nested through
-  another child scope, and clipped container/folder siblings
+  multi-slot scope masks, clipping runs nested through another child scope, and
+  clipped container/folder siblings
 
 ## Correctness Policy
 

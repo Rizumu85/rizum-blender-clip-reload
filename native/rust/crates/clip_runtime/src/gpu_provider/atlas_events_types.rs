@@ -44,6 +44,7 @@ pub(crate) enum SparseAtlasRasterEventSkipReason {
         resource_id: u32,
     },
     InvalidPointFilter,
+    ScopeDepthLimitExceeded,
     MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
 }
@@ -125,6 +126,9 @@ impl From<SparseAtlasRasterEventSkipReason> for crate::GpuSparseAtlasRasterEvent
                 resource_id,
             },
             SparseAtlasRasterEventSkipReason::InvalidPointFilter => Self::InvalidPointFilter,
+            SparseAtlasRasterEventSkipReason::ScopeDepthLimitExceeded => {
+                Self::ScopeDepthLimitExceeded
+            }
             SparseAtlasRasterEventSkipReason::MixedSparseAtlasKeys => Self::MixedSparseAtlasKeys,
             SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange => {
                 Self::CanvasCoordinateOutOfRange
