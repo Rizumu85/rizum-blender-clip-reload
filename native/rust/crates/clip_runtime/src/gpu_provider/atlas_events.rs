@@ -68,7 +68,8 @@ fn lower_raster_run_segment(
         return lower_raster_clipping_run_segment(segment, rerun_segment, sources);
     }
     if segment.kind == "SimpleContainerScope" || segment.kind == "SimpleThroughScope" {
-        return lower_simple_scope_segment(segment, rerun_segment, sources);
+        let canvas = CanvasSize::new(diff.manifest.width, diff.manifest.height);
+        return lower_simple_scope_segment(segment, rerun_segment, sources, canvas);
     }
     if segment.kind != "RasterRun" {
         return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);

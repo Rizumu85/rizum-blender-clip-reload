@@ -1342,11 +1342,26 @@ executor tests lock the pixel result. THROUGH nesting beyond the two-level VM
 limit, unsupported masked filters, and unsupported non-raster child subtrees
 remain barriers.
 
+Forty-seventh form: simple scope child streams now lower `SolidColor` sources
+as typed tile events instead of treating them as non-raster barriers. The tile
+event ABI is now `10`, with `SolidColor` events sharing the point-filter payload
+storage for colour, opacity, and local bounds. The shader applies the solid
+source through the same Normal alpha-over path into the currently active
+accumulator, including ordinary simple container/THROUGH scopes and clipped
+container/folder sibling child streams. Runtime sparse affected-window lowering
+also emits `SolidColor` tile events and clips them to resident scope-mask
+sub-rects. Top-level Paper/SolidColor sources outside an already tile-local
+scope remain `SolidColorNotLowered` barriers for now. Tests cover typed payload
+encoding, planner event cost, sparse runtime event ordering for simple scopes
+and clipped siblings, and sparse executor pixels for ordinary and clipped
+solid-colour scope events.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
   stream: THROUGH nesting beyond the two-level VM limit, unsupported masked
-  filters/non-raster child subtrees, and remaining over-depth/over-limit cases
+  filters, remaining non-raster child subtrees beyond SolidColor, and
+  over-depth/over-limit cases
 
 ## Correctness Policy
 

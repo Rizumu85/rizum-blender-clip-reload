@@ -438,6 +438,48 @@ fn planner_lowers_simple_container_scope_with_opacity_and_blend() {
 }
 
 #[test]
+fn planner_lowers_solid_color_inside_simple_container_scope() {
+    let provider = PlannerProvider::new([]);
+    let sources = vec![GpuNormalStackSource::Container {
+        children: vec![GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 10,
+                g: 20,
+                b: 30,
+                a: 255,
+            },
+            opacity: 1.0,
+        }],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let program = plan_render_program(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        program.segments(),
+        &[RenderSegment {
+            source_range: 0..1,
+            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
+            cost_hint: SegmentCostHint {
+                expected_passes: 1,
+                tile_events: 3,
+                legacy_sources: 0,
+            },
+        }]
+    );
+    assert_eq!(program.stats().simple_container_scope_segments, 1);
+    assert_eq!(program.stats().barrier_reasons.solid_color_not_lowered, 0);
+}
+
+#[test]
 fn planner_lowers_fully_opaque_masked_simple_scopes() {
     let opaque_mask = mask_key(9);
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))])

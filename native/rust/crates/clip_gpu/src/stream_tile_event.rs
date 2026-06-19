@@ -1,10 +1,10 @@
-use clip_model::CanvasSize;
+use clip_model::{CanvasSize, Rgba8};
 
 use crate::blend::blend_kind;
 use crate::stream_bounds::CanvasRect;
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
-pub const TILE_EVENT_ABI_VERSION: u32 = 9;
+pub const TILE_EVENT_ABI_VERSION: u32 = 10;
 const EVENT_HEADER_WORDS: usize = 4;
 const RASTER_PAYLOAD_WORDS: usize = 10;
 const POINT_FILTER_PAYLOAD_WORDS: usize = 12;
@@ -26,6 +26,7 @@ pub(crate) enum TileEventKind {
     SpecialBlendRaster = 8,
     BeginThrough = 9,
     EndThrough = 10,
+    SolidColor = 11,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -67,11 +68,37 @@ pub(crate) struct PointFilterTileEventPayload {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct SolidColorTileEventPayload {
+    pub(crate) color: Rgba8,
+    pub(crate) opacity: f32,
+    pub(crate) local_bounds: CanvasRect,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct ScopeTileEventPayload {
     pub(crate) opacity: f32,
     pub(crate) blend_mode: GpuRasterBlendMode,
     pub(crate) local_bounds: CanvasRect,
     pub(crate) mask_atlas_origin: Option<(u32, u32)>,
+}
+
+impl SolidColorTileEventPayload {
+    fn words(self) -> [u32; POINT_FILTER_PAYLOAD_WORDS] {
+        [
+            u32::from(self.color.r),
+            u32::from(self.color.g),
+            u32::from(self.color.b),
+            u32::from(self.color.a),
+            self.opacity.to_bits(),
+            0,
+            self.local_bounds.x,
+            self.local_bounds.y,
+            self.local_bounds.width,
+            self.local_bounds.height,
+            0,
+            0,
+        ]
+    }
 }
 
 impl RasterTileEventPayload {
@@ -166,6 +193,7 @@ pub(crate) enum TileEventPayload {
     BeginThrough(ScopeTileEventPayload),
     EndThrough(ScopeTileEventPayload),
     PointFilter(PointFilterTileEventPayload),
+    SolidColor(SolidColorTileEventPayload),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -173,7 +201,7 @@ pub(crate) struct TileEventProgram {
     pub(crate) abi_version: u32,
     pub(crate) headers: Vec<TileEventHeader>,
     raster_payloads: Vec<RasterTileEventPayload>,
-    filter_payloads: Vec<PointFilterTileEventPayload>,
+    filter_payloads: Vec<[u32; POINT_FILTER_PAYLOAD_WORDS]>,
     scope_payloads: Vec<ScopeTileEventPayload>,
 }
 
@@ -297,7 +325,16 @@ impl TileEventProgram {
                         payload_offset: u32::try_from(filter_payloads.len()).unwrap_or(u32::MAX),
                         payload_len: 1,
                     });
-                    filter_payloads.push(payload);
+                    filter_payloads.push(payload.words());
+                }
+                TileEventPayload::SolidColor(payload) => {
+                    headers.push(TileEventHeader {
+                        kind: TileEventKind::SolidColor,
+                        flags: 0,
+                        payload_offset: u32::try_from(filter_payloads.len()).unwrap_or(u32::MAX),
+                        payload_len: 1,
+                    });
+                    filter_payloads.push(payload.words());
                 }
             }
         }
@@ -329,7 +366,7 @@ impl TileEventProgram {
     pub(crate) fn filter_payload_words(&self) -> Vec<u32> {
         let mut words = Vec::with_capacity(self.filter_payloads.len() * POINT_FILTER_PAYLOAD_WORDS);
         for payload in &self.filter_payloads {
-            words.extend_from_slice(&payload.words());
+            words.extend_from_slice(payload);
         }
         words
     }

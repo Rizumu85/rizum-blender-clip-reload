@@ -54,6 +54,13 @@ pub struct GpuSparseAtlasPointFilterEvent {
     pub mask: Option<GpuSparseAtlasTileRef>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GpuSparseAtlasSolidColorEvent {
+    pub color: clip_model::Rgba8,
+    pub opacity: f32,
+    pub local_bounds: Rect,
+}
+
 impl GpuRenderer {
     pub fn draw_sparse_atlas_raster_events_to_rgba8(
         &self,

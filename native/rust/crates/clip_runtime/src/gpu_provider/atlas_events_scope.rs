@@ -39,6 +39,7 @@ pub(super) fn lower_simple_scope_segment(
     segment: &ReloadDiffSegment,
     rerun_segment: &SparseAtlasRerunSegment,
     sources: &[clip_gpu::GpuNormalStackSource],
+    canvas: clip_model::CanvasSize,
 ) -> Result<SparseAtlasRasterEventSegment, SparseAtlasRasterEventSkipReason> {
     let source_span = segment_source_span(segment, sources)?;
     let [source] = source_span else {
@@ -58,6 +59,7 @@ pub(super) fn lower_simple_scope_segment(
                 rerun_segment,
                 children,
                 ClippingRunPolicy::NestedContainers,
+                canvas,
             )?;
             container_scope_batches(
                 rerun_segment,
@@ -76,13 +78,21 @@ pub(super) fn lower_simple_scope_segment(
                 mask_key,
             },
         ) => {
-            let (tile_events, bounds) =
-                scope_child_tile_events(rerun_segment, children, ClippingRunPolicy::DirectOnly)?;
+            let (tile_events, bounds) = scope_child_tile_events(
+                rerun_segment,
+                children,
+                ClippingRunPolicy::DirectOnly,
+                canvas,
+            )?;
             through_scope_batches(rerun_segment, tile_events, *opacity, *mask_key, bounds)
         }
         _ => return Err(SparseAtlasRasterEventSkipReason::NonRasterRun),
     }?;
-    if batches.is_empty() || batches.iter().any(|batch| batch.events.is_empty()) {
+    if batches.is_empty()
+        || batches
+            .iter()
+            .any(clip_gpu::GpuSparseAtlasRasterEventBatch::is_empty)
+    {
         return Err(SparseAtlasRasterEventSkipReason::EmptyRasterSlots);
     }
     if batches.iter().any(|batch| {
@@ -101,8 +111,9 @@ fn scope_child_tile_events(
     segment: &SparseAtlasRerunSegment,
     children: &[clip_gpu::GpuNormalStackSource],
     clipping_run_policy: ClippingRunPolicy,
+    canvas: clip_model::CanvasSize,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
-    scope_child_tile_events_at_depth(segment, children, 1, clipping_run_policy, true)
+    scope_child_tile_events_at_depth(segment, children, 1, clipping_run_policy, true, canvas)
 }
 
 fn scope_child_tile_events_at_depth(
@@ -111,11 +122,28 @@ fn scope_child_tile_events_at_depth(
     scope_depth: usize,
     clipping_run_policy: ClippingRunPolicy,
     allow_through_children: bool,
+    canvas: clip_model::CanvasSize,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     let mut tile_events = Vec::new();
     let mut current_bounds = None;
     for child in children {
         match child {
+            clip_gpu::GpuNormalStackSource::SolidColor { color, opacity }
+                if *opacity > 0.0 && color.a != 0 =>
+            {
+                let bounds = Rect::new(0, 0, canvas.width, canvas.height);
+                tile_events.push(clip_gpu::GpuSparseAtlasTileEvent::SolidColor(
+                    clip_gpu::GpuSparseAtlasSolidColorEvent {
+                        color: *color,
+                        opacity: *opacity,
+                        local_bounds: bounds,
+                    },
+                ));
+                current_bounds = Some(match current_bounds {
+                    Some(current) => union_rect(current, bounds),
+                    None => bounds,
+                });
+            }
             clip_gpu::GpuNormalStackSource::Raster(raster) => {
                 let mut events = Vec::new();
                 push_raster_events_for_source(segment, *raster, &mut events)?;
@@ -137,6 +165,7 @@ fn scope_child_tile_events_at_depth(
                     clipped,
                     scope_depth,
                     clipping_run_policy,
+                    canvas,
                     &mut tile_events,
                 )?;
                 current_bounds = Some(match current_bounds {
@@ -183,6 +212,7 @@ fn scope_child_tile_events_at_depth(
                     clip_gpu::GpuSparseAtlasScopeEventKind::Container,
                     clipping_run_policy.for_nested_container(),
                     allow_through_children,
+                    canvas,
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),
@@ -208,6 +238,7 @@ fn scope_child_tile_events_at_depth(
                     clip_gpu::GpuSparseAtlasScopeEventKind::Through,
                     ClippingRunPolicy::DirectOnly,
                     true,
+                    canvas,
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),
@@ -234,6 +265,7 @@ fn nested_scope_tile_events(
     kind: clip_gpu::GpuSparseAtlasScopeEventKind,
     clipping_run_policy: ClippingRunPolicy,
     allow_through_children: bool,
+    canvas: clip_model::CanvasSize,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     if parent_scope_depth >= SPARSE_SCOPE_STACK_LIMIT {
         return Err(SparseAtlasRasterEventSkipReason::ScopeDepthLimitExceeded);
@@ -244,6 +276,7 @@ fn nested_scope_tile_events(
         parent_scope_depth + 1,
         clipping_run_policy,
         allow_through_children,
+        canvas,
     )?;
     let mut tile_events = Vec::new();
     if let Some(mask_key) = mask_key {
@@ -289,6 +322,7 @@ fn push_clipping_run_tile_events(
     clipped: &[clip_gpu::GpuClippedStackSource],
     scope_depth: usize,
     _clipping_run_policy: ClippingRunPolicy,
+    canvas: clip_model::CanvasSize,
     tile_events: &mut Vec<clip_gpu::GpuSparseAtlasTileEvent>,
 ) -> Result<Rect, SparseAtlasRasterEventSkipReason> {
     let mut base_events = Vec::new();
@@ -331,6 +365,7 @@ fn push_clipping_run_tile_events(
                 *mask_key,
                 *blend_mode,
                 scope_depth,
+                canvas,
                 tile_events,
             )?,
         }
@@ -348,6 +383,7 @@ fn push_clipped_container_tile_events(
     mask_key: Option<clip_gpu::GpuMaskResourceKey>,
     blend_mode: clip_gpu::GpuRasterBlendMode,
     parent_scope_depth: usize,
+    canvas: clip_model::CanvasSize,
     tile_events: &mut Vec<clip_gpu::GpuSparseAtlasTileEvent>,
 ) -> Result<(), SparseAtlasRasterEventSkipReason> {
     if opacity <= 0.0 || children.is_empty() {
@@ -362,6 +398,7 @@ fn push_clipped_container_tile_events(
         parent_scope_depth + 1,
         ClippingRunPolicy::DirectOnly,
         true,
+        canvas,
     )?;
     if let Some(mask_key) = mask_key {
         for mask_ref in scope_mask_tile_refs_for_bounds(segment, mask_key, bounds)? {
@@ -476,6 +513,7 @@ fn tile_event_mask(
         | clip_gpu::GpuSparseAtlasTileEvent::ClipBaseRaster(event)
         | clip_gpu::GpuSparseAtlasTileEvent::ClippedRaster(event) => event.mask,
         clip_gpu::GpuSparseAtlasTileEvent::PointFilter(filter) => filter.mask,
+        clip_gpu::GpuSparseAtlasTileEvent::SolidColor(_) => None,
         clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope)
         | clip_gpu::GpuSparseAtlasTileEvent::EndScope(scope)
         | clip_gpu::GpuSparseAtlasTileEvent::BeginClippedScope(scope)

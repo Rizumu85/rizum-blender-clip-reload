@@ -133,6 +133,11 @@ pub(super) fn clip_tile_events_to_bounds(
                     clipped.push(clip_gpu::GpuSparseAtlasTileEvent::PointFilter(filter));
                 }
             }
+            clip_gpu::GpuSparseAtlasTileEvent::SolidColor(event) => {
+                if let Some(event) = clip_solid_color_event(*event, bounds) {
+                    clipped.push(clip_gpu::GpuSparseAtlasTileEvent::SolidColor(event));
+                }
+            }
             clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope) => {
                 if let Some(scope) = clip_scope_event(*scope, bounds)? {
                     clipped.push(clip_gpu::GpuSparseAtlasTileEvent::BeginScope(scope));
@@ -218,6 +223,18 @@ fn clip_filter_event(
             .map(|mask| shifted_tile_ref(mask, dx, dy, intersection.width, intersection.height))
             .transpose()?,
     }))
+}
+
+fn clip_solid_color_event(
+    event: clip_gpu::GpuSparseAtlasSolidColorEvent,
+    bounds: Rect,
+) -> Option<clip_gpu::GpuSparseAtlasSolidColorEvent> {
+    let intersection = rect_intersection(event.local_bounds, bounds)?;
+    Some(clip_gpu::GpuSparseAtlasSolidColorEvent {
+        color: event.color,
+        opacity: event.opacity,
+        local_bounds: intersection,
+    })
 }
 
 fn clip_scope_event(

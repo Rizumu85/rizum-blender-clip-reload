@@ -2,7 +2,8 @@ use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_context::StreamingExecutionContext;
 use crate::stream_tile_event::{
-    PointFilterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
+    PointFilterTileEventPayload, ScopeTileEventPayload, SolidColorTileEventPayload,
+    TileEventPayload,
 };
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
 use crate::stream_tile_mask_atlas_plan::MaskAtlasPlan;
@@ -137,6 +138,24 @@ where
 {
     for child in children {
         match child {
+            GpuNormalStackSource::SolidColor { color, opacity }
+                if *opacity > 0.0 && color.a != 0 =>
+            {
+                let Some(bounds) = context
+                    .state
+                    .clip_pass_bounds(CanvasRect::full(context.output_size))
+                else {
+                    return Ok(false);
+                };
+                let local_bounds = local_pass_bounds(bounds, target_origin);
+                payloads.push(TileEventPayload::SolidColor(SolidColorTileEventPayload {
+                    color: *color,
+                    opacity: *opacity,
+                    local_bounds,
+                }));
+                event_bounds.push(local_bounds);
+                *scope_dirty = union_optional(*scope_dirty, Some(bounds));
+            }
             GpuNormalStackSource::Raster(raster) => {
                 append_raster_payloads(raster, prepared, payloads, event_bounds, scope_dirty);
             }

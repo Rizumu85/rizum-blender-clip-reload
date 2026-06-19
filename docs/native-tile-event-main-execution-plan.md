@@ -338,12 +338,14 @@ inside a clipped sibling can also contain a direct raster-only clipping run,
 using the nested local clip-base accumulator inside the THROUGH `after`
 accumulator before resolving back to the clipped sibling scope. The clipped
 sibling child stream also allows one nested simple THROUGH level, matching the
-tile VM's two-level THROUGH accumulator. These clipped siblings can remain in
-the sparse affected-window path when their raster and mask resources are
-resident. Missing filter/scope mask coverage, THROUGH nesting beyond the
-two-level VM limit, and clipped container/folder children whose contents are
-beyond the current simple child stream still remain explicit sparse-patch
-barriers.
+tile VM's two-level THROUGH accumulator, and `SolidColor` child sources now
+lower as typed events inside simple scopes and clipped sibling child streams.
+These clipped siblings can remain in the sparse affected-window path when their
+raster and mask resources are resident. Missing filter/scope mask coverage,
+THROUGH nesting beyond the two-level VM limit, and clipped container/folder
+children whose contents are beyond the current simple child stream still remain
+explicit sparse-patch barriers; top-level Paper/SolidColor sources outside a
+tile-local scope are still barriers.
 
 ## Implementation Order
 
@@ -364,7 +366,8 @@ barriers.
    clipping-run, simple THROUGH child, and nested-container/simple-THROUGH
    child-stream forms, including pointwise filters after a simple THROUGH
    child, direct raster-only clipping runs inside a simple THROUGH child, and
-   one nested simple THROUGH level.
+   one nested simple THROUGH level, while keeping SolidColor child events in
+   the current simple-scope stream.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

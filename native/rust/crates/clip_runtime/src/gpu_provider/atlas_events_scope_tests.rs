@@ -131,6 +131,39 @@ fn simple_container_scope_with_point_filter_child_lowers_ordered_tile_events() {
 }
 
 #[test]
+fn simple_container_scope_with_solid_color_child_lowers_ordered_tile_event() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(Vec::new()),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![clip_gpu::GpuNormalStackSource::SolidColor {
+                color: clip_model::Rgba8 {
+                    r: 10,
+                    g: 20,
+                    b: 30,
+                    a: 255,
+                },
+                opacity: 0.5,
+            }],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let batch = &plan.segments[0].batches[0];
+    assert!(batch.events.is_empty());
+    assert_eq!(batch.tile_events.len(), 1);
+    let clip_gpu::GpuSparseAtlasTileEvent::SolidColor(event) = batch.tile_events[0] else {
+        panic!("expected solid color tile event");
+    };
+    assert_eq!(event.color.r, 10);
+    assert_eq!(event.opacity, 0.5);
+    assert_eq!(event.local_bounds, clip_model::Rect::new(0, 0, 128, 128));
+}
+
+#[test]
 fn simple_container_scope_with_masked_point_filter_child_splits_filter_events() {
     let plan = sparse_atlas_raster_event_plan(
         &diff_with_segment(segment("SimpleContainerScope")),
@@ -444,6 +477,66 @@ fn simple_container_scope_with_clipped_container_sibling_lowers_ordered_tile_eve
     assert!(matches!(
         batch.tile_events[3],
         clip_gpu::GpuSparseAtlasTileEvent::Raster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[4],
+        clip_gpu::GpuSparseAtlasTileEvent::EndClippedScope(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[5],
+        clip_gpu::GpuSparseAtlasTileEvent::ResolveClipBase(_)
+    ));
+}
+
+#[test]
+fn clipped_container_sibling_with_solid_color_child_lowers_ordered_tile_events() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![slot("raster", 10, 1, 0, 12, 34)]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![clip_gpu::GpuNormalStackSource::ClippingRun {
+                base: raster_source(10, 1, 1.0, clip_gpu::GpuRasterBlendMode::Normal, None),
+                clipped: vec![clip_gpu::GpuClippedStackSource::Container {
+                    layer_id: LayerId(11),
+                    children: vec![clip_gpu::GpuNormalStackSource::SolidColor {
+                        color: clip_model::Rgba8 {
+                            r: 0,
+                            g: 0,
+                            b: 255,
+                            a: 255,
+                        },
+                        opacity: 1.0,
+                    }],
+                    opacity: 0.5,
+                    mask_key: None,
+                    blend_mode: clip_gpu::GpuRasterBlendMode::Screen,
+                }],
+            }],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(batch.events.len(), 1);
+    assert_eq!(batch.tile_events.len(), 6);
+    assert!(matches!(
+        batch.tile_events[0],
+        clip_gpu::GpuSparseAtlasTileEvent::BeginClipBase(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[1],
+        clip_gpu::GpuSparseAtlasTileEvent::ClipBaseRaster(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[2],
+        clip_gpu::GpuSparseAtlasTileEvent::BeginClippedScope(_)
+    ));
+    assert!(matches!(
+        batch.tile_events[3],
+        clip_gpu::GpuSparseAtlasTileEvent::SolidColor(_)
     ));
     assert!(matches!(
         batch.tile_events[4],

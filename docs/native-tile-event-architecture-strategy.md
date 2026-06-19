@@ -460,11 +460,13 @@ THROUGH accumulator before clipped-scope resolve, and direct raster-only
 clipping runs inside a simple THROUGH child use the nested local clip-base
 accumulator inside the THROUGH `after` path. The clipped sibling child stream
 now also accepts one nested simple THROUGH level, matching the tile VM's
-two-level THROUGH accumulator. Unsupported or over-depth child subtrees stay
-explicit barriers. The remaining work is broader clipped container/folder
-subtrees: THROUGH nesting beyond the two-level VM limit, unsupported masked
-filters, more nested scope positions, and other non-direct-raster children. Do
-not solve those by only relaxing eligibility checks.
+two-level THROUGH accumulator, and SolidColor child sources lower as typed
+events in the same simple-scope stream. Unsupported or over-depth child
+subtrees stay explicit barriers. The remaining work is broader clipped
+container/folder subtrees: THROUGH nesting beyond the two-level VM limit,
+unsupported masked filters, more nested scope positions, and other non-raster
+children not yet modeled as faithful tile events. Do not solve those by only
+relaxing eligibility checks.
 
 ### Phase 6: Add Session Atlas and Dirty Segment Reuse After Semantics Stabilize
 

@@ -2,12 +2,13 @@ use clip_model::CanvasSize;
 
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_tile_event::{
-    PointFilterTileEventPayload, RasterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
+    PointFilterTileEventPayload, RasterTileEventPayload, ScopeTileEventPayload,
+    SolidColorTileEventPayload, TileEventPayload,
 };
 use crate::{
     GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent,
     GpuSparseAtlasRasterEvent, GpuSparseAtlasScopeEvent, GpuSparseAtlasScopeEventKind,
-    GpuSparseAtlasTexture, GpuSparseAtlasTileRef,
+    GpuSparseAtlasSolidColorEvent, GpuSparseAtlasTexture, GpuSparseAtlasTileRef,
 };
 
 pub(crate) fn append_raster_payload(
@@ -139,6 +140,30 @@ pub(crate) fn append_filter_payload<'a>(
         mask_atlas_origin: filter.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
     }));
     lut_rows.push(filter.lut_rgba.as_slice());
+    Ok(())
+}
+
+pub(crate) fn append_solid_color_payload(
+    output_size: CanvasSize,
+    event: GpuSparseAtlasSolidColorEvent,
+    payloads: &mut Vec<TileEventPayload>,
+    bounds: &mut Vec<CanvasRect>,
+    pass_bounds: &mut Option<CanvasRect>,
+) -> Result<(), GpuRenderError> {
+    validate_solid_color_event(output_size, &event)?;
+    let bounds_rect = CanvasRect {
+        x: event.local_bounds.x,
+        y: event.local_bounds.y,
+        width: event.local_bounds.width,
+        height: event.local_bounds.height,
+    };
+    *pass_bounds = union_optional(*pass_bounds, Some(bounds_rect));
+    bounds.push(bounds_rect);
+    payloads.push(TileEventPayload::SolidColor(SolidColorTileEventPayload {
+        color: event.color,
+        opacity: event.opacity,
+        local_bounds: bounds_rect,
+    }));
     Ok(())
 }
 
@@ -283,6 +308,31 @@ fn validate_filter_event(
             origin_x: filter.local_bounds.x,
             origin_y: filter.local_bounds.y,
             read_size: CanvasSize::new(filter.local_bounds.width, filter.local_bounds.height),
+        });
+    }
+    Ok(())
+}
+
+fn validate_solid_color_event(
+    output_size: CanvasSize,
+    event: &GpuSparseAtlasSolidColorEvent,
+) -> Result<(), GpuRenderError> {
+    let right = event
+        .local_bounds
+        .x
+        .checked_add(event.local_bounds.width)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    let bottom = event
+        .local_bounds
+        .y
+        .checked_add(event.local_bounds.height)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    if event.local_bounds.is_empty() || right > output_size.width || bottom > output_size.height {
+        return Err(GpuRenderError::ReadbackRegionOutOfBounds {
+            texture_size: output_size,
+            origin_x: event.local_bounds.x,
+            origin_y: event.local_bounds.y,
+            read_size: CanvasSize::new(event.local_bounds.width, event.local_bounds.height),
         });
     }
     Ok(())

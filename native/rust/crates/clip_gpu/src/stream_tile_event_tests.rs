@@ -3,7 +3,8 @@ use clip_model::CanvasSize;
 use crate::stream_bounds::CanvasRect;
 use crate::stream_tile_event::{
     PointFilterTileEventPayload, RasterTileEventPayload, ScopeTileEventPayload,
-    TILE_EVENT_ABI_VERSION, TileEventHeader, TileEventKind, TileEventPayload, TileEventProgram,
+    SolidColorTileEventPayload, TILE_EVENT_ABI_VERSION, TileEventHeader, TileEventKind,
+    TileEventPayload, TileEventProgram,
 };
 use crate::{GpuLutFilterMode, GpuRasterBlendMode};
 
@@ -116,6 +117,36 @@ fn builds_typed_point_filter_events() {
             41,
             42,
         ]
+    );
+}
+
+#[test]
+fn builds_typed_solid_color_events() {
+    let program = TileEventProgram::from_payloads([TileEventPayload::SolidColor(
+        SolidColorTileEventPayload {
+            color: clip_model::Rgba8 {
+                r: 10,
+                g: 20,
+                b: 30,
+                a: 40,
+            },
+            opacity: 0.75,
+            local_bounds: CanvasRect {
+                x: 1,
+                y: 2,
+                width: 31,
+                height: 32,
+            },
+        },
+    )]);
+
+    assert_eq!(
+        program.header_words(),
+        vec![TileEventKind::SolidColor as u32, 0, 0, 1]
+    );
+    assert_eq!(
+        program.filter_payload_words(),
+        vec![10, 20, 30, 40, 0.75f32.to_bits(), 0, 1, 2, 31, 32, 0, 0,]
     );
 }
 

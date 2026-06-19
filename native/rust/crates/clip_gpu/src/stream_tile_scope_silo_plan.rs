@@ -236,6 +236,12 @@ where
     let mut saw_raster = false;
     for child in children {
         match child {
+            GpuNormalStackSource::SolidColor { color, opacity }
+                if *opacity > 0.0 && color.a != 0 =>
+            {
+                saw_raster = true;
+                count = add_scope_events(count, 1)?;
+            }
             GpuNormalStackSource::Raster(_) => {
                 if !source_is_silo_eligible(
                     provider,

@@ -1,6 +1,6 @@
 use crate::{
     GpuRasterBlendMode, GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent,
-    GpuSparseAtlasTextureKey, GpuSparseAtlasTileRef,
+    GpuSparseAtlasSolidColorEvent, GpuSparseAtlasTextureKey, GpuSparseAtlasTileRef,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -33,6 +33,7 @@ pub struct GpuSparseAtlasScopeEvent {
 #[derive(Clone, Debug, PartialEq)]
 pub enum GpuSparseAtlasTileEvent {
     Raster(GpuSparseAtlasRasterEvent),
+    SolidColor(GpuSparseAtlasSolidColorEvent),
     PointFilter(GpuSparseAtlasPointFilterEvent),
     BeginScope(GpuSparseAtlasScopeEvent),
     EndScope(GpuSparseAtlasScopeEvent),
@@ -180,6 +181,7 @@ fn split_tile_events(
             GpuSparseAtlasTileEvent::ClipBaseRaster(event) => events.push(*event),
             GpuSparseAtlasTileEvent::ClippedRaster(event) => events.push(*event),
             GpuSparseAtlasTileEvent::PointFilter(filter) => filters.push(filter.clone()),
+            GpuSparseAtlasTileEvent::SolidColor(_) => {}
             GpuSparseAtlasTileEvent::BeginScope(_)
             | GpuSparseAtlasTileEvent::EndScope(_)
             | GpuSparseAtlasTileEvent::BeginClippedScope(_)

@@ -58,6 +58,7 @@ const TILE_EVENT_KIND_POINT_FILTER: u32 = 7u;
 const TILE_EVENT_KIND_SPECIAL_BLEND_RASTER: u32 = 8u;
 const TILE_EVENT_KIND_BEGIN_THROUGH: u32 = 9u;
 const TILE_EVENT_KIND_END_THROUGH: u32 = 10u;
+const TILE_EVENT_KIND_SOLID_COLOR: u32 = 11u;
 const TILE_EVENT_FLAG_CLIP_BASE_RASTER: u32 = 1u;
 const TILE_EVENT_FLAG_CLIPPED_SCOPE: u32 = 2u;
 const MODE_NORMAL: u32 = 0u;
@@ -96,6 +97,26 @@ fn event_flags(event_index: u32) -> u32 {
 fn filter_word(event_index: u32, word_index: u32) -> u32 {
     let payload_offset = event_headers[event_index * EVENT_HEADER_WORDS + 2u];
     return filter_payloads[payload_offset * POINT_FILTER_PAYLOAD_WORDS + word_index];
+}
+
+fn solid_contains(event_index: u32, local_texel: vec2<i32>) -> bool {
+    let x = filter_word(event_index, 6u);
+    let y = filter_word(event_index, 7u);
+    let width = filter_word(event_index, 8u);
+    let height = filter_word(event_index, 9u);
+    let local = vec2<u32>(local_texel);
+    return local.x >= x && local.y >= y && local.x < x + width && local.y < y + height;
+}
+
+fn solid_color(event_index: u32) -> vec4<f32> {
+    let rgba = vec4<f32>(
+        f32(filter_word(event_index, 0u)),
+        f32(filter_word(event_index, 1u)),
+        f32(filter_word(event_index, 2u)),
+        f32(filter_word(event_index, 3u)),
+    ) / 255.0;
+    let opacity = bitcast<f32>(filter_word(event_index, 4u));
+    return vec4<f32>(rgba.rgb, clamp(rgba.a * opacity, 0.0, 1.0));
 }
 
 fn scope_word(event_index: u32, word_index: u32) -> u32 {
@@ -1353,6 +1374,37 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     through0_after = apply_point_filter_event(event_index, through0_after, local_texel);
                 } else {
                     dst = apply_point_filter_event(event_index, dst, local_texel);
+                }
+            }
+            continue;
+        }
+        if (kind == TILE_EVENT_KIND_SOLID_COLOR) {
+            if (solid_contains(event_index, local_texel)) {
+                let src = solid_color(event_index);
+                var active_through_target_scope_depth = 0u;
+                if (through_depth == 2u) {
+                    active_through_target_scope_depth = through1_target_scope_depth;
+                } else if (through_depth == 1u) {
+                    active_through_target_scope_depth = through0_target_scope_depth;
+                }
+                if (src.a <= 0.0) {
+                    continue;
+                } else if (params.mode == MODE_CLIPPING_RUN) {
+                    clip_dst = apply_normal_alpha(src, clip_dst, to_u8(src.a));
+                } else if (scope_depth == 4u && scope_depth > active_through_target_scope_depth) {
+                    scope3_dst = apply_normal_alpha(src, scope3_dst, to_u8(src.a));
+                } else if (scope_depth == 3u && scope_depth > active_through_target_scope_depth) {
+                    scope2_dst = apply_normal_alpha(src, scope2_dst, to_u8(src.a));
+                } else if (scope_depth == 2u && scope_depth > active_through_target_scope_depth) {
+                    scope1_dst = apply_normal_alpha(src, scope1_dst, to_u8(src.a));
+                } else if (scope_depth == 1u && scope_depth > active_through_target_scope_depth) {
+                    scope0_dst = apply_normal_alpha(src, scope0_dst, to_u8(src.a));
+                } else if (through_depth == 2u) {
+                    through1_after = apply_normal_alpha(src, through1_after, to_u8(src.a));
+                } else if (through_depth == 1u) {
+                    through0_after = apply_normal_alpha(src, through0_after, to_u8(src.a));
+                } else {
+                    dst = apply_normal_alpha(src, dst, to_u8(src.a));
                 }
             }
             continue;
