@@ -1181,11 +1181,18 @@ recursively lowers nested simple scope children within the bounded scope stack,
 while keeping nested clipping runs as explicit fail-closed cases until their
 cache/writeback semantics are modelled in that position.
 
+Thirty-third form: sparse affected-window simple scopes now support raster-only
+clipping runs inside nested container children. The runtime lowering now uses
+the same clipping-run policy as the main scope tile-silo planner: container
+scopes can carry clipping runs through nested containers, while THROUGH scopes
+still only allow direct clipping-run children. Nested clipping runs under a
+THROUGH child remain explicit fail-closed cases.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  multi-slot scope masks, clipping runs nested through another child scope, and
-  clipped container/folder siblings
+  multi-slot scope masks, clipping runs nested through THROUGH child scopes,
+  and clipped container/folder siblings
 
 ## Correctness Policy
 

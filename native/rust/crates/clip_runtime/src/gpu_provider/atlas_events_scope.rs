@@ -10,6 +10,26 @@ use crate::reload_diff::ReloadDiffSegment;
 
 const SPARSE_SCOPE_STACK_LIMIT: usize = 4;
 
+#[derive(Clone, Copy)]
+enum ClippingRunPolicy {
+    None,
+    DirectOnly,
+    NestedContainers,
+}
+
+impl ClippingRunPolicy {
+    fn allows_current(self) -> bool {
+        matches!(self, Self::DirectOnly | Self::NestedContainers)
+    }
+
+    fn for_nested_container(self) -> Self {
+        match self {
+            Self::NestedContainers => Self::NestedContainers,
+            Self::DirectOnly | Self::None => Self::None,
+        }
+    }
+}
+
 pub(super) fn lower_simple_scope_segment(
     segment: &ReloadDiffSegment,
     rerun_segment: &SparseAtlasRerunSegment,
@@ -29,7 +49,11 @@ pub(super) fn lower_simple_scope_segment(
                 blend_mode,
             },
         ) => {
-            let (tile_events, bounds) = scope_child_tile_events(rerun_segment, children)?;
+            let (tile_events, bounds) = scope_child_tile_events(
+                rerun_segment,
+                children,
+                ClippingRunPolicy::NestedContainers,
+            )?;
             let mask = scope_mask_tile_ref_for_bounds(rerun_segment, *mask_key, bounds)?;
             clip_gpu::GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
                 tile_events,
@@ -47,7 +71,8 @@ pub(super) fn lower_simple_scope_segment(
                 mask_key,
             },
         ) => {
-            let (tile_events, bounds) = scope_child_tile_events(rerun_segment, children)?;
+            let (tile_events, bounds) =
+                scope_child_tile_events(rerun_segment, children, ClippingRunPolicy::DirectOnly)?;
             clip_gpu::GpuSparseAtlasRasterEventBatch::simple_through_scope_tile_events(
                 tile_events,
                 *opacity,
@@ -113,15 +138,16 @@ fn scope_mask_tile_ref_for_bounds(
 fn scope_child_tile_events(
     segment: &SparseAtlasRerunSegment,
     children: &[clip_gpu::GpuNormalStackSource],
+    clipping_run_policy: ClippingRunPolicy,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
-    scope_child_tile_events_at_depth(segment, children, 1, true)
+    scope_child_tile_events_at_depth(segment, children, 1, clipping_run_policy)
 }
 
 fn scope_child_tile_events_at_depth(
     segment: &SparseAtlasRerunSegment,
     children: &[clip_gpu::GpuNormalStackSource],
     scope_depth: usize,
-    allow_clipping_run: bool,
+    clipping_run_policy: ClippingRunPolicy,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     let mut tile_events = Vec::new();
     let mut current_bounds = None;
@@ -139,7 +165,7 @@ fn scope_child_tile_events_at_depth(
                 }
             }
             clip_gpu::GpuNormalStackSource::ClippingRun { base, clipped } => {
-                if !allow_clipping_run {
+                if !clipping_run_policy.allows_current() {
                     return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);
                 }
                 let bounds =
@@ -186,6 +212,7 @@ fn scope_child_tile_events_at_depth(
                     *blend_mode,
                     *mask_key,
                     clip_gpu::GpuSparseAtlasScopeEventKind::Container,
+                    clipping_run_policy.for_nested_container(),
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),
@@ -206,6 +233,7 @@ fn scope_child_tile_events_at_depth(
                     clip_gpu::GpuRasterBlendMode::Normal,
                     *mask_key,
                     clip_gpu::GpuSparseAtlasScopeEventKind::Through,
+                    ClippingRunPolicy::None,
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),
@@ -230,12 +258,17 @@ fn nested_scope_tile_events(
     blend_mode: clip_gpu::GpuRasterBlendMode,
     mask_key: Option<clip_gpu::GpuMaskResourceKey>,
     kind: clip_gpu::GpuSparseAtlasScopeEventKind,
+    clipping_run_policy: ClippingRunPolicy,
 ) -> Result<(Vec<clip_gpu::GpuSparseAtlasTileEvent>, Rect), SparseAtlasRasterEventSkipReason> {
     if parent_scope_depth >= SPARSE_SCOPE_STACK_LIMIT {
         return Err(SparseAtlasRasterEventSkipReason::ScopeDepthLimitExceeded);
     }
-    let (child_events, bounds) =
-        scope_child_tile_events_at_depth(segment, children, parent_scope_depth + 1, false)?;
+    let (child_events, bounds) = scope_child_tile_events_at_depth(
+        segment,
+        children,
+        parent_scope_depth + 1,
+        clipping_run_policy,
+    )?;
     let scope = clip_gpu::GpuSparseAtlasScopeEvent {
         kind,
         opacity,
