@@ -46,6 +46,46 @@ pub(crate) struct SparseAtlasRerunSlot {
     pub slot: SparseAtlasSlot,
 }
 
+pub(crate) fn suffix_rerun_segments(
+    plan: &ReloadDiffPlan,
+    cache: &SparseAtlasUpdatePlan,
+) -> Vec<SparseAtlasRerunSegment> {
+    if plan.mode != ReloadDiffMode::Patch {
+        return Vec::new();
+    }
+    let Some(first_dirty_ordinal) = plan
+        .dirty_segments
+        .iter()
+        .map(|segment| segment.ordinal)
+        .min()
+    else {
+        return Vec::new();
+    };
+
+    let updates = update_lookup(cache);
+    let source_tiles = source_tile_lookup(&plan.manifest);
+    plan.manifest
+        .segments
+        .iter()
+        .filter(|segment| segment.ordinal >= first_dirty_ordinal)
+        .map(|segment| {
+            let resident_slots = resident_slots_for_tiles(
+                &segment.tile_work_list,
+                &updates,
+                &source_tiles,
+                cache.atlas_size,
+            );
+            let updated_slots = updated_slots_from_resident(&resident_slots);
+            SparseAtlasRerunSegment {
+                ordinal: segment.ordinal,
+                event_ranges: full_segment_event_range(segment.tile_events),
+                resident_slots,
+                updated_slots,
+            }
+        })
+        .collect()
+}
+
 impl SparseAtlasCache {
     pub(crate) fn plan_reload_diff(&mut self, plan: &ReloadDiffPlan) -> SparseAtlasReloadPlan {
         let cache = self.plan_reload_manifest(&plan.manifest);
@@ -75,23 +115,13 @@ fn rerunnable_segments(
                 .segments
                 .iter()
                 .find(|segment| segment.ordinal == dirty.ordinal)?;
-            let resident_slots = segment
+            let tiles = segment
                 .tile_work_list
                 .iter()
-                .filter(|tile| event_range_intersects_any(tile, &dirty.dirty_event_ranges))
-                .filter_map(|tile| {
-                    let key = tile_key(tile);
-                    let canvas_tile = source_tiles.get(&key)?;
-                    updates.get(&key).map(|update| {
-                        rerun_slot_for_update(tile, update, cache.atlas_size, canvas_tile)
-                    })
-                })
-                .collect::<Vec<_>>();
-            let updated_slots = resident_slots
-                .iter()
-                .filter(|slot| slot.action != SparseAtlasUpdateAction::Reuse)
-                .cloned()
-                .collect();
+                .filter(|tile| event_range_intersects_any(tile, &dirty.dirty_event_ranges));
+            let resident_slots =
+                resident_slots_for_tiles(tiles, &updates, &source_tiles, cache.atlas_size);
+            let updated_slots = updated_slots_from_resident(&resident_slots);
             Some(SparseAtlasRerunSegment {
                 ordinal: dirty.ordinal,
                 event_ranges: dirty.dirty_event_ranges.clone(),
@@ -99,6 +129,44 @@ fn rerunnable_segments(
                 updated_slots,
             })
         })
+        .collect()
+}
+
+fn resident_slots_for_tiles<'a>(
+    tiles: impl IntoIterator<Item = &'a ReloadDiffSegmentTileRef>,
+    updates: &HashMap<AtlasTileKey, &SparseAtlasTileUpdate>,
+    source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
+    atlas_size: clip_model::CanvasSize,
+) -> Vec<SparseAtlasRerunSlot> {
+    tiles
+        .into_iter()
+        .filter_map(|tile| {
+            let key = tile_key(tile);
+            let canvas_tile = source_tiles.get(&key)?;
+            updates
+                .get(&key)
+                .map(|update| rerun_slot_for_update(tile, update, atlas_size, canvas_tile))
+        })
+        .collect()
+}
+
+fn updated_slots_from_resident(
+    resident_slots: &[SparseAtlasRerunSlot],
+) -> Vec<SparseAtlasRerunSlot> {
+    resident_slots
+        .iter()
+        .filter(|slot| slot.action != SparseAtlasUpdateAction::Reuse)
+        .cloned()
+        .collect()
+}
+
+fn full_segment_event_range(tile_events: u32) -> Vec<ReloadDirtySegmentEventRange> {
+    (tile_events > 0)
+        .then_some(ReloadDirtySegmentEventRange {
+            start: 0,
+            end: tile_events,
+        })
+        .into_iter()
         .collect()
 }
 

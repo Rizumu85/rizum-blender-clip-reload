@@ -1,7 +1,13 @@
 use clip_model::{CanvasSize, LayerId};
 
-use super::atlas_cache::{SparseAtlasSlot, SparseAtlasUpdateAction, SparseAtlasUpdatePlan};
-use super::atlas_events::{SparseAtlasRasterEventSkipReason, sparse_atlas_raster_event_plan};
+use super::atlas_cache::{
+    SparseAtlasFingerprint, SparseAtlasResourceKind, SparseAtlasSlot, SparseAtlasTileId,
+    SparseAtlasTileUpdate, SparseAtlasUpdateAction, SparseAtlasUpdatePlan,
+};
+use super::atlas_events::{
+    SparseAtlasRasterEventSkipReason, sparse_atlas_raster_event_plan,
+    sparse_atlas_raster_suffix_event_plan,
+};
 use super::atlas_rerun::{SparseAtlasReloadPlan, SparseAtlasRerunSegment, SparseAtlasRerunSlot};
 use crate::reload_diff::{
     ReloadDiffManifest, ReloadDiffMode, ReloadDiffPlan, ReloadDiffSegment,
@@ -168,6 +174,90 @@ fn raster_run_splits_resident_events_by_executor_compatible_atlas_keys() {
     assert_eq!(segment.batches[2].events[0].raster.key.atlas_id, 3);
 }
 
+#[test]
+fn suffix_plan_lowers_dirty_segment_and_later_raster_runs() {
+    let diff = diff_with_segments(
+        vec![
+            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
+            manifest_segment(8, 1, 2, "RasterRun", 11, 2),
+        ],
+        vec![source_manifest(10, 1), source_manifest(11, 2)],
+        vec![dirty_segment(7)],
+    );
+    let reload = reload_with_cache_updates(vec![cache_update(10, 1, 0), cache_update(11, 2, 1)]);
+    let plan = sparse_atlas_raster_suffix_event_plan(
+        &diff,
+        &reload,
+        &[
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                10,
+                1,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                11,
+                2,
+                0.5,
+                clip_gpu::GpuRasterBlendMode::Multiply,
+                None,
+            )),
+        ],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    assert_eq!(plan.segments.len(), 2);
+    assert_eq!(plan.segments[0].ordinal, 7);
+    assert_eq!(plan.segments[1].ordinal, 8);
+    assert_eq!(plan.segments[1].batches[0].events[0].opacity, 0.5);
+    assert_eq!(
+        plan.segments[1].batches[0].events[0].blend_mode,
+        clip_gpu::GpuRasterBlendMode::Multiply
+    );
+}
+
+#[test]
+fn suffix_plan_explains_later_non_raster_segment() {
+    let diff = diff_with_segments(
+        vec![
+            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
+            manifest_segment(8, 1, 2, "SimpleContainerScope", 11, 2),
+        ],
+        vec![source_manifest(10, 1), source_manifest(11, 2)],
+        vec![dirty_segment(7)],
+    );
+    let reload = reload_with_cache_updates(vec![cache_update(10, 1, 0), cache_update(11, 2, 1)]);
+    let plan = sparse_atlas_raster_suffix_event_plan(
+        &diff,
+        &reload,
+        &[
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                10,
+                1,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                11,
+                2,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+        ],
+    );
+
+    assert_eq!(plan.segments.len(), 1);
+    assert_eq!(plan.skipped_segments.len(), 1);
+    assert_eq!(plan.skipped_segments[0].ordinal, 8);
+    assert_eq!(
+        plan.skipped_segments[0].reason,
+        SparseAtlasRasterEventSkipReason::NonRasterRun
+    );
+}
+
 fn diff_with_segment(segment: ReloadDiffSegment) -> ReloadDiffPlan {
     ReloadDiffPlan {
         manifest: ReloadDiffManifest {
@@ -185,6 +275,30 @@ fn diff_with_segment(segment: ReloadDiffSegment) -> ReloadDiffPlan {
         reason: "test".to_string(),
         dirty_rects: Vec::new(),
         dirty_segments: Vec::new(),
+    }
+}
+
+fn diff_with_segments(
+    segments: Vec<ReloadDiffSegment>,
+    sources: Vec<crate::ReloadDiffSource>,
+    dirty_segments: Vec<crate::ReloadDirtySegment>,
+) -> ReloadDiffPlan {
+    ReloadDiffPlan {
+        manifest: ReloadDiffManifest {
+            abi: 4,
+            tile_size: 256,
+            tile_event_abi_version: clip_gpu::TILE_EVENT_ABI_VERSION,
+            width: 128,
+            height: 128,
+            root_layer_id: 1,
+            nodes: Vec::new(),
+            sources,
+            segments,
+        },
+        mode: ReloadDiffMode::Patch,
+        reason: "test".to_string(),
+        dirty_rects: Vec::new(),
+        dirty_segments,
     }
 }
 
@@ -208,6 +322,75 @@ fn segment(kind: &str) -> ReloadDiffSegment {
     }
 }
 
+fn manifest_segment(
+    ordinal: u32,
+    source_start: u32,
+    source_end: u32,
+    kind: &str,
+    layer_id: u32,
+    resource_id: u32,
+) -> ReloadDiffSegment {
+    ReloadDiffSegment {
+        ordinal,
+        source_start,
+        source_end,
+        kind: kind.to_string(),
+        resources: vec![crate::ReloadDiffSegmentResource {
+            kind: "raster".to_string(),
+            layer_id,
+            resource_id,
+        }],
+        tile_work_list_source_count: 1,
+        tile_work_list_tile_count: 1,
+        tile_work_list_signature: 1,
+        tile_work_list: vec![crate::ReloadDiffSegmentTileRef {
+            kind: "raster".to_string(),
+            layer_id,
+            resource_id,
+            tile_x: 0,
+            tile_y: 0,
+            event_start: 0,
+            event_end: 1,
+        }],
+        ..segment(kind)
+    }
+}
+
+fn source_manifest(layer_id: u32, resource_id: u32) -> crate::ReloadDiffSource {
+    crate::ReloadDiffSource {
+        kind: "raster".to_string(),
+        layer_id,
+        resource_id,
+        external_id: format!("ext-{layer_id}-{resource_id}"),
+        offset_x: 0,
+        offset_y: 0,
+        width: 64,
+        height: 32,
+        color_type: Some(0),
+        empty_fill: None,
+        signature: u64::from(layer_id) << 32 | u64::from(resource_id),
+        tiles: vec![crate::ReloadDiffTile {
+            tile_x: 0,
+            tile_y: 0,
+            x: 12,
+            y: 34,
+            width: 64,
+            height: 32,
+            compressed_bytes: 10,
+            compressed_hash: u64::from(layer_id) << 32 | u64::from(resource_id),
+        }],
+    }
+}
+
+fn dirty_segment(ordinal: u32) -> crate::ReloadDirtySegment {
+    crate::ReloadDirtySegment {
+        ordinal,
+        dirty_tile_count: 1,
+        dirty_resource_count: 0,
+        dirty_event_ranges: vec![ReloadDirtySegmentEventRange { start: 0, end: 1 }],
+    }
+}
+
 fn reload_with_slots(slots: Vec<SparseAtlasRerunSlot>) -> SparseAtlasReloadPlan {
     SparseAtlasReloadPlan {
         cache: SparseAtlasUpdatePlan::default(),
@@ -217,6 +400,49 @@ fn reload_with_slots(slots: Vec<SparseAtlasRerunSlot>) -> SparseAtlasReloadPlan 
             resident_slots: slots.clone(),
             updated_slots: slots,
         }],
+    }
+}
+
+fn reload_with_cache_updates(updates: Vec<SparseAtlasTileUpdate>) -> SparseAtlasReloadPlan {
+    SparseAtlasReloadPlan {
+        cache: SparseAtlasUpdatePlan {
+            generation: 1,
+            atlas_size: CanvasSize::new(256, 256),
+            updates,
+            stats: Default::default(),
+        },
+        rerunnable_segments: Vec::new(),
+    }
+}
+
+fn cache_update(layer_id: u32, resource_id: u32, slot_index: u32) -> SparseAtlasTileUpdate {
+    SparseAtlasTileUpdate {
+        fingerprint: SparseAtlasFingerprint {
+            tile: SparseAtlasTileId {
+                kind: SparseAtlasResourceKind::Raster,
+                layer_id,
+                resource_id,
+                external_id: format!("ext-{layer_id}-{resource_id}"),
+                source_signature: u64::from(layer_id) << 32 | u64::from(resource_id),
+                tile_x: 0,
+                tile_y: 0,
+            },
+            source_x: 0,
+            source_y: 0,
+            width: 64,
+            height: 32,
+            compressed_bytes: 10,
+            compressed_hash: u64::from(layer_id) << 32 | u64::from(resource_id),
+        },
+        slot: SparseAtlasSlot {
+            index: slot_index,
+            atlas_id: 3,
+            x: 16 + slot_index * 64,
+            y: 32,
+            width: 64,
+            height: 32,
+        },
+        action: SparseAtlasUpdateAction::Reuse,
     }
 }
 

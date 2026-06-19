@@ -1,6 +1,8 @@
 use clip_model::CanvasSize;
 
-use super::atlas_rerun::{SparseAtlasReloadPlan, SparseAtlasRerunSegment, SparseAtlasRerunSlot};
+use super::atlas_rerun::{
+    SparseAtlasReloadPlan, SparseAtlasRerunSegment, SparseAtlasRerunSlot, suffix_rerun_segments,
+};
 use crate::reload_diff::{ReloadDiffPlan, ReloadDiffSegment, ReloadDirtySegmentEventRange};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -46,9 +48,26 @@ pub(crate) fn sparse_atlas_raster_event_plan(
     reload: &SparseAtlasReloadPlan,
     sources: &[clip_gpu::GpuNormalStackSource],
 ) -> SparseAtlasRasterEventPlan {
+    sparse_atlas_raster_event_plan_for_segments(diff, &reload.rerunnable_segments, sources)
+}
+
+pub(crate) fn sparse_atlas_raster_suffix_event_plan(
+    diff: &ReloadDiffPlan,
+    reload: &SparseAtlasReloadPlan,
+    sources: &[clip_gpu::GpuNormalStackSource],
+) -> SparseAtlasRasterEventPlan {
+    let suffix_segments = suffix_rerun_segments(diff, &reload.cache);
+    sparse_atlas_raster_event_plan_for_segments(diff, &suffix_segments, sources)
+}
+
+fn sparse_atlas_raster_event_plan_for_segments(
+    diff: &ReloadDiffPlan,
+    rerunnable_segments: &[SparseAtlasRerunSegment],
+    sources: &[clip_gpu::GpuNormalStackSource],
+) -> SparseAtlasRasterEventPlan {
     let mut segments = Vec::new();
     let mut skipped_segments = Vec::new();
-    for rerun_segment in &reload.rerunnable_segments {
+    for rerun_segment in rerunnable_segments {
         match lower_raster_run_segment(diff, rerun_segment, sources) {
             Ok(segment) => segments.push(segment),
             Err(reason) => skipped_segments.push(SparseAtlasRasterEventSkip {

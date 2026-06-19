@@ -901,6 +901,26 @@ segment reload: once a checkpoint exists, a dirty raster segment can produce the
 same patch payload shape the Blender worker already consumes without reading
 back the full canvas.
 
+Fourteenth form: `clip_runtime::gpu_provider::atlas_rerun` can now build a
+suffix rerun window from the earliest dirty segment to the end of the render
+program. This is the correct checkpoint shape: the base accumulator must be the
+state before the first segment in that suffix, and the suffix must include
+unchanged later segments so their compositing still applies after the changed
+segment. `clip_runtime::gpu_provider::atlas_events` exposes
+`sparse_atlas_raster_suffix_event_plan()`, and
+`RuntimeGpuRenderer::prepare_sparse_atlas_raster_suffix_patch_plan()` prepares
+the resident sparse-atlas textures plus executable raster-event batches for
+that suffix. The current executable subset is intentionally strict: suffix
+segments lower only when every segment in the window is a `RasterRun`; later
+container/scope/filter/barrier segments appear as explicit skipped segments
+instead of being silently ignored.
+
+This fourteenth form still does not provide the base accumulator. If the suffix
+starts at source index 0, the eventual product route can use the transparent
+initial accumulator. Otherwise the renderer still needs to persist or
+reconstruct the segment-before checkpoint before calling the suffix patch
+executor.
+
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is

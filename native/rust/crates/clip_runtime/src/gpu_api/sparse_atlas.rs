@@ -1,6 +1,7 @@
 use super::RuntimeGpuRenderer;
 use crate::gpu_provider::{
-    atlas_events::sparse_atlas_raster_event_plan, atlas_upload::sparse_atlas_texture_pool_updates,
+    atlas_events::{sparse_atlas_raster_event_plan, sparse_atlas_raster_suffix_event_plan},
+    atlas_upload::sparse_atlas_texture_pool_updates,
 };
 use crate::{ClipSession, RuntimeError};
 
@@ -34,6 +35,29 @@ impl RuntimeGpuRenderer {
         Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
             texture_pool_stats,
             event_plan: sparse_atlas_raster_event_plan(plan, &reload, &selection.sources).into(),
+        })
+    }
+
+    pub fn prepare_sparse_atlas_raster_suffix_patch_plan(
+        &self,
+        session: &ClipSession,
+        plan: &crate::ReloadDiffPlan,
+    ) -> Result<crate::GpuSparseAtlasPreparedRasterEventPlan, RuntimeError> {
+        let selection =
+            session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
+        let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        let texture_pool_stats = self
+            .renderer
+            .update_sparse_atlas_texture_pool(
+                &mut self.sparse_atlas_textures.borrow_mut(),
+                &updates,
+            )
+            .map_err(RuntimeError::from)?;
+        Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
+            texture_pool_stats,
+            event_plan: sparse_atlas_raster_suffix_event_plan(plan, &reload, &selection.sources)
+                .into(),
         })
     }
 
