@@ -420,13 +420,14 @@ Eighth form: `TileEventKind::BeginClipBase`,
 `TileEventKind::ClippedRaster`, and `TileEventKind::ResolveClipBase` now allow
 the VM to express a raster-only clipping run inside a scope-local event stream.
 `TILE_EVENT_ABI_VERSION` is `8`. The implemented planner subset uses these
-events for clipping runs inside simple container scopes when the clipping base
-and clipped siblings are atlas-eligible rasters. This includes raster masks,
-layer opacity, and non-Normal clipping-base blend modes because the VM's Normal
-raster alpha path now follows the same byte-domain opacity and mask arithmetic
-as the faithful legacy pass. Clipped container/folder siblings and clipping
-runs inside THROUGH scopes remain barriers until their cache-writeback
-semantics are modelled and guarded.
+events for clipping runs inside simple container scopes and direct clipping-run
+children inside simple THROUGH scopes when the clipping base and clipped
+siblings are atlas-eligible rasters. This includes raster masks, layer opacity,
+and non-Normal clipping-base blend modes because the VM's Normal raster alpha
+path now follows the same byte-domain opacity and mask arithmetic as the
+faithful legacy pass. Clipped container/folder siblings and clipping runs
+nested through another scope inside THROUGH remain barriers until their
+cache-writeback semantics are modelled and guarded.
 
 Ninth form: eligible pure raster sources lower to `TileEventKind::Raster` even
 when there is only one source in the segment. This removes the old
@@ -564,9 +565,9 @@ Implemented subset:
   `ResolveClipBase`, resolving back into the active container accumulator.
   Masked rasters, layer opacity, and non-Normal clipping-base blend modes can
   lower when the provider can supply the needed atlas/mask tiles.
-- Clipping runs inside THROUGH scopes, clipped container/folder siblings, solid
-  colors, unavailable container masks, and provider-unavailable or unknown
-  filter masks still remain explicit legacy barriers.
+- Clipped container/folder siblings, solid colors, unavailable container masks,
+  and provider-unavailable or unknown filter masks still remain explicit
+  legacy barriers.
 
 Implemented THROUGH subset:
 
@@ -591,8 +592,13 @@ Implemented THROUGH subset:
   `before`/`after` stack, resolves the inner THROUGH into the outer `after`
   accumulator, and floor-quantizes the inner resolve to match the intermediate
   RGBA8 writeback of the existing pass-heavy path.
-- Deeper nested THROUGH groups, clipping runs, solid colors, unavailable
-  THROUGH masks, container depth beyond the fixed limit, and
+- A direct raster-only clipping-run child can lower inside a simple THROUGH
+  scope as `BeginClipBase`, clip-base raster events, `ClippedRaster` preserve
+  events, and `ResolveClipBase`, resolving the completed clip-base cache into
+  the THROUGH `after` accumulator through the base blend mode.
+- Deeper nested THROUGH groups, clipping runs nested inside containers or
+  nested THROUGH groups, clipped container/folder siblings, solid colors,
+  unavailable THROUGH masks, container depth beyond the fixed limit, and
   provider-unavailable or unknown filter masks still remain explicit legacy
   barriers.
 
@@ -616,8 +622,7 @@ Verification:
   THROUGH-child containers beyond the fixed scope depth as
   `ScopeDepthLimitExceeded`.
 - GPU unit tests compare a raster-only clipping run inside a supported Normal
-  container scope against the existing legacy source path, and planner tests
-  keep clipping runs inside THROUGH scopes as `ThroughGroupNotLowered`.
+  container scope against the existing legacy source path.
 - GPU unit tests compare simple THROUGH tile-scope execution against the
   existing legacy source path for THROUGH opacity and child blend execution.
 - GPU unit tests compare a simple container inside a THROUGH scope against the
@@ -626,6 +631,10 @@ Verification:
 - GPU unit tests compare a fractional-opacity nested THROUGH scope against the
   existing legacy source path and assert nesting beyond the fixed limit remains
   a barrier.
+- GPU unit tests compare a direct raster-only clipping run inside a simple
+  THROUGH scope against the existing legacy source path, while planner tests
+  keep clipping runs nested inside a container inside THROUGH as
+  `ThroughGroupNotLowered`.
 - Planner and GPU unit tests prove masks that are explicitly known to be fully
   opaque do not block simple container/THROUGH lowering, and GPU unit tests now
   compare non-opaque masked container and THROUGH scope resolves against the
@@ -641,6 +650,25 @@ Verification:
   `simple_through_scope_segments: 1` and `tile_event_abi_version: 8`.
 - `Test_Clipping`, `Test_ClippingEdge`, `Test_FolderNested`, `Test_ToneCurve`,
   and `Test_AddGlowMultiply` remain stable.
+
+Current `Ref_Terra404_Live2D.clip --performance-plan-json` after direct
+THROUGH clipping-run lowering:
+
+- `planned_passes=481`
+- `tile_local_segments=436`
+- `barrier_segments=45`
+- `tile_event_abi_version=8`
+- remaining barriers:
+  - `ThroughGroupNotLowered=36`
+  - `IsolatedContainerRequiresIntermediate=4`
+  - `ScopeDepthLimitExceeded=3`
+  - `ClippingRunNotLowered=2`
+
+Guard comparisons remain stable after the planner/executor change:
+`Test_ClippingEdge` exact, `Test_ToneCurve` exact, `Test_AddGlowMultiply`
+`raw_max=1` / `premul_max=1` / visible `0`, `Test_RealArt` unchanged at
+`premul_visible_px=28`, and `Ref_Terra404_Live2D` unchanged at
+`premul_visible_px=13501`.
 
 Next scope-stack work:
 

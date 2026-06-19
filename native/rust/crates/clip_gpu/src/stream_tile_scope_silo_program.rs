@@ -20,6 +20,26 @@ use crate::{
     GpuRenderError,
 };
 
+#[derive(Clone, Copy)]
+enum ClippingRunPolicy {
+    None,
+    DirectOnly,
+    NestedContainers,
+}
+
+impl ClippingRunPolicy {
+    fn allows_current(self) -> bool {
+        matches!(self, Self::DirectOnly | Self::NestedContainers)
+    }
+
+    fn for_nested_container(self) -> Self {
+        match self {
+            Self::NestedContainers => Self::NestedContainers,
+            Self::DirectOnly | Self::None => Self::None,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct ScopeProgramInputs<'a> {
     pub(crate) payloads: Vec<TileEventPayload>,
@@ -54,7 +74,7 @@ where
         target_origin,
         kind.container_depth_remaining(),
         kind.through_depth_remaining(),
-        kind.allows_clipping_runs(),
+        kind.clipping_run_policy(),
         children,
         &prepared,
         &mut child_payloads,
@@ -112,7 +132,7 @@ fn append_scope_child_events<'a, P>(
     target_origin: (i32, i32),
     container_depth_remaining: usize,
     through_depth_remaining: usize,
-    allow_clipping_runs: bool,
+    clipping_run_policy: ClippingRunPolicy,
     children: &'a [GpuNormalStackSource],
     prepared: &[PreparedSiloSource],
     payloads: &mut Vec<TileEventPayload>,
@@ -153,7 +173,7 @@ where
                     target_origin,
                     container_depth_remaining - 1,
                     through_depth_remaining,
-                    allow_clipping_runs,
+                    clipping_run_policy.for_nested_container(),
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -213,7 +233,7 @@ where
                     target_origin,
                     container_depth_remaining,
                     through_depth_remaining - 1,
-                    false,
+                    ClippingRunPolicy::None,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -296,7 +316,9 @@ where
                 *scope_dirty = Some(filter_bounds);
             }
             GpuNormalStackSource::ClippingRun { base, clipped } => {
-                if !allow_clipping_runs || !simple_scope_clipping_run_can_lower(*base, clipped) {
+                if !clipping_run_policy.allows_current()
+                    || !simple_scope_clipping_run_can_lower(*base, clipped)
+                {
                     return Ok(false);
                 }
                 let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) else {
@@ -377,10 +399,10 @@ impl ScopeProgramKind {
         }
     }
 
-    fn allows_clipping_runs(self) -> bool {
+    fn clipping_run_policy(self) -> ClippingRunPolicy {
         match self {
-            Self::Container { .. } => true,
-            Self::Through { .. } => false,
+            Self::Container { .. } => ClippingRunPolicy::NestedContainers,
+            Self::Through { .. } => ClippingRunPolicy::DirectOnly,
         }
     }
 

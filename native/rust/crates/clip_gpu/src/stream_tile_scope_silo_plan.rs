@@ -31,6 +31,26 @@ enum ThroughBudget {
     Remaining(usize),
 }
 
+#[derive(Clone, Copy)]
+enum ClippingRunPolicy {
+    None,
+    DirectOnly,
+    NestedContainers,
+}
+
+impl ClippingRunPolicy {
+    fn allows_current(self) -> bool {
+        matches!(self, Self::DirectOnly | Self::NestedContainers)
+    }
+
+    fn for_nested_container(self) -> Self {
+        match self {
+            Self::NestedContainers => Self::NestedContainers,
+            Self::DirectOnly | Self::None => Self::None,
+        }
+    }
+}
+
 pub(crate) fn simple_container_scope_event_count<P>(
     provider: &P,
     output_size: CanvasSize,
@@ -148,7 +168,7 @@ where
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT - 1,
         ThroughBudget::Remaining(1),
-        true,
+        ClippingRunPolicy::NestedContainers,
     )?;
     checked_scope_event_count(2, child_count)
 }
@@ -190,7 +210,7 @@ where
         children,
         SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT,
         ThroughBudget::Remaining(SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT - 1),
-        false,
+        ClippingRunPolicy::DirectOnly,
     )?;
     checked_scope_event_count(2, child_count)
 }
@@ -203,7 +223,7 @@ fn simple_scope_children_event_count<P>(
     children: &[GpuNormalStackSource],
     container_depth_remaining: usize,
     through_budget: ThroughBudget,
-    allow_clipping_runs: bool,
+    clipping_run_policy: ClippingRunPolicy,
 ) -> Result<usize, SimpleScopeReject>
 where
     P: GpuNormalStackResourceProvider,
@@ -267,7 +287,7 @@ where
                     children,
                     container_depth_remaining - 1,
                     through_budget,
-                    allow_clipping_runs,
+                    clipping_run_policy.for_nested_container(),
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
@@ -307,14 +327,16 @@ where
                     children,
                     container_depth_remaining,
                     ThroughBudget::Remaining(through_depth_remaining - 1),
-                    false,
+                    ClippingRunPolicy::None,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
                 saw_raster = true;
             }
             GpuNormalStackSource::ClippingRun { base, clipped } => {
-                if !allow_clipping_runs || !simple_scope_clipping_run_can_lower(*base, clipped) {
+                if !clipping_run_policy.allows_current()
+                    || !simple_scope_clipping_run_can_lower(*base, clipped)
+                {
                     return Err(SimpleScopeReject::NotSimple);
                 }
                 let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) else {

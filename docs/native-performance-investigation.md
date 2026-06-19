@@ -568,12 +568,11 @@ including provider-backed non-opaque scope masks:
   completed local clipping cache back into the active container accumulator.
   Masked rasters, layer opacity, and non-Normal clipping-base blend modes are
   covered by the same byte-domain Normal alpha arithmetic as the faithful
-  legacy pass. Clipped container/folder siblings and clipping runs inside
-  THROUGH scopes remain barriers.
+  legacy pass. Clipped container/folder siblings and clipping runs that are
+  not direct children of the active simple scope remain barriers.
 - Unsupported scope shapes remain barriers: container depth beyond the fixed
-  limit, clipping runs inside THROUGH scopes, clipped container/folder
-  siblings, solid colors, unavailable masked containers, and
-  provider-unavailable or unknown filter masks.
+  limit, clipped container/folder siblings, solid colors, unavailable masked
+  containers, and provider-unavailable or unknown filter masks.
 
 Verification after this milestone:
 
@@ -596,8 +595,7 @@ Verification after this milestone:
   `ScopeDepthLimitExceeded`.
 - New GPU unit coverage compares a masked, non-1-opacity, non-Normal-base
   raster-only clipping run inside a container scope against the existing
-  legacy source path, and planner coverage keeps clipping runs inside THROUGH
-  scopes as `ThroughGroupNotLowered`.
+  legacy source path.
 - New GPU unit coverage compares non-opaque masked container scope resolve
   against the existing legacy source path.
 - New GPU unit coverage compares a provider-backed non-opaque masked filter
@@ -642,10 +640,15 @@ The tile-event renderer now lowers the first narrow THROUGH subset:
   resolves the inner THROUGH into the outer THROUGH `after` accumulator, and
   floor-quantizes the inner resolve to match the intermediate RGBA8 writeback
   of the existing pass-heavy path.
+- Direct raster-only clipping-run children can lower inside the simple THROUGH
+  scope when the clipping base and clipped siblings are atlas-eligible rasters.
+  The tile VM reuses `BeginClipBase`, local clip-base raster events,
+  `ClippedRaster` preserve events, and `ResolveClipBase`, then resolves the
+  completed local clipping cache into the THROUGH `after` accumulator.
 - Unsupported THROUGH shapes remain barriers: deeper nested THROUGH groups,
-  clipping runs, solid colors, unavailable masked THROUGH groups, container
-  depth beyond the fixed limit, and provider-unavailable or unknown filter
-  masks.
+  clipping runs nested through another scope, clipped container/folder
+  siblings, solid colors, unavailable masked THROUGH groups, container depth
+  beyond the fixed limit, and provider-unavailable or unknown filter masks.
 
 Verification after this milestone:
 
@@ -658,6 +661,10 @@ Verification after this milestone:
 - GPU unit coverage compares a fractional-opacity nested THROUGH scope against
   the existing legacy source path and keeps deeper nested THROUGH groups as
   planner barriers.
+- GPU unit coverage compares a direct raster-only clipping run inside a simple
+  THROUGH scope against the existing legacy source path, and planner coverage
+  keeps a clipping run nested inside a container inside THROUGH as
+  `ThroughGroupNotLowered`.
 - Planner and GPU unit coverage prove explicitly fully opaque masks do not
   block simple container/THROUGH tile-local lowering, and GPU unit coverage now
   compares non-opaque masked container and THROUGH scope resolves against the
@@ -689,14 +696,15 @@ handles the single source, and unsupported rasters still report explicit
 barrier reasons. It removes `RasterRunTooShort` from current
 `--performance-plan-json` output for atlas-eligible rasters.
 
-Current `Ref_Terra404_Live2D.clip --performance-plan-json` after this change:
+Current `Ref_Terra404_Live2D.clip --performance-plan-json` after direct
+THROUGH clipping-run lowering:
 
 - `planned_passes=481`
-- `tile_local_segments=402`
-- `barrier_segments=79`
+- `tile_local_segments=436`
+- `barrier_segments=45`
 - `tile_event_abi_version=8`
 - remaining barriers:
-  - `ThroughGroupNotLowered=70`
+  - `ThroughGroupNotLowered=36`
   - `IsolatedContainerRequiresIntermediate=4`
   - `ScopeDepthLimitExceeded=3`
   - `ClippingRunNotLowered=2`
