@@ -10,6 +10,11 @@ make tile-local event execution the main native renderer model, with explicit
 barriers only for `.clip` semantics that do not yet have a faithful tile-local
 model.
 
+The forward-looking main-execution plan lives in
+`docs/native-tile-event-main-execution-plan.md`. This roadmap remains the
+durable phase record for what has been implemented, verified, and deliberately
+left as an explicit barrier.
+
 The current renderer already proved the useful shape through sparse tile
 decoding, atlas raster-run collapse, direct compressed tile events, mask atlas
 events, clipped raster sibling events, and raster-only clipping-run events. The
@@ -920,6 +925,26 @@ starts at source index 0, the eventual product route can use the transparent
 initial accumulator. Otherwise the renderer still needs to persist or
 reconstruct the segment-before checkpoint before calling the suffix patch
 executor.
+
+Fifteenth form: `RuntimeGpuRenderer::draw_sparse_atlas_initial_suffix_patches()`
+now exposes the first product-safe sparse suffix patch route. It only attempts
+execution for patch reloads whose earliest dirty segment starts at source index
+0 and whose suffix manifest is entirely `RasterRun` segments. That lets the
+renderer use CSP's initial transparent-white accumulator as the valid
+segment-before checkpoint, upload only non-reused sparse atlas chunks, execute
+the suffix event batches against the resident sparse atlas pool, and read back
+only the dirty rect payload expected by the Blender worker. The method returns
+the sparse-atlas diagnostics from the same cache generation it executed, so the
+worker does not pre-plan the cache and accidentally convert required uploads
+into apparent reuse before the GPU pool is populated.
+
+The Blender worker patch path now tries this safe sparse suffix route first.
+If it is ineligible, it falls back to the existing region patch renderer and
+records `reload_diff.patch_renderer` as either
+`sparse_atlas_initial_suffix`, `region`, or `full_render_patch_extract`.
+General dirty segment reload still requires a persisted or reconstructed
+segment-before checkpoint; the initial-accumulator route is intentionally only
+the safe suffix subset.
 
 Next Phase 6 work:
 

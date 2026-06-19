@@ -32,10 +32,10 @@ pub(crate) fn write_blender_render_files_with_renderer(
     let reload_plan = session
         .plan_reload_diff(previous_manifest)
         .map_err(|err| err.to_string())?;
-    let sparse_atlas = renderer
-        .map(|renderer| renderer.plan_sparse_atlas_reload(&reload_plan))
-        .unwrap_or_default();
     if reload_plan.mode == ReloadDiffMode::NoChange {
+        let sparse_atlas = renderer
+            .map(|renderer| renderer.plan_sparse_atlas_reload(&reload_plan))
+            .unwrap_or_default();
         let support = session
             .check_normal_raster_stack_support()
             .map_err(|err| err.to_string())?;
@@ -50,7 +50,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
             Some(support.resource_stats),
             clip_runtime::GpuTextureCacheStats::default(),
             sparse_atlas,
-            reload_plan_metadata(&reload_plan, 0),
+            reload_plan_metadata(&reload_plan, 0, None),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -60,9 +60,19 @@ pub(crate) fn write_blender_render_files_with_renderer(
     if reload_plan.mode == ReloadDiffMode::Patch
         && let Some(renderer) = renderer
     {
-        let render = renderer
-            .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
+        let sparse_patch = renderer
+            .draw_sparse_atlas_initial_suffix_patches(session, &reload_plan)
             .map_err(|err| err.to_string())?;
+        let (render, sparse_atlas, patch_renderer) =
+            if let Some((render, sparse_atlas)) = sparse_patch {
+                (render, sparse_atlas, "sparse_atlas_initial_suffix")
+            } else {
+                let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
+                let render = renderer
+                    .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
+                    .map_err(|err| err.to_string())?;
+                (render, sparse_atlas, "region")
+            };
         if !render.unsupported.is_empty() {
             return Err(RuntimeError::UnsupportedRenderPlan {
                 unsupported: render.unsupported,
@@ -86,7 +96,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
             Some(stats),
             texture_cache_stats,
             sparse_atlas,
-            reload_plan_metadata(&reload_plan, payload_bytes),
+            reload_plan_metadata(&reload_plan, payload_bytes, Some(patch_renderer)),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -121,6 +131,11 @@ pub(crate) fn write_blender_render_files_with_renderer(
         }
         ReloadDiffMode::NoChange => unreachable!("no-change reload returns before rendering"),
     };
+    let sparse_atlas = renderer
+        .map(|renderer| renderer.plan_sparse_atlas_reload(&reload_plan))
+        .unwrap_or_default();
+    let patch_renderer =
+        (reload_plan.mode == ReloadDiffMode::Patch).then_some("full_render_patch_extract");
     fs::write(rgba_path, &rgba_payload).map_err(|err| err.to_string())?;
 
     let metadata = base_metadata(
@@ -133,7 +148,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
         Some(stats),
         texture_cache_stats,
         sparse_atlas,
-        reload_plan_metadata(&reload_plan, payload_bytes),
+        reload_plan_metadata(&reload_plan, payload_bytes, patch_renderer),
     );
     let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
     fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -221,6 +236,7 @@ fn base_metadata(
 fn reload_plan_metadata(
     plan: &clip_runtime::ReloadDiffPlan,
     payload_bytes: usize,
+    patch_renderer: Option<&str>,
 ) -> serde_json::Value {
     let mode = match plan.mode {
         ReloadDiffMode::Full => "full",
@@ -231,6 +247,7 @@ fn reload_plan_metadata(
         "mode": mode,
         "reason": plan.reason,
         "payload_bytes": payload_bytes,
+        "patch_renderer": patch_renderer,
         "rects": plan.dirty_rects,
         "dirty_segments": plan.dirty_segments.iter().map(|segment| {
             json!({
@@ -454,6 +471,7 @@ mod tests {
                 .expect("parse json");
 
         assert_eq!(metadata["reload_diff"]["mode"], "patch");
+        assert_eq!(metadata["reload_diff"]["patch_renderer"], "region");
         assert!(
             metadata["sparse_atlas_cache"]["inserted_tiles"]
                 .as_u64()
