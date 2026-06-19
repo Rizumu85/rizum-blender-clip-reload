@@ -1,12 +1,20 @@
+use std::collections::VecDeque;
+
 use super::RuntimeGpuRenderer;
 use crate::gpu_provider::{
     GpuResourcePlan, RuntimeGpuResourceProvider, cache::PersistentGpuTextureCache,
 };
 use crate::{ClipSession, GpuTextureCacheStats, RuntimeError};
 
-#[derive(Debug, Default)]
+const DEFAULT_CHECKPOINT_MAX_ENTRIES: usize = 2;
+const DEFAULT_CHECKPOINT_BUDGET_BYTES: usize = 512 * 1024 * 1024;
+
+#[derive(Debug)]
 pub(crate) struct SegmentCheckpointCache {
-    entry: Option<SegmentCheckpointCacheEntry>,
+    entries: VecDeque<SegmentCheckpointCacheEntry>,
+    max_entries: usize,
+    budget_bytes: usize,
+    cached_bytes: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -35,23 +43,74 @@ struct SegmentCheckpointKey {
 }
 
 impl SegmentCheckpointCache {
-    fn get(&self, key: &SegmentCheckpointKey) -> Option<SegmentCheckpoint> {
-        let entry = self.entry.as_ref()?;
-        (entry.key == *key).then(|| SegmentCheckpoint {
+    fn new(max_entries: usize, budget_bytes: usize) -> Self {
+        Self {
+            entries: VecDeque::new(),
+            max_entries,
+            budget_bytes,
+            cached_bytes: 0,
+        }
+    }
+
+    fn get(&mut self, key: &SegmentCheckpointKey) -> Option<SegmentCheckpoint> {
+        let index = self.entries.iter().position(|entry| entry.key == *key)?;
+        let entry = self.entries.remove(index)?;
+        let checkpoint = SegmentCheckpoint {
             pixels: entry.pixels.clone(),
             texture_cache_stats: GpuTextureCacheStats::default(),
             drawn_resources: entry.drawn_resources.clone(),
             mask_resources: entry.mask_resources.clone(),
-        })
+        };
+        self.entries.push_back(entry);
+        Some(checkpoint)
     }
 
     fn store(&mut self, key: SegmentCheckpointKey, checkpoint: &SegmentCheckpoint) {
-        self.entry = Some(SegmentCheckpointCacheEntry {
+        let entry = SegmentCheckpointCacheEntry {
             key,
             pixels: checkpoint.pixels.clone(),
             drawn_resources: checkpoint.drawn_resources.clone(),
             mask_resources: checkpoint.mask_resources.clone(),
-        });
+        };
+        let byte_len = entry.byte_len();
+        if byte_len > self.budget_bytes || self.max_entries == 0 {
+            return;
+        }
+
+        if let Some(index) = self
+            .entries
+            .iter()
+            .position(|existing| existing.key == entry.key)
+        {
+            if let Some(existing) = self.entries.remove(index) {
+                self.cached_bytes = self.cached_bytes.saturating_sub(existing.byte_len());
+            }
+        }
+        while self.cached_bytes.saturating_add(byte_len) > self.budget_bytes
+            || self.entries.len() >= self.max_entries
+        {
+            let Some(evicted) = self.entries.pop_front() else {
+                break;
+            };
+            self.cached_bytes = self.cached_bytes.saturating_sub(evicted.byte_len());
+        }
+        self.cached_bytes = self.cached_bytes.saturating_add(byte_len);
+        self.entries.push_back(entry);
+    }
+}
+
+impl Default for SegmentCheckpointCache {
+    fn default() -> Self {
+        Self::new(
+            DEFAULT_CHECKPOINT_MAX_ENTRIES,
+            DEFAULT_CHECKPOINT_BUDGET_BYTES,
+        )
+    }
+}
+
+impl SegmentCheckpointCacheEntry {
+    fn byte_len(&self) -> usize {
+        self.pixels.len()
     }
 }
 
@@ -65,7 +124,7 @@ impl RuntimeGpuRenderer {
         resource_plan: GpuResourcePlan,
     ) -> Result<SegmentCheckpoint, RuntimeError> {
         let key = SegmentCheckpointKey::from_reload_plan(plan, source_start);
-        if let Some(checkpoint) = self.segment_checkpoint_cache.borrow().get(&key) {
+        if let Some(checkpoint) = self.segment_checkpoint_cache.borrow_mut().get(&key) {
             return Ok(checkpoint);
         }
 
@@ -220,7 +279,10 @@ impl Hash64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{SegmentCheckpointKey, initial_transparent_rgba8};
+    use super::{
+        SegmentCheckpoint, SegmentCheckpointCache, SegmentCheckpointKey, initial_transparent_rgba8,
+    };
+    use crate::GpuTextureCacheStats;
 
     #[test]
     fn initial_transparent_base_uses_white_rgb_zero_alpha() {
@@ -248,6 +310,61 @@ mod tests {
         plan.manifest.segments[1].tile_work_list_signature ^= 1;
         let changed_suffix = SegmentCheckpointKey::from_reload_plan(&plan, 1);
         assert_eq!(first, changed_suffix);
+    }
+
+    #[test]
+    fn checkpoint_cache_keeps_multiple_budgeted_entries() {
+        let plan = patch_plan_with_segments();
+        let key_a = SegmentCheckpointKey::from_reload_plan(&plan, 1);
+        let key_b = SegmentCheckpointKey::from_reload_plan(&plan, 2);
+        let mut cache = SegmentCheckpointCache::new(2, 8);
+
+        cache.store(key_a.clone(), &checkpoint_with_len(4));
+        cache.store(key_b.clone(), &checkpoint_with_len(4));
+
+        assert_eq!(cache.get(&key_a).expect("key_a cached").pixels.len(), 4);
+        assert_eq!(cache.get(&key_b).expect("key_b cached").pixels.len(), 4);
+    }
+
+    #[test]
+    fn checkpoint_cache_evicts_lru_entry_by_count() {
+        let plan = patch_plan_with_segments();
+        let key_a = SegmentCheckpointKey::from_reload_plan(&plan, 1);
+        let key_b = SegmentCheckpointKey::from_reload_plan(&plan, 2);
+        let key_c = SegmentCheckpointKey {
+            source_start: 3,
+            ..key_b.clone()
+        };
+        let mut cache = SegmentCheckpointCache::new(2, 12);
+
+        cache.store(key_a.clone(), &checkpoint_with_len(4));
+        cache.store(key_b.clone(), &checkpoint_with_len(4));
+        assert!(cache.get(&key_a).is_some());
+        cache.store(key_c.clone(), &checkpoint_with_len(4));
+
+        assert!(cache.get(&key_a).is_some());
+        assert!(cache.get(&key_b).is_none());
+        assert!(cache.get(&key_c).is_some());
+    }
+
+    #[test]
+    fn checkpoint_cache_skips_over_budget_entry() {
+        let plan = patch_plan_with_segments();
+        let key = SegmentCheckpointKey::from_reload_plan(&plan, 1);
+        let mut cache = SegmentCheckpointCache::new(2, 3);
+
+        cache.store(key.clone(), &checkpoint_with_len(4));
+
+        assert!(cache.get(&key).is_none());
+    }
+
+    fn checkpoint_with_len(len: usize) -> SegmentCheckpoint {
+        SegmentCheckpoint {
+            pixels: vec![7; len],
+            texture_cache_stats: GpuTextureCacheStats::default(),
+            drawn_resources: Vec::new(),
+            mask_resources: Vec::new(),
+        }
     }
 
     fn patch_plan_with_segments() -> crate::ReloadDiffPlan {

@@ -964,28 +964,33 @@ the same suffix executor can avoid rerendering unchanged prefixes.
 
 Seventeenth form: `clip_runtime::gpu_api::checkpoint` now owns segment-before
 checkpoint reconstruction and caching. `RuntimeGpuRenderer` keeps a session
-single-entry checkpoint cache keyed by the current reload manifest's canvas,
-root layer, tile-event ABI, checkpoint `source_start`, all node signatures,
-and the prefix segment signatures up to that source boundary. A changed suffix
-tile work-list does not invalidate the prefix checkpoint key, while a changed
-prefix segment does. The reconstructed sparse suffix route now asks this module
-for the checkpoint; on a key hit it reuses the cached RGBA8 accumulator instead
-of rendering the unchanged prefix again. This is deliberately a selected
+checkpoint cache keyed by the current reload manifest's canvas, root layer,
+tile-event ABI, checkpoint `source_start`, all node signatures, and the prefix
+segment signatures up to that source boundary. A changed suffix tile work-list
+does not invalidate the prefix checkpoint key, while a changed prefix segment
+does. The reconstructed sparse suffix route now asks this module for the
+checkpoint; on a key hit it reuses the cached RGBA8 accumulator instead of
+rendering the unchanged prefix again. This is deliberately a selected
 segment-before accumulator cache, not a global per-layer full-canvas texture
 cache.
 
-This seventeenth form is still CPU RGBA checkpoint storage and stores only one
-checkpoint. The next improvement is to make checkpoint selection explicit in
-the render program and cache one or a small budgeted set of useful
-segment-before checkpoints, then move toward GPU-resident checkpoints where
-that is safe and measurable.
+Eighteenth form: the checkpoint cache is now a small budgeted LRU set instead
+of a single slot. The default cache keeps up to two RGBA8 checkpoints within a
+512 MiB budget, skips checkpoints larger than the budget, updates recency on
+hits, and evicts least-recently-used entries by count or byte budget. This
+lets repeated edits around different suffix boundaries reuse more than one
+valid segment-before accumulator without turning the renderer into an
+unbounded full-canvas cache.
+
+This eighteenth form is still CPU RGBA checkpoint storage. The next
+improvement is to make checkpoint selection explicit in the render program,
+then move toward GPU-resident checkpoints where that is safe and measurable.
 
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
-- choose and persist a budgeted set of valid segment-before checkpoints for
-  dirty segment reruns
+- make checkpoint selection explicit in the render program
 - route Blender patch reload through sparse segment rerun when every dirty
   segment has a valid checkpoint and executable raster-event plan
 
