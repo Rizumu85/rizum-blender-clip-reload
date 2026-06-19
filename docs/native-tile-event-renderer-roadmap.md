@@ -11,9 +11,10 @@ barriers only for `.clip` semantics that do not yet have a faithful tile-local
 model.
 
 The forward-looking main-execution plan lives in
-`docs/native-tile-event-main-execution-plan.md`. This roadmap remains the
-durable phase record for what has been implemented, verified, and deliberately
-left as an explicit barrier.
+`docs/native-tile-event-main-execution-plan.md`, and the implementation
+strategy lives in `docs/native-tile-event-architecture-strategy.md`. This
+roadmap remains the durable phase record for what has been implemented,
+verified, and deliberately left as an explicit barrier.
 
 The current renderer already proved the useful shape through sparse tile
 decoding, atlas raster-run collapse, direct compressed tile events, mask atlas

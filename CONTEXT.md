@@ -108,6 +108,34 @@ buffers while preserving the original raster, mask, clipped-raster, and
 raster-only clipping-run semantics. Future work should add new event kinds only
 after each semantic model is faithful.
 
+**Tile-local event executor**
+
+The `clip_gpu` execution module that consumes a planned tile program and runs
+typed tile events over canvas tiles. Its interface should be the tile program,
+event payload buffers, tile spans, and bound atlas resources, not raw `.clip`
+source traversal.
+
+**Barrier executor**
+
+The faithful pass-heavy execution path for render segments whose `.clip`
+semantics do not yet have a tile-local model. It is allowed as a debug and
+correctness oracle and as an explicit planned barrier, but it should not hide
+tile-event coverage gaps as a product fallback.
+
+**Tile-local scope stack**
+
+The bounded accumulator model used by tile events to represent isolated
+containers, THROUGH groups, clipping bases, and scope resolves inside one tile.
+Architecture work should add scope semantics here rather than adding
+case-specific pass-collapse branches.
+
+**Render-frame arena**
+
+A future `clip_gpu` module for per-render ring buffers and bind-group reuse.
+It should append event, work-list, span, and parameter data for many tile-local
+segments, then reset after the render. It is a fixed-cost optimization after
+the tile-event interface stabilizes.
+
 **Performance plan diagnostic**
 
 The metadata/block-level CLI report that explains the current native render

@@ -10,6 +10,11 @@ opportunistic optimization and instead make tile-local event execution the main
 model. Barrier passes remain only for `.clip` semantics that do not yet have a
 faithful tile-local model.
 
+The implementation strategy and phase ordering live in
+`docs/native-tile-event-architecture-strategy.md`. This file remains the
+compact target model, while the strategy document records the Module seams,
+phase sequence, and avoided work for the next development span.
+
 The product goal is order-of-magnitude native render and reload improvement
 without approximate compositing, CPU compositor fallback, post-processing, or
 global full-canvas layer caches.
