@@ -61,7 +61,10 @@ pub use stream::{
 };
 pub use stream_program::RenderProgramStats;
 pub use stream_program_barriers::{RenderProgramBarrierCounts, RenderProgramBarrierReason};
-pub use stream_program_inspect::inspect_normal_stack_render_program;
+pub use stream_program_inspect::{
+    RenderProgramInspection, RenderProgramSegmentInfo, inspect_normal_stack_render_program,
+    inspect_normal_stack_render_program_detail,
+};
 pub use stream_tile_event::TILE_EVENT_ABI_VERSION;
 pub use types::{
     GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,

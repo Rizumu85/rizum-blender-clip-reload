@@ -690,6 +690,38 @@ has focused parity tests.
 Add session-level sparse atlas allocation and segment/tile-event dirty reload
 after the typed event model is stable.
 
+First form: reload manifests now carry render-program identity, not only graph
+and source-tile identity. `clip_gpu::stream_program_inspect` exposes a stable
+inspection Interface with planner stats plus a preorder list of render segment
+records. `clip_runtime` reload manifest ABI `2` stores:
+
+- `tile_event_abi_version`
+- segment ordinal and nesting depth
+- source-range span
+- tile-local or barrier kind
+- optional barrier reason
+- expected pass, tile-event, and legacy-source cost hints
+- a segment signature that includes the tile-event ABI
+
+The reload planner currently promotes to full render when the tile-event ABI or
+segment plan changes. This is deliberate: it prevents patch reload from reusing
+old manifests after shader event layout or lowering-plan changes. It also gives
+future dirty-segment reload a durable data shape to refine, instead of bolting
+segment invalidation onto final dirty rectangles later.
+
+This first form is not yet the session-level sparse atlas allocator. It does
+not reuse atlas slots across reloads, and it does not yet compute affected
+tile-event ranges from segment/resource differences.
+
+Next Phase 6 work:
+
+- add tile work-list fingerprints to the segment manifest
+- map changed source tiles to affected segment/tile-event ranges
+- introduce a session-level sparse atlas allocator keyed by compressed tile
+  fingerprints
+- update changed atlas regions in place and rerun only affected segments when
+  the segment graph is unchanged
+
 ## Correctness Policy
 
 Do not introduce approximate semantics for speed. If a structure cannot be

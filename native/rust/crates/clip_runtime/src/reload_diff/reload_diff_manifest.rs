@@ -2,7 +2,9 @@ use clip_graph::RenderNodeKind;
 use clip_model::CanvasSize;
 
 use crate::RuntimeError;
-use crate::reload_diff::{RELOAD_TILE_SIZE, ReloadDiffSource, ReloadDiffTile, ReloadPatchRect};
+use crate::reload_diff::{
+    RELOAD_TILE_SIZE, ReloadDiffSegment, ReloadDiffSource, ReloadDiffTile, ReloadPatchRect,
+};
 
 pub(crate) fn raster_source_manifest(
     container: &clip_file::container::ClipContainer,
@@ -194,6 +196,41 @@ pub(crate) fn node_signature(node: &clip_graph::RenderNode) -> u64 {
     hash.finish()
 }
 
+pub(crate) fn render_segment_manifest(
+    segment: &clip_gpu::RenderProgramSegmentInfo,
+) -> ReloadDiffSegment {
+    let barrier_reason = segment
+        .barrier_reason
+        .map(|reason| reason.as_str().to_string());
+    ReloadDiffSegment {
+        ordinal: segment.ordinal,
+        depth: segment.depth,
+        source_start: segment.source_start,
+        source_end: segment.source_end,
+        kind: segment.kind.to_string(),
+        barrier_reason,
+        expected_passes: segment.expected_passes,
+        tile_events: segment.tile_events,
+        legacy_sources: segment.legacy_sources,
+        signature: render_segment_signature(segment),
+    }
+}
+
+fn render_segment_signature(segment: &clip_gpu::RenderProgramSegmentInfo) -> u64 {
+    let mut hash = Hash64::new();
+    hash.u32(clip_gpu::TILE_EVENT_ABI_VERSION);
+    hash.u32(segment.ordinal);
+    hash.u16(segment.depth);
+    hash.u32(segment.source_start);
+    hash.u32(segment.source_end);
+    hash.str(segment.kind);
+    hash.opt_str(segment.barrier_reason.map(|reason| reason.as_str()));
+    hash.u32(segment.expected_passes);
+    hash.u32(segment.tile_events);
+    hash.u32(segment.legacy_sources);
+    hash.finish()
+}
+
 fn raster_source_signature(source: &clip_file::metadata::RasterLayerSource) -> u64 {
     let mut hash = Hash64::new();
     hash.str("raster");
@@ -272,6 +309,16 @@ impl Hash64 {
             Some(value) => {
                 self.u8(1);
                 self.u32(value);
+            }
+            None => self.u8(0),
+        }
+    }
+
+    fn opt_str(&mut self, value: Option<&str>) {
+        match value {
+            Some(value) => {
+                self.u8(1);
+                self.str(value);
             }
             None => self.u8(0),
         }

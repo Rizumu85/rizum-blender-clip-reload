@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::reload_diff::{
     FULL_DIRTY_AREA_RATIO, MANIFEST_ABI, MAX_PATCH_RECTS, ReloadDiffManifest, ReloadDiffMode,
-    ReloadDiffNode, ReloadDiffPlan, ReloadDiffSource, ReloadDiffTile, ReloadPatchRect,
+    ReloadDiffNode, ReloadDiffPlan, ReloadDiffSegment, ReloadDiffSource, ReloadDiffTile,
+    ReloadPatchRect,
 };
 
 pub(crate) fn plan_reload_diff(
@@ -15,6 +16,9 @@ pub(crate) fn plan_reload_diff(
     if previous.tile_size != manifest.tile_size {
         return full_plan(manifest, "reload tile size changed");
     }
+    if previous.tile_event_abi_version != manifest.tile_event_abi_version {
+        return full_plan(manifest, "tile event ABI changed");
+    }
     if previous.width != manifest.width
         || previous.height != manifest.height
         || previous.root_layer_id != manifest.root_layer_id
@@ -23,6 +27,9 @@ pub(crate) fn plan_reload_diff(
     }
     if !same_node_sequence(&previous.nodes, &manifest.nodes) {
         return full_plan(manifest, "visible render graph order changed");
+    }
+    if !same_segment_sequence(&previous.segments, &manifest.segments) {
+        return full_plan(manifest, "render segment plan changed");
     }
 
     let mut dirty = Vec::new();
@@ -86,6 +93,19 @@ fn same_node_sequence(left: &[ReloadDiffNode], right: &[ReloadDiffNode]) -> bool
     left.len() == right.len()
         && left.iter().zip(right).all(|(left, right)| {
             left.layer_id == right.layer_id && left.kind == right.kind && left.depth == right.depth
+        })
+}
+
+fn same_segment_sequence(left: &[ReloadDiffSegment], right: &[ReloadDiffSegment]) -> bool {
+    left.len() == right.len()
+        && left.iter().zip(right).all(|(left, right)| {
+            left.ordinal == right.ordinal
+                && left.depth == right.depth
+                && left.source_start == right.source_start
+                && left.source_end == right.source_end
+                && left.kind == right.kind
+                && left.barrier_reason == right.barrier_reason
+                && left.signature == right.signature
         })
 }
 

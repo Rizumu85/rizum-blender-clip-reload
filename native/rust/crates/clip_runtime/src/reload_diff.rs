@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::gpu_provider::RuntimeGpuResourceProvider;
 use crate::{ClipSession, RuntimeError};
 
 mod reload_diff_manifest;
@@ -9,10 +10,11 @@ mod reload_diff_tests;
 
 use reload_diff_manifest::{
     mask_source_manifest, node_signature, raster_source_manifest, render_node_kind_name,
+    render_segment_manifest,
 };
 use reload_diff_plan::{full_plan, plan_reload_diff};
 
-pub(crate) const MANIFEST_ABI: u32 = 1;
+pub(crate) const MANIFEST_ABI: u32 = 2;
 pub(crate) const RELOAD_TILE_SIZE: u32 = clip_file::tiles::TILE_SIZE as u32;
 pub(crate) const FULL_DIRTY_AREA_RATIO: f64 = 0.5;
 pub(crate) const MAX_PATCH_RECTS: usize = 256;
@@ -21,11 +23,15 @@ pub(crate) const MAX_PATCH_RECTS: usize = 256;
 pub struct ReloadDiffManifest {
     pub abi: u32,
     pub tile_size: u32,
+    #[serde(default)]
+    pub tile_event_abi_version: u32,
     pub width: u32,
     pub height: u32,
     pub root_layer_id: u32,
     pub nodes: Vec<ReloadDiffNode>,
     pub sources: Vec<ReloadDiffSource>,
+    #[serde(default)]
+    pub segments: Vec<ReloadDiffSegment>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -56,6 +62,20 @@ pub struct ReloadDiffSource {
     pub empty_fill: Option<u8>,
     pub signature: u64,
     pub tiles: Vec<ReloadDiffTile>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ReloadDiffSegment {
+    pub ordinal: u32,
+    pub depth: u16,
+    pub source_start: u32,
+    pub source_end: u32,
+    pub kind: String,
+    pub barrier_reason: Option<String>,
+    pub expected_passes: u32,
+    pub tile_events: u32,
+    pub legacy_sources: u32,
+    pub signature: u64,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -137,14 +157,36 @@ impl ClipSession {
             )
         });
 
+        let selection =
+            self.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        let provider = RuntimeGpuResourceProvider::new(
+            &self.container,
+            self.summary.canvas,
+            selection.resource_plan,
+        )?;
+        let inspection = clip_gpu::inspect_normal_stack_render_program_detail(
+            &provider,
+            self.summary.canvas,
+            (0, 0),
+            self.summary.canvas,
+            &selection.sources,
+        );
+        let segments = inspection
+            .segments
+            .iter()
+            .map(render_segment_manifest)
+            .collect();
+
         Ok(ReloadDiffManifest {
             abi: MANIFEST_ABI,
             tile_size: RELOAD_TILE_SIZE,
+            tile_event_abi_version: clip_gpu::TILE_EVENT_ABI_VERSION,
             width: self.summary.canvas.width,
             height: self.summary.canvas.height,
             root_layer_id: self.summary.root_layer_id.0,
             nodes,
             sources,
+            segments,
         })
     }
 
