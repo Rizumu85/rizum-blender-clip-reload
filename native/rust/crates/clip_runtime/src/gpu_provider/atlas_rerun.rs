@@ -5,8 +5,8 @@ use super::atlas_cache::{
     SparseAtlasUpdatePlan,
 };
 use crate::reload_diff::{
-    ReloadDiffManifest, ReloadDiffMode, ReloadDiffPlan, ReloadDiffSegmentTileRef, ReloadDiffTile,
-    ReloadDirtySegmentEventRange,
+    ReloadDiffManifest, ReloadDiffMode, ReloadDiffPlan, ReloadDiffSegment,
+    ReloadDiffSegmentTileRef, ReloadDiffTile, ReloadDirtySegmentEventRange, ReloadPatchRect,
 };
 use crate::{
     GpuSparseAtlasEventRange, GpuSparseAtlasReloadPlan, GpuSparseAtlasRerunSegment,
@@ -46,11 +46,11 @@ pub(crate) struct SparseAtlasRerunSlot {
     pub slot: SparseAtlasSlot,
 }
 
-pub(crate) fn suffix_rerun_segments(
+pub(crate) fn affected_rerun_segments(
     plan: &ReloadDiffPlan,
     cache: &SparseAtlasUpdatePlan,
 ) -> Vec<SparseAtlasRerunSegment> {
-    if plan.mode != ReloadDiffMode::Patch {
+    if plan.mode != ReloadDiffMode::Patch || plan.dirty_rects.is_empty() {
         return Vec::new();
     }
     let Some(first_dirty_ordinal) = plan
@@ -68,13 +68,15 @@ pub(crate) fn suffix_rerun_segments(
         .segments
         .iter()
         .filter(|segment| segment.ordinal >= first_dirty_ordinal)
+        .filter(|segment| segment_affects_dirty_rects(segment, &source_tiles, &plan.dirty_rects))
         .map(|segment| {
-            let resident_slots = resident_slots_for_tiles(
-                &segment.tile_work_list,
-                &updates,
-                &source_tiles,
-                cache.atlas_size,
-            );
+            let resident_slots = if segment_has_unknown_work_tile(segment, &source_tiles) {
+                Vec::new()
+            } else {
+                let affecting_tiles =
+                    tiles_affecting_dirty_rects(segment, &source_tiles, &plan.dirty_rects);
+                resident_slots_for_tiles(affecting_tiles, &updates, &source_tiles, cache.atlas_size)
+            };
             let updated_slots = updated_slots_from_resident(&resident_slots);
             SparseAtlasRerunSegment {
                 ordinal: segment.ordinal,
@@ -148,6 +150,67 @@ fn resident_slots_for_tiles<'a>(
                 .map(|update| rerun_slot_for_update(tile, update, atlas_size, canvas_tile))
         })
         .collect()
+}
+
+fn segment_affects_dirty_rects(
+    segment: &ReloadDiffSegment,
+    source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
+    dirty_rects: &[ReloadPatchRect],
+) -> bool {
+    if segment.tile_work_list.is_empty() {
+        return segment.tile_events > 0 || segment.legacy_sources > 0;
+    }
+    segment
+        .tile_work_list
+        .iter()
+        .any(|tile| tile_affects_dirty_rects(tile, source_tiles, dirty_rects))
+}
+
+fn segment_has_unknown_work_tile(
+    segment: &ReloadDiffSegment,
+    source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
+) -> bool {
+    segment
+        .tile_work_list
+        .iter()
+        .any(|tile| !source_tiles.contains_key(&tile_key(tile)))
+}
+
+fn tiles_affecting_dirty_rects<'a>(
+    segment: &'a ReloadDiffSegment,
+    source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
+    dirty_rects: &[ReloadPatchRect],
+) -> impl Iterator<Item = &'a ReloadDiffSegmentTileRef> {
+    segment
+        .tile_work_list
+        .iter()
+        .filter(move |tile| tile_affects_dirty_rects(tile, source_tiles, dirty_rects))
+}
+
+fn tile_affects_dirty_rects(
+    tile: &ReloadDiffSegmentTileRef,
+    source_tiles: &HashMap<AtlasTileKey, ReloadDiffTile>,
+    dirty_rects: &[ReloadPatchRect],
+) -> bool {
+    source_tiles
+        .get(&tile_key(tile))
+        .map(|source_tile| {
+            dirty_rects
+                .iter()
+                .any(|rect| rects_intersect(*source_tile, *rect))
+        })
+        .unwrap_or(true)
+}
+
+fn rects_intersect(tile: ReloadDiffTile, rect: ReloadPatchRect) -> bool {
+    let left_x1 = u64::from(tile.x) + u64::from(tile.width);
+    let left_y1 = u64::from(tile.y) + u64::from(tile.height);
+    let right_x1 = u64::from(rect.x) + u64::from(rect.width);
+    let right_y1 = u64::from(rect.y) + u64::from(rect.height);
+    u64::from(tile.x) < right_x1
+        && u64::from(rect.x) < left_x1
+        && u64::from(tile.y) < right_y1
+        && u64::from(rect.y) < left_y1
 }
 
 fn updated_slots_from_resident(

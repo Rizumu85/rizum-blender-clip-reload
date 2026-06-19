@@ -1,11 +1,10 @@
 use super::RuntimeGpuRenderer;
 use super::checkpoint::initial_transparent_rgba8;
 use super::checkpoint_selection::{
-    suffix_checkpoint_candidate, suffix_manifest_is_raster_only,
-    suffix_starts_at_initial_accumulator,
+    dirty_checkpoint_candidate, dirty_starts_at_initial_accumulator,
 };
 use crate::gpu_provider::{
-    atlas_events::{sparse_atlas_raster_event_plan, sparse_atlas_raster_suffix_event_plan},
+    atlas_events::{sparse_atlas_raster_affected_event_plan, sparse_atlas_raster_event_plan},
     atlas_upload::sparse_atlas_texture_pool_updates,
 };
 use crate::{
@@ -46,7 +45,7 @@ impl RuntimeGpuRenderer {
         })
     }
 
-    pub fn prepare_sparse_atlas_raster_suffix_patch_plan(
+    pub fn prepare_sparse_atlas_raster_affected_patch_plan(
         &self,
         session: &ClipSession,
         plan: &crate::ReloadDiffPlan,
@@ -64,12 +63,12 @@ impl RuntimeGpuRenderer {
             .map_err(RuntimeError::from)?;
         Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
             texture_pool_stats,
-            event_plan: sparse_atlas_raster_suffix_event_plan(plan, &reload, &selection.sources)
+            event_plan: sparse_atlas_raster_affected_event_plan(plan, &reload, &selection.sources)
                 .into(),
         })
     }
 
-    pub fn draw_sparse_atlas_initial_suffix_patches(
+    pub fn draw_sparse_atlas_initial_segment_patches(
         &self,
         session: &ClipSession,
         plan: &crate::ReloadDiffPlan,
@@ -82,8 +81,7 @@ impl RuntimeGpuRenderer {
     > {
         if plan.mode != crate::ReloadDiffMode::Patch
             || plan.dirty_rects.is_empty()
-            || !suffix_starts_at_initial_accumulator(plan)
-            || !suffix_manifest_is_raster_only(plan)
+            || !dirty_starts_at_initial_accumulator(plan)
         {
             return Ok(None);
         }
@@ -109,7 +107,7 @@ impl RuntimeGpuRenderer {
                 &updates,
             )
             .map_err(RuntimeError::from)?;
-        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
+        let event_plan = sparse_atlas_raster_affected_event_plan(plan, &reload, &sources);
         if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
             return Ok(None);
         }
@@ -147,7 +145,7 @@ impl RuntimeGpuRenderer {
         )))
     }
 
-    pub fn draw_sparse_atlas_reconstructed_suffix_patches(
+    pub fn draw_sparse_atlas_reconstructed_segment_patches(
         &self,
         session: &ClipSession,
         plan: &crate::ReloadDiffPlan,
@@ -158,13 +156,10 @@ impl RuntimeGpuRenderer {
         )>,
         RuntimeError,
     > {
-        if plan.mode != crate::ReloadDiffMode::Patch
-            || plan.dirty_rects.is_empty()
-            || !suffix_manifest_is_raster_only(plan)
-        {
+        if plan.mode != crate::ReloadDiffMode::Patch || plan.dirty_rects.is_empty() {
             return Ok(None);
         }
-        let Some(checkpoint_candidate) = suffix_checkpoint_candidate(plan) else {
+        let Some(checkpoint_candidate) = dirty_checkpoint_candidate(plan) else {
             return Ok(None);
         };
         if checkpoint_candidate.source_start == 0 {
@@ -190,7 +185,7 @@ impl RuntimeGpuRenderer {
         let resource_stats = resource_plan.resource_stats();
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let sparse_atlas = reload.clone().into();
-        let event_plan = sparse_atlas_raster_suffix_event_plan(plan, &reload, &sources);
+        let event_plan = sparse_atlas_raster_affected_event_plan(plan, &reload, &sources);
         if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
             return Ok(None);
         }

@@ -1019,12 +1019,32 @@ per-layer full-canvas caches. The next improvement is to use the dirty
 segment/event-range data to rerun only affected segments when a valid
 checkpoint and executable sparse-atlas plan are available.
 
+Twenty-first form: product sparse patch reload now uses an affected-segment
+window instead of requiring the entire suffix after the first dirty segment to
+be raster-only. `clip_runtime::gpu_provider::atlas_rerun` builds the window
+from the first dirty segment, keeps only later segments whose tile work-list
+intersects the dirty patch rectangles, and treats empty or unknown work-lists
+with real tile/legacy work as affecting the patch so they fail closed.
+`clip_runtime::gpu_provider::atlas_events` lowers that affected window through
+`sparse_atlas_raster_affected_event_plan()`. The Blender worker now records
+`reload_diff.patch_renderer` as `sparse_atlas_initial_segments` or
+`sparse_atlas_reconstructed_segments` when this product path succeeds.
+
+This is still a strict raster-event product route. Overlapping later
+`RasterRun` segments are rerun so their compositing still applies to the dirty
+rect; non-overlapping later barriers can be skipped; overlapping non-raster,
+scope, filter, or otherwise unsupported affected segments are explicit skipped
+segments and force the worker back to the region renderer. This moves dirty
+reload from "raster-only suffix" toward "only segments that can affect the
+patch" without introducing approximate compositing.
+
 Next Phase 6 work:
 
-- rerun only affected segments and event ranges when the segment graph is
-  unchanged
-- route Blender patch reload through sparse segment rerun when every dirty
-  segment has a valid checkpoint and executable raster-event plan
+- narrow affected raster windows further to event ranges once event ownership
+  can prove all overlapping contributors for a dirty rect
+- expand affected-window execution beyond plain `RasterRun` by lowering more
+  pointwise filters, simple scopes, and clipping relationships into executable
+  sparse atlas events
 
 ## Correctness Policy
 

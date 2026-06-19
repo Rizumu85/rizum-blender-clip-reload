@@ -61,17 +61,17 @@ pub(crate) fn write_blender_render_files_with_renderer(
         && let Some(renderer) = renderer
     {
         let sparse_patch = renderer
-            .draw_sparse_atlas_initial_suffix_patches(session, &reload_plan)
+            .draw_sparse_atlas_initial_segment_patches(session, &reload_plan)
             .map_err(|err| err.to_string())?;
         let (render, sparse_atlas, patch_renderer) =
             if let Some((render, sparse_atlas)) = sparse_patch {
-                (render, sparse_atlas, "sparse_atlas_initial_suffix")
+                (render, sparse_atlas, "sparse_atlas_initial_segments")
             } else {
                 let sparse_patch = renderer
-                    .draw_sparse_atlas_reconstructed_suffix_patches(session, &reload_plan)
+                    .draw_sparse_atlas_reconstructed_segment_patches(session, &reload_plan)
                     .map_err(|err| err.to_string())?;
                 if let Some((render, sparse_atlas)) = sparse_patch {
-                    (render, sparse_atlas, "sparse_atlas_reconstructed_suffix")
+                    (render, sparse_atlas, "sparse_atlas_reconstructed_segments")
                 } else {
                     let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
                     let render = renderer

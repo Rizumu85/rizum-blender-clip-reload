@@ -146,7 +146,7 @@ fn planner_lowers_single_eligible_raster_as_tile_local() {
 }
 
 #[test]
-fn inspection_marks_only_raster_suffix_checkpoint_candidates() {
+fn inspection_marks_raster_run_checkpoint_candidates() {
     let provider = PlannerProvider::new([
         (raster_key(1), CanvasSize::new(4, 4)),
         (raster_key(2), CanvasSize::new(4, 4)),
@@ -182,7 +182,7 @@ fn inspection_marks_only_raster_suffix_checkpoint_candidates() {
             .map(|segment| (segment.kind, segment.checkpoint_before))
             .collect::<Vec<_>>(),
         vec![
-            ("RasterRun", false),
+            ("RasterRun", true),
             ("LegacySource", false),
             ("RasterRun", true),
         ]

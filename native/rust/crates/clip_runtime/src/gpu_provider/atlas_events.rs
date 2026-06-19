@@ -1,7 +1,7 @@
 use clip_model::CanvasSize;
 
 use super::atlas_rerun::{
-    SparseAtlasReloadPlan, SparseAtlasRerunSegment, SparseAtlasRerunSlot, suffix_rerun_segments,
+    SparseAtlasReloadPlan, SparseAtlasRerunSegment, SparseAtlasRerunSlot, affected_rerun_segments,
 };
 use crate::reload_diff::{ReloadDiffPlan, ReloadDiffSegment, ReloadDirtySegmentEventRange};
 
@@ -51,13 +51,13 @@ pub(crate) fn sparse_atlas_raster_event_plan(
     sparse_atlas_raster_event_plan_for_segments(diff, &reload.rerunnable_segments, sources)
 }
 
-pub(crate) fn sparse_atlas_raster_suffix_event_plan(
+pub(crate) fn sparse_atlas_raster_affected_event_plan(
     diff: &ReloadDiffPlan,
     reload: &SparseAtlasReloadPlan,
     sources: &[clip_gpu::GpuNormalStackSource],
 ) -> SparseAtlasRasterEventPlan {
-    let suffix_segments = suffix_rerun_segments(diff, &reload.cache);
-    sparse_atlas_raster_event_plan_for_segments(diff, &suffix_segments, sources)
+    let affected_segments = affected_rerun_segments(diff, &reload.cache);
+    sparse_atlas_raster_event_plan_for_segments(diff, &affected_segments, sources)
 }
 
 fn sparse_atlas_raster_event_plan_for_segments(

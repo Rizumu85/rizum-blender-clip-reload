@@ -5,8 +5,8 @@ use super::atlas_cache::{
     SparseAtlasTileUpdate, SparseAtlasUpdateAction, SparseAtlasUpdatePlan,
 };
 use super::atlas_events::{
-    SparseAtlasRasterEventSkipReason, sparse_atlas_raster_event_plan,
-    sparse_atlas_raster_suffix_event_plan,
+    SparseAtlasRasterEventSkipReason, sparse_atlas_raster_affected_event_plan,
+    sparse_atlas_raster_event_plan,
 };
 use super::atlas_rerun::{SparseAtlasReloadPlan, SparseAtlasRerunSegment, SparseAtlasRerunSlot};
 use crate::reload_diff::{
@@ -175,17 +175,72 @@ fn raster_run_splits_resident_events_by_executor_compatible_atlas_keys() {
 }
 
 #[test]
-fn suffix_plan_lowers_dirty_segment_and_later_raster_runs() {
-    let diff = diff_with_segments(
+fn affected_plan_skips_later_non_overlapping_barrier_segment() {
+    let diff = diff_with_segments_and_rects(
         vec![
-            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
-            manifest_segment(8, 1, 2, "RasterRun", 11, 2),
+            manifest_segment_at_rect(7, 0, 1, "RasterRun", 10, 1, 12, 34),
+            manifest_segment_at_rect(8, 1, 2, "SimpleContainerScope", 11, 2, 96, 96),
         ],
-        vec![source_manifest(10, 1), source_manifest(11, 2)],
+        vec![
+            source_manifest_at_rect(10, 1, 12, 34),
+            source_manifest_at_rect(11, 2, 96, 96),
+        ],
         vec![dirty_segment(7)],
+        vec![crate::ReloadPatchRect {
+            x: 12,
+            y: 34,
+            width: 64,
+            height: 32,
+        }],
     );
     let reload = reload_with_cache_updates(vec![cache_update(10, 1, 0), cache_update(11, 2, 1)]);
-    let plan = sparse_atlas_raster_suffix_event_plan(
+    let plan = sparse_atlas_raster_affected_event_plan(
+        &diff,
+        &reload,
+        &[
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                10,
+                1,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                11,
+                2,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+        ],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    assert_eq!(plan.segments.len(), 1);
+    assert_eq!(plan.segments[0].ordinal, 7);
+}
+
+#[test]
+fn affected_plan_lowers_later_overlapping_raster_segment() {
+    let diff = diff_with_segments_and_rects(
+        vec![
+            manifest_segment_at_rect(7, 0, 1, "RasterRun", 10, 1, 12, 34),
+            manifest_segment_at_rect(8, 1, 2, "RasterRun", 11, 2, 20, 40),
+        ],
+        vec![
+            source_manifest_at_rect(10, 1, 12, 34),
+            source_manifest_at_rect(11, 2, 20, 40),
+        ],
+        vec![dirty_segment(7)],
+        vec![crate::ReloadPatchRect {
+            x: 12,
+            y: 34,
+            width: 64,
+            height: 32,
+        }],
+    );
+    let reload = reload_with_cache_updates(vec![cache_update(10, 1, 0), cache_update(11, 2, 1)]);
+    let plan = sparse_atlas_raster_affected_event_plan(
         &diff,
         &reload,
         &[
@@ -218,17 +273,26 @@ fn suffix_plan_lowers_dirty_segment_and_later_raster_runs() {
 }
 
 #[test]
-fn suffix_plan_explains_later_non_raster_segment() {
-    let diff = diff_with_segments(
+fn affected_plan_explains_later_overlapping_non_raster_segment() {
+    let diff = diff_with_segments_and_rects(
         vec![
-            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
-            manifest_segment(8, 1, 2, "SimpleContainerScope", 11, 2),
+            manifest_segment_at_rect(7, 0, 1, "RasterRun", 10, 1, 12, 34),
+            manifest_segment_at_rect(8, 1, 2, "SimpleContainerScope", 11, 2, 20, 40),
         ],
-        vec![source_manifest(10, 1), source_manifest(11, 2)],
+        vec![
+            source_manifest_at_rect(10, 1, 12, 34),
+            source_manifest_at_rect(11, 2, 20, 40),
+        ],
         vec![dirty_segment(7)],
+        vec![crate::ReloadPatchRect {
+            x: 12,
+            y: 34,
+            width: 64,
+            height: 32,
+        }],
     );
     let reload = reload_with_cache_updates(vec![cache_update(10, 1, 0), cache_update(11, 2, 1)]);
-    let plan = sparse_atlas_raster_suffix_event_plan(
+    let plan = sparse_atlas_raster_affected_event_plan(
         &diff,
         &reload,
         &[
@@ -255,6 +319,49 @@ fn suffix_plan_explains_later_non_raster_segment() {
     assert_eq!(
         plan.skipped_segments[0].reason,
         SparseAtlasRasterEventSkipReason::NonRasterRun
+    );
+}
+
+#[test]
+fn affected_plan_fails_closed_for_unknown_work_list_tile() {
+    let diff = diff_with_segments_and_rects(
+        vec![manifest_segment_at_rect(
+            7,
+            0,
+            1,
+            "RasterRun",
+            10,
+            1,
+            12,
+            34,
+        )],
+        Vec::new(),
+        vec![dirty_segment(7)],
+        vec![crate::ReloadPatchRect {
+            x: 12,
+            y: 34,
+            width: 64,
+            height: 32,
+        }],
+    );
+    let reload = reload_with_cache_updates(Vec::new());
+    let plan = sparse_atlas_raster_affected_event_plan(
+        &diff,
+        &reload,
+        &[clip_gpu::GpuNormalStackSource::Raster(raster_source(
+            10,
+            1,
+            1.0,
+            clip_gpu::GpuRasterBlendMode::Normal,
+            None,
+        ))],
+    );
+
+    assert!(plan.segments.is_empty());
+    assert_eq!(plan.skipped_segments.len(), 1);
+    assert_eq!(
+        plan.skipped_segments[0].reason,
+        SparseAtlasRasterEventSkipReason::EmptyRasterSlots
     );
 }
 
@@ -299,6 +406,18 @@ fn diff_with_segments(
         reason: "test".to_string(),
         dirty_rects: Vec::new(),
         dirty_segments,
+    }
+}
+
+fn diff_with_segments_and_rects(
+    segments: Vec<ReloadDiffSegment>,
+    sources: Vec<crate::ReloadDiffSource>,
+    dirty_segments: Vec<crate::ReloadDirtySegment>,
+    dirty_rects: Vec<crate::ReloadPatchRect>,
+) -> ReloadDiffPlan {
+    ReloadDiffPlan {
+        dirty_rects,
+        ..diff_with_segments(segments, sources, dirty_segments)
     }
 }
 
@@ -358,7 +477,32 @@ fn manifest_segment(
     }
 }
 
-fn source_manifest(layer_id: u32, resource_id: u32) -> crate::ReloadDiffSource {
+fn manifest_segment_at_rect(
+    ordinal: u32,
+    source_start: u32,
+    source_end: u32,
+    kind: &str,
+    layer_id: u32,
+    resource_id: u32,
+    _x: u32,
+    _y: u32,
+) -> ReloadDiffSegment {
+    manifest_segment(
+        ordinal,
+        source_start,
+        source_end,
+        kind,
+        layer_id,
+        resource_id,
+    )
+}
+
+fn source_manifest_at_rect(
+    layer_id: u32,
+    resource_id: u32,
+    x: u32,
+    y: u32,
+) -> crate::ReloadDiffSource {
     crate::ReloadDiffSource {
         kind: "raster".to_string(),
         layer_id,
@@ -374,8 +518,8 @@ fn source_manifest(layer_id: u32, resource_id: u32) -> crate::ReloadDiffSource {
         tiles: vec![crate::ReloadDiffTile {
             tile_x: 0,
             tile_y: 0,
-            x: 12,
-            y: 34,
+            x,
+            y,
             width: 64,
             height: 32,
             compressed_bytes: 10,

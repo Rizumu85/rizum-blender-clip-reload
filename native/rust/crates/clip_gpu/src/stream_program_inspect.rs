@@ -180,14 +180,12 @@ fn mark_checkpoint_candidates(segments: &mut [RenderProgramSegmentInfo], output_
         prefix_cost = prefix_cost.saturating_add(segment_checkpoint_work_cost(segment));
     }
 
-    let mut suffix_is_raster_run = true;
     let mut suffix_reuse_signal = 0u64;
     let checkpoint_memory_mib = checkpoint_memory_mib(output_size);
     for (index, segment) in segments.iter_mut().enumerate().rev() {
         suffix_reuse_signal =
             suffix_reuse_signal.saturating_add(segment_checkpoint_reuse_signal(segment));
-        let is_raster_run = segment.kind == "RasterRun";
-        let candidate = is_raster_run && suffix_is_raster_run;
+        let candidate = segment.kind == "RasterRun";
         segment.checkpoint_before = candidate;
         segment.checkpoint_priority = if candidate {
             checkpoint_priority(
@@ -198,7 +196,6 @@ fn mark_checkpoint_candidates(segments: &mut [RenderProgramSegmentInfo], output_
         } else {
             0
         };
-        suffix_is_raster_run = candidate;
     }
 }
 

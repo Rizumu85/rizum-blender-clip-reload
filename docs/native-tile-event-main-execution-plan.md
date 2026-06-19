@@ -270,28 +270,31 @@ Reload rules:
 
 Current safe product subsets:
 
-- if the dirty suffix starts at source index `0` and every suffix segment is a
-  `RasterRun`, the Blender worker may rerun the suffix over the initial
-  transparent-white accumulator and return dirty-rect patch payloads
-- if the dirty suffix starts after source index `0` and every suffix segment is
-  a `RasterRun`, the runtime may reconstruct the segment-before checkpoint by
-  rendering the unchanged source prefix through the faithful GPU provider, then
-  execute the sparse-atlas suffix over that checkpoint
+- if the first dirty segment starts at source index `0`, the Blender worker may
+  rerun the affected raster segment window over the initial transparent-white
+  accumulator and return dirty-rect patch payloads
+- if the first dirty segment starts after source index `0`, the runtime may
+  reconstruct or reuse the segment-before checkpoint, then execute only the
+  later `RasterRun` segments whose tile work-list intersects the dirty patch
+  rectangles
+- later segments whose tile work-list does not intersect the dirty rectangles
+  can be skipped; later overlapping non-raster or unknown-work segments are
+  explicit skipped segments and force the region-render fallback
 
 The reconstructed-prefix path is a correctness seam, not the final performance
 shape when there is no cache hit. The runtime now has a small session
 budgeted LRU segment-before checkpoint cache keyed by the current reload
-manifest prefix, so repeated dirty suffix reloads can reuse selected RGBA8
+manifest prefix, so repeated dirty segment reloads can reuse selected RGBA8
 checkpoints when their prefixes are unchanged. Checkpoint selection is now
 explicit in render-program inspection and reload manifests through a
-`checkpoint_before` flag; product suffix reruns only use depth-0 explicit
-candidates as top-level source boundaries. Candidate ranking now exists as
-`checkpoint_priority` in render inspection and
-reload manifests; the session checkpoint cache uses that priority when choosing
-which cached checkpoint to evict under count or memory budget pressure, with
-LRU retained as the equal-priority tie-breaker. The next target is routing
-general dirty segment reload through sparse atlas event reruns when every dirty
-segment has a valid checkpoint and executable plan.
+`checkpoint_before` flag; product reruns only use depth-0 explicit candidates
+as top-level source boundaries. Candidate ranking now exists as
+`checkpoint_priority` in render inspection and reload manifests; the session
+checkpoint cache uses that priority when choosing which cached checkpoint to
+evict under count or memory budget pressure, with LRU retained as the
+equal-priority tie-breaker. The next target is narrowing affected raster
+windows to event ranges only after event ownership can prove every contributor
+that overlaps a dirty rect.
 
 ## Implementation Order
 
@@ -306,8 +309,8 @@ segment has a valid checkpoint and executable plan.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Route general dirty segment reload through sparse atlas event reruns when
-   every dirty segment has a valid checkpoint and executable plan.
+7. Narrow affected raster segment windows toward event-range execution once the
+   planner can prove all contributors for dirty rectangles.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.
