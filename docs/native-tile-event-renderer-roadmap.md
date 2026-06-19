@@ -999,15 +999,30 @@ selection a durable data surface.
 
 This nineteenth form still uses a simple candidate rule: a segment is a
 checkpoint candidate when the suffix from that segment to the end of its local
-stack consists only of `RasterRun` segments. The next improvement is to rank
-candidate checkpoints by expected reload value, memory cost, and reuse
-probability before rendering or retaining them.
+stack consists only of `RasterRun` segments.
+
+Twentieth form: checkpoint candidates now carry a ranked retention signal.
+`RenderProgramSegmentInfo` computes `checkpoint_priority` for each explicit
+candidate from estimated prefix reconstruction cost, suffix reuse signal, and
+full-canvas checkpoint memory cost. `ReloadDiffSegment` persists
+`checkpoint_priority` with backward-compatible JSON defaults, and
+`checkpoint_selection` owns suffix candidate lookup separate from sparse-atlas
+execution. The reconstructed suffix route passes that priority into the session
+checkpoint cache. The cache remains LRU for equal-priority entries, but budget
+or entry-count pressure now evicts the lowest-priority checkpoint first and
+refuses to let a low-priority incoming checkpoint displace higher-priority
+cached checkpoints.
+
+This twentieth form still stores CPU RGBA8 full-canvas segment-before
+checkpoints. It does not pre-render all candidates and does not add global
+per-layer full-canvas caches. The next improvement is to use the dirty
+segment/event-range data to rerun only affected segments when a valid
+checkpoint and executable sparse-atlas plan are available.
 
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
-- rank checkpoint candidates by cost and expected reuse
 - route Blender patch reload through sparse segment rerun when every dirty
   segment has a valid checkpoint and executable raster-event plan
 

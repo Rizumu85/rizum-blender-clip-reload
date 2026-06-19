@@ -72,6 +72,8 @@ pub struct ReloadDiffSegment {
     pub source_end: u32,
     #[serde(default, skip_serializing_if = "is_false")]
     pub checkpoint_before: bool,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub checkpoint_priority: u32,
     pub kind: String,
     pub barrier_reason: Option<String>,
     pub expected_passes: u32,
@@ -162,6 +164,10 @@ pub struct ReloadPatchRect {
 
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+fn is_zero(value: &u32) -> bool {
+    *value == 0
 }
 
 impl ClipSession {

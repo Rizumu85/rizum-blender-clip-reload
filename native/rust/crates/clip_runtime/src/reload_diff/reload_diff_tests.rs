@@ -318,6 +318,7 @@ fn test_segment(signature: u64) -> ReloadDiffSegment {
         source_start: 0,
         source_end: 1,
         checkpoint_before: false,
+        checkpoint_priority: 0,
         kind: "RasterRun".to_string(),
         barrier_reason: None,
         expected_passes: 1,

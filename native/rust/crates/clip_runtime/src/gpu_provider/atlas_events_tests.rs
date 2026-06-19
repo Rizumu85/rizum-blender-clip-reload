@@ -309,6 +309,7 @@ fn segment(kind: &str) -> ReloadDiffSegment {
         source_start: 0,
         source_end: 1,
         checkpoint_before: false,
+        checkpoint_priority: 0,
         kind: kind.to_string(),
         barrier_reason: None,
         expected_passes: 1,

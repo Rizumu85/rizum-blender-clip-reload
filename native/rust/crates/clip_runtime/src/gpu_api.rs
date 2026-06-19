@@ -20,6 +20,7 @@ use crate::{
 };
 
 mod checkpoint;
+mod checkpoint_selection;
 mod sparse_atlas;
 
 pub struct RuntimeGpuRenderer {

@@ -28,6 +28,7 @@ pub(crate) struct SegmentCheckpoint {
 #[derive(Clone, Debug)]
 struct SegmentCheckpointCacheEntry {
     key: SegmentCheckpointKey,
+    priority: u32,
     pixels: Vec<u8>,
     drawn_resources: Vec<clip_gpu::GpuRasterResourceInfo>,
     mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
@@ -65,9 +66,10 @@ impl SegmentCheckpointCache {
         Some(checkpoint)
     }
 
-    fn store(&mut self, key: SegmentCheckpointKey, checkpoint: &SegmentCheckpoint) {
+    fn store(&mut self, key: SegmentCheckpointKey, checkpoint: &SegmentCheckpoint, priority: u32) {
         let entry = SegmentCheckpointCacheEntry {
             key,
+            priority,
             pixels: checkpoint.pixels.clone(),
             drawn_resources: checkpoint.drawn_resources.clone(),
             mask_resources: checkpoint.mask_resources.clone(),
@@ -89,13 +91,24 @@ impl SegmentCheckpointCache {
         while self.cached_bytes.saturating_add(byte_len) > self.budget_bytes
             || self.entries.len() >= self.max_entries
         {
-            let Some(evicted) = self.entries.pop_front() else {
-                break;
+            let Some(index) = self.eviction_candidate_index(entry.priority) else {
+                return;
             };
-            self.cached_bytes = self.cached_bytes.saturating_sub(evicted.byte_len());
+            if let Some(evicted) = self.entries.remove(index) {
+                self.cached_bytes = self.cached_bytes.saturating_sub(evicted.byte_len());
+            }
         }
         self.cached_bytes = self.cached_bytes.saturating_add(byte_len);
         self.entries.push_back(entry);
+    }
+
+    fn eviction_candidate_index(&self, incoming_priority: u32) -> Option<usize> {
+        let (index, entry) = self
+            .entries
+            .iter()
+            .enumerate()
+            .min_by_key(|(index, entry)| (entry.priority, *index))?;
+        (entry.priority <= incoming_priority).then_some(index)
     }
 }
 
@@ -122,6 +135,7 @@ impl RuntimeGpuRenderer {
         source_start: u32,
         sources: &[clip_gpu::GpuNormalStackSource],
         resource_plan: GpuResourcePlan,
+        checkpoint_priority: u32,
     ) -> Result<SegmentCheckpoint, RuntimeError> {
         let key = SegmentCheckpointKey::from_reload_plan(plan, source_start);
         if let Some(checkpoint) = self.segment_checkpoint_cache.borrow_mut().get(&key) {
@@ -131,7 +145,7 @@ impl RuntimeGpuRenderer {
         let checkpoint = self.render_prefix_checkpoint_rgba8(session, sources, resource_plan)?;
         self.segment_checkpoint_cache
             .borrow_mut()
-            .store(key, &checkpoint);
+            .store(key, &checkpoint, checkpoint_priority);
         Ok(checkpoint)
     }
 
@@ -319,8 +333,8 @@ mod tests {
         let key_b = SegmentCheckpointKey::from_reload_plan(&plan, 2);
         let mut cache = SegmentCheckpointCache::new(2, 8);
 
-        cache.store(key_a.clone(), &checkpoint_with_len(4));
-        cache.store(key_b.clone(), &checkpoint_with_len(4));
+        cache.store(key_a.clone(), &checkpoint_with_len(4), 1);
+        cache.store(key_b.clone(), &checkpoint_with_len(4), 1);
 
         assert_eq!(cache.get(&key_a).expect("key_a cached").pixels.len(), 4);
         assert_eq!(cache.get(&key_b).expect("key_b cached").pixels.len(), 4);
@@ -337,14 +351,42 @@ mod tests {
         };
         let mut cache = SegmentCheckpointCache::new(2, 12);
 
-        cache.store(key_a.clone(), &checkpoint_with_len(4));
-        cache.store(key_b.clone(), &checkpoint_with_len(4));
+        cache.store(key_a.clone(), &checkpoint_with_len(4), 1);
+        cache.store(key_b.clone(), &checkpoint_with_len(4), 1);
         assert!(cache.get(&key_a).is_some());
-        cache.store(key_c.clone(), &checkpoint_with_len(4));
+        cache.store(key_c.clone(), &checkpoint_with_len(4), 1);
 
         assert!(cache.get(&key_a).is_some());
         assert!(cache.get(&key_b).is_none());
         assert!(cache.get(&key_c).is_some());
+    }
+
+    #[test]
+    fn checkpoint_cache_keeps_higher_priority_entry_by_count() {
+        let plan = patch_plan_with_segments();
+        let high = SegmentCheckpointKey::from_reload_plan(&plan, 1);
+        let low = SegmentCheckpointKey::from_reload_plan(&plan, 2);
+        let mut cache = SegmentCheckpointCache::new(1, 8);
+
+        cache.store(high.clone(), &checkpoint_with_len(4), 10);
+        cache.store(low.clone(), &checkpoint_with_len(4), 1);
+
+        assert!(cache.get(&high).is_some());
+        assert!(cache.get(&low).is_none());
+    }
+
+    #[test]
+    fn checkpoint_cache_replaces_lower_priority_entry_by_count() {
+        let plan = patch_plan_with_segments();
+        let low = SegmentCheckpointKey::from_reload_plan(&plan, 1);
+        let high = SegmentCheckpointKey::from_reload_plan(&plan, 2);
+        let mut cache = SegmentCheckpointCache::new(1, 8);
+
+        cache.store(low.clone(), &checkpoint_with_len(4), 1);
+        cache.store(high.clone(), &checkpoint_with_len(4), 10);
+
+        assert!(cache.get(&low).is_none());
+        assert!(cache.get(&high).is_some());
     }
 
     #[test]
@@ -353,7 +395,7 @@ mod tests {
         let key = SegmentCheckpointKey::from_reload_plan(&plan, 1);
         let mut cache = SegmentCheckpointCache::new(2, 3);
 
-        cache.store(key.clone(), &checkpoint_with_len(4));
+        cache.store(key.clone(), &checkpoint_with_len(4), 1);
 
         assert!(cache.get(&key).is_none());
     }
@@ -411,6 +453,7 @@ mod tests {
             source_start,
             source_end,
             checkpoint_before: false,
+            checkpoint_priority: 0,
             kind: "RasterRun".to_string(),
             barrier_reason: None,
             expected_passes: 1,

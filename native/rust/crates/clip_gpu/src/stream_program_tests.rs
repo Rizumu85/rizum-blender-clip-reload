@@ -187,6 +187,9 @@ fn inspection_marks_only_raster_suffix_checkpoint_candidates() {
             ("RasterRun", true),
         ]
     );
+    assert_eq!(inspection.segments[0].checkpoint_priority, 0);
+    assert_eq!(inspection.segments[1].checkpoint_priority, 0);
+    assert!(inspection.segments[2].checkpoint_priority > 0);
 }
 
 #[test]

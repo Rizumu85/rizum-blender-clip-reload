@@ -285,9 +285,13 @@ manifest prefix, so repeated dirty suffix reloads can reuse selected RGBA8
 checkpoints when their prefixes are unchanged. Checkpoint selection is now
 explicit in render-program inspection and reload manifests through a
 `checkpoint_before` flag; product suffix reruns only use depth-0 explicit
-candidates as top-level source boundaries. The next target is checkpoint
-candidate ranking by expected reload value, memory cost, and reuse
-probability.
+candidates as top-level source boundaries. Candidate ranking now exists as
+`checkpoint_priority` in render inspection and
+reload manifests; the session checkpoint cache uses that priority when choosing
+which cached checkpoint to evict under count or memory budget pressure, with
+LRU retained as the equal-priority tie-breaker. The next target is routing
+general dirty segment reload through sparse atlas event reruns when every dirty
+segment has a valid checkpoint and executable plan.
 
 ## Implementation Order
 
@@ -302,9 +306,11 @@ probability.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Rank checkpoint candidates to decide which segment-before checkpoints
-   should be retained under the cache budget.
-8. Route general dirty segment reload through sparse atlas event reruns.
+7. Route general dirty segment reload through sparse atlas event reruns when
+   every dirty segment has a valid checkpoint and executable plan.
+8. Promote useful segment-before checkpoint storage toward GPU-resident or
+   cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
+   limiting factor.
 9. Keep the pass-heavy renderer as a test oracle and debug backend, not as a
    product fallback.
 
