@@ -76,6 +76,61 @@ fn sparse_atlas_batch_executor_applies_simple_container_scope_mask() {
 }
 
 #[test]
+fn sparse_atlas_batch_executor_draws_split_scope_mask_batches() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let mut pool = GpuSparseAtlasTexturePool::default();
+    let raster = GpuSparseAtlasTextureKey {
+        format: GpuSparseAtlasFormat::Rgba8,
+        atlas_id: 38,
+    };
+    let mask = GpuSparseAtlasTextureKey {
+        format: GpuSparseAtlasFormat::R8,
+        atlas_id: 39,
+    };
+    renderer
+        .update_sparse_atlas_texture_pool(
+            &mut pool,
+            &[
+                two_pixel_update(raster, [255, 0, 0, 255], [255, 0, 0, 255]),
+                two_pixel_mask_update(mask, 0, 255),
+            ],
+        )
+        .expect("prepare sparse atlas pool");
+    let batches = vec![
+        GpuSparseAtlasRasterEventBatch::simple_container_scope(
+            vec![sparse_event_atlas_x_and_offset(raster, 0, 0)],
+            1.0,
+            GpuRasterBlendMode::Normal,
+            Rect::new(0, 0, 1, 1),
+            Some(GpuSparseAtlasTileRef {
+                key: mask,
+                atlas_x: 0,
+                atlas_y: 0,
+                size: CanvasSize::new(1, 1),
+            }),
+        ),
+        GpuSparseAtlasRasterEventBatch::simple_container_scope(
+            vec![sparse_event_atlas_x_and_offset(raster, 1, 1)],
+            1.0,
+            GpuRasterBlendMode::Normal,
+            Rect::new(1, 0, 1, 1),
+            Some(GpuSparseAtlasTileRef {
+                key: mask,
+                atlas_x: 1,
+                atlas_y: 0,
+                size: CanvasSize::new(1, 1),
+            }),
+        ),
+    ];
+
+    let output = renderer
+        .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(2, 1), &pool, &batches)
+        .expect("draw sparse atlas split scope mask batches");
+
+    assert_eq!(output.pixels, vec![255, 255, 255, 0, 255, 0, 0, 255]);
+}
+
+#[test]
 fn sparse_atlas_batch_executor_applies_simple_container_scope_point_filter() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
     let mut pool = GpuSparseAtlasTexturePool::default();
@@ -298,11 +353,36 @@ fn one_pixel_mask_update(
     }
 }
 
+fn two_pixel_mask_update(
+    key: GpuSparseAtlasTextureKey,
+    left: u8,
+    right: u8,
+) -> GpuSparseAtlasTexturePoolUpdate {
+    GpuSparseAtlasTexturePoolUpdate {
+        key,
+        atlas_size: CanvasSize::new(2, 1),
+        chunks: vec![GpuSparseAtlasUpdateChunk {
+            atlas_x: 0,
+            atlas_y: 0,
+            size: CanvasSize::new(2, 1),
+            pixels: vec![left, right],
+        }],
+    }
+}
+
 fn sparse_event(key: GpuSparseAtlasTextureKey) -> GpuSparseAtlasRasterEvent {
     sparse_event_atlas_x(key, 0)
 }
 
 fn sparse_event_atlas_x(key: GpuSparseAtlasTextureKey, atlas_x: u32) -> GpuSparseAtlasRasterEvent {
+    sparse_event_atlas_x_and_offset(key, atlas_x, 0)
+}
+
+fn sparse_event_atlas_x_and_offset(
+    key: GpuSparseAtlasTextureKey,
+    atlas_x: u32,
+    source_offset_x: i32,
+) -> GpuSparseAtlasRasterEvent {
     GpuSparseAtlasRasterEvent {
         raster: GpuSparseAtlasTileRef {
             key,
@@ -310,7 +390,7 @@ fn sparse_event_atlas_x(key: GpuSparseAtlasTextureKey, atlas_x: u32) -> GpuSpars
             atlas_y: 0,
             size: CanvasSize::new(1, 1),
         },
-        source_offset_x: 0,
+        source_offset_x,
         source_offset_y: 0,
         opacity: 1.0,
         blend_mode: GpuRasterBlendMode::Normal,

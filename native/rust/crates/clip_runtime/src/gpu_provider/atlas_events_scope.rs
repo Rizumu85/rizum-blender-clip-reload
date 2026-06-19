@@ -4,6 +4,7 @@ use super::atlas_events::{
     events_share_executor_atlases, push_raster_events_for_source, segment_source_span,
 };
 use super::atlas_events_filter::point_filter_events_for_source;
+use super::atlas_events_scope_split::{container_scope_batches, through_scope_batches};
 use super::atlas_events_types::{SparseAtlasRasterEventSegment, SparseAtlasRasterEventSkipReason};
 use super::atlas_rerun::{SparseAtlasRerunSegment, SparseAtlasRerunSlot};
 use crate::reload_diff::ReloadDiffSegment;
@@ -39,7 +40,7 @@ pub(super) fn lower_simple_scope_segment(
     let [source] = source_span else {
         return Err(SparseAtlasRasterEventSkipReason::SourceSpanOutOfRange);
     };
-    let batch = match (segment.kind.as_str(), source) {
+    let batches = match (segment.kind.as_str(), source) {
         (
             "SimpleContainerScope",
             clip_gpu::GpuNormalStackSource::Container {
@@ -54,13 +55,13 @@ pub(super) fn lower_simple_scope_segment(
                 children,
                 ClippingRunPolicy::NestedContainers,
             )?;
-            let mask = scope_mask_tile_ref_for_bounds(rerun_segment, *mask_key, bounds)?;
-            clip_gpu::GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
+            container_scope_batches(
+                rerun_segment,
                 tile_events,
                 *opacity,
                 *blend_mode,
+                *mask_key,
                 bounds,
-                mask,
             )
         }
         (
@@ -73,25 +74,22 @@ pub(super) fn lower_simple_scope_segment(
         ) => {
             let (tile_events, bounds) =
                 scope_child_tile_events(rerun_segment, children, ClippingRunPolicy::DirectOnly)?;
-            clip_gpu::GpuSparseAtlasRasterEventBatch::simple_through_scope_tile_events(
-                tile_events,
-                *opacity,
-                bounds,
-                scope_mask_tile_ref_for_bounds(rerun_segment, *mask_key, bounds)?,
-            )
+            through_scope_batches(rerun_segment, tile_events, *opacity, *mask_key, bounds)
         }
         _ => return Err(SparseAtlasRasterEventSkipReason::NonRasterRun),
-    };
-    if batch.events.is_empty() {
+    }?;
+    if batches.is_empty() || batches.iter().any(|batch| batch.events.is_empty()) {
         return Err(SparseAtlasRasterEventSkipReason::EmptyRasterSlots);
     }
-    if !events_share_executor_atlases(&batch.events) || !batch_masks_share_executor_atlas(&batch) {
+    if batches.iter().any(|batch| {
+        !events_share_executor_atlases(&batch.events) || !batch_masks_share_executor_atlas(batch)
+    }) {
         return Err(SparseAtlasRasterEventSkipReason::MixedSparseAtlasKeys);
     }
     Ok(SparseAtlasRasterEventSegment {
         ordinal: rerun_segment.ordinal,
         event_ranges: rerun_segment.event_ranges.clone(),
-        batches: vec![batch],
+        batches,
     })
 }
 

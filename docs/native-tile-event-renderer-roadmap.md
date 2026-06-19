@@ -1188,11 +1188,21 @@ scopes can carry clipping runs through nested containers, while THROUGH scopes
 still only allow direct clipping-run children. Nested clipping runs under a
 THROUGH child remain explicit fail-closed cases.
 
+Thirty-fourth form: sparse affected-window simple scopes now support
+multi-slot masks on the outer scope. When a `SimpleContainerScope` or
+`SimpleThroughScope` has a scope mask whose dirty bounds are covered by
+multiple resident R8 mask slots, runtime lowering splits the scope into one
+executor batch per mask slot and clips the child tile events to that slot's
+canvas bounds before resolving the scope. This keeps child raster/filter/clip
+events from leaking into the parent accumulator outside the masked sub-rect.
+Nested scope masks still require a single resident R8 slot and fail closed when
+their bounds span multiple mask slots.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  multi-slot scope masks, clipping runs nested through THROUGH child scopes,
-  and clipped container/folder siblings
+  nested multi-slot scope masks, clipping runs nested through THROUGH child
+  scopes, and clipped container/folder siblings
 
 ## Correctness Policy
 
