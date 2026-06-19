@@ -103,6 +103,7 @@ pub enum GpuSparseAtlasRasterEventSkipReason {
         canvas_x: u32,
         canvas_y: u32,
     },
+    MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
 }
 

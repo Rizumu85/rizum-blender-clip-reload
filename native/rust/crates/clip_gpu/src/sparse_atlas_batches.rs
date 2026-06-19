@@ -1,8 +1,34 @@
-use crate::{GpuSparseAtlasRasterEvent, GpuSparseAtlasTextureKey};
+use crate::{GpuRasterBlendMode, GpuSparseAtlasRasterEvent, GpuSparseAtlasTextureKey};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum GpuSparseAtlasRasterEventBatchKind {
+    RasterRun,
+    RasterClippingRun {
+        base_event_count: u32,
+        resolve_blend_mode: GpuRasterBlendMode,
+    },
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct GpuSparseAtlasRasterEventBatch {
+    pub kind: GpuSparseAtlasRasterEventBatchKind,
     pub events: Vec<GpuSparseAtlasRasterEvent>,
+}
+
+impl GpuSparseAtlasRasterEventBatch {
+    pub fn raster_clipping_run(
+        events: Vec<GpuSparseAtlasRasterEvent>,
+        base_event_count: u32,
+        resolve_blend_mode: GpuRasterBlendMode,
+    ) -> Self {
+        Self {
+            kind: GpuSparseAtlasRasterEventBatchKind::RasterClippingRun {
+                base_event_count,
+                resolve_blend_mode,
+            },
+            events,
+        }
+    }
 }
 
 pub fn split_sparse_atlas_raster_event_batches(
@@ -55,6 +81,9 @@ impl CurrentSparseAtlasBatch {
         let events = std::mem::take(&mut self.events);
         self.raster_key = None;
         self.mask_key = None;
-        GpuSparseAtlasRasterEventBatch { events }
+        GpuSparseAtlasRasterEventBatch {
+            kind: GpuSparseAtlasRasterEventBatchKind::RasterRun,
+            events,
+        }
     }
 }

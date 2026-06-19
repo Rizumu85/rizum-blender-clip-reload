@@ -10,6 +10,8 @@ pub(crate) mod atlas_cache;
 mod atlas_cache_tests;
 pub(crate) mod atlas_events;
 #[cfg(test)]
+mod atlas_events_clipping_tests;
+#[cfg(test)]
 mod atlas_events_test_support;
 #[cfg(test)]
 mod atlas_events_tests;

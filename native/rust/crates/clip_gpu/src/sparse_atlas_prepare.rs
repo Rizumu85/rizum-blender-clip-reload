@@ -4,11 +4,13 @@ use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_tile_event::RasterTileEventPayload;
 use crate::stream_tile_silo_plan::{TILE_SIZE, tile_work_lists_for_bounds};
 use crate::{
-    GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasRasterEvent, GpuSparseAtlasTexture,
+    GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasRasterEvent,
+    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind, GpuSparseAtlasTexture,
     GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTileRef,
 };
 
 pub(crate) struct PreparedSparseAtlasRasterEvents<'a> {
+    pub(crate) kind: GpuSparseAtlasRasterEventBatchKind,
     pub(crate) atlas: &'a GpuSparseAtlasTexture,
     pub(crate) mask_atlas: Option<&'a GpuSparseAtlasTexture>,
     pub(crate) payloads: Vec<RasterTileEventPayload>,
@@ -21,6 +23,28 @@ pub(crate) struct PreparedSparseAtlasRasterEvents<'a> {
 pub(crate) fn prepare_sparse_atlas_raster_events<'a>(
     output_size: CanvasSize,
     pool: &'a GpuSparseAtlasTexturePool,
+    events: &[GpuSparseAtlasRasterEvent],
+) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
+    prepare_sparse_atlas_raster_events_with_kind(
+        output_size,
+        pool,
+        GpuSparseAtlasRasterEventBatchKind::RasterRun,
+        events,
+    )
+}
+
+pub(crate) fn prepare_sparse_atlas_raster_event_batch<'a>(
+    output_size: CanvasSize,
+    pool: &'a GpuSparseAtlasTexturePool,
+    batch: &GpuSparseAtlasRasterEventBatch,
+) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
+    prepare_sparse_atlas_raster_events_with_kind(output_size, pool, batch.kind, &batch.events)
+}
+
+fn prepare_sparse_atlas_raster_events_with_kind<'a>(
+    output_size: CanvasSize,
+    pool: &'a GpuSparseAtlasTexturePool,
+    kind: GpuSparseAtlasRasterEventBatchKind,
     events: &[GpuSparseAtlasRasterEvent],
 ) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
     let raster_key = common_raster_atlas_key(events)?;
@@ -77,6 +101,7 @@ pub(crate) fn prepare_sparse_atlas_raster_events<'a>(
             .map_err(|_| GpuRenderError::TextureSizeOverflow)?;
     let (work_indices, tile_spans) = tile_work_lists_for_bounds(tile_count, tile_cols, &bounds)?;
     Ok(PreparedSparseAtlasRasterEvents {
+        kind,
         atlas,
         mask_atlas,
         payloads,

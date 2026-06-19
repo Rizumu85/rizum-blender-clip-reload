@@ -1,8 +1,10 @@
 use clip_model::{CanvasSize, Rect};
 
+use crate::blend::blend_kind;
 use crate::pass::create_rgba8_texture;
 use crate::sparse_atlas_prepare::{
-    PreparedSparseAtlasRasterEvents, prepare_sparse_atlas_raster_events,
+    PreparedSparseAtlasRasterEvents, prepare_sparse_atlas_raster_event_batch,
+    prepare_sparse_atlas_raster_events,
 };
 use crate::sparse_atlas_targets::{
     SparseAtlasRenderedTextures, initialize_sparse_atlas_executor_targets, rgba8_patch_pixels,
@@ -11,14 +13,19 @@ use crate::sparse_atlas_targets::{
 use crate::stream_bounds::CanvasRect;
 use crate::stream_tile_event::TileEventProgram;
 use crate::stream_tile_silo_buffers::{
-    create_params_buffer, create_tile_event_storage_buffers, create_u32_storage_buffer,
+    create_params_buffer_with_mode_and_resolve, create_tile_event_storage_buffers,
+    create_u32_storage_buffer,
 };
 use crate::stream_tile_silo_pipeline::TileSiloPipeline;
 use crate::stream_tile_silo_upload::{upload_lut_atlas_texture, upload_mask_atlas_tile_texture};
 use crate::{
     GpuRasterBlendMode, GpuRasterPatchOutput, GpuRasterStackOutput, GpuRenderError, GpuRenderer,
-    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
+    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind, GpuSparseAtlasTextureKey,
+    GpuSparseAtlasTexturePool,
 };
+
+const TILE_SILO_MODE_NORMAL: u32 = 0;
+const TILE_SILO_MODE_CLIPPING_RUN: u32 = 2;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GpuSparseAtlasTileRef {
@@ -76,7 +83,7 @@ impl GpuRenderer {
         let prepared_batches = batches
             .iter()
             .filter(|batch| !batch.events.is_empty())
-            .map(|batch| prepare_sparse_atlas_raster_events(output_size, pool, &batch.events))
+            .map(|batch| prepare_sparse_atlas_raster_event_batch(output_size, pool, batch))
             .collect::<Result<Vec<_>, _>>()?;
         if prepared_batches.is_empty() {
             return Err(GpuRenderError::EmptyRasterStack);
@@ -109,7 +116,7 @@ impl GpuRenderer {
         let prepared_batches = batches
             .iter()
             .filter(|batch| !batch.events.is_empty())
-            .map(|batch| prepare_sparse_atlas_raster_events(output_size, pool, &batch.events))
+            .map(|batch| prepare_sparse_atlas_raster_event_batch(output_size, pool, batch))
             .collect::<Result<Vec<_>, _>>()?;
         if prepared_batches.is_empty() {
             return Ok(GpuRasterStackOutput {
@@ -147,7 +154,7 @@ impl GpuRenderer {
         let prepared_batches = batches
             .iter()
             .filter(|batch| !batch.events.is_empty())
-            .map(|batch| prepare_sparse_atlas_raster_events(output_size, pool, &batch.events))
+            .map(|batch| prepare_sparse_atlas_raster_event_batch(output_size, pool, batch))
             .collect::<Result<Vec<_>, _>>()?;
         if prepared_batches.is_empty() {
             return Ok(GpuRasterPatchOutput {
@@ -326,7 +333,16 @@ impl GpuRenderer {
             "rizum_clip_sparse_atlas_spans",
             &prepared.tile_spans,
         );
-        let params_buffer = create_params_buffer(&self.context.device, (0, 0), prepared.tile_cols);
+        let (mode, resolve_blend_kind, base_event_count) =
+            sparse_atlas_batch_tile_silo_params(prepared.kind);
+        let params_buffer = create_params_buffer_with_mode_and_resolve(
+            &self.context.device,
+            (0, 0),
+            prepared.tile_cols,
+            mode,
+            resolve_blend_kind,
+            base_event_count,
+        );
         let pipeline = TileSiloPipeline::new(&self.context.device);
         let bind_group = self
             .context
@@ -408,5 +424,21 @@ impl GpuRenderer {
         );
         pass.draw(0..3, 0..1);
         Ok(())
+    }
+}
+
+fn sparse_atlas_batch_tile_silo_params(
+    kind: GpuSparseAtlasRasterEventBatchKind,
+) -> (u32, u32, u32) {
+    match kind {
+        GpuSparseAtlasRasterEventBatchKind::RasterRun => (TILE_SILO_MODE_NORMAL, 0, 0),
+        GpuSparseAtlasRasterEventBatchKind::RasterClippingRun {
+            base_event_count,
+            resolve_blend_mode,
+        } => (
+            TILE_SILO_MODE_CLIPPING_RUN,
+            blend_kind(resolve_blend_mode),
+            base_event_count,
+        ),
     }
 }

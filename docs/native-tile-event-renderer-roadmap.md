@@ -1048,17 +1048,30 @@ lowerer to skip the segment so the worker falls back to the region renderer.
 This keeps diagnostics and future executor scheduling aligned with the actual
 affected tile events without claiming a narrower range for unknown work.
 
-This twenty-second form still executes raster event batches for the affected
-resident slots only; it does not yet support non-raster affected contributors.
-The next improvement is to expand affected-window execution beyond plain
-`RasterRun` by lowering more pointwise filters, simple scopes, and clipping
-relationships into executable sparse atlas events.
+Twenty-third form: sparse affected-window execution now supports
+`RasterClippingRun` segments when the clipping run is the planner's
+raster-only direct sibling form. `GpuSparseAtlasRasterEventBatch` now carries
+an explicit batch kind, so the sparse atlas executor can reuse the existing
+tile-silo clipping-run shader mode with the batch's base-event count and base
+resolve blend. Runtime lowering builds clipping batches from resident atlas
+slots in CSP source order: base raster tile events first, then clipped raster
+tile events. Mixed RGBA atlas keys, mixed mask atlas keys, missing mask slots,
+or unexpected clipped container siblings fail closed as skipped segments and
+preserve the existing region-render fallback. This moves affected-window
+reload beyond plain `RasterRun` without creating a second compositor path or
+approximating clipping semantics.
+
+This twenty-third form still does not execute pointwise filters or simple
+container/THROUGH scopes from sparse affected windows. The next improvement is
+to lower those remaining tile-local segment kinds into executable sparse atlas
+events, starting with the filter/scope forms that already have faithful
+tile-silo shader semantics.
 
 Next Phase 6 work:
 
-- expand affected-window execution beyond plain `RasterRun` by lowering more
-  pointwise filters, simple scopes, and clipping relationships into executable
-  sparse atlas events
+- expand affected-window execution beyond `RasterRun` / `RasterClippingRun`
+  by lowering pointwise filters and simple scopes into executable sparse atlas
+  events
 
 ## Correctness Policy
 

@@ -40,6 +40,7 @@ pub(crate) enum SparseAtlasRasterEventSkipReason {
         canvas_x: u32,
         canvas_y: u32,
     },
+    MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
 }
 
@@ -144,6 +145,7 @@ impl From<SparseAtlasRasterEventSkipReason> for crate::GpuSparseAtlasRasterEvent
                 canvas_x,
                 canvas_y,
             },
+            SparseAtlasRasterEventSkipReason::MixedSparseAtlasKeys => Self::MixedSparseAtlasKeys,
             SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange => {
                 Self::CanvasCoordinateOutOfRange
             }
@@ -162,6 +164,9 @@ fn lower_raster_run_segment(
         .iter()
         .find(|segment| segment.ordinal == rerun_segment.ordinal)
         .ok_or(SparseAtlasRasterEventSkipReason::SegmentManifestMissing)?;
+    if segment.kind == "RasterClippingRun" {
+        return lower_raster_clipping_run_segment(segment, rerun_segment, sources);
+    }
     if segment.kind != "RasterRun" {
         return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);
     }
@@ -214,6 +219,46 @@ fn lower_raster_run_segment(
     })
 }
 
+fn lower_raster_clipping_run_segment(
+    segment: &ReloadDiffSegment,
+    rerun_segment: &SparseAtlasRerunSegment,
+    sources: &[clip_gpu::GpuNormalStackSource],
+) -> Result<SparseAtlasRasterEventSegment, SparseAtlasRasterEventSkipReason> {
+    let source_span = segment_source_span(segment, sources)?;
+    let [clip_gpu::GpuNormalStackSource::ClippingRun { base, clipped }] = source_span else {
+        return Err(SparseAtlasRasterEventSkipReason::SourceSpanOutOfRange);
+    };
+
+    let mut events = Vec::new();
+    push_raster_events_for_source(rerun_segment, *base, &mut events)?;
+    let base_event_count = u32::try_from(events.len())
+        .map_err(|_| SparseAtlasRasterEventSkipReason::SourceSpanOutOfRange)?;
+    for clipped_source in clipped {
+        let clip_gpu::GpuClippedStackSource::Raster(raster) = clipped_source else {
+            return Err(SparseAtlasRasterEventSkipReason::NonRasterRun);
+        };
+        push_raster_events_for_source(rerun_segment, *raster, &mut events)?;
+    }
+    if events.is_empty() {
+        return Err(SparseAtlasRasterEventSkipReason::EmptyRasterSlots);
+    }
+    if !events_share_executor_atlases(&events) {
+        return Err(SparseAtlasRasterEventSkipReason::MixedSparseAtlasKeys);
+    }
+
+    Ok(SparseAtlasRasterEventSegment {
+        ordinal: rerun_segment.ordinal,
+        event_ranges: rerun_segment.event_ranges.clone(),
+        batches: vec![
+            clip_gpu::GpuSparseAtlasRasterEventBatch::raster_clipping_run(
+                events,
+                base_event_count,
+                base.blend_mode,
+            ),
+        ],
+    })
+}
+
 fn segment_source_span<'a>(
     segment: &ReloadDiffSegment,
     sources: &'a [clip_gpu::GpuNormalStackSource],
@@ -238,6 +283,71 @@ fn raster_source_for_slot(
         (raster.key.layer_id.0 == slot.layer_id && raster.key.render_mipmap_id == slot.resource_id)
             .then_some(*raster)
     })
+}
+
+fn push_raster_events_for_source(
+    segment: &SparseAtlasRerunSegment,
+    raster: clip_gpu::GpuNormalRasterSource,
+    events: &mut Vec<clip_gpu::GpuSparseAtlasRasterEvent>,
+) -> Result<(), SparseAtlasRasterEventSkipReason> {
+    let mut raster_slots = segment
+        .resident_slots
+        .iter()
+        .filter(|slot| {
+            slot.kind == "raster"
+                && slot.layer_id == raster.key.layer_id.0
+                && slot.resource_id == raster.key.render_mipmap_id
+        })
+        .collect::<Vec<_>>();
+    raster_slots.sort_by_key(|slot| {
+        (
+            slot.event_start,
+            slot.event_end,
+            slot.canvas_y,
+            slot.canvas_x,
+            slot.tile_y,
+            slot.tile_x,
+        )
+    });
+
+    for slot in raster_slots {
+        let mask = mask_tile_ref_for_raster(segment, raster, slot)?;
+        events.push(clip_gpu::GpuSparseAtlasRasterEvent {
+            raster: tile_ref_for_slot(slot),
+            source_offset_x: i32::try_from(slot.canvas_x)
+                .map_err(|_| SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange)?,
+            source_offset_y: i32::try_from(slot.canvas_y)
+                .map_err(|_| SparseAtlasRasterEventSkipReason::CanvasCoordinateOutOfRange)?,
+            opacity: raster.opacity,
+            blend_mode: raster.blend_mode,
+            mask,
+        });
+    }
+    Ok(())
+}
+
+fn events_share_executor_atlases(events: &[clip_gpu::GpuSparseAtlasRasterEvent]) -> bool {
+    let Some(first) = events.first() else {
+        return true;
+    };
+    let raster_key = first.raster.key;
+    let mut mask_key = None;
+    for event in events {
+        if event.raster.key != raster_key {
+            return false;
+        }
+        let Some(next_mask_key) = event.mask.map(|mask| mask.key) else {
+            continue;
+        };
+        if let Some(current_mask_key) = mask_key {
+            if current_mask_key != next_mask_key {
+                return false;
+            }
+        } else {
+            mask_key = Some(next_mask_key);
+        }
+    }
+    true
 }
 
 fn mask_tile_ref_for_raster(
