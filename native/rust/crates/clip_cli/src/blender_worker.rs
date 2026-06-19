@@ -30,8 +30,8 @@ pub(crate) fn write_blender_render_files_with_renderer(
     let reload_plan = session
         .plan_reload_diff(previous_manifest)
         .map_err(|err| err.to_string())?;
-    let sparse_atlas_cache = renderer
-        .map(|renderer| renderer.plan_sparse_atlas_reload(&reload_plan.manifest))
+    let sparse_atlas = renderer
+        .map(|renderer| renderer.plan_sparse_atlas_reload(&reload_plan))
         .unwrap_or_default();
     if reload_plan.mode == ReloadDiffMode::NoChange {
         let support = session
@@ -47,7 +47,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
             0,
             Some(support.resource_stats),
             clip_runtime::GpuTextureCacheStats::default(),
-            sparse_atlas_cache,
+            sparse_atlas,
             reload_plan_metadata(&reload_plan, 0),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
@@ -83,7 +83,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
             payload_bytes,
             Some(stats),
             texture_cache_stats,
-            sparse_atlas_cache,
+            sparse_atlas,
             reload_plan_metadata(&reload_plan, payload_bytes),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
@@ -130,7 +130,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
         payload_bytes,
         Some(stats),
         texture_cache_stats,
-        sparse_atlas_cache,
+        sparse_atlas,
         reload_plan_metadata(&reload_plan, payload_bytes),
     );
     let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
@@ -147,7 +147,7 @@ fn base_metadata(
     payload_bytes: usize,
     stats: Option<clip_runtime::NormalRasterStackResourceStats>,
     texture_cache: clip_runtime::GpuTextureCacheStats,
-    sparse_atlas_cache: clip_runtime::GpuSparseAtlasCacheStats,
+    sparse_atlas: clip_runtime::GpuSparseAtlasReloadPlan,
     reload_diff: serde_json::Value,
 ) -> serde_json::Value {
     let canvas = session.summary().canvas;
@@ -193,14 +193,40 @@ fn base_metadata(
             "cached_bytes": texture_cache.cached_bytes,
         },
         "sparse_atlas_cache": {
-            "cached_tiles": sparse_atlas_cache.cached_tiles,
-            "cached_bytes": sparse_atlas_cache.cached_bytes,
-            "atlas_count": sparse_atlas_cache.atlas_count,
-            "reused_tiles": sparse_atlas_cache.reused_tiles,
-            "inserted_tiles": sparse_atlas_cache.inserted_tiles,
-            "changed_tiles": sparse_atlas_cache.changed_tiles,
-            "evicted_tiles": sparse_atlas_cache.evicted_tiles,
-            "upload_bytes": sparse_atlas_cache.upload_bytes,
+            "cached_tiles": sparse_atlas.cache_stats.cached_tiles,
+            "cached_bytes": sparse_atlas.cache_stats.cached_bytes,
+            "atlas_count": sparse_atlas.cache_stats.atlas_count,
+            "reused_tiles": sparse_atlas.cache_stats.reused_tiles,
+            "inserted_tiles": sparse_atlas.cache_stats.inserted_tiles,
+            "changed_tiles": sparse_atlas.cache_stats.changed_tiles,
+            "evicted_tiles": sparse_atlas.cache_stats.evicted_tiles,
+            "upload_bytes": sparse_atlas.cache_stats.upload_bytes,
+            "rerunnable_segments": sparse_atlas.rerunnable_segments.iter().map(|segment| {
+                json!({
+                    "ordinal": segment.ordinal,
+                    "event_ranges": segment.event_ranges.iter().map(|range| {
+                        json!({
+                            "start": range.start,
+                            "end": range.end,
+                        })
+                    }).collect::<Vec<_>>(),
+                    "updated_slots": segment.updated_slots.iter().map(|slot| {
+                        json!({
+                            "kind": slot.kind,
+                            "layer_id": slot.layer_id,
+                            "resource_id": slot.resource_id,
+                            "tile_x": slot.tile_x,
+                            "tile_y": slot.tile_y,
+                            "action": slot.action,
+                            "atlas_id": slot.atlas_id,
+                            "atlas_x": slot.atlas_x,
+                            "atlas_y": slot.atlas_y,
+                            "width": slot.width,
+                            "height": slot.height,
+                        })
+                    }).collect::<Vec<_>>(),
+                })
+            }).collect::<Vec<_>>(),
         },
         "support": {
             "source_count": source_count,
@@ -410,6 +436,68 @@ mod tests {
                 .as_u64()
                 .unwrap()
                 > 0
+        );
+        assert_eq!(
+            second["sparse_atlas_cache"]["rerunnable_segments"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0
+        );
+
+        let _ = std::fs::remove_file(rgba_path);
+        let _ = std::fs::remove_file(json_path);
+        let _ = std::fs::remove_dir(temp);
+    }
+
+    #[test]
+    fn persistent_worker_reports_sparse_atlas_rerunnable_patch_segments() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../../img/Test_Clipping.clip");
+        let mut session = clip_runtime::ClipSession::open(&path).expect("open Test_Clipping.clip");
+        let mut previous_manifest = session
+            .reload_diff_manifest()
+            .expect("build reload diff manifest");
+        let first_tile = previous_manifest
+            .sources
+            .iter_mut()
+            .find_map(|source| source.tiles.first_mut())
+            .expect("manifest has compressed tiles");
+        first_tile.compressed_hash ^= 1;
+        let renderer =
+            clip_runtime::RuntimeGpuRenderer::new_with_texture_cache().expect("create renderer");
+        let temp = std::env::temp_dir().join(format!(
+            "clip_blender_worker_sparse_atlas_patch_test_{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&temp).expect("create temp dir");
+        let rgba_path = temp.join("render.rgba");
+        let json_path = temp.join("render.json");
+
+        write_blender_render_files_with_renderer(
+            &mut session,
+            &rgba_path,
+            &json_path,
+            Some(&previous_manifest),
+            Some(&renderer),
+        )
+        .expect("write worker patch files");
+        let metadata: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&json_path).expect("read json"))
+                .expect("parse json");
+
+        assert_eq!(metadata["reload_diff"]["mode"], "patch");
+        assert!(
+            metadata["sparse_atlas_cache"]["inserted_tiles"]
+                .as_u64()
+                .unwrap()
+                > 0
+        );
+        assert!(
+            !metadata["sparse_atlas_cache"]["rerunnable_segments"]
+                .as_array()
+                .unwrap()
+                .is_empty()
         );
 
         let _ = std::fs::remove_file(rgba_path);

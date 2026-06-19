@@ -769,10 +769,22 @@ them for drawing. It is the planner/cache state seam required before the render
 executor can update atlas regions in place and rerun only dirty segment/event
 ranges.
 
+Fifth form: `clip_runtime::gpu_provider::atlas_rerun` now maps sparse atlas
+updates plus `ReloadDiffPlan.dirty_segments` into rerunnable segment work. For
+patch reloads, the planner emits each dirty segment's event ranges and the
+non-reused atlas slots that intersect those event ranges. Resource-only
+invalidations can still produce a rerunnable segment with no atlas upload, while
+no-change and full-render plans intentionally produce no rerunnable segment
+work. The persistent Blender worker includes these rerunnable segment entries
+inside `sparse_atlas_cache.rerunnable_segments` diagnostics.
+
+This fifth form still does not execute the segment rerun or read back
+segment/tile output. It is the executor Interface for the next step: updating
+changed atlas regions in place and using the mapped event ranges to rerun only
+the affected tile-local segment work when the segment graph is unchanged.
+
 Next Phase 6 work:
 
-- map updated atlas slots plus dirty event ranges into rerunnable segment
-  ranges
 - update changed atlas regions in place and rerun only affected segments when
   the segment graph is unchanged
 

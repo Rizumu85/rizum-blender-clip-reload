@@ -56,6 +56,40 @@ pub struct GpuSparseAtlasCacheStats {
     pub upload_bytes: u64,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct GpuSparseAtlasReloadPlan {
+    pub cache_stats: GpuSparseAtlasCacheStats,
+    pub rerunnable_segments: Vec<GpuSparseAtlasRerunSegment>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct GpuSparseAtlasRerunSegment {
+    pub ordinal: u32,
+    pub event_ranges: Vec<GpuSparseAtlasEventRange>,
+    pub updated_slots: Vec<GpuSparseAtlasUpdatedSlot>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct GpuSparseAtlasEventRange {
+    pub start: u32,
+    pub end: u32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct GpuSparseAtlasUpdatedSlot {
+    pub kind: String,
+    pub layer_id: u32,
+    pub resource_id: u32,
+    pub tile_x: u32,
+    pub tile_y: u32,
+    pub action: String,
+    pub atlas_id: u32,
+    pub atlas_x: u32,
+    pub atlas_y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
 #[derive(Debug)]
 pub struct NormalRasterStackSupportResult {
     pub source_count: usize,

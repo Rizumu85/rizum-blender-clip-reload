@@ -8,6 +8,9 @@ use crate::{NormalRasterStackResourceStats, RuntimeError, source_crop};
 pub(crate) mod atlas_cache;
 #[cfg(test)]
 mod atlas_cache_tests;
+mod atlas_rerun;
+#[cfg(test)]
+mod atlas_rerun_tests;
 mod atlas_run;
 pub(crate) mod cache;
 mod sparse;

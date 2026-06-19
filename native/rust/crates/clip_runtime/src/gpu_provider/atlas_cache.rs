@@ -21,6 +21,13 @@ impl SparseAtlasResourceKind {
         }
     }
 
+    pub(super) fn as_reload_kind(self) -> &'static str {
+        match self {
+            Self::Raster => "raster",
+            Self::Mask => "mask",
+        }
+    }
+
     fn bytes_per_pixel(self) -> u64 {
         match self {
             Self::Raster => 4,
@@ -104,6 +111,16 @@ pub(crate) enum SparseAtlasUpdateAction {
     Reuse,
     UploadInserted,
     UploadChanged,
+}
+
+impl SparseAtlasUpdateAction {
+    pub(super) fn as_str(self) -> &'static str {
+        match self {
+            Self::Reuse => "reuse",
+            Self::UploadInserted => "upload_inserted",
+            Self::UploadChanged => "upload_changed",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -44,12 +44,11 @@ impl RuntimeGpuRenderer {
 
     pub fn plan_sparse_atlas_reload(
         &self,
-        manifest: &crate::ReloadDiffManifest,
-    ) -> crate::GpuSparseAtlasCacheStats {
+        plan: &crate::ReloadDiffPlan,
+    ) -> crate::GpuSparseAtlasReloadPlan {
         self.sparse_atlas_cache
             .borrow_mut()
-            .plan_reload_manifest(manifest)
-            .stats
+            .plan_reload_diff(plan)
             .into()
     }
 
