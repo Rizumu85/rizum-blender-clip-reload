@@ -57,11 +57,13 @@ impl RuntimeGpuRenderer {
         session: &ClipSession,
         segment: &crate::GpuSparseAtlasRasterEventSegment,
     ) -> Result<clip_file::tiles::RgbaTileImage, RuntimeError> {
-        let output = self.renderer.draw_sparse_atlas_raster_events_to_rgba8(
-            session.summary.canvas,
-            &self.sparse_atlas_textures.borrow(),
-            &segment.events,
-        )?;
+        let output = self
+            .renderer
+            .draw_sparse_atlas_raster_event_batches_to_rgba8(
+                session.summary.canvas,
+                &self.sparse_atlas_textures.borrow(),
+                &segment.batches,
+            )?;
         Ok(clip_file::tiles::RgbaTileImage {
             width: output.size.width,
             height: output.size.height,

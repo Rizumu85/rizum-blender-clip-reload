@@ -11,7 +11,8 @@ use crate::stream_tile_silo_plan::{TILE_SIZE, tile_work_lists_for_bounds};
 use crate::stream_tile_silo_upload::{upload_lut_atlas_texture, upload_mask_atlas_tile_texture};
 use crate::{
     GpuRasterBlendMode, GpuRasterStackOutput, GpuRenderError, GpuRenderer, GpuSparseAtlasFormat,
-    GpuSparseAtlasTexture, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
+    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTexture, GpuSparseAtlasTextureKey,
+    GpuSparseAtlasTexturePool,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -46,7 +47,40 @@ impl GpuRenderer {
             return Err(GpuRenderError::EmptyRasterStack);
         }
 
-        let prepared = prepare_sparse_atlas_raster_events(output_size, pool, events)?;
+        let prepared_batches = [prepare_sparse_atlas_raster_events(
+            output_size,
+            pool,
+            events,
+        )?];
+        self.draw_prepared_sparse_atlas_raster_batches_to_rgba8(output_size, &prepared_batches)
+    }
+
+    pub fn draw_sparse_atlas_raster_event_batches_to_rgba8(
+        &self,
+        output_size: CanvasSize,
+        pool: &GpuSparseAtlasTexturePool,
+        batches: &[GpuSparseAtlasRasterEventBatch],
+    ) -> Result<GpuRasterStackOutput, GpuRenderError> {
+        if output_size.width == 0 || output_size.height == 0 {
+            return Err(GpuRenderError::InvalidImageSize);
+        }
+        let prepared_batches = batches
+            .iter()
+            .filter(|batch| !batch.events.is_empty())
+            .map(|batch| prepare_sparse_atlas_raster_events(output_size, pool, &batch.events))
+            .collect::<Result<Vec<_>, _>>()?;
+        if prepared_batches.is_empty() {
+            return Err(GpuRenderError::EmptyRasterStack);
+        }
+
+        self.draw_prepared_sparse_atlas_raster_batches_to_rgba8(output_size, &prepared_batches)
+    }
+
+    fn draw_prepared_sparse_atlas_raster_batches_to_rgba8(
+        &self,
+        output_size: CanvasSize,
+        prepared_batches: &[PreparedSparseAtlasRasterEvents<'_>],
+    ) -> Result<GpuRasterStackOutput, GpuRenderError> {
         let usage = wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::TEXTURE_BINDING
             | wgpu::TextureUsages::COPY_SRC;
@@ -73,17 +107,38 @@ impl GpuRenderer {
                 });
         clear_sparse_atlas_executor_targets(&mut encoder, &previous_view, &output_view);
 
-        if !prepared.payloads.is_empty() {
+        let drawable_batches = prepared_batches
+            .iter()
+            .filter(|prepared| !prepared.payloads.is_empty())
+            .collect::<Vec<_>>();
+        let full_bounds = CanvasRect::full(output_size).ok_or(GpuRenderError::InvalidImageSize)?;
+        for (index, prepared) in drawable_batches.iter().enumerate() {
+            let (input_view, target_view) = if index % 2 == 0 {
+                (&previous_view, &output_view)
+            } else {
+                (&output_view, &previous_view)
+            };
             self.encode_sparse_atlas_raster_events(
                 &mut encoder,
-                &prepared,
-                &previous_view,
-                &output_view,
+                prepared,
+                input_view,
+                target_view,
+                if drawable_batches.len() == 1 {
+                    prepared.pass_bounds
+                } else {
+                    full_bounds
+                },
             )?;
         }
 
         self.context.queue.submit([encoder.finish()]);
-        let pixels = self.read_texture_rgba8(&output, output_size.width, output_size.height)?;
+        let final_texture = if drawable_batches.len() % 2 == 0 {
+            &previous
+        } else {
+            &output
+        };
+        let pixels =
+            self.read_texture_rgba8(final_texture, output_size.width, output_size.height)?;
         Ok(GpuRasterStackOutput {
             drawn_resources: Vec::new(),
             size: output_size,
@@ -97,6 +152,7 @@ impl GpuRenderer {
         prepared: &PreparedSparseAtlasRasterEvents<'_>,
         previous_view: &wgpu::TextureView,
         output_view: &wgpu::TextureView,
+        pass_bounds: CanvasRect,
     ) -> Result<(), GpuRenderError> {
         let atlas_view = prepared
             .atlas
@@ -211,10 +267,10 @@ impl GpuRenderer {
         pass.set_pipeline(&pipeline.render_pipeline);
         pass.set_bind_group(0, &bind_group, &[]);
         pass.set_scissor_rect(
-            prepared.pass_bounds.x,
-            prepared.pass_bounds.y,
-            prepared.pass_bounds.width,
-            prepared.pass_bounds.height,
+            pass_bounds.x,
+            pass_bounds.y,
+            pass_bounds.width,
+            pass_bounds.height,
         );
         pass.draw(0..3, 0..1);
         Ok(())

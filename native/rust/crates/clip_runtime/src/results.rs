@@ -78,7 +78,7 @@ pub struct GpuSparseAtlasRasterEventPlan {
 pub struct GpuSparseAtlasRasterEventSegment {
     pub ordinal: u32,
     pub event_ranges: Vec<GpuSparseAtlasEventRange>,
-    pub events: Vec<clip_gpu::GpuSparseAtlasRasterEvent>,
+    pub batches: Vec<clip_gpu::GpuSparseAtlasRasterEventBatch>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

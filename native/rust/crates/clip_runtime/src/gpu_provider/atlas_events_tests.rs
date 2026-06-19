@@ -30,8 +30,9 @@ fn raster_run_resident_slots_lower_to_sparse_atlas_events() {
         segment.event_ranges,
         vec![ReloadDirtySegmentEventRange { start: 2, end: 3 }]
     );
-    assert_eq!(segment.events.len(), 1);
-    let event = segment.events[0];
+    assert_eq!(segment.batches.len(), 1);
+    assert_eq!(segment.batches[0].events.len(), 1);
+    let event = segment.batches[0].events[0];
     assert_eq!(
         event.raster.key.format,
         clip_gpu::GpuSparseAtlasFormat::Rgba8
@@ -65,7 +66,9 @@ fn masked_raster_run_pairs_canvas_matching_mask_slot() {
     );
 
     assert!(plan.skipped_segments.is_empty());
-    let mask = plan.segments[0].events[0].mask.expect("mask tile ref");
+    let mask = plan.segments[0].batches[0].events[0]
+        .mask
+        .expect("mask tile ref");
     assert_eq!(mask.key.format, clip_gpu::GpuSparseAtlasFormat::R8);
     assert_eq!(mask.key.atlas_id, 3);
     assert_eq!(mask.atlas_x, 80);
@@ -117,6 +120,52 @@ fn non_raster_run_is_explained_as_skipped() {
         plan.skipped_segments[0].reason,
         SparseAtlasRasterEventSkipReason::NonRasterRun
     );
+}
+
+#[test]
+fn raster_run_splits_resident_events_by_executor_compatible_atlas_keys() {
+    let first = slot("raster", 10, 1, 0, 12, 34);
+    let mut second = slot("raster", 11, 2, 1, 20, 34);
+    second.slot.atlas_id = 4;
+    let mut third = slot("raster", 12, 3, 2, 28, 34);
+    third.slot.atlas_id = 3;
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(ReloadDiffSegment {
+            source_end: 3,
+            ..segment("RasterRun")
+        }),
+        &reload_with_slots(vec![first, second, third]),
+        &[
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                10,
+                1,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                11,
+                2,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+            clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                12,
+                3,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            )),
+        ],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let segment = &plan.segments[0];
+    assert_eq!(segment.batches.len(), 3);
+    assert_eq!(segment.batches[0].events[0].raster.key.atlas_id, 3);
+    assert_eq!(segment.batches[1].events[0].raster.key.atlas_id, 4);
+    assert_eq!(segment.batches[2].events[0].raster.key.atlas_id, 3);
 }
 
 fn diff_with_segment(segment: ReloadDiffSegment) -> ReloadDiffPlan {

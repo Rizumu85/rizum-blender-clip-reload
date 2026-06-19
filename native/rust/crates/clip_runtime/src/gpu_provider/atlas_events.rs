@@ -13,7 +13,7 @@ pub(crate) struct SparseAtlasRasterEventPlan {
 pub(crate) struct SparseAtlasRasterEventSegment {
     pub ordinal: u32,
     pub event_ranges: Vec<ReloadDirtySegmentEventRange>,
-    pub events: Vec<clip_gpu::GpuSparseAtlasRasterEvent>,
+    pub batches: Vec<clip_gpu::GpuSparseAtlasRasterEventBatch>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -84,7 +84,7 @@ impl From<SparseAtlasRasterEventSegment> for crate::GpuSparseAtlasRasterEventSeg
                     end: range.end,
                 })
                 .collect(),
-            events: value.events,
+            batches: value.batches,
         }
     }
 }
@@ -191,7 +191,7 @@ fn lower_raster_run_segment(
     Ok(SparseAtlasRasterEventSegment {
         ordinal: rerun_segment.ordinal,
         event_ranges: rerun_segment.event_ranges.clone(),
-        events,
+        batches: clip_gpu::split_sparse_atlas_raster_event_batches(&events),
     })
 }
 

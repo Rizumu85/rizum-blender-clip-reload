@@ -852,15 +852,24 @@ prepared raster event segment against the resident pool for the next rerun
 step.
 
 This tenth form still does not compose rerun segment output back into the
-previous full image, split mixed-atlas event segments into legal executor
-batches, or read back only dirty output tiles for Blender patch reload. It
-turns the Phase 6 data seam from diagnostics into executable event payloads,
-but product reload still uses the existing dirty-rectangle path.
+previous full image or read back only dirty output tiles for Blender patch
+reload. It turns the Phase 6 data seam from diagnostics into executable event
+payloads, but product reload still uses the existing dirty-rectangle path.
+
+Eleventh form: prepared raster event segments now split into ordered
+executor-compatible batches through `clip_gpu::sparse_atlas_batches`. A batch
+may contain only one resident RGBA atlas key and at most one resident R8 mask
+atlas key, while unmasked events can share a batch with masked events because
+their payloads do not sample the mask binding. The splitter preserves event
+order by producing contiguous batches; it does not group non-contiguous events
+by key. `GpuRenderer::draw_sparse_atlas_raster_event_batches_to_rgba8()` can
+execute those batches in one command encoder with two output textures used as a
+ping-pong pair. Multi-batch execution uses full-canvas passes so each batch
+copies the previous batch's pixels through `dest_texture` even outside the
+current batch's source bounds, avoiding loss of earlier atlas-key batches.
 
 Next Phase 6 work:
 
-- split prepared raster event segments by executor-compatible atlas keys when a
-  dirty segment spans multiple resident atlas textures
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
 - read back only the updated output tiles for Blender patch reload
