@@ -1278,17 +1278,30 @@ sibling's clip-base cache; resolving the inner child clipping run writes into
 the currently active clipped-scope accumulator, and the outer
 `EndClippedScope` still resolves that clipped scope into the outer clip-base
 accumulator. The supported subset is direct raster base plus raster clipped
-siblings inside the clipped container/folder child stream; THROUGH children and
-more complex non-raster clipped children remain barriers. Planner tests lock
-the lowered event count, main GPU tests compare against the existing legacy
-pass path, sparse runtime tests lock the nested `BeginClipBase` /
-`ResolveClipBase` event order, and sparse executor tests lock the pixel result.
+siblings inside the clipped container/folder child stream; more complex
+non-raster clipped children remain barriers. Planner tests lock the lowered
+event count, main GPU tests compare against the existing legacy pass path,
+sparse runtime tests lock the nested `BeginClipBase` / `ResolveClipBase` event
+order, and sparse executor tests lock the pixel result.
+
+Forty-second form: clipped container/folder sibling child streams now lower a
+simple THROUGH child. The clipped sibling child builder passes one THROUGH
+budget into the nested child stream, so `BeginThrough` captures the clipped
+scope accumulator as its `before`, child raster events render into the THROUGH
+`after`, and `EndThrough` resolves back into the clipped scope before
+`EndClippedScope` applies the preserve-alpha clip-base rule. This is still the
+same bounded simple-through subset used elsewhere: positive opacity, supported
+scope masks, and children that already fit the simple child event model.
+Planner tests lock the event count, main GPU tests compare against the legacy
+pass path, sparse runtime tests lock the ordered THROUGH events inside the
+clipped scope, and sparse executor tests lock the pixel result. Broader nested
+THROUGH positions and unsupported non-raster children remain barriers.
 
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
-  stream: THROUGH child semantics, broader nested positions, and other
-  non-direct-raster subtrees
+  stream: broader nested THROUGH positions, unsupported non-raster child
+  subtrees, and remaining over-depth/over-limit cases
 
 ## Correctness Policy
 

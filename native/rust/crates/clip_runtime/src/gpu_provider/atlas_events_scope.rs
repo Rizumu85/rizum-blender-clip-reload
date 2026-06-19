@@ -361,7 +361,7 @@ fn push_clipped_container_tile_events(
         children,
         parent_scope_depth + 1,
         ClippingRunPolicy::DirectOnly,
-        false,
+        true,
     )?;
     if let Some(mask_key) = mask_key {
         for mask_ref in scope_mask_tile_refs_for_bounds(segment, mask_key, bounds)? {

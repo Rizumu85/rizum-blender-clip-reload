@@ -328,9 +328,11 @@ scopes and container scopes nested under THROUGH. Clipped container/folder
 siblings now reuse the same ordered simple-scope child stream for raster
 children followed by pointwise filters and for nested simple container
 children, and raster-only child clipping runs now execute there through a
-nested local clip-base accumulator. These clipped siblings can remain in the
-sparse affected-window path when their raster and mask resources are resident.
-Missing filter/scope mask coverage, THROUGH children inside clipped siblings,
+nested local clip-base accumulator. Simple THROUGH children also execute there
+by resolving their before/after accumulator back into the clipped sibling's
+active scope before `EndClippedScope`. These clipped siblings can remain in
+the sparse affected-window path when their raster and mask resources are
+resident. Missing filter/scope mask coverage, broader nested THROUGH shapes,
 and clipped container/folder children whose contents are beyond the current
 simple child stream still remain explicit sparse-patch barriers.
 
@@ -349,8 +351,8 @@ simple child stream still remain explicit sparse-patch barriers.
    path.
 7. Expand affected-window simple container/THROUGH scopes beyond the current
    sparse-scope subsets by broadening clipped container/folder sibling support
-   past the current filtered, nested-container, and raster-only child
-   clipping-run simple-child-stream forms.
+   past the current filtered, nested-container, raster-only child
+   clipping-run, and simple THROUGH child-stream forms.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

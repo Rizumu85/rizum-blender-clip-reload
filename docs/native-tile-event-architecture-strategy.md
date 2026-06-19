@@ -439,8 +439,8 @@ barriers.
 Add tile-local scope coverage in this order:
 
 1. clipped container or folder siblings beyond the current filtered,
-   nested-container, and raster-only child clipping-run simple-child-stream
-   subset
+   nested-container, raster-only child clipping-run, and simple THROUGH
+   child-stream subset
 2. deeper simple container nesting when the scope-depth limit allows it
 3. nested THROUGH cases with explicit before/after accumulator semantics
 4. scope masks that span resident R8 mask slots
@@ -449,13 +449,13 @@ Add tile-local scope coverage in this order:
 The current clipped container/folder support reuses the simple-scope child
 stream for raster children followed by pointwise filters and nested simple
 containers, and now uses a second local clip-base accumulator for raster-only
-child clipping runs inside clipped siblings. Unsupported or over-depth child
-subtrees stay explicit barriers. THROUGH children inside clipped siblings still
-have targeted mismatch evidence and remain barriers until their before/after
-accumulator semantics are modeled directly. The remaining work is broader
-clipped container/folder subtrees: THROUGH child semantics, more nested scope
-positions, and other non-direct-raster children. Do not solve those by only
-relaxing eligibility checks.
+child clipping runs inside clipped siblings. Simple THROUGH children inside
+clipped siblings now reuse the existing before/after THROUGH accumulator and
+resolve into the clipped sibling's active scope accumulator. Unsupported or
+over-depth child subtrees stay explicit barriers. The remaining work is broader
+clipped container/folder subtrees: more nested THROUGH positions, more nested
+scope positions, and other non-direct-raster children. Do not solve those by
+only relaxing eligibility checks.
 
 ### Phase 6: Add Session Atlas and Dirty Segment Reuse After Semantics Stabilize
 

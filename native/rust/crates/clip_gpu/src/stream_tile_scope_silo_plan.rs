@@ -32,7 +32,6 @@ enum SimpleScopeReject {
 #[derive(Clone, Copy)]
 enum ThroughBudget {
     Remaining(usize),
-    Disallowed,
 }
 
 #[derive(Clone, Copy)]
@@ -304,7 +303,6 @@ where
                 mask_key,
             } => {
                 let through_depth_remaining = match through_budget {
-                    ThroughBudget::Disallowed => return Err(SimpleScopeReject::NotSimple),
                     ThroughBudget::Remaining(0) => {
                         ensure_nested_through_scope_header(
                             provider, *opacity, *mask_key, children,
@@ -510,7 +508,7 @@ where
                     target_size,
                     children,
                     container_depth_remaining - 1,
-                    ThroughBudget::Disallowed,
+                    ThroughBudget::Remaining(1),
                     ClippingRunPolicy::DirectOnly,
                 )?;
                 count = add_scope_events(count, 2)?;
