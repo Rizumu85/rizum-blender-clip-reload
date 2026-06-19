@@ -130,3 +130,10 @@ It creates resident atlas textures on demand and applies in-place region updates
 for changed atlas slots. Future dirty segment reload execution should feed this
 pool from the sparse atlas cache and bind the resulting textures in tile-local
 segment reruns.
+
+**Sparse atlas executor**
+
+The tile-local executor adapter that consumes resident sparse atlas slots and
+binds the matching sparse atlas texture pool entries as shader inputs. It should
+reuse the typed tile event ABI and tile-silo shader semantics instead of
+creating a separate compositor path.

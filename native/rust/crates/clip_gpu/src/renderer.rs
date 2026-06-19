@@ -5,6 +5,7 @@ use clip_graph::RenderPlan;
 use clip_model::Rect;
 
 use crate::{GpuContext, GpuDeviceConfig, GpuDeviceError};
+use crate::{GpuSparseAtlasFormat, GpuSparseAtlasTextureKey};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum GpuRenderError {
@@ -50,6 +51,14 @@ pub enum GpuRenderError {
         expected: clip_model::CanvasSize,
         actual: clip_model::CanvasSize,
     },
+    MissingSparseAtlasTexture {
+        key: GpuSparseAtlasTextureKey,
+    },
+    SparseAtlasFormatMismatch {
+        expected: GpuSparseAtlasFormat,
+        actual: GpuSparseAtlasFormat,
+    },
+    SparseAtlasMixedTextureKeys,
     RasterAtlasResourceCountMismatch {
         expected: usize,
         actual: usize,
@@ -142,6 +151,19 @@ impl fmt::Display for GpuRenderError {
                 "GPU sparse atlas has size {}x{}, expected {}x{}",
                 actual.width, actual.height, expected.width, expected.height,
             ),
+            Self::MissingSparseAtlasTexture { key } => write!(
+                f,
+                "missing GPU sparse atlas texture for format {:?} atlas {}",
+                key.format, key.atlas_id,
+            ),
+            Self::SparseAtlasFormatMismatch { expected, actual } => write!(
+                f,
+                "GPU sparse atlas format mismatch: expected {:?}, got {:?}",
+                expected, actual,
+            ),
+            Self::SparseAtlasMixedTextureKeys => {
+                f.write_str("GPU sparse atlas tile pass cannot bind multiple atlas keys")
+            }
             Self::RasterAtlasResourceCountMismatch { expected, actual } => write!(
                 f,
                 "GPU raster atlas reported {actual} resources, expected {expected}",

@@ -9,6 +9,7 @@ pub mod resource;
 mod shaders;
 mod source_params;
 mod sparse_atlas;
+mod sparse_atlas_executor;
 #[cfg(test)]
 mod sparse_atlas_tests;
 pub mod stream;
@@ -63,6 +64,7 @@ pub use sparse_atlas::{
     GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolStats,
     GpuSparseAtlasTexturePoolUpdate,
 };
+pub use sparse_atlas_executor::{GpuSparseAtlasRasterEvent, GpuSparseAtlasTileRef};
 pub use stream::{
     GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuNormalStackResourceProvider,
     GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,

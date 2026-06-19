@@ -824,10 +824,21 @@ regions in the GPU pool. The Blender worker sparse-atlas diagnostics are
 formatted through a small `blender_worker_sparse` Module and now include
 `resident_slots` beside `updated_slots`.
 
+Ninth form: `clip_gpu::sparse_atlas_executor` now provides the first real
+pooled-atlas tile-event executor seam. `GpuRenderer` can bind a resident
+`GpuSparseAtlasTexturePool` RGBA atlas, optionally bind a resident R8 mask atlas
+or a dummy opaque mask atlas, build typed raster tile-event payloads from
+`GpuSparseAtlasRasterEvent`, and run the existing `tile_silo.wgsl` shader to
+produce an RGBA output. The current executor slice deliberately supports only
+one raster atlas key and one optional mask atlas key per pass, because the
+current tile-silo bind layout exposes one RGBA atlas texture and one R8 mask
+atlas texture. Missing atlas textures, wrong atlas formats, and mixed atlas keys
+fail explicitly instead of falling back to the legacy renderer.
+
 Next Phase 6 work:
 
-- bind resident sparse-atlas slots and pooled atlas textures in the tile-local
-  segment executor
+- connect reload `resident_slots` plus current segment source metadata to
+  `GpuSparseAtlasRasterEvent` construction
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
 - read back only the updated output tiles for Blender patch reload
