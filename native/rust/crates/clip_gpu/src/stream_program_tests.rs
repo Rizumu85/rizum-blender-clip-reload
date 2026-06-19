@@ -858,7 +858,7 @@ fn planner_keeps_nested_container_clipping_run_inside_through_scope_as_barrier()
 }
 
 #[test]
-fn planner_keeps_nested_through_clipping_run_inside_through_scope_as_barrier() {
+fn planner_lowers_nested_through_direct_clipping_run_inside_through_scope() {
     let provider = PlannerProvider::new([
         (raster_key(1), CanvasSize::new(4, 4)),
         (raster_key(2), CanvasSize::new(4, 4)),
@@ -885,12 +885,19 @@ fn planner_keeps_nested_through_clipping_run_inside_through_scope_as_barrier() {
     );
 
     assert_eq!(
-        program.segments()[0].kind,
-        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::ThroughGroupNotLowered,
-        ))
+        program.segments(),
+        &[RenderSegment {
+            source_range: 0..1,
+            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
+            cost_hint: SegmentCostHint {
+                expected_passes: 1,
+                tile_events: 8,
+                legacy_sources: 0,
+            },
+        }]
     );
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 1);
+    assert_eq!(program.stats().simple_through_scope_segments, 1);
+    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
 }
 
 #[test]

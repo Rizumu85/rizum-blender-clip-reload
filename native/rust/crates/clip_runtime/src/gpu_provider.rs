@@ -21,6 +21,8 @@ mod atlas_events_scope_split_tests;
 #[cfg(test)]
 mod atlas_events_scope_tests;
 #[cfg(test)]
+mod atlas_events_scope_through_tests;
+#[cfg(test)]
 mod atlas_events_test_support;
 #[cfg(test)]
 mod atlas_events_tests;

@@ -194,7 +194,7 @@ fn scope_child_tile_events_at_depth(
                     clip_gpu::GpuRasterBlendMode::Normal,
                     *mask_key,
                     clip_gpu::GpuSparseAtlasScopeEventKind::Through,
-                    ClippingRunPolicy::None,
+                    ClippingRunPolicy::DirectOnly,
                 )?;
                 current_bounds = Some(match current_bounds {
                     Some(current) => union_rect(current, bounds),

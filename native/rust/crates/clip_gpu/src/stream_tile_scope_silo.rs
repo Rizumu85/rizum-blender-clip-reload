@@ -10,6 +10,8 @@ use crate::stream_tile_scope_silo_plan::{
 };
 use crate::stream_tile_scope_silo_program::{
     ScopeProgramInputs, ScopeProgramKind, build_scope_event_program_inputs,
+};
+use crate::stream_tile_scope_silo_rules::{
     raster_sources_from_scope_children, raster_sources_have_masks,
 };
 use crate::stream_tile_silo::atlas_requests;

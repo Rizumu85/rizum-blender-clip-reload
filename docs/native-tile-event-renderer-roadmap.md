@@ -1205,11 +1205,20 @@ for accumulated scope bounds, while pixels outside each mask slot sub-rect
 cannot leak into the parent accumulator. Missing nested mask coverage still
 fails closed to the region renderer.
 
+Thirty-sixth form: nested THROUGH child scopes now support direct raster-only
+clipping runs. The main render-program planner, main tile-silo scope program,
+and sparse affected-window scope lowering now all allow a `ClippingRun`
+directly inside a nested `ThroughGroup`, emitting the existing
+`BeginClipBase` / `ClipBaseRaster` / `ClippedRaster` / `ResolveClipBase`
+events inside the nested THROUGH scope. Clipping runs inside a container nested
+under a THROUGH scope still fail closed, preserving the narrower faithful
+subset until that extra scope relationship is modelled.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  clipping runs nested through THROUGH child scopes and clipped
-  container/folder siblings
+  clipped container/folder siblings and clipping runs inside container scopes
+  nested under THROUGH
 
 ## Correctness Policy
 

@@ -10,8 +10,10 @@ use crate::stream_tile_event::{
 use crate::stream_tile_filter_silo::{filter_mask_can_lower, raster_payload};
 use crate::stream_tile_mask_atlas_plan::MaskAtlasPlan;
 use crate::stream_tile_scope_silo_plan::{
-    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT, scope_mask_can_lower,
-    simple_scope_clipping_run_can_lower,
+    SIMPLE_CONTAINER_SCOPE_DEPTH_LIMIT, SIMPLE_THROUGH_SCOPE_DEPTH_LIMIT,
+};
+use crate::stream_tile_scope_silo_rules::{
+    scope_mask_can_lower, simple_scope_clipping_run_can_lower,
 };
 use crate::stream_tile_silo_plan::PreparedSiloSource;
 use crate::stream_utils::local_pass_bounds;
@@ -233,7 +235,7 @@ where
                     target_origin,
                     container_depth_remaining,
                     through_depth_remaining - 1,
-                    ClippingRunPolicy::None,
+                    ClippingRunPolicy::DirectOnly,
                     children,
                     prepared,
                     &mut nested_payloads,
@@ -317,7 +319,7 @@ where
             }
             GpuNormalStackSource::ClippingRun { base, clipped } => {
                 if !clipping_run_policy.allows_current()
-                    || !simple_scope_clipping_run_can_lower(*base, clipped)
+                    || !simple_scope_clipping_run_can_lower(clipped)
                 {
                     return Ok(false);
                 }
@@ -448,46 +450,6 @@ impl ScopeProgramKind {
             }
         }
     }
-}
-
-pub(crate) fn raster_sources_from_scope_children(
-    children: &[GpuNormalStackSource],
-) -> Vec<GpuNormalStackSource> {
-    let mut sources = Vec::new();
-    append_raster_sources(children, &mut sources);
-    sources
-}
-
-fn append_raster_sources(
-    children: &[GpuNormalStackSource],
-    sources: &mut Vec<GpuNormalStackSource>,
-) {
-    for child in children {
-        match child {
-            GpuNormalStackSource::Raster(raster) => {
-                sources.push(GpuNormalStackSource::Raster(*raster));
-            }
-            GpuNormalStackSource::Container { children, .. } => {
-                append_raster_sources(children, sources);
-            }
-            GpuNormalStackSource::ThroughGroup { children, .. } => {
-                append_raster_sources(children, sources);
-            }
-            GpuNormalStackSource::ClippingRun { base, clipped } => {
-                if let Some(normal_sources) = clipping_run_as_normal_sources(*base, clipped) {
-                    sources.extend(normal_sources);
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
-pub(crate) fn raster_sources_have_masks(sources: &[GpuNormalStackSource]) -> bool {
-    sources.iter().any(|source| match source {
-        GpuNormalStackSource::Raster(raster) => raster.mask_key.is_some(),
-        _ => false,
-    })
 }
 
 fn event_bounds_fit_target(bounds: &[CanvasRect], target_size: CanvasSize) -> bool {

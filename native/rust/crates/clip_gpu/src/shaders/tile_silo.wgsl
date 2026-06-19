@@ -1117,6 +1117,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
     var through1_after = vec4<f32>(1.0, 1.0, 1.0, 0.0);
     var through0_target_scope_depth = 0u;
     var through1_target_scope_depth = 0u;
+    var through1_has_clipping_resolve = false;
     var through_depth = 0u;
 
     for (var index = 0u; index < span_count; index = index + 1u) {
@@ -1133,6 +1134,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     through1_before = through0_after;
                     through1_after = through0_after;
                     through1_target_scope_depth = scope_depth;
+                    through1_has_clipping_resolve = false;
                     through_depth = 2u;
                 }
             }
@@ -1142,8 +1144,14 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
             if (scope_contains(event_index, local_texel)) {
                 let scope_mask = load_scope_mask(event_index, local_texel);
                 if (through_depth == 2u) {
-                    through0_after = floor_quantize_u8(resolve_through_scope(event_index, through1_before, through1_after, scope_mask));
+                    let nested_through_resolved = resolve_through_scope(event_index, through1_before, through1_after, scope_mask);
+                    if (through1_has_clipping_resolve) {
+                        through0_after = quantize_u8(nested_through_resolved);
+                    } else {
+                        through0_after = floor_quantize_u8(nested_through_resolved);
+                    }
                     through1_target_scope_depth = 0u;
+                    through1_has_clipping_resolve = false;
                     through_depth = 1u;
                 } else if (through_depth == 1u) {
                     let through_resolved = resolve_through_scope(event_index, through0_before, through0_after, scope_mask);
@@ -1234,6 +1242,7 @@ fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
                     scope0_dst = apply_clipping_run_resolve_with_blend(resolved_clip_src, scope0_dst, clip_blend_kind);
                 } else if (through_depth == 2u) {
                     through1_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through1_after, clip_blend_kind);
+                    through1_has_clipping_resolve = true;
                 } else if (through_depth == 1u) {
                     through0_after = apply_clipping_run_resolve_with_blend(resolved_clip_src, through0_after, clip_blend_kind);
                 } else {

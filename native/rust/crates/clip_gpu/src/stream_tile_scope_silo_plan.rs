@@ -5,6 +5,9 @@ use crate::stream_bounds::target_canvas_bounds;
 use crate::stream_clipping_tile_silo::clipping_run_as_normal_sources;
 use crate::stream_extents::{KnownStackBounds, known_stack_bounds};
 use crate::stream_tile_filter_silo::filter_mask_can_lower;
+use crate::stream_tile_scope_silo_rules::{
+    scope_mask_can_lower, simple_scope_clipping_run_can_lower,
+};
 use crate::stream_tile_silo_plan::{MAX_SILO_EVENTS, source_is_silo_eligible};
 use crate::{GpuNormalStackSource, GpuRasterBlendMode};
 
@@ -327,7 +330,7 @@ where
                     children,
                     container_depth_remaining,
                     ThroughBudget::Remaining(through_depth_remaining - 1),
-                    ClippingRunPolicy::None,
+                    ClippingRunPolicy::DirectOnly,
                 )?;
                 count = add_scope_events(count, 2)?;
                 count = add_scope_events(count, child_count)?;
@@ -335,7 +338,7 @@ where
             }
             GpuNormalStackSource::ClippingRun { base, clipped } => {
                 if !clipping_run_policy.allows_current()
-                    || !simple_scope_clipping_run_can_lower(*base, clipped)
+                    || !simple_scope_clipping_run_can_lower(clipped)
                 {
                     return Err(SimpleScopeReject::NotSimple);
                 }
@@ -464,15 +467,6 @@ where
     Ok(())
 }
 
-pub(crate) fn simple_scope_clipping_run_can_lower(
-    _base: crate::GpuNormalRasterSource,
-    clipped: &[crate::GpuClippedStackSource],
-) -> bool {
-    clipped
-        .iter()
-        .all(|source| matches!(source, crate::GpuClippedStackSource::Raster(_)))
-}
-
 fn checked_scope_event_count(base: usize, child_count: usize) -> Result<usize, SimpleScopeReject> {
     add_scope_events(base, child_count)
 }
@@ -485,20 +479,4 @@ fn add_scope_events(count: usize, additional: usize) -> Result<usize, SimpleScop
         return Err(SimpleScopeReject::TileEventLimitExceeded);
     }
     Ok(count)
-}
-
-pub(crate) fn scope_mask_can_lower<P>(
-    provider: &P,
-    mask_key: Option<crate::GpuMaskResourceKey>,
-) -> bool
-where
-    P: GpuNormalStackResourceProvider,
-{
-    match mask_key {
-        Some(key) => {
-            provider.mask_is_fully_opaque(key) == Some(true)
-                || provider.mask_atlas_tiles_supported()
-        }
-        None => true,
-    }
 }
