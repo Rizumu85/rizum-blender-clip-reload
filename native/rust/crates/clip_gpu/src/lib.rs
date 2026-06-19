@@ -15,6 +15,8 @@ mod sparse_atlas_batch_tests;
 mod sparse_atlas_batches;
 mod sparse_atlas_executor;
 mod sparse_atlas_prepare;
+#[cfg(test)]
+mod sparse_atlas_scope_tests;
 mod sparse_atlas_targets;
 #[cfg(test)]
 mod sparse_atlas_tests;
@@ -71,8 +73,8 @@ pub use sparse_atlas::{
     GpuSparseAtlasTexturePoolUpdate,
 };
 pub use sparse_atlas_batches::{
-    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind,
-    split_sparse_atlas_raster_event_batches,
+    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind, GpuSparseAtlasScopeEvent,
+    GpuSparseAtlasScopeEventKind, split_sparse_atlas_raster_event_batches,
 };
 pub use sparse_atlas_executor::{
     GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent, GpuSparseAtlasTileRef,

@@ -460,5 +460,7 @@ fn sparse_atlas_batch_tile_silo_params(
             base_event_count,
         ),
         GpuSparseAtlasRasterEventBatchKind::PointFilterRun => (TILE_SILO_MODE_NORMAL, 0, 0),
+        GpuSparseAtlasRasterEventBatchKind::SimpleContainerScope
+        | GpuSparseAtlasRasterEventBatchKind::SimpleThroughScope => (TILE_SILO_MODE_NORMAL, 0, 0),
     }
 }

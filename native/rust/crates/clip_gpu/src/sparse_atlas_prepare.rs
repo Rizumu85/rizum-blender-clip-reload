@@ -2,14 +2,14 @@ use clip_model::CanvasSize;
 
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_tile_event::{
-    PointFilterTileEventPayload, RasterTileEventPayload, TileEventPayload,
+    PointFilterTileEventPayload, RasterTileEventPayload, ScopeTileEventPayload, TileEventPayload,
 };
 use crate::stream_tile_silo_plan::{TILE_SIZE, tile_work_lists_for_bounds};
 use crate::{
     GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent,
     GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind,
-    GpuSparseAtlasTexture, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
-    GpuSparseAtlasTileRef,
+    GpuSparseAtlasScopeEvent, GpuSparseAtlasScopeEventKind, GpuSparseAtlasTexture,
+    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTileRef,
 };
 
 pub(crate) struct PreparedSparseAtlasRasterEvents<'a> {
@@ -35,6 +35,7 @@ pub(crate) fn prepare_sparse_atlas_raster_events<'a>(
         GpuSparseAtlasRasterEventBatchKind::RasterRun,
         events,
         &[],
+        None,
     )
 }
 
@@ -49,6 +50,7 @@ pub(crate) fn prepare_sparse_atlas_raster_event_batch<'a>(
         batch.kind,
         &batch.events,
         &batch.filters,
+        batch.scope,
     )
 }
 
@@ -58,6 +60,7 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
     kind: GpuSparseAtlasRasterEventBatchKind,
     events: &[GpuSparseAtlasRasterEvent],
     filters: &'a [GpuSparseAtlasPointFilterEvent],
+    scope: Option<GpuSparseAtlasScopeEvent>,
 ) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
     let atlas = if events.is_empty() {
         None
@@ -69,7 +72,7 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
         validate_sparse_atlas_format(atlas, GpuSparseAtlasFormat::Rgba8)?;
         Some(atlas)
     };
-    let mask_key = common_mask_atlas_key(events, filters)?;
+    let mask_key = common_mask_atlas_key(events, filters, scope)?;
     let mask_atlas = match mask_key {
         Some(key) => {
             let atlas = pool
@@ -85,30 +88,68 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
     let mut lut_rows = Vec::new();
     let mut bounds = Vec::new();
     let mut pass_bounds = None;
-    for event in events {
-        let atlas = atlas.expect("raster events must have an atlas");
-        validate_tile_ref(atlas, event.raster)?;
-        if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
+    if let Some(scope) = scope {
+        validate_scope_event(output_size, &scope)?;
+        if let (Some(mask_atlas), Some(mask)) = (mask_atlas, scope.mask) {
             validate_tile_ref(mask_atlas, mask)?;
         }
-        let Some(source_bounds) = CanvasRect::from_source(
-            event.source_offset_x,
-            event.source_offset_y,
-            event.raster.size,
-            output_size,
-        ) else {
-            continue;
-        };
-        pass_bounds = union_optional(pass_bounds, Some(source_bounds));
-        bounds.push(source_bounds);
-        payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
-            atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
-            source_size: event.raster.size,
-            source_offset: (event.source_offset_x, event.source_offset_y),
-            opacity: event.opacity,
-            blend_mode: event.blend_mode,
-            mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
-        }));
+        let (begin, end, bounds_rect) = scope_payloads(scope);
+        pass_bounds = union_optional(pass_bounds, Some(bounds_rect));
+        bounds.push(bounds_rect);
+        payloads.push(begin);
+        for event in events {
+            let atlas = atlas.expect("raster events must have an atlas");
+            validate_tile_ref(atlas, event.raster)?;
+            if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
+                validate_tile_ref(mask_atlas, mask)?;
+            }
+            let Some(source_bounds) = CanvasRect::from_source(
+                event.source_offset_x,
+                event.source_offset_y,
+                event.raster.size,
+                output_size,
+            ) else {
+                continue;
+            };
+            pass_bounds = union_optional(pass_bounds, Some(source_bounds));
+            bounds.push(source_bounds);
+            payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
+                atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
+                source_size: event.raster.size,
+                source_offset: (event.source_offset_x, event.source_offset_y),
+                opacity: event.opacity,
+                blend_mode: event.blend_mode,
+                mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+            }));
+        }
+        bounds.push(bounds_rect);
+        payloads.push(end);
+    } else {
+        for event in events {
+            let atlas = atlas.expect("raster events must have an atlas");
+            validate_tile_ref(atlas, event.raster)?;
+            if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
+                validate_tile_ref(mask_atlas, mask)?;
+            }
+            let Some(source_bounds) = CanvasRect::from_source(
+                event.source_offset_x,
+                event.source_offset_y,
+                event.raster.size,
+                output_size,
+            ) else {
+                continue;
+            };
+            pass_bounds = union_optional(pass_bounds, Some(source_bounds));
+            bounds.push(source_bounds);
+            payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
+                atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
+                source_size: event.raster.size,
+                source_offset: (event.source_offset_x, event.source_offset_y),
+                opacity: event.opacity,
+                blend_mode: event.blend_mode,
+                mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+            }));
+        }
     }
     for filter in filters {
         validate_filter_event(output_size, filter)?;
@@ -175,12 +216,14 @@ fn common_raster_atlas_key(
 fn common_mask_atlas_key(
     events: &[GpuSparseAtlasRasterEvent],
     filters: &[GpuSparseAtlasPointFilterEvent],
+    scope: Option<GpuSparseAtlasScopeEvent>,
 ) -> Result<Option<GpuSparseAtlasTextureKey>, GpuRenderError> {
     let mut key = None;
     for mask in events
         .iter()
         .filter_map(|event| event.mask)
         .chain(filters.iter().filter_map(|filter| filter.mask))
+        .chain(scope.into_iter().filter_map(|scope| scope.mask))
     {
         if mask.key.format != GpuSparseAtlasFormat::R8 {
             return Err(GpuRenderError::SparseAtlasFormatMismatch {
@@ -197,6 +240,59 @@ fn common_mask_atlas_key(
         }
     }
     Ok(key)
+}
+
+fn scope_payloads(
+    scope: GpuSparseAtlasScopeEvent,
+) -> (TileEventPayload, TileEventPayload, CanvasRect) {
+    let bounds = CanvasRect {
+        x: scope.local_bounds.x,
+        y: scope.local_bounds.y,
+        width: scope.local_bounds.width,
+        height: scope.local_bounds.height,
+    };
+    let payload = ScopeTileEventPayload {
+        opacity: scope.opacity,
+        blend_mode: scope.blend_mode,
+        local_bounds: bounds,
+        mask_atlas_origin: scope.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+    };
+    let events = match scope.kind {
+        GpuSparseAtlasScopeEventKind::Container => (
+            TileEventPayload::BeginContainer(payload),
+            TileEventPayload::EndContainer(payload),
+        ),
+        GpuSparseAtlasScopeEventKind::Through => (
+            TileEventPayload::BeginThrough(payload),
+            TileEventPayload::EndThrough(payload),
+        ),
+    };
+    (events.0, events.1, bounds)
+}
+
+fn validate_scope_event(
+    output_size: CanvasSize,
+    scope: &GpuSparseAtlasScopeEvent,
+) -> Result<(), GpuRenderError> {
+    let right = scope
+        .local_bounds
+        .x
+        .checked_add(scope.local_bounds.width)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    let bottom = scope
+        .local_bounds
+        .y
+        .checked_add(scope.local_bounds.height)
+        .ok_or(GpuRenderError::TextureSizeOverflow)?;
+    if scope.local_bounds.is_empty() || right > output_size.width || bottom > output_size.height {
+        return Err(GpuRenderError::ReadbackRegionOutOfBounds {
+            texture_size: output_size,
+            origin_x: scope.local_bounds.x,
+            origin_y: scope.local_bounds.y,
+            read_size: CanvasSize::new(scope.local_bounds.width, scope.local_bounds.height),
+        });
+    }
+    Ok(())
 }
 
 fn validate_filter_event(

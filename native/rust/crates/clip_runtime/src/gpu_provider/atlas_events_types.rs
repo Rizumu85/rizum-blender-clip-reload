@@ -39,6 +39,10 @@ pub(crate) enum SparseAtlasRasterEventSkipReason {
         layer_id: u32,
         resource_id: u32,
     },
+    ScopeMaskNotLowered {
+        layer_id: u32,
+        resource_id: u32,
+    },
     InvalidPointFilter,
     MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
@@ -110,6 +114,13 @@ impl From<SparseAtlasRasterEventSkipReason> for crate::GpuSparseAtlasRasterEvent
                 layer_id,
                 resource_id,
             } => Self::FilterMaskNotLowered {
+                layer_id,
+                resource_id,
+            },
+            SparseAtlasRasterEventSkipReason::ScopeMaskNotLowered {
+                layer_id,
+                resource_id,
+            } => Self::ScopeMaskNotLowered {
                 layer_id,
                 resource_id,
             },

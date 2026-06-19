@@ -306,8 +306,12 @@ mask slot; the filter payload points into that slot with the dirty-rect offset.
 Multi-slot provider-backed masked point filters are now represented by split
 `PointFilter` events whose local bounds intersect resident R8 mask slots, with
 full dirty-bounds coverage required before lowering. The next target is
-expanding affected-window execution into simple container/THROUGH scopes using
-the typed scope event path.
+expanding affected-window simple container/THROUGH scope execution beyond the
+first direct-raster subset. Direct-raster `SimpleContainerScope` and
+`SimpleThroughScope` segments already lower into sparse atlas batches by
+wrapping resident raster events in typed scope begin/end events. Scope-level
+masks, nested child scopes, point filters, clipping-run children, and clipped
+container/folder children still remain explicit sparse-patch barriers.
 
 ## Implementation Order
 
@@ -322,8 +326,9 @@ the typed scope event path.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Expand affected-window execution into simple container/THROUGH scopes using
-   executable sparse atlas events.
+7. Expand affected-window simple container/THROUGH scopes beyond direct raster
+   children by adding scope-level masks, nested simple scopes, point filters,
+   and raster-only clipping-run children.
 8. Promote useful segment-before checkpoint storage toward GPU-resident or
    cropped forms only when profiling proves the CPU RGBA8 checkpoint is the
    limiting factor.

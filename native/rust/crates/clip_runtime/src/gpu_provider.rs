@@ -15,6 +15,8 @@ mod atlas_events_filter;
 #[cfg(test)]
 mod atlas_events_filter_tests;
 #[cfg(test)]
+mod atlas_events_scope_tests;
+#[cfg(test)]
 mod atlas_events_test_support;
 #[cfg(test)]
 mod atlas_events_tests;

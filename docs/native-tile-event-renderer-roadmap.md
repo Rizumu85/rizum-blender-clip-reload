@@ -1113,10 +1113,28 @@ from sparse affected windows. The next improvement is to start the first
 sparse affected-window simple scope form, reusing the typed scope events that
 the main tile-silo renderer already executes.
 
+Twenty-seventh form: sparse affected-window execution now supports the first
+simple scope subset. `SimpleContainerScope` and `SimpleThroughScope` segments
+whose direct children are raster sources lower into executable sparse atlas
+batches with typed `BeginContainer`/`EndContainer` or
+`BeginThrough`/`EndThrough` events wrapped around the resident raster events.
+The executor reuses the existing tile-silo shader path and scope payload
+buffer; it does not introduce a second scope compositor. Child raster masks
+continue to use the existing R8 atlas event coordinates. Scope-level masks,
+nested child scopes, filter children, clipping-run children, and clipped
+container/folder children still fail closed and keep the region-render
+fallback.
+
+This twenty-seventh form is intentionally narrow: it proves sparse affected
+windows can execute scope events from resident atlas slots, while leaving the
+broader simple-scope subset to be migrated piece by piece from the main
+tile-silo renderer.
+
 Next Phase 6 work:
 
-- expand affected-window execution into simple container/THROUGH scopes using
-  executable sparse atlas events
+- expand sparse affected-window simple scopes beyond direct raster children:
+  scope-level masks, nested simple scopes, point filters, and raster-only
+  clipping-run children
 
 ## Correctness Policy
 

@@ -107,6 +107,10 @@ pub enum GpuSparseAtlasRasterEventSkipReason {
         layer_id: u32,
         resource_id: u32,
     },
+    ScopeMaskNotLowered {
+        layer_id: u32,
+        resource_id: u32,
+    },
     InvalidPointFilter,
     MixedSparseAtlasKeys,
     CanvasCoordinateOutOfRange,
