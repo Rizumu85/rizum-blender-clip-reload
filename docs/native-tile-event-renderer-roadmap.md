@@ -1140,10 +1140,21 @@ not add a second mask compositor. Missing mask slots or scope mask coverage that
 spans multiple resident slots still fail closed and keep the region-render
 fallback.
 
+Twenty-ninth form: sparse affected-window simple scopes now use ordered child
+tile events and support unmasked point-filter children after raster content.
+`GpuSparseAtlasRasterEventBatch` can carry an ordered child event stream for
+scope batches, currently `Raster` and `PointFilter`, while still exposing the
+derived raster/filter lists needed by existing executor compatibility checks.
+Runtime lowering tracks the current scope bounds as raster child events are
+emitted, then gives point filters the accumulated local bounds so filter order
+matches the main tile-silo scope model. Filter masks inside sparse scopes,
+nested child scopes, raster-only clipping-run children, and clipped
+container/folder children still fail closed and keep the region-render fallback.
+
 Next Phase 6 work:
 
 - expand sparse affected-window simple scopes beyond direct raster children:
-  multi-slot scope masks, nested simple scopes, point filters, and raster-only
+  multi-slot scope masks, filter masks, nested simple scopes, and raster-only
   clipping-run children
 
 ## Correctness Policy

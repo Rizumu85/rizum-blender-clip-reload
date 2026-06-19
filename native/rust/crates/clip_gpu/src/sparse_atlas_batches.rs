@@ -31,16 +31,23 @@ pub struct GpuSparseAtlasScopeEvent {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum GpuSparseAtlasTileEvent {
+    Raster(GpuSparseAtlasRasterEvent),
+    PointFilter(GpuSparseAtlasPointFilterEvent),
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct GpuSparseAtlasRasterEventBatch {
     pub kind: GpuSparseAtlasRasterEventBatchKind,
     pub events: Vec<GpuSparseAtlasRasterEvent>,
     pub filters: Vec<GpuSparseAtlasPointFilterEvent>,
     pub scope: Option<GpuSparseAtlasScopeEvent>,
+    pub tile_events: Vec<GpuSparseAtlasTileEvent>,
 }
 
 impl GpuSparseAtlasRasterEventBatch {
     pub fn is_empty(&self) -> bool {
-        self.events.is_empty() && self.filters.is_empty()
+        self.events.is_empty() && self.filters.is_empty() && self.tile_events.is_empty()
     }
 
     pub fn raster_clipping_run(
@@ -56,6 +63,7 @@ impl GpuSparseAtlasRasterEventBatch {
             events,
             filters: Vec::new(),
             scope: None,
+            tile_events: Vec::new(),
         }
     }
 
@@ -65,6 +73,7 @@ impl GpuSparseAtlasRasterEventBatch {
             events: Vec::new(),
             filters,
             scope: None,
+            tile_events: Vec::new(),
         }
     }
 
@@ -75,10 +84,32 @@ impl GpuSparseAtlasRasterEventBatch {
         local_bounds: clip_model::Rect,
         mask: Option<GpuSparseAtlasTileRef>,
     ) -> Self {
+        let tile_events = events
+            .iter()
+            .copied()
+            .map(GpuSparseAtlasTileEvent::Raster)
+            .collect();
+        Self::simple_container_scope_tile_events(
+            tile_events,
+            opacity,
+            blend_mode,
+            local_bounds,
+            mask,
+        )
+    }
+
+    pub fn simple_container_scope_tile_events(
+        tile_events: Vec<GpuSparseAtlasTileEvent>,
+        opacity: f32,
+        blend_mode: GpuRasterBlendMode,
+        local_bounds: clip_model::Rect,
+        mask: Option<GpuSparseAtlasTileRef>,
+    ) -> Self {
+        let (events, filters) = split_tile_events(&tile_events);
         Self {
             kind: GpuSparseAtlasRasterEventBatchKind::SimpleContainerScope,
             events,
-            filters: Vec::new(),
+            filters,
             scope: Some(GpuSparseAtlasScopeEvent {
                 kind: GpuSparseAtlasScopeEventKind::Container,
                 opacity,
@@ -86,6 +117,7 @@ impl GpuSparseAtlasRasterEventBatch {
                 local_bounds,
                 mask,
             }),
+            tile_events,
         }
     }
 
@@ -95,10 +127,25 @@ impl GpuSparseAtlasRasterEventBatch {
         local_bounds: clip_model::Rect,
         mask: Option<GpuSparseAtlasTileRef>,
     ) -> Self {
+        let tile_events = events
+            .iter()
+            .copied()
+            .map(GpuSparseAtlasTileEvent::Raster)
+            .collect();
+        Self::simple_through_scope_tile_events(tile_events, opacity, local_bounds, mask)
+    }
+
+    pub fn simple_through_scope_tile_events(
+        tile_events: Vec<GpuSparseAtlasTileEvent>,
+        opacity: f32,
+        local_bounds: clip_model::Rect,
+        mask: Option<GpuSparseAtlasTileRef>,
+    ) -> Self {
+        let (events, filters) = split_tile_events(&tile_events);
         Self {
             kind: GpuSparseAtlasRasterEventBatchKind::SimpleThroughScope,
             events,
-            filters: Vec::new(),
+            filters,
             scope: Some(GpuSparseAtlasScopeEvent {
                 kind: GpuSparseAtlasScopeEventKind::Through,
                 opacity,
@@ -106,8 +153,26 @@ impl GpuSparseAtlasRasterEventBatch {
                 local_bounds,
                 mask,
             }),
+            tile_events,
         }
     }
+}
+
+fn split_tile_events(
+    tile_events: &[GpuSparseAtlasTileEvent],
+) -> (
+    Vec<GpuSparseAtlasRasterEvent>,
+    Vec<GpuSparseAtlasPointFilterEvent>,
+) {
+    let mut events = Vec::new();
+    let mut filters = Vec::new();
+    for event in tile_events {
+        match event {
+            GpuSparseAtlasTileEvent::Raster(event) => events.push(*event),
+            GpuSparseAtlasTileEvent::PointFilter(filter) => filters.push(filter.clone()),
+        }
+    }
+    (events, filters)
 }
 
 pub fn split_sparse_atlas_raster_event_batches(
@@ -165,6 +230,7 @@ impl CurrentSparseAtlasBatch {
             events,
             filters: Vec::new(),
             scope: None,
+            tile_events: Vec::new(),
         }
     }
 }

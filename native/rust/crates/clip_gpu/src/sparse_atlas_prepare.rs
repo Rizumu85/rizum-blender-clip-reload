@@ -9,7 +9,8 @@ use crate::{
     GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent,
     GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch, GpuSparseAtlasRasterEventBatchKind,
     GpuSparseAtlasScopeEvent, GpuSparseAtlasScopeEventKind, GpuSparseAtlasTexture,
-    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTileRef,
+    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTileEvent,
+    GpuSparseAtlasTileRef,
 };
 
 pub(crate) struct PreparedSparseAtlasRasterEvents<'a> {
@@ -36,6 +37,7 @@ pub(crate) fn prepare_sparse_atlas_raster_events<'a>(
         events,
         &[],
         None,
+        &[],
     )
 }
 
@@ -51,6 +53,7 @@ pub(crate) fn prepare_sparse_atlas_raster_event_batch<'a>(
         &batch.events,
         &batch.filters,
         batch.scope,
+        &batch.tile_events,
     )
 }
 
@@ -61,18 +64,20 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
     events: &[GpuSparseAtlasRasterEvent],
     filters: &'a [GpuSparseAtlasPointFilterEvent],
     scope: Option<GpuSparseAtlasScopeEvent>,
+    tile_events: &'a [GpuSparseAtlasTileEvent],
 ) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
-    let atlas = if events.is_empty() {
+    let raster_events = raster_events_for_prepare(events, tile_events);
+    let atlas = if raster_events.is_empty() {
         None
     } else {
-        let raster_key = common_raster_atlas_key(events)?;
+        let raster_key = common_raster_atlas_key(&raster_events)?;
         let atlas = pool
             .texture(raster_key)
             .ok_or(GpuRenderError::MissingSparseAtlasTexture { key: raster_key })?;
         validate_sparse_atlas_format(atlas, GpuSparseAtlasFormat::Rgba8)?;
         Some(atlas)
     };
-    let mask_key = common_mask_atlas_key(events, filters, scope)?;
+    let mask_key = common_mask_atlas_key(events, filters, scope, tile_events)?;
     let mask_atlas = match mask_key {
         Some(key) => {
             let atlas = pool
@@ -97,83 +102,67 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
         pass_bounds = union_optional(pass_bounds, Some(bounds_rect));
         bounds.push(bounds_rect);
         payloads.push(begin);
-        for event in events {
-            let atlas = atlas.expect("raster events must have an atlas");
-            validate_tile_ref(atlas, event.raster)?;
-            if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
-                validate_tile_ref(mask_atlas, mask)?;
+        if tile_events.is_empty() {
+            for event in events {
+                append_raster_payload(
+                    output_size,
+                    atlas,
+                    mask_atlas,
+                    *event,
+                    &mut payloads,
+                    &mut bounds,
+                    &mut pass_bounds,
+                )?;
             }
-            let Some(source_bounds) = CanvasRect::from_source(
-                event.source_offset_x,
-                event.source_offset_y,
-                event.raster.size,
-                output_size,
-            ) else {
-                continue;
-            };
-            pass_bounds = union_optional(pass_bounds, Some(source_bounds));
-            bounds.push(source_bounds);
-            payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
-                atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
-                source_size: event.raster.size,
-                source_offset: (event.source_offset_x, event.source_offset_y),
-                opacity: event.opacity,
-                blend_mode: event.blend_mode,
-                mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
-            }));
+        } else {
+            for event in tile_events {
+                match event {
+                    GpuSparseAtlasTileEvent::Raster(event) => append_raster_payload(
+                        output_size,
+                        atlas,
+                        mask_atlas,
+                        *event,
+                        &mut payloads,
+                        &mut bounds,
+                        &mut pass_bounds,
+                    )?,
+                    GpuSparseAtlasTileEvent::PointFilter(filter) => append_filter_payload(
+                        output_size,
+                        mask_atlas,
+                        filter,
+                        &mut payloads,
+                        &mut lut_rows,
+                        &mut bounds,
+                        &mut pass_bounds,
+                    )?,
+                }
+            }
         }
         bounds.push(bounds_rect);
         payloads.push(end);
     } else {
         for event in events {
-            let atlas = atlas.expect("raster events must have an atlas");
-            validate_tile_ref(atlas, event.raster)?;
-            if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
-                validate_tile_ref(mask_atlas, mask)?;
-            }
-            let Some(source_bounds) = CanvasRect::from_source(
-                event.source_offset_x,
-                event.source_offset_y,
-                event.raster.size,
+            append_raster_payload(
                 output_size,
-            ) else {
-                continue;
-            };
-            pass_bounds = union_optional(pass_bounds, Some(source_bounds));
-            bounds.push(source_bounds);
-            payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
-                atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
-                source_size: event.raster.size,
-                source_offset: (event.source_offset_x, event.source_offset_y),
-                opacity: event.opacity,
-                blend_mode: event.blend_mode,
-                mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
-            }));
+                atlas,
+                mask_atlas,
+                *event,
+                &mut payloads,
+                &mut bounds,
+                &mut pass_bounds,
+            )?;
         }
-    }
-    for filter in filters {
-        validate_filter_event(output_size, filter)?;
-        if let (Some(mask_atlas), Some(mask)) = (mask_atlas, filter.mask) {
-            validate_tile_ref(mask_atlas, mask)?;
+        for filter in filters {
+            append_filter_payload(
+                output_size,
+                mask_atlas,
+                filter,
+                &mut payloads,
+                &mut lut_rows,
+                &mut bounds,
+                &mut pass_bounds,
+            )?;
         }
-        let bounds_rect = CanvasRect {
-            x: filter.local_bounds.x,
-            y: filter.local_bounds.y,
-            width: filter.local_bounds.width,
-            height: filter.local_bounds.height,
-        };
-        pass_bounds = union_optional(pass_bounds, Some(bounds_rect));
-        bounds.push(bounds_rect);
-        let lut_row =
-            u32::try_from(lut_rows.len()).map_err(|_| GpuRenderError::TextureSizeOverflow)?;
-        payloads.push(TileEventPayload::PointFilter(PointFilterTileEventPayload {
-            lut_row,
-            opacity: filter.opacity,
-            filter_mode: filter.filter_mode,
-            local_bounds: bounds_rect,
-            mask_atlas_origin: filter.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
-        }));
-        lut_rows.push(filter.lut_rgba.as_slice());
     }
     let pass_bounds = match pass_bounds {
         Some(bounds) => bounds,
@@ -197,6 +186,22 @@ fn prepare_sparse_atlas_raster_events_with_kind<'a>(
     })
 }
 
+fn raster_events_for_prepare(
+    events: &[GpuSparseAtlasRasterEvent],
+    tile_events: &[GpuSparseAtlasTileEvent],
+) -> Vec<GpuSparseAtlasRasterEvent> {
+    if tile_events.is_empty() {
+        return events.to_vec();
+    }
+    tile_events
+        .iter()
+        .filter_map(|event| match event {
+            GpuSparseAtlasTileEvent::Raster(event) => Some(*event),
+            GpuSparseAtlasTileEvent::PointFilter(_) => None,
+        })
+        .collect()
+}
+
 fn common_raster_atlas_key(
     events: &[GpuSparseAtlasRasterEvent],
 ) -> Result<GpuSparseAtlasTextureKey, GpuRenderError> {
@@ -217,11 +222,25 @@ fn common_mask_atlas_key(
     events: &[GpuSparseAtlasRasterEvent],
     filters: &[GpuSparseAtlasPointFilterEvent],
     scope: Option<GpuSparseAtlasScopeEvent>,
+    tile_events: &[GpuSparseAtlasTileEvent],
 ) -> Result<Option<GpuSparseAtlasTextureKey>, GpuRenderError> {
     let mut key = None;
-    for mask in events
-        .iter()
-        .filter_map(|event| event.mask)
+    let event_masks = if tile_events.is_empty() {
+        events
+            .iter()
+            .filter_map(|event| event.mask)
+            .collect::<Vec<_>>()
+    } else {
+        tile_events
+            .iter()
+            .filter_map(|event| match event {
+                GpuSparseAtlasTileEvent::Raster(event) => event.mask,
+                GpuSparseAtlasTileEvent::PointFilter(filter) => filter.mask,
+            })
+            .collect()
+    };
+    for mask in event_masks
+        .into_iter()
         .chain(filters.iter().filter_map(|filter| filter.mask))
         .chain(scope.into_iter().filter_map(|scope| scope.mask))
     {
@@ -240,6 +259,74 @@ fn common_mask_atlas_key(
         }
     }
     Ok(key)
+}
+
+fn append_raster_payload(
+    output_size: CanvasSize,
+    atlas: Option<&GpuSparseAtlasTexture>,
+    mask_atlas: Option<&GpuSparseAtlasTexture>,
+    event: GpuSparseAtlasRasterEvent,
+    payloads: &mut Vec<TileEventPayload>,
+    bounds: &mut Vec<CanvasRect>,
+    pass_bounds: &mut Option<CanvasRect>,
+) -> Result<(), GpuRenderError> {
+    let atlas = atlas.expect("raster events must have an atlas");
+    validate_tile_ref(atlas, event.raster)?;
+    if let (Some(mask_atlas), Some(mask)) = (mask_atlas, event.mask) {
+        validate_tile_ref(mask_atlas, mask)?;
+    }
+    let Some(source_bounds) = CanvasRect::from_source(
+        event.source_offset_x,
+        event.source_offset_y,
+        event.raster.size,
+        output_size,
+    ) else {
+        return Ok(());
+    };
+    *pass_bounds = union_optional(*pass_bounds, Some(source_bounds));
+    bounds.push(source_bounds);
+    payloads.push(TileEventPayload::Raster(RasterTileEventPayload {
+        atlas_origin: (event.raster.atlas_x, event.raster.atlas_y),
+        source_size: event.raster.size,
+        source_offset: (event.source_offset_x, event.source_offset_y),
+        opacity: event.opacity,
+        blend_mode: event.blend_mode,
+        mask_atlas_origin: event.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+    }));
+    Ok(())
+}
+
+fn append_filter_payload<'a>(
+    output_size: CanvasSize,
+    mask_atlas: Option<&GpuSparseAtlasTexture>,
+    filter: &'a GpuSparseAtlasPointFilterEvent,
+    payloads: &mut Vec<TileEventPayload>,
+    lut_rows: &mut Vec<&'a [u8]>,
+    bounds: &mut Vec<CanvasRect>,
+    pass_bounds: &mut Option<CanvasRect>,
+) -> Result<(), GpuRenderError> {
+    validate_filter_event(output_size, filter)?;
+    if let (Some(mask_atlas), Some(mask)) = (mask_atlas, filter.mask) {
+        validate_tile_ref(mask_atlas, mask)?;
+    }
+    let bounds_rect = CanvasRect {
+        x: filter.local_bounds.x,
+        y: filter.local_bounds.y,
+        width: filter.local_bounds.width,
+        height: filter.local_bounds.height,
+    };
+    *pass_bounds = union_optional(*pass_bounds, Some(bounds_rect));
+    bounds.push(bounds_rect);
+    let lut_row = u32::try_from(lut_rows.len()).map_err(|_| GpuRenderError::TextureSizeOverflow)?;
+    payloads.push(TileEventPayload::PointFilter(PointFilterTileEventPayload {
+        lut_row,
+        opacity: filter.opacity,
+        filter_mode: filter.filter_mode,
+        local_bounds: bounds_rect,
+        mask_atlas_origin: filter.mask.map(|mask| (mask.atlas_x, mask.atlas_y)),
+    }));
+    lut_rows.push(filter.lut_rgba.as_slice());
+    Ok(())
 }
 
 fn scope_payloads(

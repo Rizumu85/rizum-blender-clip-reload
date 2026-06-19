@@ -89,6 +89,48 @@ fn simple_scope_with_resident_scope_mask_lowers_to_scope_batch() {
 }
 
 #[test]
+fn simple_container_scope_with_point_filter_child_lowers_ordered_tile_events() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("SimpleContainerScope")),
+        &reload_with_slots(vec![slot("raster", 10, 1, 0, 12, 34)]),
+        &[clip_gpu::GpuNormalStackSource::Container {
+            children: vec![
+                clip_gpu::GpuNormalStackSource::Raster(raster_source(
+                    10,
+                    1,
+                    1.0,
+                    clip_gpu::GpuRasterBlendMode::Normal,
+                    None,
+                )),
+                clip_gpu::GpuNormalStackSource::LutFilter {
+                    lut_rgba: invert_lut(),
+                    opacity: 1.0,
+                    mask_key: None,
+                    filter_mode: clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+                },
+            ],
+            opacity: 1.0,
+            mask_key: None,
+            blend_mode: clip_gpu::GpuRasterBlendMode::Normal,
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(batch.events.len(), 1);
+    assert_eq!(batch.filters.len(), 1);
+    assert_eq!(batch.tile_events.len(), 2);
+    assert!(matches!(
+        batch.tile_events[0],
+        clip_gpu::GpuSparseAtlasTileEvent::Raster(_)
+    ));
+    let clip_gpu::GpuSparseAtlasTileEvent::PointFilter(filter) = &batch.tile_events[1] else {
+        panic!("expected point filter tile event");
+    };
+    assert_eq!(filter.local_bounds, clip_model::Rect::new(12, 34, 64, 32));
+}
+
+#[test]
 fn simple_scope_without_resident_scope_mask_is_not_lowered() {
     let plan = sparse_atlas_raster_event_plan(
         &diff_with_segment(segment("SimpleContainerScope")),
@@ -118,4 +160,12 @@ fn simple_scope_without_resident_scope_mask_is_not_lowered() {
             resource_id: 5,
         }
     );
+}
+
+fn invert_lut() -> Vec<u8> {
+    let mut lut = Vec::with_capacity(256 * 4);
+    for value in 0u8..=255 {
+        lut.extend_from_slice(&[255 - value, 255 - value, 255 - value, 255]);
+    }
+    lut
 }
