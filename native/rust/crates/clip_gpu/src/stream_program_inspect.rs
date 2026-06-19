@@ -25,6 +25,7 @@ pub struct RenderProgramSegmentInfo {
     pub depth: u16,
     pub source_start: u32,
     pub source_end: u32,
+    pub checkpoint_before: bool,
     pub kind: &'static str,
     pub barrier_reason: Option<RenderProgramBarrierReason>,
     pub expected_passes: u32,
@@ -114,9 +115,10 @@ where
         stats: program.stats(),
         segments: Vec::with_capacity(program.segments().len()),
     };
+    let mut local_segments = Vec::with_capacity(program.segments().len());
     for segment in program.segments() {
         let resources = resources_for_source_range(segment, sources);
-        inspection.segments.push(render_segment_info(
+        local_segments.push(render_segment_info(
             segment,
             depth,
             *next_ordinal,
@@ -124,6 +126,8 @@ where
         ));
         *next_ordinal = next_ordinal.saturating_add(1);
     }
+    mark_checkpoint_candidates(&mut local_segments);
+    inspection.segments.extend(local_segments);
     for source in sources {
         add_nested_source_inspection(
             &mut inspection,
@@ -156,12 +160,23 @@ fn render_segment_info(
         depth,
         source_start: usize_to_u32(segment.source_range.start),
         source_end: usize_to_u32(segment.source_range.end),
+        checkpoint_before: false,
         kind,
         barrier_reason,
         expected_passes: segment.cost_hint.expected_passes,
         tile_events: segment.cost_hint.tile_events,
         legacy_sources: segment.cost_hint.legacy_sources,
         resources,
+    }
+}
+
+fn mark_checkpoint_candidates(segments: &mut [RenderProgramSegmentInfo]) {
+    let mut suffix_is_raster_run = true;
+    for segment in segments.iter_mut().rev() {
+        let is_raster_run = segment.kind == "RasterRun";
+        let candidate = is_raster_run && suffix_is_raster_run;
+        segment.checkpoint_before = candidate;
+        suffix_is_raster_run = candidate;
     }
 }
 

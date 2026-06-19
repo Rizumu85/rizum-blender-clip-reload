@@ -282,8 +282,12 @@ The reconstructed-prefix path is a correctness seam, not the final performance
 shape when there is no cache hit. The runtime now has a small session
 budgeted LRU segment-before checkpoint cache keyed by the current reload
 manifest prefix, so repeated dirty suffix reloads can reuse selected RGBA8
-checkpoints when their prefixes are unchanged. The next target is explicit
-checkpoint selection in the render program.
+checkpoints when their prefixes are unchanged. Checkpoint selection is now
+explicit in render-program inspection and reload manifests through a
+`checkpoint_before` flag; product suffix reruns only use depth-0 explicit
+candidates as top-level source boundaries. The next target is checkpoint
+candidate ranking by expected reload value, memory cost, and reuse
+probability.
 
 ## Implementation Order
 
@@ -298,8 +302,8 @@ checkpoint selection in the render program.
    container/folder siblings.
 6. Add frame arena and bind-group/buffer reuse once tile events dominate the
    path.
-7. Add explicit checkpoint selection to decide which segment-before
-   checkpoints should be retained.
+7. Rank checkpoint candidates to decide which segment-before checkpoints
+   should be retained under the cache budget.
 8. Route general dirty segment reload through sparse atlas event reruns.
 9. Keep the pass-heavy renderer as a test oracle and debug backend, not as a
    product fallback.

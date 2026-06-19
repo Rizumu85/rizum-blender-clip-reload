@@ -324,16 +324,18 @@ fn suffix_starts_at_initial_accumulator(plan: &crate::ReloadDiffPlan) -> bool {
 }
 
 fn suffix_checkpoint_source_start(plan: &crate::ReloadDiffPlan) -> Option<u32> {
+    suffix_checkpoint_segment(plan).map(|segment| segment.source_start)
+}
+
+fn suffix_checkpoint_segment(plan: &crate::ReloadDiffPlan) -> Option<&crate::ReloadDiffSegment> {
     let first_dirty_ordinal = plan
         .dirty_segments
         .iter()
         .map(|segment| segment.ordinal)
         .min()?;
-    plan.manifest
-        .segments
-        .iter()
-        .find(|segment| segment.ordinal == first_dirty_ordinal)
-        .map(|segment| segment.source_start)
+    plan.manifest.segments.iter().find(|segment| {
+        segment.ordinal == first_dirty_ordinal && segment.depth == 0 && segment.checkpoint_before
+    })
 }
 
 fn suffix_manifest_is_raster_only(plan: &crate::ReloadDiffPlan) -> bool {
@@ -370,6 +372,17 @@ mod tests {
     }
 
     #[test]
+    fn suffix_checkpoint_requires_explicit_depth_zero_candidate() {
+        let mut plan = patch_plan_with_segment_start(1);
+        plan.manifest.segments[0].checkpoint_before = false;
+        assert_eq!(suffix_checkpoint_source_start(&plan), None);
+
+        plan.manifest.segments[0].checkpoint_before = true;
+        plan.manifest.segments[0].depth = 1;
+        assert_eq!(suffix_checkpoint_source_start(&plan), None);
+    }
+
+    #[test]
     fn suffix_initial_base_requires_raster_only_suffix() {
         let mut plan = patch_plan_with_segment_start(0);
         assert!(suffix_manifest_is_raster_only(&plan));
@@ -379,6 +392,7 @@ mod tests {
             depth: 0,
             source_start: 1,
             source_end: 2,
+            checkpoint_before: false,
             kind: "Barrier".to_string(),
             barrier_reason: Some("SolidColorNotLowered".to_string()),
             expected_passes: 1,
@@ -410,6 +424,7 @@ mod tests {
                     depth: 0,
                     source_start,
                     source_end: source_start + 1,
+                    checkpoint_before: true,
                     kind: "RasterRun".to_string(),
                     barrier_reason: None,
                     expected_passes: 1,

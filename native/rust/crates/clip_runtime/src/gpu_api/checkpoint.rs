@@ -410,6 +410,7 @@ mod tests {
             depth: 0,
             source_start,
             source_end,
+            checkpoint_before: false,
             kind: "RasterRun".to_string(),
             barrier_reason: None,
             expected_passes: 1,

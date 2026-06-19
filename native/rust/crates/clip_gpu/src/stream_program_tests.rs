@@ -8,6 +8,7 @@ use crate::{
     GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuNormalStackSource,
     GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError, GpuRenderer,
     RenderProgramBarrierCounts, RenderProgramBarrierReason,
+    inspect_normal_stack_render_program_detail,
 };
 
 #[test]
@@ -142,6 +143,50 @@ fn planner_lowers_single_eligible_raster_as_tile_local() {
         }]
     );
     assert_eq!(program.stats().barrier_reasons.raster_run_too_short, 0);
+}
+
+#[test]
+fn inspection_marks_only_raster_suffix_checkpoint_candidates() {
+    let provider = PlannerProvider::new([
+        (raster_key(1), CanvasSize::new(4, 4)),
+        (raster_key(2), CanvasSize::new(4, 4)),
+        (raster_key(3), CanvasSize::new(4, 4)),
+    ]);
+    let sources = vec![
+        GpuNormalStackSource::Raster(raster_source(1)),
+        GpuNormalStackSource::SolidColor {
+            color: clip_model::Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            },
+            opacity: 1.0,
+        },
+        GpuNormalStackSource::Raster(raster_source(2)),
+        GpuNormalStackSource::Raster(raster_source(3)),
+    ];
+
+    let inspection = inspect_normal_stack_render_program_detail(
+        &provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        &sources,
+    );
+
+    assert_eq!(
+        inspection
+            .segments
+            .iter()
+            .map(|segment| (segment.kind, segment.checkpoint_before))
+            .collect::<Vec<_>>(),
+        vec![
+            ("RasterRun", false),
+            ("LegacySource", false),
+            ("RasterRun", true),
+        ]
+    );
 }
 
 #[test]

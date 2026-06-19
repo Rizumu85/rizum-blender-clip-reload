@@ -219,6 +219,7 @@ pub(crate) fn render_segment_manifest(
         depth: segment.depth,
         source_start: segment.source_start,
         source_end: segment.source_end,
+        checkpoint_before: segment.checkpoint_before,
         kind: segment.kind.to_string(),
         barrier_reason,
         expected_passes: segment.expected_passes,

@@ -986,11 +986,28 @@ This eighteenth form is still CPU RGBA checkpoint storage. The next
 improvement is to make checkpoint selection explicit in the render program,
 then move toward GPU-resident checkpoints where that is safe and measurable.
 
+Nineteenth form: checkpoint selection is now explicit in render-program
+inspection and reload manifests. `RenderProgramSegmentInfo` carries
+`checkpoint_before`, and the planner marks only raster-only suffix boundaries
+inside each inspected stack. `ReloadDiffSegment` persists that flag as
+`checkpoint_before` with backward-compatible JSON defaults. The product sparse
+suffix route now requires the earliest dirty segment to be a depth-0 explicit
+checkpoint candidate before using its `source_start` as a top-level
+segment-before boundary. This prevents nested stack segment indexes from being
+misinterpreted as top-level source indexes and gives future checkpoint
+selection a durable data surface.
+
+This nineteenth form still uses a simple candidate rule: a segment is a
+checkpoint candidate when the suffix from that segment to the end of its local
+stack consists only of `RasterRun` segments. The next improvement is to rank
+candidate checkpoints by expected reload value, memory cost, and reuse
+probability before rendering or retaining them.
+
 Next Phase 6 work:
 
 - rerun only affected segments and event ranges when the segment graph is
   unchanged
-- make checkpoint selection explicit in the render program
+- rank checkpoint candidates by cost and expected reuse
 - route Blender patch reload through sparse segment rerun when every dirty
   segment has a valid checkpoint and executable raster-event plan
 
