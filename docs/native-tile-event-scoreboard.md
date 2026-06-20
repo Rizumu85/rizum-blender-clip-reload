@@ -1,6 +1,6 @@
 # Native Tile-Event Scoreboard
 
-Last updated: 2026-06-19
+Last updated: 2026-06-20
 
 This file is the convergence scoreboard for tile-event work. Update it before
 choosing another semantic coverage task. Do not use the old implementation log
@@ -28,6 +28,7 @@ cd native/rust
 | `Test_ClippingEdge` | 1 | 1 | 0 | 0 | none | 1.15s | not measured |
 | `Test_AddGlowMultiply` | 2 | 2 | 0 | 0 | none | 8.24s | not measured |
 | `Test_ToneCurve` | 1 | 1 | 0 | 0 | none | 1.45s | not measured |
+| `Ref_Terra404_Live2D` | 481 | 468 | 13 | 13 | `ThroughGroupNotLowered=5; IsolatedContainerRequiresIntermediate=4; ClippingRunNotLowered=2; ScopeDepthLimitExceeded=2` | 44.17s | not measured |
 
 Notes:
 
