@@ -129,6 +129,10 @@ fn decodes_test_clipping_layer_10_rgba_tiles() {
 fn reads_ref_terra_render_offsets() {
     let path =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Ref_Terra404_Live2D.clip");
+    if !path.exists() {
+        eprintln!("skip missing private fixture: {}", path.display());
+        return;
+    }
     let container = ClipContainer::open(path).expect("open Ref_Terra404_Live2D.clip");
     let summary = metadata::read_summary_from_sqlite(
         container.sqlite_bytes(),

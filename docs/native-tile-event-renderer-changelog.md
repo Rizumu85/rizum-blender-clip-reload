@@ -1355,6 +1355,18 @@ encoding, planner event cost, sparse runtime event ordering for simple scopes
 and clipped siblings, and sparse executor pixels for ordinary and clipped
 solid-colour scope events.
 
+Forty-eighth form: persistent reload cache diagnostics now have a small
+benchmark harness in `scripts/benchmark_persistent_reload_cache.py`. It drives
+one `clip_cli --blender-render-server` process, renders a baseline, mutates one
+compressed raster tile hash in the previous reload manifest for five patch
+requests, and records sparse atlas reuse, checkpoint cache deltas,
+`render_task_graph`, dirty segment ranges, and region fallback status. The
+first run showed atlas tile reuse is effective on Test_Clipping, Test_RealArt,
+and Ref_Terra404_Live2D, but all three controlled mutations still use the
+region patch renderer; no sparse upload occurred before region fallback. The
+next evidence-backed experiment is region-demand execution for unsafe legacy
+barrier segments, not more semantic lowering.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
