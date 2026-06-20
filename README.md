@@ -1,4 +1,4 @@
-<div align="center">
+<table align="center"><tr><td align="center" width="620">
   <img src="docs/assets/rizum-clip-reload-icon.png" alt="Rizum Clip Reload icon" width="140">
   <h1><strong>Rizum Clip Reload</strong></h1>
   <p style="margin-top: 0; margin-bottom: 10px;">Import Clip Studio Paint <code>.clip</code> files into Blender as packed, reloadable image textures.</p>
@@ -22,7 +22,7 @@
     <a href="#why">English</a> |
     <a href="#why-zh">中文</a>
   </p>
-</div>
+</td></tr></table>
 
 ---
 
@@ -174,7 +174,7 @@ GPL-3.0-or-later. See [LICENSE](LICENSE).
 
 <a id="why-zh"></a>
 
-<div align="center">
+<table align="center"><tr><td align="center" width="620">
   <img src="docs/assets/rizum-clip-reload-icon.png" alt="Rizum Clip Reload icon" width="140">
   <h1><strong>Rizum Clip Reload</strong></h1>
   <p style="margin-top: 0; margin-bottom: 10px;">把 Clip Studio Paint <code>.clip</code> 文件导入 Blender，作为可打包、可重载的图片纹理。</p>
@@ -198,7 +198,7 @@ GPL-3.0-or-later. See [LICENSE](LICENSE).
     <a href="#why">English</a> |
     <a href="#why-zh">中文</a>
   </p>
-</div>
+</td></tr></table>
 
 ## 用于什么
 
