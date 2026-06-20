@@ -12,6 +12,12 @@ pub(crate) fn performance_plan_json(
     for (reason, count) in stats.barrier_reasons.nonzero_counts() {
         barrier_reasons.insert(reason.as_str().to_string(), json!(count));
     }
+    let top_barrier_reasons = top_barrier_reasons(result);
+    let product_render_path = if stats.barrier_segments == 0 {
+        "tile_event_only"
+    } else {
+        "tile_event_with_legacy_barriers"
+    };
 
     serde_json::to_string_pretty(&json!({
         "canvas": [summary.canvas.width, summary.canvas.height],
@@ -21,6 +27,20 @@ pub(crate) fn performance_plan_json(
         "tile_local_segments": stats.tile_local_segments,
         "barrier_segments": stats.barrier_segments,
         "barrier_reasons": Value::Object(barrier_reasons),
+        "coverage": {
+            "product_render_path": product_render_path,
+            "legacy_segment_count": stats.legacy_source_segments,
+            "legacy_segment_ratio": segment_ratio(stats.legacy_source_segments, stats.segments),
+            "tile_local_segment_ratio": segment_ratio(stats.tile_local_segments, stats.segments),
+            "top_barrier_reasons": top_barrier_reasons,
+        },
+        "fallback": {
+            "legacy_segment_count": stats.legacy_source_segments,
+            "legacy_barrier_count": stats.barrier_segments,
+            "sparse_patch_attempted": false,
+            "sparse_patch_succeeded": false,
+            "sparse_patch_fallback_reason": "not_applicable_performance_plan_only",
+        },
         "tile_event_abi_version": result.tile_event_abi_version,
         "compressed_raster_tiles": estimate.raster_compressed_tile_slot_count,
         "mask_tiles": estimate.mask_compressed_tile_slot_count,
@@ -76,6 +96,33 @@ pub(crate) fn performance_plan_json(
     .expect("performance plan JSON is serializable")
 }
 
+fn segment_ratio(count: u32, total: u32) -> f64 {
+    if total == 0 {
+        0.0
+    } else {
+        f64::from(count) / f64::from(total)
+    }
+}
+
+fn top_barrier_reasons(result: &NativePerformancePlanResult) -> Vec<Value> {
+    let mut counts = result.render_program_stats.barrier_reasons.nonzero_counts();
+    counts.sort_by(|(left_reason, left_count), (right_reason, right_count)| {
+        right_count
+            .cmp(left_count)
+            .then_with(|| left_reason.as_str().cmp(right_reason.as_str()))
+    });
+    counts
+        .into_iter()
+        .take(5)
+        .map(|(reason, count)| {
+            json!({
+                "reason": reason.as_str(),
+                "count": count,
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::Value;
@@ -97,6 +144,19 @@ mod tests {
 
         assert_eq!(parsed["canvas"][0], 512);
         assert_eq!(parsed["tile_event_abi_version"], 10);
+        assert_eq!(
+            parsed["coverage"]["product_render_path"],
+            "tile_event_with_legacy_barriers"
+        );
+        assert_eq!(parsed["coverage"]["legacy_segment_count"], 1);
+        assert_eq!(
+            parsed["fallback"]["sparse_patch_fallback_reason"],
+            "not_applicable_performance_plan_only"
+        );
+        assert_eq!(
+            parsed["coverage"]["top_barrier_reasons"][0]["reason"],
+            "SolidColorNotLowered"
+        );
         assert!(parsed["planned_passes"].as_u64().unwrap() > 0);
         assert!(
             parsed["planner"]["point_filter_run_segments"]
