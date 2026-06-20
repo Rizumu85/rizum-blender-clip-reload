@@ -151,9 +151,8 @@ Result:
   import after it is shown, mark reload renders as needing pack, and store
   source path, source mtime, source size, source SHA-256, canvas metadata,
   renderer ABI, renderer version, reload status, and pack status custom
-  properties. The installable add-on zip includes the local
-  release `clip_cli` worker plus `clip_capi` library under
-  `clip_studio_importer/native/`; preferences expose reload/debug controls
+  properties. The installable extension zip includes the local release
+  `clip_cli` worker plus `clip_capi` library under `native/`; preferences expose reload/debug controls
   instead of successful packaged-worker status or a user renderer override. The direct
   `clip_capi` path remains internal development/test plumbing because
   in-process wgpu rendering can crash Blender's UI redraw path on Blender
@@ -172,9 +171,9 @@ Result:
   `.blend`, and the Image Editor panel exposes `Pack`.
 - `clip_studio_importer/__init__.py` no longer imports `clip_loader`, no longer
   exposes a `Use native renderer` off switch, and no longer writes or reloads
-  sidecar PNGs. `tools/build_blender_addon.py` packages only `__init__.py`,
-  `i18n.py`, `native_bridge.py`, and native libraries under
-  `clip_studio_importer/native/`.
+  sidecar PNGs. `tools/build_blender_addon.py` packages the Blender extension
+  manifest, `__init__.py`, `i18n.py`, `native_bridge.py`, support modules,
+  `LICENSE`, `NOTICE.md`, and native libraries under `native/`.
   The duplicate `clip_studio_importer/clip_loader.py` package copy has been
   removed; the project-root `clip_loader.py` remains reference verification
   tooling outside the add-on runtime.

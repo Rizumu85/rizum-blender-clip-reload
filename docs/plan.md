@@ -127,10 +127,10 @@ Current policy:
   metadata but displays only unsupported counts, expandable unsupported
   layer/node detail lines, compact unsupported layer/node/kind issue locators,
   and copyable/searchable diagnostics when failures exist. `tools/build_blender_addon.py`
-  builds the installable zip with `__init__.py`, `native_bridge.py`, and the
-  locally built release `clip_cli` worker plus `clip_capi` library under
-  `clip_studio_importer/native/`;
-  it no longer packages the Python compositor/loader. Preferences expose reload
+  builds the installable extension zip with `blender_manifest.toml`,
+  `__init__.py`, `native_bridge.py`, `LICENSE`, `NOTICE.md`, and the locally
+  built release `clip_cli` worker plus `clip_capi` library under `native/`;
+  it no longer packages the Python compositor/loader or `bl_info`. Preferences expose reload
   timing, debug logging, and Developer Mode; they only report packaged native
   worker status when the worker is missing. The project-root `clip_loader.py` remains slow reference tooling for
   verification while native fidelity gaps close.

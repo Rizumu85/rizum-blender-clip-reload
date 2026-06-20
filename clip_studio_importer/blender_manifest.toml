@@ -1,0 +1,21 @@
+schema_version = "1.0.0"
+
+id = "rizum_clip_reload"
+version = "0.8.67"
+name = "Rizum Clip Reload"
+tagline = "Import Clip Studio files as Blender images"
+maintainer = "Rizum"
+type = "add-on"
+website = "https://github.com/Rizumu85/rizum-blender-clip-reload"
+tags = ["Import-Export"]
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = [
+  "2026 Rizum",
+  "2024 KazuhitoTakahashi",
+]
+platforms = ["windows-x64"]
+
+[permissions]
+files = "Import Clip Studio files and reload changed sources from disk"
+clipboard = "Copy render diagnostics for issue reports"

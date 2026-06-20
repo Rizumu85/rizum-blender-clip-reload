@@ -1,0 +1,44 @@
+# Rizum Clip Reload Notices
+
+Rizum Clip Reload is distributed under the GNU General Public License version 3
+or any later version.
+
+## Reference Projects
+
+The following projects were reviewed as public prior art or implementation
+references. Their source code is not bundled in the extension package unless a
+future change explicitly says otherwise.
+
+- Kazuhito00/clip_studio_paint_tool, MIT License, copyright 2024
+  KazuhitoTakahashi. Credited for early reference and implementation work.
+- Avarel/silicate, MIT License, copyright 2021-2026 An Tran. This project was
+  used as an algorithm and architecture reference for tile-local GPU rendering;
+  its source code is not bundled or copied into this extension.
+
+If a future change copies a substantial portion of either project, keep the
+original MIT copyright and permission notice with that copied material and
+update the extension manifest copyright list if needed.
+
+## MIT License Notice: Kazuhito00/clip_studio_paint_tool
+
+MIT License
+
+Copyright (c) 2024 KazuhitoTakahashi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
