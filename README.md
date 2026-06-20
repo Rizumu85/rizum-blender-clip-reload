@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/assets/rizum-clip-reload-icon.png" alt="Rizum Clip Reload icon" width="116">
-  <div style="font-size: 2em; font-weight: 700; margin: 8px 0;">Rizum Clip Reload</div>
+  <img src="docs/assets/rizum-clip-reload-icon.png" alt="Rizum Clip Reload icon" width="140">
+  <h1><strong>Rizum Clip Reload</strong></h1>
   <p style="margin-top: 0; margin-bottom: 10px;">Import Clip Studio Paint <code>.clip</code> files into Blender as packed, reloadable image textures.</p>
 
   <p style="margin-top: 0; margin-bottom: 10px;">
