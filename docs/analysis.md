@@ -4270,3 +4270,27 @@ the coloured-destination difference; layers `263` and `264` are ordinary
 `LayerComposite=10` rasters at opacity `256`. The accepted black-destination
 fix should therefore remain, but further Kabi work needs native dispatch or
 resolve evidence for the coloured Glow Dodge path rather than threshold tuning.
+
+## Native render profile top-segment follow-up
+
+`RIZUM_CLIP_RENDER_PROFILE=1` now reports the slowest render segments with
+kind, source shape, fallback/barrier reason, source range, first layer id,
+target rect, cost hints, and elapsed microseconds. The first useful large-sample
+drilldown showed that the largest stable Terra/RealArt costs include planned
+tile-local scope segments that fall back through the faithful path because
+`plan_atlas_layout` cannot pack their raster source set under the current
+8192-wide/tall atlas cap. Representative rejected fallbacks were Terra
+ThroughGroups starting at first raster layers `61`, `407`, and `37`, and RealArt
+first raster layer `365`.
+
+A direct large-atlas trial was rejected. Requesting/using the adapter's larger
+2D texture limit removed those `atlas_layout_unavailable` fallbacks, but it also
+changed fidelity because the newly-enabled large ThroughScope tile-local path is
+not yet a faithful replacement for the legacy path on those shapes. In the
+trial, `Ref_Terra404_Live2D` stayed at `premul_max=3` but worsened visible
+premultiplied pixels (`13643 -> 13908` in the measured run), and
+`Test_RealArt` worsened from `premul_max=3` / `premul_visible_px=36` to
+`premul_max=4` / `premul_visible_px=229`. The product path therefore remains on
+the 8192 atlas cap and keeps the faithful fallback. Do not re-enable larger
+scope atlases as a performance optimization until a focused legacy-vs-tile test
+proves the affected large ThroughScope/container shapes faithful.

@@ -474,6 +474,31 @@ fn print_render_profile(worker_total_ms: u64) {
         profile.checkpoint_cache_skipped_over_budget,
         worker_total_ms,
     );
+    for (rank, segment) in profile.top_segments.iter().enumerate() {
+        println!(
+            "render_profile_top_segment rank={} ordinal={} kind={} source_shape={} barrier_reason={} elapsed_us={} elapsed_ms={} source_range={}..{} first_layer_id={} target_origin={},{} target_size={}x{} expected_passes={} tile_events={} legacy_sources={}",
+            rank + 1,
+            segment.ordinal,
+            segment.kind,
+            segment.source_shape,
+            segment.barrier_reason.unwrap_or("none"),
+            segment.elapsed_us,
+            segment.elapsed_ms,
+            segment.source_start,
+            segment.source_end,
+            segment
+                .first_layer_id
+                .map(|id| id.to_string())
+                .unwrap_or_else(|| "none".to_string()),
+            segment.target_origin_x,
+            segment.target_origin_y,
+            segment.target_width,
+            segment.target_height,
+            segment.expected_passes,
+            segment.tile_events,
+            segment.legacy_sources,
+        );
+    }
 }
 
 fn print_decode_profile(worker_total_ms: u64) {
