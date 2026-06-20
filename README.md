@@ -3,6 +3,13 @@
 Import Clip Studio Paint `.clip` files into Blender as packed, reloadable image
 textures.
 
+- [English](#english)
+- [简体中文](#简体中文)
+
+---
+
+## English
+
 ## What It Does
 
 Rizum Clip Reload lets Blender open Clip Studio Paint artwork from `.clip` files
@@ -150,3 +157,93 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 - Improve reload and rendering performance through measured renderer/cache work.
 - Keep verification on CSP PNG exports and native `clip_cli --compare-png`.
 - Explore true file-backed `.clip` integration later, without sidecar PNGs.
+
+---
+
+## 简体中文
+
+Rizum Clip Reload 可以把 Clip Studio Paint 的 `.clip` 文件导入 Blender，
+作为打包在 `.blend` 里的可重载扁平图片纹理使用。
+
+## 它能做什么
+
+这个插件适合这样的流程：你在 Clip Studio Paint 里画图，在 Blender 里做
+材质、排版、动画或参考。
+
+导入后，插件会用内置 native renderer 渲染 `.clip`，然后在 Blender 里创建
+generated image。图片会被打包进 `.blend`，之后 `.clip` 源文件变化时可以自动
+或手动重新加载。
+
+插件关注最终画面是否正确。它不会把 Clip Studio 的图层变成 Blender 里可编辑
+的图层。
+
+## 安装
+
+1. 使用 Blender 4.2 或更新版本。
+2. 打开 `Edit > Preferences > Get Extensions`。
+3. 选择 `Install from Disk...`。
+4. 选择 `clip_studio_importer.zip` 或 universal 包。
+5. 启用 `Rizum Clip Reload`。
+
+## 使用
+
+1. 在 Blender 中选择 `File > Import > Clip Studio (.clip)`。
+2. 选择你的 `.clip` 文件。
+3. Blender 会创建一张 generated image。
+4. 图片会被打包进 `.blend`。
+5. 在 Clip Studio Paint 里修改并保存 `.clip` 后，Blender 可以自动重新加载。
+6. 也可以在 Image Editor 侧边栏点击 `Manual Reload` 手动刷新。
+
+如果之后找不到原始 `.clip` 文件，Blender 仍然会显示上一次已打包的画面。
+
+## 当前状态
+
+包版本：`0.8.67`。
+
+目前支持：
+
+- 栅格图层和全彩图像。
+- 纸张/背景图层。
+- 文件夹和裁剪图层。
+- 图层蒙版和透明度。
+- 常见混合模式。
+- 当前验证样本覆盖的调整图层和滤镜图层。
+- 手动重载和非阻塞自动重载。
+- 图片结果打包保存进 `.blend`。
+- 缺失源文件、渲染错误、pack 状态等清晰提示。
+- 简体中文、日语、西班牙语 UI 翻译。
+
+目前不做：
+
+- 导入可编辑图层。
+- 矢量线条或填充。
+- 文字图层。
+- 对话框/分镜框渲染器。
+- 3D 图层或动画时间轴。
+- 把修改写回 `.clip` 文件。
+
+## 构建插件包
+
+先构建 native renderer：
+
+```powershell
+cd native\rust
+cargo build --release -q -p clip_capi
+cargo build --release -q -p clip_cli
+cd ..\..
+```
+
+然后构建可安装扩展包：
+
+```powershell
+python tools\build_blender_addon.py
+```
+
+构建所有平台 native artifact 后，可以生成一个 universal zip：
+
+```powershell
+python tools\build_blender_addon.py --platform all --output clip_studio_importer-universal.zip
+```
+
+Windows x64 已在维护者机器上测试。Linux x64、macOS x64、macOS arm64 包支持
+已经存在，但因为没有对应设备，仍标记为维护者未测试。
