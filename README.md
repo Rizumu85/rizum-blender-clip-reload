@@ -174,6 +174,32 @@ GPL-3.0-or-later. See [LICENSE](LICENSE).
 
 <a id="why-zh"></a>
 
+<div align="center">
+  <img src="docs/assets/rizum-clip-reload-icon.png" alt="Rizum Clip Reload icon" width="140">
+  <h1><strong>Rizum Clip Reload</strong></h1>
+  <p style="margin-top: 0; margin-bottom: 10px;">把 Clip Studio Paint <code>.clip</code> 文件导入 Blender，作为可打包、可重载的图片纹理。</p>
+
+  <p style="margin-top: 0; margin-bottom: 10px;">
+    <a href="https://github.com/Rizumu85/rizum-blender-clip-reload/issues">反馈问题</a> |
+    <a href="https://github.com/Rizumu85/rizum-blender-clip-reload/releases">下载发布版</a> |
+    <a href="https://extensions.blender.org/">Blender Extensions</a>
+  </p>
+
+  <p style="margin-top: 0; margin-bottom: 10px;">
+    <img src="https://img.shields.io/badge/version-0.8.67-f2cfc7" alt="Version">
+    <img src="https://img.shields.io/badge/Blender-4.2%2B-d4b6aa" alt="Blender 4.2+">
+    <img src="https://img.shields.io/badge/Rust-native-4a3832" alt="Rust native renderer">
+    <img src="https://img.shields.io/badge/wgpu-GPU%20renderer-79675f" alt="wgpu GPU renderer">
+    <img src="https://img.shields.io/badge/OpenImageIO-adapter-d4b6aa" alt="OpenImageIO adapter">
+    <img src="https://img.shields.io/badge/license-GPL--3.0--or--later-79675f" alt="License">
+  </p>
+
+  <p style="margin-top: 0; margin-bottom: 0;">
+    <a href="#why">English</a> |
+    <a href="#why-zh">中文</a>
+  </p>
+</div>
+
 ## 为什么
 
 Rizum Clip Reload 适合这样的流程：你在 Clip Studio Paint 里画图，在 Blender
