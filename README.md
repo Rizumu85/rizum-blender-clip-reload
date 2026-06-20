@@ -2,6 +2,8 @@
 
 Import Clip Studio Paint `.clip` files into Blender as packed, reloadable image
 textures.
+<img width="800" height="463" alt="6月20日" src="https://github.com/user-attachments/assets/bc51736a-aec3-4361-b296-3e63a61713d8" />
+
 
 - [English](#english)
 - [简体中文](#简体中文)
