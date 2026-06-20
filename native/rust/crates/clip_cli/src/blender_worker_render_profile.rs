@@ -36,9 +36,38 @@ pub(crate) fn render_profile_metadata(worker_total_ms: u64) -> Option<serde_json
             "checkpoint_cache_stores": profile.checkpoint_cache_stores,
             "checkpoint_cache_evictions": profile.checkpoint_cache_evictions,
             "checkpoint_cache_skipped_over_budget": profile.checkpoint_cache_skipped_over_budget,
+            "top_segments": top_segments_json(&profile.top_segments),
             "worker_total_ms": worker_total_ms,
         })
     })
+}
+
+fn top_segments_json(
+    segments: &[clip_runtime::render_profile::RenderProfileSegment],
+) -> Vec<serde_json::Value> {
+    segments
+        .iter()
+        .enumerate()
+        .map(|(rank, segment)| {
+            json!({
+                "rank": rank + 1,
+                "ordinal": segment.ordinal,
+                "kind": segment.kind,
+                "source_shape": segment.source_shape,
+                "barrier_reason": segment.barrier_reason,
+                "elapsed_us": segment.elapsed_us,
+                "elapsed_ms": segment.elapsed_ms,
+                "source_start": segment.source_start,
+                "source_end": segment.source_end,
+                "first_layer_id": segment.first_layer_id,
+                "target_origin": [segment.target_origin_x, segment.target_origin_y],
+                "target_size": [segment.target_width, segment.target_height],
+                "expected_passes": segment.expected_passes,
+                "tile_events": segment.tile_events,
+                "legacy_sources": segment.legacy_sources,
+            })
+        })
+        .collect()
 }
 
 pub(crate) fn tile_cache_diagnostics(

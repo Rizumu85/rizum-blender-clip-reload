@@ -1,8 +1,10 @@
-use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+const TOP_SEGMENT_LIMIT: usize = 16;
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct RenderProfileSnapshot {
     pub source_selection_ms: u64,
     pub gpu_device_init_ms: u64,
@@ -31,6 +33,27 @@ pub struct RenderProfileSnapshot {
     pub checkpoint_cache_stores: u64,
     pub checkpoint_cache_evictions: u64,
     pub checkpoint_cache_skipped_over_budget: u64,
+    pub top_segments: Vec<RenderProfileSegment>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RenderProfileSegment {
+    pub ordinal: u64,
+    pub kind: &'static str,
+    pub source_shape: &'static str,
+    pub barrier_reason: Option<&'static str>,
+    pub elapsed_us: u64,
+    pub elapsed_ms: u64,
+    pub source_start: u32,
+    pub source_end: u32,
+    pub first_layer_id: Option<u32>,
+    pub target_origin_x: i32,
+    pub target_origin_y: i32,
+    pub target_width: u32,
+    pub target_height: u32,
+    pub expected_passes: u32,
+    pub tile_events: u32,
+    pub legacy_sources: u32,
 }
 
 static ENABLED: OnceLock<bool> = OnceLock::new();
@@ -62,6 +85,8 @@ static CHECKPOINT_CACHE_MISSES: AtomicU64 = AtomicU64::new(0);
 static CHECKPOINT_CACHE_STORES: AtomicU64 = AtomicU64::new(0);
 static CHECKPOINT_CACHE_EVICTIONS: AtomicU64 = AtomicU64::new(0);
 static CHECKPOINT_CACHE_SKIPPED_OVER_BUDGET: AtomicU64 = AtomicU64::new(0);
+static SEGMENT_ORDINAL: AtomicU64 = AtomicU64::new(0);
+static TOP_SEGMENTS: OnceLock<Mutex<Vec<RenderProfileSegment>>> = OnceLock::new();
 
 pub fn enabled() -> bool {
     *ENABLED.get_or_init(|| std::env::var_os("RIZUM_CLIP_RENDER_PROFILE").is_some())
@@ -74,6 +99,11 @@ pub fn reset_if_enabled() {
     for counter in counters() {
         counter.store(0, Ordering::Relaxed);
     }
+    SEGMENT_ORDINAL.store(0, Ordering::Relaxed);
+    top_segments()
+        .lock()
+        .expect("render profile mutex poisoned")
+        .clear();
 }
 
 pub fn snapshot_if_enabled() -> Option<RenderProfileSnapshot> {
@@ -110,6 +140,7 @@ pub fn snapshot() -> RenderProfileSnapshot {
         checkpoint_cache_evictions: CHECKPOINT_CACHE_EVICTIONS.load(Ordering::Relaxed),
         checkpoint_cache_skipped_over_budget: CHECKPOINT_CACHE_SKIPPED_OVER_BUDGET
             .load(Ordering::Relaxed),
+        top_segments: top_segments_snapshot(),
     }
 }
 
@@ -199,6 +230,46 @@ pub(crate) fn record_tile_local_segment(elapsed: Duration) {
     add_duration_ms(&TILE_LOCAL_SEGMENT_MS, elapsed);
 }
 
+pub(crate) struct RenderProfileSegmentRecord {
+    pub kind: &'static str,
+    pub source_shape: &'static str,
+    pub legacy_reason: Option<&'static str>,
+    pub elapsed: Duration,
+    pub source_start: usize,
+    pub source_end: usize,
+    pub first_layer_id: Option<u32>,
+    pub target_origin: (i32, i32),
+    pub target_size: clip_model::CanvasSize,
+    pub expected_passes: u32,
+    pub tile_events: u32,
+    pub legacy_sources: u32,
+}
+
+pub(crate) fn record_segment(record: RenderProfileSegmentRecord) {
+    if !enabled() {
+        return;
+    }
+    let segment = RenderProfileSegment {
+        ordinal: SEGMENT_ORDINAL.fetch_add(1, Ordering::Relaxed),
+        kind: record.kind,
+        source_shape: record.source_shape,
+        barrier_reason: record.legacy_reason,
+        elapsed_us: record.elapsed.as_micros().try_into().unwrap_or(u64::MAX),
+        elapsed_ms: record.elapsed.as_millis().try_into().unwrap_or(u64::MAX),
+        source_start: usize_to_u32(record.source_start),
+        source_end: usize_to_u32(record.source_end),
+        first_layer_id: record.first_layer_id,
+        target_origin_x: record.target_origin.0,
+        target_origin_y: record.target_origin.1,
+        target_width: record.target_size.width,
+        target_height: record.target_size.height,
+        expected_passes: record.expected_passes,
+        tile_events: record.tile_events,
+        legacy_sources: record.legacy_sources,
+    };
+    record_top_segment(top_segments(), segment);
+}
+
 pub(crate) fn record_streaming_pass() {
     if enabled() {
         add(&STREAMING_PASS_COUNT, 1);
@@ -274,5 +345,85 @@ fn add(counter: &AtomicU64, value: u64) {
 fn add_duration_ms(counter: &AtomicU64, elapsed: Duration) {
     if enabled() {
         add(counter, elapsed.as_millis().try_into().unwrap_or(u64::MAX));
+    }
+}
+
+fn top_segments() -> &'static Mutex<Vec<RenderProfileSegment>> {
+    TOP_SEGMENTS.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+fn top_segments_snapshot() -> Vec<RenderProfileSegment> {
+    if !enabled() {
+        return Vec::new();
+    }
+    top_segments()
+        .lock()
+        .expect("render profile mutex poisoned")
+        .clone()
+}
+
+fn record_top_segment(storage: &Mutex<Vec<RenderProfileSegment>>, segment: RenderProfileSegment) {
+    let mut segments = storage.lock().expect("render profile mutex poisoned");
+    insert_top_segment(&mut segments, segment, TOP_SEGMENT_LIMIT);
+}
+
+fn insert_top_segment(
+    segments: &mut Vec<RenderProfileSegment>,
+    segment: RenderProfileSegment,
+    limit: usize,
+) {
+    segments.push(segment);
+    segments.sort_by(|left, right| {
+        right
+            .elapsed_us
+            .cmp(&left.elapsed_us)
+            .then_with(|| left.ordinal.cmp(&right.ordinal))
+    });
+    segments.truncate(limit);
+}
+
+fn usize_to_u32(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RenderProfileSegment, insert_top_segment};
+
+    #[test]
+    fn insert_top_segment_keeps_slowest_in_deterministic_order() {
+        let mut segments = Vec::new();
+        for (ordinal, elapsed_us) in [(0, 10), (1, 30), (2, 20), (3, 30)] {
+            insert_top_segment(
+                &mut segments,
+                RenderProfileSegment {
+                    ordinal,
+                    kind: "RasterRun",
+                    source_shape: "Raster",
+                    barrier_reason: None,
+                    elapsed_us,
+                    elapsed_ms: 0,
+                    source_start: ordinal as u32,
+                    source_end: ordinal as u32 + 1,
+                    first_layer_id: Some(ordinal as u32),
+                    target_origin_x: 0,
+                    target_origin_y: 0,
+                    target_width: 1,
+                    target_height: 1,
+                    expected_passes: 1,
+                    tile_events: 1,
+                    legacy_sources: 0,
+                },
+                3,
+            );
+        }
+
+        assert_eq!(
+            segments
+                .iter()
+                .map(|segment| segment.ordinal)
+                .collect::<Vec<_>>(),
+            vec![1, 3, 2]
+        );
     }
 }

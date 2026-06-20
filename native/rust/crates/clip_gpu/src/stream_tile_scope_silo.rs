@@ -27,6 +27,25 @@ use crate::stream_tile_silo_upload::{
 use crate::stream_utils::local_pass_bounds;
 use crate::{GpuMaskAtlasTileChunk, GpuNormalStackSource, GpuRenderError};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum ScopeSiloEncodeResult {
+    Wrote,
+    Fallback(&'static str),
+}
+
+impl ScopeSiloEncodeResult {
+    pub(crate) fn wrote(self) -> bool {
+        matches!(self, Self::Wrote)
+    }
+
+    pub(crate) fn fallback_reason(self) -> Option<&'static str> {
+        match self {
+            Self::Wrote => None,
+            Self::Fallback(reason) => Some(reason),
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_simple_container_scope_silo_with_provider<P>(
     context: &mut StreamingExecutionContext<'_, '_, P>,
@@ -36,7 +55,7 @@ pub(crate) fn encode_simple_container_scope_silo_with_provider<P>(
     previous_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
     dirty_bounds: &mut Option<CanvasRect>,
-) -> Result<bool, P::Error>
+) -> Result<ScopeSiloEncodeResult, P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
@@ -47,7 +66,9 @@ where
         blend_mode,
     } = source
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "source_not_container_scope",
+        ));
     };
     if simple_container_scope_event_count(
         &*context.provider,
@@ -58,12 +79,14 @@ where
     )
     .is_none()
     {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "scope_event_count_not_lowered",
+        ));
     }
 
     let raster_sources = raster_sources_from_scope_children(children);
     if raster_sources.is_empty() {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("no_raster_sources"));
     }
     let output_size = context.output_size;
     let Some(layout) = plan_atlas_layout(
@@ -72,8 +95,9 @@ where
         target_origin,
         target_size,
         &raster_sources,
+        crate::stream_tile_silo_plan::MAX_ATLAS_TEXTURE_SIZE,
     ) else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("atlas_layout_unavailable"));
     };
     let Some(requests) = atlas_requests(
         &*context.provider,
@@ -83,7 +107,9 @@ where
         &raster_sources,
         &layout.sources,
     ) else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "atlas_requests_unavailable",
+        ));
     };
 
     let run_has_masks = raster_sources_have_masks(&raster_sources);
@@ -97,7 +123,7 @@ where
         run_has_masks,
     )?
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("raster_upload_unavailable"));
     };
 
     let Some(program_inputs) = build_scope_event_program_inputs(
@@ -112,17 +138,19 @@ where
         children,
         upload.prepared,
         upload.mask_atlas_size,
-        context.renderer.max_texture_dimension_2d(),
+        crate::stream_tile_silo_plan::MAX_ATLAS_TEXTURE_SIZE,
         *dirty_bounds,
     )?
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "scope_program_inputs_unavailable",
+        ));
     };
     let Some(pass_bounds) = context
         .state
         .clip_pass_bounds(program_inputs.final_dirty_bounds)
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("pass_bounds_empty"));
     };
 
     let tile_cols = target_size.width.div_ceil(TILE_SIZE);
@@ -134,7 +162,7 @@ where
         tile_work_lists_for_bounds(tile_count, tile_cols, &program_inputs.event_bounds)
             .map_err(P::Error::from)?;
     if work_indices.is_empty() {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("tile_work_empty"));
     }
 
     let Some((mask_atlas, mask_atlas_bytes)) = scope_mask_atlas(
@@ -146,7 +174,9 @@ where
         &program_inputs,
     )?
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "scope_mask_atlas_unavailable",
+        ));
     };
 
     encode_scope_tile_program(
@@ -168,7 +198,7 @@ where
         context.state.push_drawn_resource(info);
     }
     *dirty_bounds = Some(pass_bounds);
-    Ok(true)
+    Ok(ScopeSiloEncodeResult::Wrote)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -180,7 +210,7 @@ pub(crate) fn encode_simple_through_scope_silo_with_provider<P>(
     previous_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
     dirty_bounds: &mut Option<CanvasRect>,
-) -> Result<bool, P::Error>
+) -> Result<ScopeSiloEncodeResult, P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
@@ -190,7 +220,7 @@ where
         mask_key,
     } = source
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("source_not_through_scope"));
     };
     if simple_through_scope_event_count(
         &*context.provider,
@@ -201,12 +231,14 @@ where
     )
     .is_none()
     {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "scope_event_count_not_lowered",
+        ));
     }
 
     let raster_sources = raster_sources_from_scope_children(children);
     if raster_sources.is_empty() {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("no_raster_sources"));
     }
     let output_size = context.output_size;
     let Some(layout) = plan_atlas_layout(
@@ -215,8 +247,9 @@ where
         target_origin,
         target_size,
         &raster_sources,
+        crate::stream_tile_silo_plan::MAX_ATLAS_TEXTURE_SIZE,
     ) else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("atlas_layout_unavailable"));
     };
     let Some(requests) = atlas_requests(
         &*context.provider,
@@ -226,7 +259,9 @@ where
         &raster_sources,
         &layout.sources,
     ) else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "atlas_requests_unavailable",
+        ));
     };
 
     let run_has_masks = raster_sources_have_masks(&raster_sources);
@@ -240,7 +275,7 @@ where
         run_has_masks,
     )?
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("raster_upload_unavailable"));
     };
 
     let Some(program_inputs) = build_scope_event_program_inputs(
@@ -258,13 +293,15 @@ where
         *dirty_bounds,
     )?
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "scope_program_inputs_unavailable",
+        ));
     };
     let Some(pass_bounds) = context
         .state
         .clip_pass_bounds(program_inputs.final_dirty_bounds)
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("pass_bounds_empty"));
     };
 
     let tile_cols = target_size.width.div_ceil(TILE_SIZE);
@@ -276,7 +313,7 @@ where
         tile_work_lists_for_bounds(tile_count, tile_cols, &program_inputs.event_bounds)
             .map_err(P::Error::from)?;
     if work_indices.is_empty() {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback("tile_work_empty"));
     }
 
     let Some((mask_atlas, mask_atlas_bytes)) = scope_mask_atlas(
@@ -288,7 +325,9 @@ where
         &program_inputs,
     )?
     else {
-        return Ok(false);
+        return Ok(ScopeSiloEncodeResult::Fallback(
+            "scope_mask_atlas_unavailable",
+        ));
     };
 
     encode_scope_tile_program(
@@ -310,7 +349,7 @@ where
         context.state.push_drawn_resource(info);
     }
     *dirty_bounds = Some(pass_bounds);
-    Ok(true)
+    Ok(ScopeSiloEncodeResult::Wrote)
 }
 
 fn scope_mask_atlas<P>(

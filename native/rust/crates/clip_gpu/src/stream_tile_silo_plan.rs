@@ -12,6 +12,7 @@ use crate::{
 pub(crate) const TILE_SIZE: u32 = 256;
 pub(crate) const MIN_SILO_RUN_LEN: usize = 2;
 pub(crate) const MAX_SILO_EVENTS: usize = 256;
+pub(crate) const MAX_ATLAS_TEXTURE_SIZE: u32 = 8192;
 
 #[derive(Clone, Copy)]
 pub(crate) struct AtlasSourcePlacement {
@@ -61,11 +62,12 @@ pub(crate) fn plan_atlas_layout<P>(
     target_origin: (i32, i32),
     target_size: CanvasSize,
     sources: &[GpuNormalStackSource],
+    max_texture_size: u32,
 ) -> Option<AtlasLayout>
 where
     P: GpuNormalStackResourceProvider,
 {
-    let max_texture_size = 8192u32;
+    let max_texture_size = max_texture_size.max(1);
     let sizes: Vec<_> = sources
         .iter()
         .map(|source| {
@@ -295,4 +297,90 @@ fn ceil_sqrt_u64(value: u64) -> u64 {
         root += 1;
     }
     root
+}
+
+#[cfg(test)]
+mod tests {
+    use clip_model::{CanvasSize, LayerId};
+
+    use super::{GpuNormalStackResourceProvider, plan_atlas_layout};
+    use crate::{
+        GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
+        GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRenderError,
+        GpuRenderer,
+    };
+
+    struct FixedSizeProvider {
+        size: CanvasSize,
+    }
+
+    impl GpuNormalStackResourceProvider for FixedSizeProvider {
+        type Error = GpuRenderError;
+
+        fn raster_resource(
+            &mut self,
+            _renderer: &GpuRenderer,
+            _source: GpuNormalRasterSource,
+        ) -> Result<GpuRasterResourceCache, Self::Error> {
+            Ok(GpuRasterResourceCache::empty())
+        }
+
+        fn raster_resource_size(&self, _source: GpuNormalRasterSource) -> Option<CanvasSize> {
+            Some(self.size)
+        }
+
+        fn mask_resource(
+            &mut self,
+            _renderer: &GpuRenderer,
+            _key: GpuMaskResourceKey,
+        ) -> Result<GpuMaskResourceCache, Self::Error> {
+            Ok(GpuMaskResourceCache::empty())
+        }
+    }
+
+    #[test]
+    fn atlas_layout_uses_supplied_texture_limit() {
+        let provider = FixedSizeProvider {
+            size: CanvasSize::new(4096, 4096),
+        };
+        let sources = vec![raster_source(1), raster_source(2), raster_source(3)];
+
+        assert!(
+            plan_atlas_layout(
+                &provider,
+                CanvasSize::new(20000, 20000),
+                (0, 0),
+                CanvasSize::new(20000, 20000),
+                &sources,
+                8192,
+            )
+            .is_none()
+        );
+        let layout = plan_atlas_layout(
+            &provider,
+            CanvasSize::new(20000, 20000),
+            (0, 0),
+            CanvasSize::new(20000, 20000),
+            &sources,
+            16384,
+        )
+        .expect("larger device limit should keep atlas layout eligible");
+
+        assert!(layout.size.height > 8192);
+        assert!(layout.size.height <= 16384);
+    }
+
+    fn raster_source(layer_id: u32) -> GpuNormalStackSource {
+        GpuNormalStackSource::Raster(GpuNormalRasterSource {
+            key: GpuRasterResourceKey {
+                layer_id: LayerId(layer_id),
+                render_mipmap_id: layer_id,
+            },
+            opacity: 1.0,
+            mask_key: None,
+            offset_x: 0,
+            offset_y: 0,
+            blend_mode: GpuRasterBlendMode::Normal,
+        })
+    }
 }

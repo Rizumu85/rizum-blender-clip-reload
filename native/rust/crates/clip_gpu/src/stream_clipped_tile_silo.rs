@@ -72,6 +72,7 @@ where
         target_origin,
         target_size,
         &normal_sources,
+        crate::stream_tile_silo_plan::MAX_ATLAS_TEXTURE_SIZE,
     ) else {
         return Ok(false);
     };
