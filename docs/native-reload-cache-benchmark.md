@@ -153,47 +153,125 @@ decode/upload work before a known fallback. The more important finding is that
 the sparse path cannot currently execute past specific legacy barriers even
 when all source tiles are resident and unchanged.
 
-## Task C: Region-Demand Prototype Proposal
+## Dirty-Rect Internal Cost Drilldown
 
-Recommended single next implementation:
+Command:
 
-- Prototype a faithful region-demand path for
-  `LegacySource(IsolatedContainerRequiresIntermediate)`.
-- Primary fixture: `Ref_Terra404_Live2D`.
-- Exact observed barrier candidate:
-  `segment=6 kind=LegacySource reason=IsolatedContainerRequiresIntermediate`.
+```powershell
+python scripts\benchmark_persistent_reload_cache.py `
+  --clip-cli native\rust\target\release\clip_cli.exe `
+  --fixture-root E:\Documents\Claude\Projects\rizum-blender-clip-reload\img `
+  --samples Ref_Terra404_Live2D Test_RealArt `
+  --iterations 1 `
+  --output-json native\rust\target\dirty-rect-drilldown.json
+```
 
-Why it is unsafe to lower semantically:
+This run adds per top-segment drilldown fields under
+`render_profile.top_segments` when `RIZUM_CLIP_RENDER_PROFILE=1`:
 
-- This barrier represents isolated container semantics that the current
-  tile-event scope model has not proven faithful for all nested shapes.
-- The existing Terra guard around nested THROUGH/container relationships must
-  remain intact. This experiment should not lower the container to tile events.
+- CPU wall time, GPU pass encode ms, queue submit/poll ms, readback contribution
+- raster source count, visible source-tile intersections, active dirty tiles,
+  and max events per dirty tile
+- per-run atlas versus resident sparse atlas status
+- child source count, nested container/THROUGH count, raster count, and mask
+  count inside legacy barriers
+- whether source bounds extend outside the requested dirty target
 
-Smallest faithful experiment:
+The values below are release-mode `reload_1` measurements from one local run.
+They are diagnostic timings, not fidelity changes.
 
-- Input: a reload dirty rect and the legacy barrier segment that intersects the
-  affected window.
-- Execution: invoke the existing faithful legacy source/barrier renderer, but
-  restrict its render target and readback to the requested dirty rect clipped to
-  the barrier/source bounds when those bounds are known.
-- Output: the same patch payload format returned by the current region renderer.
-- Fallback: use the current full region renderer if the barrier bounds,
-  required child-source bounds, mask bounds, or coordinate translation cannot be
-  proven.
+### Ref_Terra404_Live2D reload_1
 
-Correctness test:
+Patch shape:
 
-- Use the same controlled previous-manifest tile mutation as the benchmark.
-- Compare the prototype barrier-region patch payload against the current
-  `patch_renderer=region` payload for `Ref_Terra404_Live2D`.
-- Add `Test_RealArt` as a guard where the first later barrier is
-  `ScopeDepthLimitExceeded`; it should either match the existing region path or
-  explicitly decline and fall back.
+- `patch_renderer=region`
+- dirty rect: `2048,2304 256x256`
+- sparse resident atlas: `6859` reused tiles, `0` inserted/changed, `1330.2`
+  MiB resident
+- no sparse upload before region fallback
+- dominant task: `RegionFallback:210ms`
 
-Expected metric:
+Top 10 patch/reload segments:
 
-- Primary: reduce Terra patch reload worker time or `RegionFallback` actual ms.
-- Secondary: reduce `legacy_barrier_segment_ms` for the patch reload.
-- The prototype is accepted only if the payload matches the current region path
-  byte-for-byte for the tested patch rects.
+| rank | kind | reason | first layer | ms | target is dirty rect | rasters | children | masks | active tiles | max events/tile | atlas | queue/poll ms | source bounds exceed target |
+| ---: | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |
+| 1 | LegacySource | ThroughGroupNotLowered | 13 | 19 | yes | 19 | 24 | 0 | 1 | 2 | legacy/not applicable | 0 | yes |
+| 2 | RasterRun | - | 31 | 18 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+| 3 | LegacySource | ThroughGroupNotLowered | 203 | 16 | yes | 48 | 70 | 1 | 1 | 10 | legacy/not applicable | 0 | yes |
+| 4 | LegacySource | ThroughGroupNotLowered | 407 | 13 | yes | 21 | 28 | 3 | 1 | 6 | legacy/not applicable | 0 | yes |
+| 5 | LegacySource | ThroughGroupNotLowered | 443 | 9 | yes | 10 | 12 | 3 | 1 | 4 | legacy/not applicable | 1 | yes |
+| 6 | LegacySource | ClippingRunNotLowered | 416 | 8 | yes | 5 | 5 | 1 | 1 | 3 | legacy/not applicable | 0 | yes |
+| 7 | LegacySource | IsolatedContainerRequiresIntermediate | 195 | 6 | yes | 5 | 6 | 0 | 1 | 2 | legacy/not applicable | 0 | yes |
+| 8 | RasterRun | - | 196 | 6 | yes | 2 | 2 | 0 | 1 | 2 | per-run atlas | 0 | yes |
+| 9 | LegacySource | ThroughGroupNotLowered | 469 | 5 | yes | 20 | 26 | 3 | 1 | 5 | legacy/not applicable | 0 | yes |
+| 10 | RasterRun | - | 267 | 5 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+
+### Test_RealArt reload_1
+
+Patch shape:
+
+- `patch_renderer=region`
+- dirty rect: `1280,1024 256x256`
+- sparse resident atlas: `2443` reused tiles, `0` inserted/changed, `566.6`
+  MiB resident
+- no sparse upload before region fallback
+- dominant task: `RegionFallback:113ms`
+
+Top 10 patch/reload segments:
+
+| rank | kind | reason | first layer | ms | target is dirty rect | rasters | children | masks | active tiles | max events/tile | atlas | queue/poll ms | source bounds exceed target |
+| ---: | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |
+| 1 | RasterRun | - | 35 | 24 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+| 2 | LegacySource | IsolatedContainerRequiresIntermediate | 312 | 14 | yes | 14 | 16 | 1 | 1 | 4 | legacy/not applicable | 0 | yes |
+| 3 | LegacySource | IsolatedContainerRequiresIntermediate | 315 | 11 | yes | 12 | 13 | 0 | 1 | 3 | legacy/not applicable | 0 | yes |
+| 4 | RasterRun | - | 299 | 5 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+| 5 | RasterRun | - | 319 | 5 | yes | 2 | 2 | 0 | 1 | 2 | per-run atlas | 0 | yes |
+| 6 | LegacySource | ThroughGroupNotLowered | 31 | 5 | yes | 4 | 5 | 0 | 1 | 2 | legacy/not applicable | 0 | yes |
+| 7 | LegacySource | ThroughGroupNotLowered | 37 | 5 | yes | 4 | 5 | 0 | 1 | 1 | legacy/not applicable | 0 | yes |
+| 8 | RasterRun | - | 327 | 3 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+| 9 | RasterRun | - | 313 | 3 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+| 10 | RasterRun | - | 323 | 2 | yes | 1 | 1 | 0 | 1 | 1 | per-run atlas | 0 | yes |
+
+### Classification
+
+Selected class: **E. Sparse resident atlas not used in region path**.
+
+Reasoning:
+
+- The outer region renderer is already using the 256x256 dirty target for every
+  top segment in both requested samples. That rules out a broad full-canvas or
+  segment-bounds region-demand fix as the next smallest step.
+- The measured RasterRun segments are tiny in semantic work: one active dirty
+  tile and usually one raster source, yet they still cost up to `18ms` on Terra
+  and `24ms` on RealArt.
+- The same reload requests already have thousands of resident sparse atlas
+  tiles reused, but the region renderer's RasterRun segments report
+  `per-run atlas`, not `resident_sparse_atlas`.
+- Legacy barriers are still meaningful costs, especially Terra's
+  `ThroughGroupNotLowered`, but those are semantic-unsafe barriers. Reducing
+  them would require semantic lowering, which is out of scope for this pass.
+
+Unsupported/unknown fields:
+
+- Legacy internal intermediate-cache rectangle and internal child sub-pass timing
+  are not measured yet. The profiler records the outer target rect, child source
+  counts, raster counts, mask counts, direct streaming pass counts, and
+  source-bound over-target status only.
+- Per-segment cache reuse count is not currently attributed inside
+  `stream_sequence`; sample-level sparse cache reuse is measured by
+  `sparse_atlas_cache`.
+
+Recommended smallest prototype:
+
+- Add an opt-in region-renderer RasterRun cache substitution prototype.
+- Scope: patch reload only, `RIZUM_CLIP_RENDER_PROFILE=1` / explicit feature
+  flag only.
+- When the region fallback renderer executes a `RasterRun` segment and the
+  persistent sparse atlas has complete resident slot coverage for that segment's
+  dirty target, execute that RasterRun through the resident sparse atlas
+  executor instead of rebuilding a per-run atlas.
+- Keep legacy barriers on the existing faithful path and preserve segment order,
+  target origin, transparent-white accumulator convention, and current patch
+  payload bytes.
+- Validate by comparing patch payload bytes against the current region renderer
+  on `Test_RealArt reload_1` and `Ref_Terra404_Live2D reload_1`.

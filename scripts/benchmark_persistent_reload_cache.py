@@ -214,6 +214,12 @@ def summarize_metadata(
     sparse_upload_work = int(sparse.get("inserted_tiles") or 0) + int(
         sparse.get("changed_tiles") or 0
     )
+    dirty_rects = reload_diff.get("dirty_rects") or reload_diff.get("rects") or []
+    top_reload_segments = enrich_top_reload_segments(
+        render_profile.get("top_segments") or [],
+        dirty_rects,
+        reload_diff.get("patch_renderer") or "full",
+    )
 
     return {
         "sample": sample,
@@ -256,6 +262,7 @@ def summarize_metadata(
         "region_fallback_executed": region_fallback,
         "first_skipped_sparse_task_reason": first_skipped_sparse_reason,
         "dominant_task": dominant_task,
+        "top_reload_segments": top_reload_segments,
         "sparse_upload_before_region_fallback": bool(
             region_fallback
             and (
@@ -265,6 +272,62 @@ def summarize_metadata(
         ),
         "mutation": mutation,
     }
+
+
+def enrich_top_reload_segments(
+    segments: list[dict[str, Any]],
+    dirty_rects: list[dict[str, Any]],
+    patch_renderer: str,
+) -> list[dict[str, Any]]:
+    return [
+        enrich_top_reload_segment(segment, dirty_rects, patch_renderer)
+        for segment in segments[:10]
+    ]
+
+
+def enrich_top_reload_segment(
+    segment: dict[str, Any],
+    dirty_rects: list[dict[str, Any]],
+    patch_renderer: str,
+) -> dict[str, Any]:
+    enriched = dict(segment)
+    enriched["target_rect_exactly_dirty_rect"] = segment_target_matches_dirty_rect(
+        segment, dirty_rects
+    )
+    enriched["reason_cannot_skip"] = cannot_skip_reason(segment, patch_renderer)
+    return enriched
+
+
+def segment_target_matches_dirty_rect(
+    segment: dict[str, Any], dirty_rects: list[dict[str, Any]]
+) -> bool:
+    origin = segment.get("target_origin") or []
+    size = segment.get("target_size") or []
+    if len(origin) != 2 or len(size) != 2:
+        return False
+    target = {
+        "x": int(origin[0]),
+        "y": int(origin[1]),
+        "width": int(size[0]),
+        "height": int(size[1]),
+    }
+    return any(
+        target["x"] == int(rect.get("x") or 0)
+        and target["y"] == int(rect.get("y") or 0)
+        and target["width"] == int(rect.get("width") or 0)
+        and target["height"] == int(rect.get("height") or 0)
+        for rect in dirty_rects
+    )
+
+
+def cannot_skip_reason(segment: dict[str, Any], patch_renderer: str) -> str:
+    if patch_renderer == "region":
+        if segment.get("kind") == "LegacySource":
+            return "region fallback replays unsafe barrier because it overlaps the dirty rect"
+        return "region fallback replays tile-local segment because it contributes to the dirty rect stack"
+    if segment.get("event_sources_outside_target_rect"):
+        return "segment has source events whose global bounds exceed the requested target"
+    return "requested by selected patch renderer"
 
 
 def first_skipped_sparse_task_reason(tasks: list[dict[str, Any]]) -> str | None:
@@ -461,6 +524,29 @@ def print_markdown(results: list[dict[str, Any]]) -> None:
                     f"tile=({mutation.get('tile_x')},{mutation.get('tile_y')}) "
                     f"segment={mutation.get('segment_ordinal')}`"
                 )
+            if first_patch.get("top_reload_segments"):
+                print()
+                print("| rank | kind | reason | first layer | ms | target dirty | rasters | child sources | masks | active tiles | max events/tile | atlas | queue/poll | outside target |")
+                print("| ---: | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |")
+                for segment in first_patch["top_reload_segments"]:
+                    queue_poll = int(segment.get("queue_submit_ms") or 0) + int(
+                        segment.get("queue_poll_ms") or 0
+                    )
+                    print(
+                        f"| {segment.get('rank')} | {segment.get('kind')} | "
+                        f"{segment.get('barrier_reason') or ''} | "
+                        f"{segment.get('first_layer_id') or ''} | "
+                        f"{segment.get('elapsed_ms')} | "
+                        f"{yes_no(bool(segment.get('target_rect_exactly_dirty_rect')))} | "
+                        f"{segment.get('raster_source_count') or 0} | "
+                        f"{segment.get('child_source_count') or 0} | "
+                        f"{segment.get('barrier_mask_count') or segment.get('mask_count') or 0} | "
+                        f"{segment.get('active_canvas_tile_count') or 0} | "
+                        f"{segment.get('max_events_per_dirty_tile') or 0} | "
+                        f"{segment.get('atlas_upload_reuse_status') or ''} | "
+                        f"{queue_poll} | "
+                        f"{yes_no(bool(segment.get('event_sources_outside_target_rect')))} |"
+                    )
             print()
 
 

@@ -75,6 +75,7 @@ class ReloadCacheBenchmarkTests(unittest.TestCase):
                 "patch_renderer": "region",
                 "patch_renderer_fallback_reason": "no executable sparse patch",
                 "payload_bytes": 1024,
+                "dirty_rects": [{"x": 64, "y": 128, "width": 256, "height": 256}],
                 "dirty_segments": [
                     {
                         "dirty_event_ranges": [
@@ -108,6 +109,23 @@ class ReloadCacheBenchmarkTests(unittest.TestCase):
                 "legacy_barrier_segment_ms": 8,
                 "tile_local_segment_count": 2,
                 "tile_local_segment_ms": 3,
+                "top_segments": [
+                    {
+                        "rank": 1,
+                        "kind": "RasterRun",
+                        "elapsed_ms": 5,
+                        "target_origin": [64, 128],
+                        "target_size": [256, 256],
+                    },
+                    {
+                        "rank": 2,
+                        "kind": "LegacySource",
+                        "barrier_reason": "ThroughGroupNotLowered",
+                        "elapsed_ms": 4,
+                        "target_origin": [0, 0],
+                        "target_size": [512, 512],
+                    },
+                ],
             },
             "render_task_graph": {
                 "tasks": [
@@ -139,6 +157,10 @@ class ReloadCacheBenchmarkTests(unittest.TestCase):
         self.assertTrue(row["region_fallback_executed"])
         self.assertTrue(row["sparse_upload_before_region_fallback"])
         self.assertEqual(row["dominant_task"], "RegionFallback:9ms")
+        self.assertEqual(len(row["top_reload_segments"]), 2)
+        self.assertTrue(row["top_reload_segments"][0]["target_rect_exactly_dirty_rect"])
+        self.assertFalse(row["top_reload_segments"][1]["target_rect_exactly_dirty_rect"])
+        self.assertIn("unsafe barrier", row["top_reload_segments"][1]["reason_cannot_skip"])
 
 
 if __name__ == "__main__":

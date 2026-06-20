@@ -44,6 +44,14 @@ pub struct RenderProfileSegment {
     pub barrier_reason: Option<&'static str>,
     pub elapsed_us: u64,
     pub elapsed_ms: u64,
+    pub gpu_pass_encode_ms: u64,
+    pub queue_submit_ms: u64,
+    pub queue_poll_ms: u64,
+    pub readback_copy_ms: u64,
+    pub readback_cpu_copy_ms: u64,
+    pub streaming_pass_count: u64,
+    pub queue_submit_count: u64,
+    pub readback_count: u64,
     pub source_start: u32,
     pub source_end: u32,
     pub first_layer_id: Option<u32>,
@@ -54,6 +62,21 @@ pub struct RenderProfileSegment {
     pub expected_passes: u32,
     pub tile_events: u32,
     pub legacy_sources: u32,
+    pub raster_source_count: u32,
+    pub compressed_tile_event_count: u32,
+    pub active_canvas_tile_count: u32,
+    pub max_events_per_dirty_tile: u32,
+    pub event_sources_outside_target_rect: bool,
+    pub uses_sparse_resident_atlas: bool,
+    pub uses_per_run_atlas: bool,
+    pub gpu_batches: u32,
+    pub child_source_count: u32,
+    pub nested_container_through_count: u32,
+    pub barrier_raster_count: u32,
+    pub barrier_mask_count: u32,
+    pub legacy_subpass_count_estimate: u32,
+    pub legacy_direct_subpass_count: u32,
+    pub largest_legacy_direct_subpass_us: u64,
 }
 
 static ENABLED: OnceLock<bool> = OnceLock::new();
@@ -230,11 +253,65 @@ pub(crate) fn record_tile_local_segment(elapsed: Duration) {
     add_duration_ms(&TILE_LOCAL_SEGMENT_MS, elapsed);
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct RenderProfileSegmentCounters {
+    pub gpu_pass_encode_ms: u64,
+    pub queue_submit_ms: u64,
+    pub queue_poll_ms: u64,
+    pub readback_copy_ms: u64,
+    pub readback_cpu_copy_ms: u64,
+    pub streaming_pass_count: u64,
+    pub queue_submit_count: u64,
+    pub readback_count: u64,
+}
+
+impl RenderProfileSegmentCounters {
+    pub(crate) fn saturating_sub(self, before: Self) -> Self {
+        Self {
+            gpu_pass_encode_ms: self
+                .gpu_pass_encode_ms
+                .saturating_sub(before.gpu_pass_encode_ms),
+            queue_submit_ms: self.queue_submit_ms.saturating_sub(before.queue_submit_ms),
+            queue_poll_ms: self.queue_poll_ms.saturating_sub(before.queue_poll_ms),
+            readback_copy_ms: self
+                .readback_copy_ms
+                .saturating_sub(before.readback_copy_ms),
+            readback_cpu_copy_ms: self
+                .readback_cpu_copy_ms
+                .saturating_sub(before.readback_cpu_copy_ms),
+            streaming_pass_count: self
+                .streaming_pass_count
+                .saturating_sub(before.streaming_pass_count),
+            queue_submit_count: self
+                .queue_submit_count
+                .saturating_sub(before.queue_submit_count),
+            readback_count: self.readback_count.saturating_sub(before.readback_count),
+        }
+    }
+}
+
+pub(crate) fn segment_counters() -> RenderProfileSegmentCounters {
+    if !enabled() {
+        return RenderProfileSegmentCounters::default();
+    }
+    RenderProfileSegmentCounters {
+        gpu_pass_encode_ms: GPU_PASS_ENCODE_MS.load(Ordering::Relaxed),
+        queue_submit_ms: QUEUE_SUBMIT_MS.load(Ordering::Relaxed),
+        queue_poll_ms: QUEUE_POLL_MS.load(Ordering::Relaxed),
+        readback_copy_ms: READBACK_COPY_MS.load(Ordering::Relaxed),
+        readback_cpu_copy_ms: READBACK_CPU_COPY_MS.load(Ordering::Relaxed),
+        streaming_pass_count: STREAMING_PASS_COUNT.load(Ordering::Relaxed),
+        queue_submit_count: QUEUE_SUBMIT_COUNT.load(Ordering::Relaxed),
+        readback_count: READBACK_COUNT.load(Ordering::Relaxed),
+    }
+}
+
 pub(crate) struct RenderProfileSegmentRecord {
     pub kind: &'static str,
     pub source_shape: &'static str,
     pub legacy_reason: Option<&'static str>,
     pub elapsed: Duration,
+    pub counters: RenderProfileSegmentCounters,
     pub source_start: usize,
     pub source_end: usize,
     pub first_layer_id: Option<u32>,
@@ -243,6 +320,21 @@ pub(crate) struct RenderProfileSegmentRecord {
     pub expected_passes: u32,
     pub tile_events: u32,
     pub legacy_sources: u32,
+    pub raster_source_count: u32,
+    pub compressed_tile_event_count: u32,
+    pub active_canvas_tile_count: u32,
+    pub max_events_per_dirty_tile: u32,
+    pub event_sources_outside_target_rect: bool,
+    pub uses_sparse_resident_atlas: bool,
+    pub uses_per_run_atlas: bool,
+    pub gpu_batches: u32,
+    pub child_source_count: u32,
+    pub nested_container_through_count: u32,
+    pub barrier_raster_count: u32,
+    pub barrier_mask_count: u32,
+    pub legacy_subpass_count_estimate: u32,
+    pub legacy_direct_subpass_count: u32,
+    pub largest_legacy_direct_subpass_us: u64,
 }
 
 pub(crate) fn record_segment(record: RenderProfileSegmentRecord) {
@@ -256,6 +348,14 @@ pub(crate) fn record_segment(record: RenderProfileSegmentRecord) {
         barrier_reason: record.legacy_reason,
         elapsed_us: record.elapsed.as_micros().try_into().unwrap_or(u64::MAX),
         elapsed_ms: record.elapsed.as_millis().try_into().unwrap_or(u64::MAX),
+        gpu_pass_encode_ms: record.counters.gpu_pass_encode_ms,
+        queue_submit_ms: record.counters.queue_submit_ms,
+        queue_poll_ms: record.counters.queue_poll_ms,
+        readback_copy_ms: record.counters.readback_copy_ms,
+        readback_cpu_copy_ms: record.counters.readback_cpu_copy_ms,
+        streaming_pass_count: record.counters.streaming_pass_count,
+        queue_submit_count: record.counters.queue_submit_count,
+        readback_count: record.counters.readback_count,
         source_start: usize_to_u32(record.source_start),
         source_end: usize_to_u32(record.source_end),
         first_layer_id: record.first_layer_id,
@@ -266,6 +366,21 @@ pub(crate) fn record_segment(record: RenderProfileSegmentRecord) {
         expected_passes: record.expected_passes,
         tile_events: record.tile_events,
         legacy_sources: record.legacy_sources,
+        raster_source_count: record.raster_source_count,
+        compressed_tile_event_count: record.compressed_tile_event_count,
+        active_canvas_tile_count: record.active_canvas_tile_count,
+        max_events_per_dirty_tile: record.max_events_per_dirty_tile,
+        event_sources_outside_target_rect: record.event_sources_outside_target_rect,
+        uses_sparse_resident_atlas: record.uses_sparse_resident_atlas,
+        uses_per_run_atlas: record.uses_per_run_atlas,
+        gpu_batches: record.gpu_batches,
+        child_source_count: record.child_source_count,
+        nested_container_through_count: record.nested_container_through_count,
+        barrier_raster_count: record.barrier_raster_count,
+        barrier_mask_count: record.barrier_mask_count,
+        legacy_subpass_count_estimate: record.legacy_subpass_count_estimate,
+        legacy_direct_subpass_count: record.legacy_direct_subpass_count,
+        largest_legacy_direct_subpass_us: record.largest_legacy_direct_subpass_us,
     };
     record_top_segment(top_segments(), segment);
 }
@@ -403,6 +518,14 @@ mod tests {
                     barrier_reason: None,
                     elapsed_us,
                     elapsed_ms: 0,
+                    gpu_pass_encode_ms: 0,
+                    queue_submit_ms: 0,
+                    queue_poll_ms: 0,
+                    readback_copy_ms: 0,
+                    readback_cpu_copy_ms: 0,
+                    streaming_pass_count: 0,
+                    queue_submit_count: 0,
+                    readback_count: 0,
                     source_start: ordinal as u32,
                     source_end: ordinal as u32 + 1,
                     first_layer_id: Some(ordinal as u32),
@@ -413,6 +536,21 @@ mod tests {
                     expected_passes: 1,
                     tile_events: 1,
                     legacy_sources: 0,
+                    raster_source_count: 1,
+                    compressed_tile_event_count: 1,
+                    active_canvas_tile_count: 1,
+                    max_events_per_dirty_tile: 1,
+                    event_sources_outside_target_rect: false,
+                    uses_sparse_resident_atlas: false,
+                    uses_per_run_atlas: true,
+                    gpu_batches: 1,
+                    child_source_count: 1,
+                    nested_container_through_count: 0,
+                    barrier_raster_count: 0,
+                    barrier_mask_count: 0,
+                    legacy_subpass_count_estimate: 0,
+                    legacy_direct_subpass_count: 0,
+                    largest_legacy_direct_subpass_us: 0,
                 },
                 3,
             );

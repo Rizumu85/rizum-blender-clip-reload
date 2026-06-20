@@ -49,23 +49,120 @@ fn top_segments_json(
         .iter()
         .enumerate()
         .map(|(rank, segment)| {
-            json!({
-                "rank": rank + 1,
-                "ordinal": segment.ordinal,
-                "kind": segment.kind,
-                "source_shape": segment.source_shape,
-                "barrier_reason": segment.barrier_reason,
-                "elapsed_us": segment.elapsed_us,
-                "elapsed_ms": segment.elapsed_ms,
-                "source_start": segment.source_start,
-                "source_end": segment.source_end,
-                "first_layer_id": segment.first_layer_id,
-                "target_origin": [segment.target_origin_x, segment.target_origin_y],
-                "target_size": [segment.target_width, segment.target_height],
-                "expected_passes": segment.expected_passes,
-                "tile_events": segment.tile_events,
-                "legacy_sources": segment.legacy_sources,
-            })
+            let mut object = serde_json::Map::new();
+            macro_rules! insert {
+                ($key:literal, $value:expr) => {
+                    object.insert($key.to_string(), json!($value));
+                };
+            }
+            let atlas_status = if segment.uses_sparse_resident_atlas {
+                "resident_sparse_atlas"
+            } else if segment.uses_per_run_atlas {
+                "per_run_atlas"
+            } else {
+                "legacy_or_not_applicable"
+            };
+            insert!("rank", rank + 1);
+            insert!("ordinal", segment.ordinal);
+            insert!("kind", segment.kind);
+            insert!("source_shape", segment.source_shape);
+            insert!("barrier_reason", segment.barrier_reason);
+            insert!("elapsed_us", segment.elapsed_us);
+            insert!("elapsed_ms", segment.elapsed_ms);
+            insert!("cpu_encode_ms", segment.elapsed_ms);
+            insert!("gpu_pass_encode_ms", segment.gpu_pass_encode_ms);
+            insert!("queue_submit_ms", segment.queue_submit_ms);
+            insert!("queue_poll_ms", segment.queue_poll_ms);
+            insert!(
+                "queue_submit_poll_ms",
+                segment
+                    .queue_submit_ms
+                    .saturating_add(segment.queue_poll_ms)
+            );
+            insert!("readback_copy_ms", segment.readback_copy_ms);
+            insert!("readback_cpu_copy_ms", segment.readback_cpu_copy_ms);
+            insert!(
+                "readback_contribution_ms",
+                segment
+                    .readback_copy_ms
+                    .saturating_add(segment.readback_cpu_copy_ms)
+            );
+            insert!("streaming_pass_count", segment.streaming_pass_count);
+            insert!("queue_submit_count", segment.queue_submit_count);
+            insert!("readback_count", segment.readback_count);
+            insert!("source_start", segment.source_start);
+            insert!("source_end", segment.source_end);
+            insert!("first_layer_id", segment.first_layer_id);
+            insert!(
+                "target_origin",
+                [segment.target_origin_x, segment.target_origin_y]
+            );
+            insert!("target_size", [segment.target_width, segment.target_height]);
+            insert!("expected_passes", segment.expected_passes);
+            insert!("tile_events", segment.tile_events);
+            insert!("legacy_sources", segment.legacy_sources);
+            insert!("raster_source_count", segment.raster_source_count);
+            insert!(
+                "compressed_tile_event_count",
+                segment.compressed_tile_event_count
+            );
+            insert!(
+                "compressed_tile_event_count_basis",
+                "visible source-tile intersections in the requested target"
+            );
+            insert!("active_canvas_tile_count", segment.active_canvas_tile_count);
+            insert!(
+                "max_events_per_dirty_tile",
+                segment.max_events_per_dirty_tile
+            );
+            insert!(
+                "event_sources_outside_target_rect",
+                segment.event_sources_outside_target_rect
+            );
+            insert!("atlas_upload_reuse_status", atlas_status);
+            insert!("gpu_passes", segment.expected_passes);
+            insert!("gpu_batches", segment.gpu_batches);
+            insert!(
+                "uses_sparse_resident_atlas",
+                segment.uses_sparse_resident_atlas
+            );
+            insert!("uses_per_run_atlas", segment.uses_per_run_atlas);
+            insert!("target_rect_mode", "requested_region");
+            object.insert(
+                "cache_resource_reuse_count".to_string(),
+                serde_json::Value::Null,
+            );
+            insert!("cache_resource_reuse_status", "not_measured_per_segment");
+            insert!("child_source_count", segment.child_source_count);
+            insert!(
+                "nested_container_through_count",
+                segment.nested_container_through_count
+            );
+            insert!("barrier_raster_count", segment.barrier_raster_count);
+            insert!("barrier_mask_count", segment.barrier_mask_count);
+            insert!("legacy_intermediate_cache_rect", "not_measured");
+            insert!(
+                "legacy_source_bounds_exceed_target_rect",
+                segment.event_sources_outside_target_rect
+            );
+            insert!("legacy_internal_region_mode", "not_measured");
+            insert!(
+                "legacy_subpass_count_estimate",
+                segment.legacy_subpass_count_estimate
+            );
+            insert!(
+                "legacy_direct_subpass_count",
+                segment.legacy_direct_subpass_count
+            );
+            insert!(
+                "largest_legacy_direct_subpass_ms",
+                segment.largest_legacy_direct_subpass_us.saturating_add(999) / 1000
+            );
+            object.insert(
+                "largest_child_subpass_ms".to_string(),
+                serde_json::Value::Null,
+            );
+            serde_json::Value::Object(object)
         })
         .collect()
 }

@@ -33,6 +33,7 @@ mod stream_context;
 mod stream_effects;
 mod stream_extents;
 mod stream_groups;
+mod stream_legacy_segment;
 mod stream_program;
 mod stream_program_barriers;
 mod stream_program_inspect;
@@ -43,6 +44,7 @@ mod stream_provider;
 mod stream_resources;
 #[cfg(test)]
 mod stream_resources_tests;
+mod stream_segment_profile;
 mod stream_sequence;
 mod stream_state;
 #[cfg(test)]

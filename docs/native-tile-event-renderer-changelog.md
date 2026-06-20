@@ -1367,6 +1367,18 @@ region patch renderer; no sparse upload occurred before region fallback. The
 next evidence-backed experiment is region-demand execution for unsafe legacy
 barrier segments, not more semantic lowering.
 
+Forty-ninth form: dirty-rect internal cost drilldown is now reported through
+`RIZUM_CLIP_RENDER_PROFILE=1` top segments and the persistent reload benchmark.
+The worker JSON records per top segment CPU wall time, GPU pass encode,
+queue/poll, readback contribution, raster/source/tile density, atlas reuse
+status, and legacy barrier child/raster/mask counts. The local `reload_1`
+drilldown for `Ref_Terra404_Live2D` and `Test_RealArt` showed every top
+segment already uses the 256x256 dirty target, so the coarse libvips-style
+full/segment region-demand prototype is not the next best step. The selected
+next class is `E. Sparse resident atlas not used in region path`: tiny dirty
+RasterRun segments still use per-run atlases even though the persistent sparse
+atlas has complete resident tile reuse at the sample level.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
