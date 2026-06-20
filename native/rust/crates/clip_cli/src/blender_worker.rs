@@ -144,12 +144,6 @@ pub(crate) fn write_blender_render_files_with_renderer(
             sparse_reconstructed_ms,
             region_fallback_ms,
         );
-        if !render.unsupported.is_empty() {
-            return Err(RuntimeError::UnsupportedRenderPlan {
-                unsupported: render.unsupported,
-            }
-            .to_string());
-        }
         let source_count = render.source_count;
         let stats = render.resource_stats;
         let texture_cache_stats = render.texture_cache_stats;
@@ -197,12 +191,6 @@ pub(crate) fn write_blender_render_files_with_renderer(
     }
     .map_err(|err| err.to_string())?;
     let render_ms = elapsed_ms(render_start);
-    if !render.unsupported.is_empty() {
-        return Err(RuntimeError::UnsupportedRenderPlan {
-            unsupported: render.unsupported,
-        }
-        .to_string());
-    }
     let source_count = render.source_count;
     let stats = render.resource_stats;
     let texture_cache_stats = render.texture_cache_stats;

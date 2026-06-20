@@ -64,6 +64,9 @@ Out of scope:
   images before saving the `.blend`.
 - Missing source files keep the packed pixels visible and mark the image
   `missing_source`.
+- Unsupported out-of-scope layer kinds such as vector, text, bubble/frame, or
+  future unknown layer records are skipped during flattened import and recorded
+  in diagnostics; they do not abort the import.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
 - UI translations exist for Simplified Chinese, Japanese, and Spanish. Add-on

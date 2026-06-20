@@ -3,9 +3,12 @@ use std::path::{Path, PathBuf};
 
 use clip_file::ClipFileSummary;
 use clip_graph::{RenderNode, RenderNodeId, RenderNodeKind, RenderPlan};
-use clip_model::{CanvasSize, LayerId, LayerKind, LayerOpacity, LayerVisibility, Rgba8};
+use clip_model::{CanvasSize, LayerId, LayerKind, LayerOpacity, LayerVisibility, Rect, Rgba8};
 
-use super::{ClipSession, StrictRasterStackDraw, StrictRasterStackOptions};
+use super::{
+    ClipSession, SimpleRasterStackUnsupportedReason, StrictRasterStackDraw,
+    StrictRasterStackOptions,
+};
 
 #[test]
 fn plans_test_clipping_visible_layer_order() {
@@ -846,6 +849,51 @@ fn normal_gpu_result_reuses_support_resource_stats() {
 }
 
 #[test]
+fn gpu_selector_records_unsupported_layer_kind_without_blocking_sources() {
+    let session = synthetic_session(vec![
+        container_node(0, 2, 0, 0),
+        paper_node(1, 4, 1),
+        unsupported_node(2, 20, 1, 9001),
+        paper_node(3, 5, 1),
+    ]);
+
+    let selection = session
+        .select_gpu_normal_render_stack(gpu_selector_options())
+        .expect("select synthetic stack with unsupported layer");
+
+    assert_eq!(selection.sources.len(), 2);
+    assert_eq!(selection.unsupported.len(), 1);
+    assert_eq!(selection.unsupported[0].layer_id, LayerId(20));
+    assert!(matches!(
+        selection.unsupported[0].reason,
+        SimpleRasterStackUnsupportedReason::UnsupportedLayerKind(9001)
+    ));
+}
+
+#[test]
+fn region_read_skips_unsupported_layer_kinds() {
+    let mut session = synthetic_session(vec![
+        container_node(0, 2, 0, 0),
+        paper_node(1, 4, 1),
+        unsupported_node(2, 20, 1, 9001),
+        paper_node(3, 5, 1),
+    ]);
+
+    let support = session
+        .check_normal_raster_stack_support()
+        .expect("check synthetic support");
+    assert_eq!(support.source_count, 2);
+    assert_eq!(support.unsupported.len(), 1);
+
+    let mut pixel = [0u8; 4];
+    session
+        .read_rgba8_region(Rect::new(0, 0, 1, 1), &mut pixel)
+        .expect("read region while unsupported layer is skipped");
+
+    assert_eq!(pixel, [226, 226, 226, 255]);
+}
+
+#[test]
 fn gpu_selector_accepts_container_base_clipping_runs_in_aya_fixture() {
     let Some(path) = fixture_path_ending("Aya_Live2D.clip") else {
         return;
@@ -1090,6 +1138,22 @@ fn filter_node(id: u32, layer_id: u32, depth: u16) -> RenderNode {
         layer_id: LayerId(layer_id),
         layer_name: String::new(),
         kind: RenderNodeKind::Filter,
+        depth,
+        clip: false,
+        opacity: LayerOpacity::MAX,
+        composite: 0,
+        render_mipmap_id: None,
+        mask_mipmap_id: None,
+        paper_color: None,
+    }
+}
+
+fn unsupported_node(id: u32, layer_id: u32, depth: u16, raw_kind: u32) -> RenderNode {
+    RenderNode {
+        id: RenderNodeId(id),
+        layer_id: LayerId(layer_id),
+        layer_name: String::new(),
+        kind: RenderNodeKind::Unsupported(raw_kind),
         depth,
         clip: false,
         opacity: LayerOpacity::MAX,

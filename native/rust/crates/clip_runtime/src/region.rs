@@ -47,11 +47,6 @@ impl ClipSession {
     fn rendered_image(&mut self) -> Result<&clip_file::tiles::RgbaTileImage, RuntimeError> {
         if self.rendered_image.is_none() {
             let result = self.draw_normal_raster_stack_via_gpu()?;
-            if !result.unsupported.is_empty() {
-                return Err(RuntimeError::UnsupportedRenderPlan {
-                    unsupported: result.unsupported,
-                });
-            }
             let image = result.image.ok_or(RuntimeError::EmptyRenderPlan)?;
             self.rendered_image = Some(image);
         }
