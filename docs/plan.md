@@ -1,6 +1,6 @@
 # Plan
 
-Last reconciled: 2026-06-18
+Last reconciled: 2026-06-20
 
 ## Purpose
 
@@ -22,8 +22,9 @@ Goal: improve flattened `.clip` output for raster artwork without reopening vect
 
 Current focus:
 
-- Keep the project-root `clip_loader.py` available as slow reference tooling for
-  verification scripts while native fidelity gaps close.
+- Use CSP PNG exports and native `clip_cli --compare-png` for verification;
+  the old project-root Python compositor has been removed now that the native
+  path owns flattened raster rendering.
 - Keep the main compositor on straight `uint8` RGBA buffers so transparent cache RGB, Add/Add Glow byte alpha, and future native byte-domain blend work are expressible.
 - Continue raster layer semantics: folders, masks, clipping, THROUGH groups, blend modes, adjustment/filter layers, and visibility bit flags.
 - Keep `LayerVisibility` as a bit flag: values `0` and `2` are hidden; values `1` and `3` are visible.
@@ -132,8 +133,9 @@ Current policy:
   built release `clip_cli` worker plus `clip_capi` library under `native/`;
   it no longer packages the Python compositor/loader or `bl_info`. Preferences expose reload
   timing, debug logging, and Developer Mode; they only report packaged native
-  worker status when the worker is missing. The project-root `clip_loader.py` remains slow reference tooling for
-  verification while native fidelity gaps close.
+  worker status when the worker is missing. The project-root Python compositor
+  has been removed; verification now uses CSP PNG exports and native
+  `clip_cli --compare-png`.
 - Strict GPU coverage status: ordinary raster blend modes `LayerComposite=1..26` plus `36` are enabled, isolated containers can resolve with supported non-NORMAL blend modes, clipping runs support non-NORMAL raster bases, container/folder clipping bases, and clipped sibling stacks whose members may be rasters or recursively rendered containers/folders. THROUGH groups clear the clip base for following clipped layers, and adjustment/filter layers now route through a dedicated GPU pass: Brightness/Contrast (`FilterLayerInfo` type `1`), Level Correction (`2`), Tone Curve (`3`), HSL (`4`, native HSV-adjust shader mode), Color Balance (`5`), Invert/Reverse Gradient (`6`), Posterization (`7`), Threshold (`8`), and Gradient Map (`9`). Unknown future filter types remain explicit unsupported filter work until faithful native models exist. A metadata-only scan of the current public/local `img/*.clip` fixtures reports `unsupported=0`, including `Ref_绫音Aya_Live2D.clip --gpu-support-json`, `Ref_Kabi_Live2D.clip --gpu-support-json`, and `Test_RealArt.clip --gpu-support-check`. These samples are fully routed but still have residual formula/quantization or performance work; distinguish native/Python parity from shared Python/CSP residuals before changing shaders, and improve correctness only with source-backed native evidence and guard samples.
 - HSL filter payload mapping is now sample-backed separately from the native
   per-pixel routine: the SQLite payload uses UI-degree hue plus UI-percent

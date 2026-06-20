@@ -1,6 +1,6 @@
 # Native Direct-Load Rewrite
 
-Last updated: 2026-06-16
+Last updated: 2026-06-20
 
 ## Decision
 
@@ -174,9 +174,9 @@ Result:
   sidecar PNGs. `tools/build_blender_addon.py` packages the Blender extension
   manifest, `__init__.py`, `i18n.py`, `native_bridge.py`, support modules,
   `LICENSE`, `NOTICE.md`, and native libraries under `native/`.
-  The duplicate `clip_studio_importer/clip_loader.py` package copy has been
-  removed; the project-root `clip_loader.py` remains reference verification
-  tooling outside the add-on runtime.
+  The duplicate `clip_studio_importer/clip_loader.py` package copy and the
+  project-root Python compositor have been removed; verification now uses CSP
+  PNG exports and native `clip_cli --compare-png`.
 - Native reload diagnostics are image-level metadata. Background, import, and
   manual renders track elapsed/last render duration metadata. Render failures
   store `clip_reload_status=error` plus `clip_reload_error`, successful renders
@@ -732,8 +732,7 @@ After the strict GPU path covers first non-NORMAL raster blend modes:
 2. Extend the pass graph toward filters and non-normal blend modes
    using native evidence.
 3. Read final RGBA bytes back for the host adapter.
-4. Compare output against CSP PNG exports and the current Python output while it
-   still exists.
+4. Compare output against CSP PNG exports through native `clip_cli --compare-png`.
 5. Replace the Python Blender add-on's compositor/sidecar path with native
    renderer calls and image datablock updates.
 6. Delete the Python compositor/loader and sidecar PNG workflow.
@@ -743,8 +742,8 @@ After the strict GPU path covers first non-NORMAL raster blend modes:
 - The user path is GPU-first.
 - Do not maintain a native CPU compositor fallback or duplicate native CPU
   oracle.
-- Use current Python output and CSP-exported PNGs only as slow external
-  references during development.
+- Use CSP-exported PNGs plus native `clip_cli --compare-png` as development
+  references.
 - Avoid full-canvas temporary buffers when tile-local rendering is possible.
 - Avoid PNG encode/decode round trips entirely in the accepted native path.
 

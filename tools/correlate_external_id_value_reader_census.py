@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import sqlite3
 import struct
-import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -17,8 +16,7 @@ OUT_PATH = REPO_ROOT / "tmp_vector_probe/native_external_id_value_reader_correla
 PREVIEW_CACHE_ID = "extrnlid5943B673F7C84B779ED2D7C96E942EAE"
 TARGET_VECTOR_ID = "extrnlid62D15CB4395245648869B4AEBAD8FBCE"
 
-sys.path.insert(0, str(REPO_ROOT))
-from clip_loader import _split_clip  # noqa: E402
+from tools.clip_container import split_clip  # noqa: E402
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -187,7 +185,7 @@ def main(argv: list[str]) -> int:
     trace_path = Path(argv[1])
     clip_path = Path(argv[2])
     rows = load_jsonl(trace_path)
-    ext_to_body, sqlite_bytes = _split_clip(str(clip_path))
+    ext_to_body, sqlite_bytes = split_clip(str(clip_path))
 
     payloads: dict[str, dict[str, Any]] = {}
     for idx, raw_body in enumerate(ext_to_body.values()):

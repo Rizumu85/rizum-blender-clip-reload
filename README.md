@@ -111,7 +111,6 @@ python tools\build_blender_addon.py --blender "C:\Program Files\Blender Foundati
 - `clip_studio_importer/` - Blender extension source.
 - `clip_studio_importer.zip` - installable extension package.
 - `native/rust/` - native renderer workspace.
-- `clip_loader.py` - slow reference loader used for development checks.
 - `docs/AI_MEMORY.md` - compact current project state.
 - `docs/analysis.md` - research notes and historical findings.
 - `docs/design.md` - Blender user experience notes.
@@ -122,7 +121,7 @@ python tools\build_blender_addon.py --blender "C:\Program Files\Blender Foundati
 - Keep the installable extension on the native renderer path.
 - Improve visual fidelity for complex `.clip` files.
 - Improve reload and rendering performance.
-- Keep the Python loader as development-only reference tooling.
+- Keep verification on CSP PNG exports and native `clip_cli --compare-png`.
 - Explore true file-backed `.clip` integration later, without sidecar PNGs.
 
 ---
@@ -227,7 +226,6 @@ python tools\build_blender_addon.py --blender "C:\Program Files\Blender Foundati
 - `clip_studio_importer/` - Blender 扩展源码。
 - `clip_studio_importer.zip` - 可安装扩展包。
 - `native/rust/` - native 渲染器 workspace。
-- `clip_loader.py` - 开发检查用的慢速参考 loader。
 - `docs/AI_MEMORY.md` - 当前项目状态摘要。
 - `docs/analysis.md` - 研究笔记和历史发现。
 - `docs/design.md` - Blender 用户体验说明。

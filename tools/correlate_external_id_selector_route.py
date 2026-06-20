@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import sqlite3
 import struct
-import sys
 import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -17,8 +16,7 @@ OUT_PATH = REPO_ROOT / "tmp_vector_probe/native_external_id_selector_correlation
 REQUESTED_96KB_ID = "extrnlid5943B673F7C84B779ED2D7C96E942EAE"
 TARGET_VECTOR_ID = "extrnlid62D15CB4395245648869B4AEBAD8FBCE"
 
-sys.path.insert(0, str(REPO_ROOT))
-from clip_loader import _split_clip  # noqa: E402
+from tools.clip_container import split_clip  # noqa: E402
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -217,7 +215,7 @@ def main(argv: list[str]) -> int:
     trace_path = Path(argv[1])
     clip_path = Path(argv[2])
     rows = load_jsonl(trace_path)
-    exta, sqlite_bytes = _split_clip(str(clip_path))
+    exta, sqlite_bytes = split_clip(str(clip_path))
     exta_payloads: dict[str, dict[str, Any]] = {}
     for idx, (ext_id, raw_body) in enumerate(exta.items()):
         parsed_ext_id, payload = split_exta_body(raw_body)

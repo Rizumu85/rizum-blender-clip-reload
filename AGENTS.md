@@ -25,7 +25,7 @@ Project-level instructions for Codex.
 
 - Read the relevant docs before changing code.
 - Keep changes surgical and traceable to the requested task.
-- Prefer existing patterns in `clip_loader.py` for reference-verifier work and `clip_studio_importer/native_bridge.py` for add-on native bridge work.
+- Prefer native `clip_cli --compare-png` and Rust verifier patterns for reference checks, and `clip_studio_importer/native_bridge.py` for add-on native bridge work.
 - Do not replace importer behavior from one reverse-engineering clue unless a targeted sample improves and guard samples stay stable.
 - Treat metric-only probes as diagnostic until sample or runtime evidence supports them.
 - Avoid degradation handling, fallbacks, hacks, heuristics, local stabilizations, or post-processing bandages that are not faithful general algorithms.
@@ -56,8 +56,9 @@ Project-level instructions for Codex.
 Run targeted checks only when the change needs them. Prefer raster/filter samples relevant to the change, for example:
 
 ```powershell
-python verify_one_clip.py img/Test_AddGlowMultiply.clip
-python verify_one_clip.py img/Test_ClippingEdge.clip
-python verify_one_clip.py img/Test_Mask.clip
-python verify_one_clip.py img/Test_ToneCurve.clip
+cd native\rust
+cargo run -q -p clip_cli -- ..\..\img\Test_AddGlowMultiply.clip --compare-png ..\..\img\Test_AddGlowMultiply.png
+cargo run -q -p clip_cli -- ..\..\img\Test_ClippingEdge.clip --compare-png ..\..\img\Test_ClippingEdge.png
+cargo run -q -p clip_cli -- ..\..\img\Test_Mask.clip --compare-png ..\..\img\Test_Mask.png
+cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 ```

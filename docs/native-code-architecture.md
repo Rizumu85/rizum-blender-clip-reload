@@ -1,6 +1,6 @@
 # Native Code Architecture
 
-Last updated: 2026-06-15
+Last updated: 2026-06-20
 
 ## Goal
 
@@ -13,9 +13,9 @@ is Rust plus `wgpu` GPU compositing. Host integration is split by boundary:
 - Blender image-datablock bridge for stock Blender add-on integration when
   external image filetype registration is unavailable.
 
-The Python loader remains only a temporary external reference while the native
-path is under construction. It must not become a compatibility layer or runtime
-fallback.
+The temporary Python compositor has been removed now that the native path owns
+flattened raster rendering. It must not be reintroduced as a compatibility layer
+or runtime fallback.
 
 ## Milestones
 
@@ -772,7 +772,6 @@ datablock wiring.
 Native runtime tests compare against external references:
 
 - CSP-exported PNGs.
-- Current Python loader output while it exists.
 - Small hand-built `.clip` fixtures for parser and graph invariants.
 
 There is no native CPU compositor oracle. The GPU compositor is the only native

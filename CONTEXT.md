@@ -1,6 +1,6 @@
 # Project Context
 
-Last updated: 2026-06-18
+Last updated: 2026-06-20
 
 This repository owns the Blender-facing `.clip` importer, native renderer
 bridge, and verification harness for flattened raster Clip Studio Paint files.
@@ -19,7 +19,8 @@ rendering, animation, or write-back.
 
 The Rust/wgpu implementation that reads `.clip` data and composites the
 flattened raster texture. It is the accepted runtime path for the Blender add-on.
-The project-root Python loader is reference tooling only, not a runtime fallback.
+The old project-root Python compositor has been removed; use CSP PNG exports and
+native `clip_cli --compare-png` checks as references.
 
 **Generated Blender image**
 
