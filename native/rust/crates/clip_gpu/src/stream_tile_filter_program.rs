@@ -1,7 +1,10 @@
+use std::time::Instant;
+
 use clip_model::CanvasSize;
 
 use crate::GpuMaskAtlasSource;
 use crate::GpuRenderError;
+use crate::render_profile;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::CanvasRect;
 use crate::stream_context::StreamingExecutionContext;
@@ -136,6 +139,7 @@ where
             ],
         });
 
+    let pass_encode_start = Instant::now();
     {
         let mut pass = context
             .state
@@ -167,6 +171,7 @@ where
         );
         pass.draw(0..3, 0..1);
     }
+    render_profile::record_gpu_pass_encode(pass_encode_start.elapsed());
 
     let atlas_bytes = rgba8_texture_byte_len(atlas_size).map_err(P::Error::from)?;
     context.state.retain_texture(atlas, atlas_bytes);

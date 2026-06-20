@@ -29,8 +29,10 @@ impl RuntimeGpuRenderer {
         session: &ClipSession,
         plan: &crate::ReloadDiffPlan,
     ) -> Result<crate::GpuSparseAtlasPreparedRasterEventPlan, RuntimeError> {
+        let selection_start = Instant::now();
         let selection =
             session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        clip_gpu::render_profile::record_source_selection(selection_start.elapsed());
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
         let update_start = Instant::now();
@@ -42,6 +44,7 @@ impl RuntimeGpuRenderer {
             )
             .map_err(RuntimeError::from)?;
         clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
+        clip_gpu::render_profile::record_sparse_atlas_update(update_start.elapsed());
         Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
             texture_pool_stats,
             event_plan: sparse_atlas_raster_event_plan(plan, &reload, &selection.sources).into(),
@@ -53,8 +56,10 @@ impl RuntimeGpuRenderer {
         session: &ClipSession,
         plan: &crate::ReloadDiffPlan,
     ) -> Result<crate::GpuSparseAtlasPreparedRasterEventPlan, RuntimeError> {
+        let selection_start = Instant::now();
         let selection =
             session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        clip_gpu::render_profile::record_source_selection(selection_start.elapsed());
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
         let update_start = Instant::now();
@@ -66,6 +71,7 @@ impl RuntimeGpuRenderer {
             )
             .map_err(RuntimeError::from)?;
         clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
+        clip_gpu::render_profile::record_sparse_atlas_update(update_start.elapsed());
         Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
             texture_pool_stats,
             event_plan: sparse_atlas_raster_affected_event_plan(plan, &reload, &selection.sources)
@@ -91,8 +97,10 @@ impl RuntimeGpuRenderer {
             return Ok(None);
         }
 
+        let selection_start = Instant::now();
         let selection =
             session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        clip_gpu::render_profile::record_source_selection(selection_start.elapsed());
         let GpuRenderStackSelection {
             sources,
             resource_plan,
@@ -114,6 +122,7 @@ impl RuntimeGpuRenderer {
             )
             .map_err(RuntimeError::from)?;
         clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
+        clip_gpu::render_profile::record_sparse_atlas_update(update_start.elapsed());
         let event_plan = sparse_atlas_raster_affected_event_plan(plan, &reload, &sources);
         if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
             return Ok(None);
@@ -175,8 +184,10 @@ impl RuntimeGpuRenderer {
             return Ok(None);
         }
 
+        let selection_start = Instant::now();
         let selection =
             session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
+        clip_gpu::render_profile::record_source_selection(selection_start.elapsed());
         let GpuRenderStackSelection {
             sources,
             resource_plan,
@@ -217,6 +228,7 @@ impl RuntimeGpuRenderer {
             )
             .map_err(RuntimeError::from)?;
         clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
+        clip_gpu::render_profile::record_sparse_atlas_update(update_start.elapsed());
 
         let batches = event_plan
             .segments
@@ -269,6 +281,7 @@ impl RuntimeGpuRenderer {
             )
             .map_err(RuntimeError::from);
         clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
+        clip_gpu::render_profile::record_sparse_atlas_update(update_start.elapsed());
         result
     }
 

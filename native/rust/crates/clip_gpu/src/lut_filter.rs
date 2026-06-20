@@ -1,5 +1,8 @@
+use std::time::Instant;
+
 use crate::GpuRenderError;
 use crate::pass::WHITE_TRANSPARENT;
+use crate::render_profile;
 use crate::stream_bounds::CanvasRect;
 
 pub(crate) fn create_lut_filter_texture(
@@ -123,6 +126,7 @@ fn encode_lut_filter_pass_with_load(
     load: wgpu::LoadOp<wgpu::Color>,
     scissor: Option<CanvasRect>,
 ) {
+    let encode_start = Instant::now();
     let uniform = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("rizum_clip_lut_filter_uniform"),
         size: uniform_bytes.len() as wgpu::BufferAddress,
@@ -178,4 +182,6 @@ fn encode_lut_filter_pass_with_load(
         pass.set_scissor_rect(scissor.x, scissor.y, scissor.width, scissor.height);
     }
     pass.draw(0..3, 0..1);
+    drop(pass);
+    render_profile::record_gpu_pass_encode(encode_start.elapsed());
 }

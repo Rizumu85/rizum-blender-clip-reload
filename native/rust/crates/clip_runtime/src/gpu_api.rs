@@ -273,6 +273,7 @@ impl ClipSession {
         renderer: &clip_gpu::GpuRenderer,
         mut texture_cache: Option<&mut PersistentGpuTextureCache>,
     ) -> Result<NormalRasterStackGpuResult, RuntimeError> {
+        let selection_start = Instant::now();
         let selection = self.select_gpu_normal_render_stack(StrictRasterStackOptions {
             allow_alpha_compositing: true,
             allow_paper: true,
@@ -296,6 +297,7 @@ impl ClipSession {
             allow_w3c_blends: true,
             allow_initial_terminal_container_elision: true,
         })?;
+        clip_gpu::render_profile::record_source_selection(selection_start.elapsed());
         let GpuRenderStackSelection {
             sources,
             resource_plan,
@@ -365,6 +367,7 @@ impl ClipSession {
         mut texture_cache: Option<&mut PersistentGpuTextureCache>,
         rects: &[ReloadPatchRect],
     ) -> Result<NormalRasterStackGpuPatchResult, RuntimeError> {
+        let selection_start = Instant::now();
         let selection = self.select_gpu_normal_render_stack(StrictRasterStackOptions {
             allow_alpha_compositing: true,
             allow_paper: true,
@@ -388,6 +391,7 @@ impl ClipSession {
             allow_w3c_blends: true,
             allow_initial_terminal_container_elision: true,
         })?;
+        clip_gpu::render_profile::record_source_selection(selection_start.elapsed());
         let GpuRenderStackSelection {
             sources,
             resource_plan,

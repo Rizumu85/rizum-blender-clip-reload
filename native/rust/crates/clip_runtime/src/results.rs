@@ -62,6 +62,17 @@ pub struct GpuSparseAtlasReloadPlan {
     pub rerunnable_segments: Vec<GpuSparseAtlasRerunSegment>,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct GpuCheckpointCacheStats {
+    pub hits: usize,
+    pub misses: usize,
+    pub stores: usize,
+    pub evictions: usize,
+    pub skipped_stores: usize,
+    pub cached_entries: usize,
+    pub cached_bytes: usize,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct GpuSparseAtlasPreparedRasterEventPlan {
     pub texture_pool_stats: clip_gpu::GpuSparseAtlasTexturePoolStats,

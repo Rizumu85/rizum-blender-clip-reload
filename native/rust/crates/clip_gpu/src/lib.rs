@@ -5,6 +5,7 @@ pub mod device;
 mod lut_filter;
 pub mod pass;
 mod readback;
+pub mod render_profile;
 pub mod renderer;
 pub mod resource;
 mod shaders;

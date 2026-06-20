@@ -30,6 +30,7 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
         }
     };
     clip_file::decode_profile::reset_if_enabled();
+    clip_runtime::render_profile::reset_if_enabled();
 
     if let (Some(rgba_path), Some(json_path)) = (
         &options.blender_render_rgba_path,
@@ -135,8 +136,9 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
         return 0;
     }
 
-    let decode_profile_active = clip_file::decode_profile::enabled();
-    if !options.gpu_support_check && !decode_profile_active {
+    let profiling_active =
+        clip_file::decode_profile::enabled() || clip_runtime::render_profile::enabled();
+    if !options.gpu_support_check && !profiling_active {
         let mut first_pixel = [0u8; 4];
         match session.read_rgba8_region(Rect::new(0, 0, 1, 1), &mut first_pixel) {
             Ok(()) => println!("host first_pixel={first_pixel:?}"),
@@ -187,6 +189,7 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
             }
         }
         print_decode_profile(worker_total_ms);
+        print_render_profile(worker_total_ms);
     }
 
     if let Some(layer_id) = options.gpu_roundtrip_layer_id {
@@ -431,6 +434,46 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
     }
 
     0
+}
+
+fn print_render_profile(worker_total_ms: u64) {
+    let Some(profile) = clip_runtime::render_profile::snapshot_if_enabled() else {
+        return;
+    };
+    println!(
+        "render_profile source_selection_ms={} gpu_device_init_ms={} render_program_planning_ms={} event_payload_build_ms={} gpu_pass_encode_ms={} queue_submit_ms={} queue_poll_ms={} queue_submit_poll_ms={} gpu_execution_time_ms=unavailable gpu_execution_time_source=cpu_wait_proxy gpu_execution_wait_proxy_ms={} readback_copy_ms={} readback_cpu_copy_ms={} patch_payload_extraction_ms={} checkpoint_reconstruction_ms={} sparse_atlas_update_ms={} legacy_barrier_segment_count={} legacy_barrier_segment_ms={} legacy_fallback_segment_count={} legacy_fallback_segment_ms={} tile_local_segment_count={} tile_local_segment_ms={} streaming_pass_count={} queue_submit_count={} readback_count={} checkpoint_cache_hits={} checkpoint_cache_misses={} checkpoint_cache_stores={} checkpoint_cache_evictions={} checkpoint_cache_skipped_over_budget={} worker_total_ms={}",
+        profile.source_selection_ms,
+        profile.gpu_device_init_ms,
+        profile.render_program_planning_ms,
+        profile.event_payload_build_ms,
+        profile.gpu_pass_encode_ms,
+        profile.queue_submit_ms,
+        profile.queue_poll_ms,
+        profile
+            .queue_submit_ms
+            .saturating_add(profile.queue_poll_ms),
+        profile.gpu_execution_wait_proxy_ms,
+        profile.readback_copy_ms,
+        profile.readback_cpu_copy_ms,
+        profile.patch_payload_extraction_ms,
+        profile.checkpoint_reconstruction_ms,
+        profile.sparse_atlas_update_ms,
+        profile.legacy_barrier_segment_count,
+        profile.legacy_barrier_segment_ms,
+        profile.legacy_fallback_segment_count,
+        profile.legacy_fallback_segment_ms,
+        profile.tile_local_segment_count,
+        profile.tile_local_segment_ms,
+        profile.streaming_pass_count,
+        profile.queue_submit_count,
+        profile.readback_count,
+        profile.checkpoint_cache_hits,
+        profile.checkpoint_cache_misses,
+        profile.checkpoint_cache_stores,
+        profile.checkpoint_cache_evictions,
+        profile.checkpoint_cache_skipped_over_budget,
+        worker_total_ms,
+    );
 }
 
 fn print_decode_profile(worker_total_ms: u64) {

@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
+use std::time::Instant;
 
 use super::RuntimeGpuRenderer;
 use crate::gpu_provider::{
     GpuResourcePlan, RuntimeGpuResourceProvider, cache::PersistentGpuTextureCache,
 };
-use crate::{ClipSession, GpuTextureCacheStats, RuntimeError};
+use crate::{ClipSession, GpuCheckpointCacheStats, GpuTextureCacheStats, RuntimeError};
 
 const DEFAULT_CHECKPOINT_MAX_ENTRIES: usize = 2;
 const DEFAULT_CHECKPOINT_BUDGET_BYTES: usize = 512 * 1024 * 1024;
@@ -15,6 +16,11 @@ pub(crate) struct SegmentCheckpointCache {
     max_entries: usize,
     budget_bytes: usize,
     cached_bytes: usize,
+    hits: usize,
+    misses: usize,
+    stores: usize,
+    evictions: usize,
+    skipped_stores: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -50,11 +56,20 @@ impl SegmentCheckpointCache {
             max_entries,
             budget_bytes,
             cached_bytes: 0,
+            hits: 0,
+            misses: 0,
+            stores: 0,
+            evictions: 0,
+            skipped_stores: 0,
         }
     }
 
     fn get(&mut self, key: &SegmentCheckpointKey) -> Option<SegmentCheckpoint> {
-        let index = self.entries.iter().position(|entry| entry.key == *key)?;
+        let Some(index) = self.entries.iter().position(|entry| entry.key == *key) else {
+            self.misses += 1;
+            clip_gpu::render_profile::record_checkpoint_cache_miss();
+            return None;
+        };
         let entry = self.entries.remove(index)?;
         let checkpoint = SegmentCheckpoint {
             pixels: entry.pixels.clone(),
@@ -63,6 +78,8 @@ impl SegmentCheckpointCache {
             mask_resources: entry.mask_resources.clone(),
         };
         self.entries.push_back(entry);
+        self.hits += 1;
+        clip_gpu::render_profile::record_checkpoint_cache_hit();
         Some(checkpoint)
     }
 
@@ -76,6 +93,8 @@ impl SegmentCheckpointCache {
         };
         let byte_len = entry.byte_len();
         if byte_len > self.budget_bytes || self.max_entries == 0 {
+            self.skipped_stores += 1;
+            clip_gpu::render_profile::record_checkpoint_cache_skipped_over_budget();
             return;
         }
 
@@ -92,14 +111,20 @@ impl SegmentCheckpointCache {
             || self.entries.len() >= self.max_entries
         {
             let Some(index) = self.eviction_candidate_index(entry.priority) else {
+                self.skipped_stores += 1;
+                clip_gpu::render_profile::record_checkpoint_cache_skipped_over_budget();
                 return;
             };
             if let Some(evicted) = self.entries.remove(index) {
                 self.cached_bytes = self.cached_bytes.saturating_sub(evicted.byte_len());
+                self.evictions += 1;
+                clip_gpu::render_profile::record_checkpoint_cache_eviction(1);
             }
         }
         self.cached_bytes = self.cached_bytes.saturating_add(byte_len);
         self.entries.push_back(entry);
+        self.stores += 1;
+        clip_gpu::render_profile::record_checkpoint_cache_store();
     }
 
     fn eviction_candidate_index(&self, incoming_priority: u32) -> Option<usize> {
@@ -109,6 +134,18 @@ impl SegmentCheckpointCache {
             .enumerate()
             .min_by_key(|(index, entry)| (entry.priority, *index))?;
         (entry.priority <= incoming_priority).then_some(index)
+    }
+
+    fn stats(&self) -> GpuCheckpointCacheStats {
+        GpuCheckpointCacheStats {
+            hits: self.hits,
+            misses: self.misses,
+            stores: self.stores,
+            evictions: self.evictions,
+            skipped_stores: self.skipped_stores,
+            cached_entries: self.entries.len(),
+            cached_bytes: self.cached_bytes,
+        }
     }
 }
 
@@ -128,6 +165,10 @@ impl SegmentCheckpointCacheEntry {
 }
 
 impl RuntimeGpuRenderer {
+    pub fn checkpoint_cache_stats(&self) -> GpuCheckpointCacheStats {
+        self.segment_checkpoint_cache.borrow().stats()
+    }
+
     pub(crate) fn prefix_checkpoint_rgba8(
         &self,
         session: &ClipSession,
@@ -142,7 +183,9 @@ impl RuntimeGpuRenderer {
             return Ok(checkpoint);
         }
 
+        let checkpoint_start = Instant::now();
         let checkpoint = self.render_prefix_checkpoint_rgba8(session, sources, resource_plan)?;
+        clip_gpu::render_profile::record_checkpoint_reconstruction(checkpoint_start.elapsed());
         self.segment_checkpoint_cache
             .borrow_mut()
             .store(key, &checkpoint, checkpoint_priority);

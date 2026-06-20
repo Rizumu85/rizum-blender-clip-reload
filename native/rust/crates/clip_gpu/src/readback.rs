@@ -1,7 +1,9 @@
 use std::sync::mpsc;
+use std::time::Instant;
 
 use clip_model::{CanvasSize, Rect};
 
+use crate::render_profile;
 use crate::{GpuRenderError, GpuRenderer};
 
 impl GpuRenderer {
@@ -24,6 +26,7 @@ impl GpuRenderer {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("rizum_clip_roundtrip_rgba8_encoder"),
                 });
+        let copy_start = Instant::now();
         encoder.copy_texture_to_buffer(
             wgpu::TexelCopyTextureInfo {
                 texture,
@@ -45,7 +48,10 @@ impl GpuRenderer {
                 depth_or_array_layers: 1,
             },
         );
+        render_profile::record_readback_copy(copy_start.elapsed());
+        let submit_start = Instant::now();
         self.context.queue.submit([encoder.finish()]);
+        render_profile::record_queue_submit(submit_start.elapsed());
 
         let mut output = vec![0u8; layout.unpadded_len];
         append_mapped_rgba8_rows(self, &readback, layout, height, &mut output, 0)?;
@@ -75,6 +81,7 @@ impl GpuRenderer {
                 usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             });
+            let copy_start = Instant::now();
             encoder.copy_texture_to_buffer(
                 wgpu::TexelCopyTextureInfo {
                     texture,
@@ -100,6 +107,7 @@ impl GpuRenderer {
                     depth_or_array_layers: 1,
                 },
             );
+            render_profile::record_readback_copy(copy_start.elapsed());
             output_len = output_len
                 .checked_add(layout.unpadded_len)
                 .ok_or(GpuRenderError::ReadbackSizeOverflow)?;
@@ -112,7 +120,9 @@ impl GpuRenderer {
         if pending.is_empty() {
             return Ok(Vec::new());
         }
+        let submit_start = Instant::now();
         self.context.queue.submit([encoder.finish()]);
+        render_profile::record_queue_submit(submit_start.elapsed());
 
         let mut output = vec![0u8; output_len];
         let mut output_offset = 0;
@@ -144,19 +154,23 @@ fn append_mapped_rgba8_rows(
     output_offset: usize,
 ) -> Result<(), GpuRenderError> {
     let slice = readback.slice(..);
+    render_profile::record_readback();
     let (tx, rx) = mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
         let _ = tx.send(result.map_err(|err| err.to_string()));
     });
+    let poll_start = Instant::now();
     renderer
         .context
         .device
         .poll(wgpu::PollType::wait_indefinitely())
         .map_err(|err| GpuRenderError::PollFailed(err.to_string()))?;
+    render_profile::record_queue_poll(poll_start.elapsed());
     rx.recv()
         .map_err(|err| GpuRenderError::MapFailed(err.to_string()))?
         .map_err(GpuRenderError::MapFailed)?;
 
+    let copy_start = Instant::now();
     let mapped = slice.get_mapped_range();
     for row in 0..height as usize {
         let src_start = row * layout.padded_bytes_per_row as usize;
@@ -167,6 +181,7 @@ fn append_mapped_rgba8_rows(
     }
     drop(mapped);
     readback.unmap();
+    render_profile::record_readback_cpu_copy(copy_start.elapsed());
     Ok(())
 }
 

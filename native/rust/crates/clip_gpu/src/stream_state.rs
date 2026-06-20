@@ -2,10 +2,12 @@ use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
+use std::time::Instant;
 
 use clip_model::CanvasSize;
 
 use crate::pass::{WHITE_TRANSPARENT, create_rgba8_texture};
+use crate::render_profile;
 use crate::stream_bounds::CanvasRect;
 use crate::stream_tile_silo_pipeline::TileSiloPipeline;
 use crate::{
@@ -217,6 +219,7 @@ where
         second: &wgpu::TextureView,
         label: &'static str,
     ) {
+        let encode_start = Instant::now();
         let encoder = self.encoder_mut();
         {
             let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -247,6 +250,7 @@ where
                 multiview_mask: None,
             });
         }
+        render_profile::record_gpu_pass_encode(encode_start.elapsed());
         self.has_pending_commands = true;
     }
 
@@ -335,6 +339,7 @@ where
     pub(crate) fn finish_pass(&mut self) -> Result<(), E> {
         self.has_pending_commands = true;
         self.encoded_passes_since_flush += 1;
+        render_profile::record_streaming_pass();
         if should_flush_streaming_batch(
             self.encoded_passes_since_flush,
             self.retained_resource_bytes,
@@ -352,7 +357,9 @@ where
             .encoder
             .take()
             .expect("streaming encoder must exist before flush");
+        let submit_start = Instant::now();
         self.queue.submit([encoder.finish()]);
+        render_profile::record_queue_submit(submit_start.elapsed());
         // Queue order plus the final readback poll waits for completion; intermediate flushes only
         // need resources to stay alive until the command buffer is submitted.
         self.clear_retained_resources();

@@ -28,6 +28,7 @@ mod tile_silo_estimate;
 mod tile_silo_occupancy;
 mod tile_silo_options;
 
+pub use clip_gpu::render_profile;
 pub use error::RuntimeError;
 pub use gpu_api::RuntimeGpuRenderer;
 pub use reload_diff::{
@@ -36,8 +37,8 @@ pub use reload_diff::{
     ReloadDirtySegment, ReloadDirtySegmentEventRange, ReloadPatchRect,
 };
 pub use results::{
-    DrawRasterLayerGpuResult, GpuSparseAtlasCacheStats, GpuSparseAtlasEventRange,
-    GpuSparseAtlasPreparedRasterEventPlan, GpuSparseAtlasRasterEventPlan,
+    DrawRasterLayerGpuResult, GpuCheckpointCacheStats, GpuSparseAtlasCacheStats,
+    GpuSparseAtlasEventRange, GpuSparseAtlasPreparedRasterEventPlan, GpuSparseAtlasRasterEventPlan,
     GpuSparseAtlasRasterEventSegment, GpuSparseAtlasRasterEventSkip,
     GpuSparseAtlasRasterEventSkipReason, GpuSparseAtlasReloadPlan, GpuSparseAtlasRerunSegment,
     GpuSparseAtlasSlot, GpuSparseAtlasUpdatedSlot, GpuTextureCacheStats,

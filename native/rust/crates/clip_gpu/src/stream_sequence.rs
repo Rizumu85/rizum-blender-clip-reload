@@ -1,4 +1,7 @@
+use std::time::Instant;
+
 use crate::GpuNormalStackSource;
+use crate::render_profile;
 use crate::stream::{GpuNormalStackResourceProvider, encode_source_with_provider};
 use crate::stream_bounds::CanvasRect;
 use crate::stream_clipping_tile_silo::encode_clipping_run_silo_with_provider;
@@ -29,6 +32,7 @@ pub(crate) fn encode_source_sequence_with_provider<P>(
 where
     P: GpuNormalStackResourceProvider,
 {
+    let planning_start = Instant::now();
     let program = plan_render_program(
         &*context.provider,
         context.output_size,
@@ -36,6 +40,7 @@ where
         texture_pair.size(),
         sources,
     );
+    render_profile::record_render_program_planning(planning_start.elapsed());
     let _program_stats = program.stats();
 
     for segment in program.segments() {
@@ -58,6 +63,7 @@ where
                     )?;
                     continue;
                 };
+                let segment_start = Instant::now();
                 let wrote_silo = encode_clipping_run_silo_with_provider(
                     context,
                     target_origin,
@@ -68,10 +74,12 @@ where
                     texture_pair.view(next_index),
                     dirty_bounds,
                 )?;
+                render_profile::record_tile_local_segment(segment_start.elapsed());
                 if wrote_silo {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }
+                let fallback_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -83,8 +91,10 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_fallback_segment(fallback_start.elapsed());
             }
             RenderSegmentKind::TileLocal(TileProgramKind::RasterRun) => {
+                let segment_start = Instant::now();
                 let wrote_silo = encode_raster_silo_run_with_provider(
                     context,
                     target_origin,
@@ -94,10 +104,12 @@ where
                     texture_pair.view(next_index),
                     dirty_bounds,
                 )?;
+                render_profile::record_tile_local_segment(segment_start.elapsed());
                 if wrote_silo {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }
+                let fallback_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -109,8 +121,10 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_fallback_segment(fallback_start.elapsed());
             }
             RenderSegmentKind::TileLocal(TileProgramKind::RasterFilterRun) => {
+                let segment_start = Instant::now();
                 let wrote_silo = encode_raster_filter_silo_run_with_provider(
                     context,
                     target_origin,
@@ -120,10 +134,12 @@ where
                     texture_pair.view(next_index),
                     dirty_bounds,
                 )?;
+                render_profile::record_tile_local_segment(segment_start.elapsed());
                 if wrote_silo {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }
+                let fallback_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -135,8 +151,10 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_fallback_segment(fallback_start.elapsed());
             }
             RenderSegmentKind::TileLocal(TileProgramKind::PointFilterRun) => {
+                let segment_start = Instant::now();
                 let wrote_silo = encode_point_filter_silo_run_with_provider(
                     context,
                     target_origin,
@@ -146,10 +164,12 @@ where
                     texture_pair.view(next_index),
                     dirty_bounds,
                 )?;
+                render_profile::record_tile_local_segment(segment_start.elapsed());
                 if wrote_silo {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }
+                let fallback_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -161,9 +181,11 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_fallback_segment(fallback_start.elapsed());
             }
             RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope) => {
                 let source_index = segment.source_range.start;
+                let segment_start = Instant::now();
                 let wrote_silo = encode_simple_container_scope_silo_with_provider(
                     context,
                     target_origin,
@@ -173,10 +195,12 @@ where
                     texture_pair.view(next_index),
                     dirty_bounds,
                 )?;
+                render_profile::record_tile_local_segment(segment_start.elapsed());
                 if wrote_silo {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }
+                let fallback_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -188,9 +212,11 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_fallback_segment(fallback_start.elapsed());
             }
             RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope) => {
                 let source_index = segment.source_range.start;
+                let segment_start = Instant::now();
                 let wrote_silo = encode_simple_through_scope_silo_with_provider(
                     context,
                     target_origin,
@@ -200,10 +226,12 @@ where
                     texture_pair.view(next_index),
                     dirty_bounds,
                 )?;
+                render_profile::record_tile_local_segment(segment_start.elapsed());
                 if wrote_silo {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }
+                let fallback_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -215,8 +243,10 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_fallback_segment(fallback_start.elapsed());
             }
             RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(_)) => {
+                let segment_start = Instant::now();
                 encode_legacy_segment(
                     context,
                     target_origin,
@@ -228,6 +258,7 @@ where
                     fallback_texture,
                     dirty_bounds,
                 )?;
+                render_profile::record_legacy_barrier_segment(segment_start.elapsed());
             }
         }
     }

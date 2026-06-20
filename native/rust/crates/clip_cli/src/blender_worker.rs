@@ -8,7 +8,11 @@ use clip_runtime::{
 };
 use serde_json::json;
 
+use crate::blender_worker_render_profile::{render_profile_metadata, tile_cache_diagnostics};
 use crate::blender_worker_sparse::sparse_atlas_metadata;
+use crate::blender_worker_task_graph::{
+    render_task_graph_for_full_render, render_task_graph_for_patch, render_task_graph_no_change,
+};
 
 pub(crate) fn write_blender_render_files(
     session: &mut ClipSession,
@@ -27,6 +31,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
     renderer: Option<&RuntimeGpuRenderer>,
 ) -> Result<(), String> {
     clip_file::decode_profile::reset_if_enabled();
+    clip_runtime::render_profile::reset_if_enabled();
     let worker_start = Instant::now();
     let summary = session.summary();
     let root_layer_id = summary.root_layer_id.0;
@@ -52,8 +57,16 @@ pub(crate) fn write_blender_render_files_with_renderer(
             0,
             Some(support.resource_stats),
             clip_runtime::GpuTextureCacheStats::default(),
-            sparse_atlas,
+            &sparse_atlas,
             reload_plan_metadata(&reload_plan, 0, None, None),
+            render_task_graph_no_change(),
+            tile_cache_diagnostics(
+                &reload_plan,
+                &sparse_atlas,
+                renderer
+                    .map(RuntimeGpuRenderer::checkpoint_cache_stats)
+                    .unwrap_or_default(),
+            ),
             worker_start
                 .elapsed()
                 .as_millis()
@@ -68,16 +81,23 @@ pub(crate) fn write_blender_render_files_with_renderer(
     if reload_plan.mode == ReloadDiffMode::Patch
         && let Some(renderer) = renderer
     {
+        let mut sparse_reconstructed_ms = None;
+        let mut region_fallback_ms = None;
+        let sparse_initial_start = Instant::now();
         let sparse_patch = renderer
             .draw_sparse_atlas_initial_segment_patches(session, &reload_plan)
             .map_err(|err| err.to_string())?;
+        let sparse_initial_ms = elapsed_ms(sparse_initial_start);
         let (render, sparse_atlas, patch_renderer, patch_renderer_fallback_reason) =
             if let Some((render, sparse_atlas)) = sparse_patch {
                 (render, sparse_atlas, "sparse_atlas_initial_segments", None)
             } else {
+                let sparse_reconstructed_start = Instant::now();
                 let sparse_patch = renderer
                     .draw_sparse_atlas_reconstructed_segment_patches(session, &reload_plan)
                     .map_err(|err| err.to_string())?;
+                let reconstructed_ms = elapsed_ms(sparse_reconstructed_start);
+                sparse_reconstructed_ms = Some(reconstructed_ms);
                 if let Some((render, sparse_atlas)) = sparse_patch {
                     (
                         render,
@@ -87,9 +107,12 @@ pub(crate) fn write_blender_render_files_with_renderer(
                     )
                 } else {
                     let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
+                    let region_start = Instant::now();
                     let render = renderer
                         .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
                         .map_err(|err| err.to_string())?;
+                    let region_ms = elapsed_ms(region_start);
+                    region_fallback_ms = Some(region_ms);
                     (
                         render,
                         sparse_atlas,
@@ -101,6 +124,14 @@ pub(crate) fn write_blender_render_files_with_renderer(
                     )
                 }
             };
+        let render_task_graph = render_task_graph_for_patch(
+            &reload_plan,
+            patch_renderer,
+            patch_renderer_fallback_reason,
+            sparse_initial_ms,
+            sparse_reconstructed_ms,
+            region_fallback_ms,
+        );
         if !render.unsupported.is_empty() {
             return Err(RuntimeError::UnsupportedRenderPlan {
                 unsupported: render.unsupported,
@@ -123,12 +154,18 @@ pub(crate) fn write_blender_render_files_with_renderer(
             payload_bytes,
             Some(stats),
             texture_cache_stats,
-            sparse_atlas,
+            &sparse_atlas,
             reload_plan_metadata(
                 &reload_plan,
                 payload_bytes,
                 Some(patch_renderer),
                 patch_renderer_fallback_reason,
+            ),
+            render_task_graph,
+            tile_cache_diagnostics(
+                &reload_plan,
+                &sparse_atlas,
+                renderer.checkpoint_cache_stats(),
             ),
             worker_start
                 .elapsed()
@@ -141,11 +178,13 @@ pub(crate) fn write_blender_render_files_with_renderer(
         return Ok(());
     }
 
+    let render_start = Instant::now();
     let render = match renderer {
         Some(renderer) => renderer.draw_normal_raster_stack(session),
         None => session.draw_normal_raster_stack_via_gpu(),
     }
     .map_err(|err| err.to_string())?;
+    let render_ms = elapsed_ms(render_start);
     if !render.unsupported.is_empty() {
         return Err(RuntimeError::UnsupportedRenderPlan {
             unsupported: render.unsupported,
@@ -163,7 +202,11 @@ pub(crate) fn write_blender_render_files_with_renderer(
     let (rgba_payload, payload_bytes) = match reload_plan.mode {
         ReloadDiffMode::Full => (image.pixels.clone(), image.pixels.len()),
         ReloadDiffMode::Patch => {
+            let extraction_start = Instant::now();
             let payload = patch_pixels(&image.pixels, image.width, &reload_plan.dirty_rects)?;
+            clip_runtime::render_profile::record_patch_payload_extraction(
+                extraction_start.elapsed(),
+            );
             let len = payload.len();
             (payload, len)
         }
@@ -188,12 +231,20 @@ pub(crate) fn write_blender_render_files_with_renderer(
         payload_bytes,
         Some(stats),
         texture_cache_stats,
-        sparse_atlas,
+        &sparse_atlas,
         reload_plan_metadata(
             &reload_plan,
             payload_bytes,
             patch_renderer,
             patch_renderer_fallback_reason,
+        ),
+        render_task_graph_for_full_render(&reload_plan, render_ms, patch_renderer),
+        tile_cache_diagnostics(
+            &reload_plan,
+            &sparse_atlas,
+            renderer
+                .map(RuntimeGpuRenderer::checkpoint_cache_stats)
+                .unwrap_or_default(),
         ),
         worker_start
             .elapsed()
@@ -206,6 +257,10 @@ pub(crate) fn write_blender_render_files_with_renderer(
     Ok(())
 }
 
+fn elapsed_ms(start: Instant) -> u64 {
+    start.elapsed().as_millis().try_into().unwrap_or(u64::MAX)
+}
+
 fn base_metadata(
     session: &ClipSession,
     root_layer_id: u32,
@@ -215,8 +270,10 @@ fn base_metadata(
     payload_bytes: usize,
     stats: Option<clip_runtime::NormalRasterStackResourceStats>,
     texture_cache: clip_runtime::GpuTextureCacheStats,
-    sparse_atlas: clip_runtime::GpuSparseAtlasReloadPlan,
+    sparse_atlas: &clip_runtime::GpuSparseAtlasReloadPlan,
     reload_diff: serde_json::Value,
+    render_task_graph: Option<serde_json::Value>,
+    tile_cache_diagnostics: Option<serde_json::Value>,
     worker_total_ms: u64,
 ) -> serde_json::Value {
     let canvas = session.summary().canvas;
@@ -270,6 +327,9 @@ fn base_metadata(
         "payload_bytes": payload_bytes,
         "reload_diff": reload_diff,
         "decode_profile": decode_profile,
+        "render_profile": render_profile_metadata(worker_total_ms),
+        "render_task_graph": render_task_graph,
+        "tile_cache_diagnostics": tile_cache_diagnostics,
         "texture_cache": {
             "raster_hits": texture_cache.raster_hits,
             "raster_misses": texture_cache.raster_misses,
@@ -279,7 +339,7 @@ fn base_metadata(
             "cached_masks": texture_cache.cached_masks,
             "cached_bytes": texture_cache.cached_bytes,
         },
-        "sparse_atlas_cache": sparse_atlas_metadata(&sparse_atlas),
+        "sparse_atlas_cache": sparse_atlas_metadata(sparse_atlas),
         "support": {
             "source_count": source_count,
             "unsupported_count": unsupported_items.len(),

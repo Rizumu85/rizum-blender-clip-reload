@@ -1,7 +1,10 @@
+use std::time::Instant;
+
 use clip_model::{CanvasSize, Rect};
 
 use crate::blend::blend_kind;
 use crate::pass::create_rgba8_texture;
+use crate::render_profile;
 use crate::sparse_atlas_prepare::{
     PreparedSparseAtlasRasterEvents, prepare_sparse_atlas_raster_event_batch,
     prepare_sparse_atlas_raster_events,
@@ -295,7 +298,9 @@ impl GpuRenderer {
             )?;
         }
 
+        let submit_start = Instant::now();
         self.context.queue.submit([encoder.finish()]);
+        render_profile::record_queue_submit(submit_start.elapsed());
         Ok(SparseAtlasRenderedTextures::new(
             previous,
             output,
@@ -424,6 +429,7 @@ impl GpuRenderer {
                 ],
             });
 
+        let pass_encode_start = Instant::now();
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("rizum_clip_sparse_atlas_raster_pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -449,6 +455,8 @@ impl GpuRenderer {
             pass_bounds.height,
         );
         pass.draw(0..3, 0..1);
+        drop(pass);
+        render_profile::record_gpu_pass_encode(pass_encode_start.elapsed());
         Ok(())
     }
 }

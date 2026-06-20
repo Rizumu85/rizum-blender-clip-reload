@@ -1,4 +1,4 @@
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, time::Instant};
 
 use clip_graph::RenderPlan;
 use clip_model::Rect;
@@ -235,9 +235,10 @@ pub struct GpuRenderer {
 
 impl GpuRenderer {
     pub fn new(config: GpuDeviceConfig) -> Result<Self, GpuRenderError> {
-        Ok(Self {
-            context: GpuContext::new(&config)?,
-        })
+        let init_start = Instant::now();
+        let context = GpuContext::new(&config)?;
+        crate::render_profile::record_gpu_device_init(init_start.elapsed());
+        Ok(Self { context })
     }
 
     pub fn max_texture_dimension_2d(&self) -> u32 {

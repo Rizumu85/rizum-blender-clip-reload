@@ -1,7 +1,9 @@
 use std::cell::OnceCell;
+use std::time::Instant;
 
 use clip_model::CanvasSize;
 
+use crate::render_profile;
 use crate::shaders::*;
 use crate::stream_bounds::CanvasRect;
 use crate::types::GpuNormalRasterSource;
@@ -443,6 +445,7 @@ fn encode_normal_source_pass_with_load(
     load: wgpu::LoadOp<wgpu::Color>,
     scissor: Option<CanvasRect>,
 ) {
+    let encode_start = Instant::now();
     let uniform = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("rizum_clip_normal_source_uniform"),
         size: uniform_bytes.len() as wgpu::BufferAddress,
@@ -498,6 +501,8 @@ fn encode_normal_source_pass_with_load(
         pass.set_scissor_rect(scissor.x, scissor.y, scissor.width, scissor.height);
     }
     pass.draw(0..3, 0..1);
+    drop(pass);
+    render_profile::record_gpu_pass_encode(encode_start.elapsed());
 }
 
 pub(crate) fn clear_rgba8_texture(
@@ -505,6 +510,7 @@ pub(crate) fn clear_rgba8_texture(
     view: &wgpu::TextureView,
     label: &'static str,
 ) {
+    let encode_start = Instant::now();
     let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some(label),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -521,4 +527,5 @@ pub(crate) fn clear_rgba8_texture(
         timestamp_writes: None,
         multiview_mask: None,
     });
+    render_profile::record_gpu_pass_encode(encode_start.elapsed());
 }

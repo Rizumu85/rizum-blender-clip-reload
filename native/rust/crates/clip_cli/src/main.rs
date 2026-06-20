@@ -5,7 +5,9 @@ use std::process;
 
 mod blender_server;
 mod blender_worker;
+mod blender_worker_render_profile;
 mod blender_worker_sparse;
+mod blender_worker_task_graph;
 mod compare_png;
 mod layer_labels;
 mod layer_window;

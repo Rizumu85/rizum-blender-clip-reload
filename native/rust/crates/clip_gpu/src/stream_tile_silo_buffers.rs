@@ -1,3 +1,6 @@
+use std::time::Instant;
+
+use crate::render_profile;
 use crate::stream_tile_event::TileEventProgram;
 use crate::stream_tile_silo_plan::TILE_SIZE;
 
@@ -14,6 +17,7 @@ pub(crate) fn create_tile_event_storage_buffers(
     raster_payload_label: &'static str,
     program: &TileEventProgram,
 ) -> TileEventStorageBuffers {
+    let build_start = Instant::now();
     let headers = create_u32_storage_buffer(device, header_label, &program.header_words());
     let raster_payloads = create_u32_storage_buffer(
         device,
@@ -36,6 +40,7 @@ pub(crate) fn create_tile_event_storage_buffers(
         filter_payloads,
         scope_payloads,
     }
+    .tap_profile_event_build(build_start)
 }
 
 pub(crate) fn create_u32_storage_buffer(
@@ -129,4 +134,15 @@ fn create_buffer_with_bytes(
     }
     buffer.unmap();
     buffer
+}
+
+trait ProfileEventBuild {
+    fn tap_profile_event_build(self, start: Instant) -> Self;
+}
+
+impl ProfileEventBuild for TileEventStorageBuffers {
+    fn tap_profile_event_build(self, start: Instant) -> Self {
+        render_profile::record_event_payload_build(start.elapsed());
+        self
+    }
 }
