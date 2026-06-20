@@ -98,11 +98,13 @@ Works today:
 - Packed image persistence inside `.blend` files.
 - Clear status messages for missing sources, render errors, and pack state.
 
+Future plan:
+- Text layers.
+
 Not in scope:
 
 - Editable layer import.
 - Vector strokes or fills.
-- Text layers.
 - Bubble/frame renderers.
 - 3D layers or animation timelines.
 - Writing changes back to `.clip` files.
@@ -267,11 +269,13 @@ macOS Intel 和 macOS Apple Silicon 的 native 包，但因为我没有对应设
 - 图片结果打包保存进 `.blend`。
 - 缺失源文件、渲染错误、pack 状态等清晰提示。
 
+以后补充：
+- 文字图层。
+
 目前不做：
 
 - 导入可编辑图层。
 - 矢量线条或填充。
-- 文字图层。
 - 对话框/分镜框渲染器。
 - 3D 图层或动画时间轴。
 - 把修改写回 `.clip` 文件。
