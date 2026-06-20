@@ -50,7 +50,7 @@ pub(crate) fn write_blender_render_files_with_renderer(
             Some(support.resource_stats),
             clip_runtime::GpuTextureCacheStats::default(),
             sparse_atlas,
-            reload_plan_metadata(&reload_plan, 0, None),
+            reload_plan_metadata(&reload_plan, 0, None, None),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -63,21 +63,34 @@ pub(crate) fn write_blender_render_files_with_renderer(
         let sparse_patch = renderer
             .draw_sparse_atlas_initial_segment_patches(session, &reload_plan)
             .map_err(|err| err.to_string())?;
-        let (render, sparse_atlas, patch_renderer) =
+        let (render, sparse_atlas, patch_renderer, patch_renderer_fallback_reason) =
             if let Some((render, sparse_atlas)) = sparse_patch {
-                (render, sparse_atlas, "sparse_atlas_initial_segments")
+                (render, sparse_atlas, "sparse_atlas_initial_segments", None)
             } else {
                 let sparse_patch = renderer
                     .draw_sparse_atlas_reconstructed_segment_patches(session, &reload_plan)
                     .map_err(|err| err.to_string())?;
                 if let Some((render, sparse_atlas)) = sparse_patch {
-                    (render, sparse_atlas, "sparse_atlas_reconstructed_segments")
+                    (
+                        render,
+                        sparse_atlas,
+                        "sparse_atlas_reconstructed_segments",
+                        None,
+                    )
                 } else {
                     let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
                     let render = renderer
                         .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
                         .map_err(|err| err.to_string())?;
-                    (render, sparse_atlas, "region")
+                    (
+                        render,
+                        sparse_atlas,
+                        "region",
+                        Some(
+                            "sparse_atlas_initial_segments and \
+                             sparse_atlas_reconstructed_segments returned no executable patch",
+                        ),
+                    )
                 }
             };
         if !render.unsupported.is_empty() {
@@ -103,7 +116,12 @@ pub(crate) fn write_blender_render_files_with_renderer(
             Some(stats),
             texture_cache_stats,
             sparse_atlas,
-            reload_plan_metadata(&reload_plan, payload_bytes, Some(patch_renderer)),
+            reload_plan_metadata(
+                &reload_plan,
+                payload_bytes,
+                Some(patch_renderer),
+                patch_renderer_fallback_reason,
+            ),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -143,6 +161,9 @@ pub(crate) fn write_blender_render_files_with_renderer(
         .unwrap_or_default();
     let patch_renderer =
         (reload_plan.mode == ReloadDiffMode::Patch).then_some("full_render_patch_extract");
+    let patch_renderer_fallback_reason = patch_renderer.map(
+        |_| "persistent RuntimeGpuRenderer unavailable; rendered full image then extracted patch",
+    );
     fs::write(rgba_path, &rgba_payload).map_err(|err| err.to_string())?;
 
     let metadata = base_metadata(
@@ -155,7 +176,12 @@ pub(crate) fn write_blender_render_files_with_renderer(
         Some(stats),
         texture_cache_stats,
         sparse_atlas,
-        reload_plan_metadata(&reload_plan, payload_bytes, patch_renderer),
+        reload_plan_metadata(
+            &reload_plan,
+            payload_bytes,
+            patch_renderer,
+            patch_renderer_fallback_reason,
+        ),
     );
     let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
     fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -244,6 +270,7 @@ fn reload_plan_metadata(
     plan: &clip_runtime::ReloadDiffPlan,
     payload_bytes: usize,
     patch_renderer: Option<&str>,
+    patch_renderer_fallback_reason: Option<&str>,
 ) -> serde_json::Value {
     let mode = match plan.mode {
         ReloadDiffMode::Full => "full",
@@ -255,6 +282,7 @@ fn reload_plan_metadata(
         "reason": plan.reason,
         "payload_bytes": payload_bytes,
         "patch_renderer": patch_renderer,
+        "patch_renderer_fallback_reason": patch_renderer_fallback_reason,
         "rects": plan.dirty_rects,
         "dirty_segments": plan.dirty_segments.iter().map(|segment| {
             json!({
@@ -333,6 +361,8 @@ mod tests {
         assert_eq!(metadata["height"], 512);
         assert_eq!(metadata["support"]["unsupported_count"], 0);
         assert_eq!(metadata["reload_diff"]["mode"], "full");
+        assert!(metadata["reload_diff"]["patch_renderer"].is_null());
+        assert!(metadata["reload_diff"]["patch_renderer_fallback_reason"].is_null());
         assert!(metadata["reload_diff"]["manifest"].is_object());
 
         let _ = std::fs::remove_file(rgba_path);
@@ -364,6 +394,8 @@ mod tests {
             serde_json::from_slice(&std::fs::read(&json_path).expect("read json"))
                 .expect("parse json");
         assert_eq!(metadata["reload_diff"]["mode"], "no_change");
+        assert!(metadata["reload_diff"]["patch_renderer"].is_null());
+        assert!(metadata["reload_diff"]["patch_renderer_fallback_reason"].is_null());
         assert_eq!(
             metadata["reload_diff"]["rects"].as_array().unwrap().len(),
             0
@@ -479,6 +511,10 @@ mod tests {
 
         assert_eq!(metadata["reload_diff"]["mode"], "patch");
         assert_eq!(metadata["reload_diff"]["patch_renderer"], "region");
+        assert_eq!(
+            metadata["reload_diff"]["patch_renderer_fallback_reason"],
+            "sparse_atlas_initial_segments and sparse_atlas_reconstructed_segments returned no executable patch"
+        );
         assert!(
             metadata["sparse_atlas_cache"]["inserted_tiles"]
                 .as_u64()

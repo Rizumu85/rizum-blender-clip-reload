@@ -1,0 +1,38 @@
+name: Native convergence
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      full_compare:
+        description: "Run clip_cli compare smoke checks"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  native-convergence:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run lightweight native convergence checks
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.full_compare) }}
+        shell: pwsh
+        run: scripts/verify_native_convergence.ps1 -SkipClipCompare
+
+      - name: Run full native convergence checks
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_compare }}
+        shell: pwsh
+        run: scripts/verify_native_convergence.ps1
