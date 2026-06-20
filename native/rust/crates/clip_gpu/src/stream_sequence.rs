@@ -10,7 +10,9 @@ use crate::stream_legacy_segment::encode_legacy_segment;
 use crate::stream_program::{
     BarrierProgramKind, RenderSegmentKind, TileProgramKind, plan_render_program,
 };
-use crate::stream_segment_profile::record_profiled_segment;
+use crate::stream_segment_profile::{
+    SegmentAtlasStatus, record_profiled_segment, record_profiled_segment_with_atlas_status,
+};
 use crate::stream_state::StreamingTexturePair;
 use crate::stream_tile_filter_silo::{
     encode_point_filter_silo_run_with_provider, encode_raster_filter_silo_run_with_provider,
@@ -130,7 +132,7 @@ where
             RenderSegmentKind::TileLocal(TileProgramKind::RasterRun) => {
                 let segment_counters_start = render_profile::segment_counters();
                 let segment_start = Instant::now();
-                let wrote_silo = encode_raster_silo_run_with_provider(
+                let silo_outcome = encode_raster_silo_run_with_provider(
                     context,
                     target_origin,
                     texture_pair.size(),
@@ -143,7 +145,7 @@ where
                 let segment_counters =
                     render_profile::segment_counters().saturating_sub(segment_counters_start);
                 render_profile::record_tile_local_segment(segment_elapsed);
-                record_profiled_segment(
+                record_profiled_segment_with_atlas_status(
                     &*context.provider,
                     context.output_size,
                     segment,
@@ -154,8 +156,13 @@ where
                     segment_counters,
                     "RasterRun",
                     None,
+                    Some(SegmentAtlasStatus {
+                        uses_sparse_resident_atlas: silo_outcome.uses_sparse_resident_atlas,
+                        uses_per_run_atlas: silo_outcome.uses_per_run_atlas,
+                        gpu_batches: silo_outcome.gpu_batches,
+                    }),
                 );
-                if wrote_silo {
+                if silo_outcome.wrote {
                     std::mem::swap(&mut previous_index, &mut next_index);
                     continue;
                 }

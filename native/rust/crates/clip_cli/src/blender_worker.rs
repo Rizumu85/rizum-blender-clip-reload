@@ -106,11 +106,23 @@ pub(crate) fn write_blender_render_files_with_renderer(
                         None,
                     )
                 } else {
-                    let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
                     let region_start = Instant::now();
-                    let render = renderer
-                        .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
-                        .map_err(|err| err.to_string())?;
+                    let (render, sparse_atlas) = match renderer
+                        .draw_normal_raster_stack_patches_with_region_resident_sparse_atlas(
+                            session,
+                            &reload_plan,
+                        )
+                        .map_err(|err| err.to_string())?
+                    {
+                        Some((render, sparse_atlas)) => (render, sparse_atlas),
+                        None => {
+                            let sparse_atlas = renderer.plan_sparse_atlas_reload(&reload_plan);
+                            let render = renderer
+                                .draw_normal_raster_stack_patches(session, &reload_plan.dirty_rects)
+                                .map_err(|err| err.to_string())?;
+                            (render, sparse_atlas)
+                        }
+                    };
                     let region_ms = elapsed_ms(region_start);
                     region_fallback_ms = Some(region_ms);
                     (

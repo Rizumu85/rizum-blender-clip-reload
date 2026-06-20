@@ -77,6 +77,13 @@ impl SegmentDrilldownStats {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct SegmentAtlasStatus {
+    pub(crate) uses_sparse_resident_atlas: bool,
+    pub(crate) uses_per_run_atlas: bool,
+    pub(crate) gpu_batches: u32,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn record_profiled_segment<P>(
     provider: &P,
@@ -89,6 +96,37 @@ pub(crate) fn record_profiled_segment<P>(
     counters: render_profile::RenderProfileSegmentCounters,
     kind: &'static str,
     reason_text: Option<&'static str>,
+) where
+    P: GpuNormalStackResourceProvider,
+{
+    record_profiled_segment_with_atlas_status(
+        provider,
+        output_size,
+        segment,
+        sources,
+        target_origin,
+        target_size,
+        elapsed,
+        counters,
+        kind,
+        reason_text,
+        None,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn record_profiled_segment_with_atlas_status<P>(
+    provider: &P,
+    output_size: CanvasSize,
+    segment: &RenderSegment,
+    sources: &[GpuNormalStackSource],
+    target_origin: (i32, i32),
+    target_size: CanvasSize,
+    elapsed: std::time::Duration,
+    counters: render_profile::RenderProfileSegmentCounters,
+    kind: &'static str,
+    reason_text: Option<&'static str>,
+    atlas_status: Option<SegmentAtlasStatus>,
 ) where
     P: GpuNormalStackResourceProvider,
 {
@@ -122,9 +160,15 @@ pub(crate) fn record_profiled_segment<P>(
         active_canvas_tile_count: drilldown.active_canvas_tile_count,
         max_events_per_dirty_tile: drilldown.max_events_per_dirty_tile,
         event_sources_outside_target_rect: drilldown.event_sources_outside_target_rect,
-        uses_sparse_resident_atlas: false,
-        uses_per_run_atlas: kind_uses_per_run_atlas(kind),
-        gpu_batches: segment.cost_hint.expected_passes,
+        uses_sparse_resident_atlas: atlas_status
+            .map(|status| status.uses_sparse_resident_atlas)
+            .unwrap_or(false),
+        uses_per_run_atlas: atlas_status
+            .map(|status| status.uses_per_run_atlas)
+            .unwrap_or_else(|| kind_uses_per_run_atlas(kind)),
+        gpu_batches: atlas_status
+            .map(|status| status.gpu_batches)
+            .unwrap_or(segment.cost_hint.expected_passes),
         child_source_count: drilldown.child_source_count,
         nested_container_through_count: drilldown.nested_container_through_count,
         barrier_raster_count: if is_legacy {

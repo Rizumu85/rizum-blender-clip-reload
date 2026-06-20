@@ -41,6 +41,7 @@ mod stream_program_lowering;
 #[cfg(test)]
 mod stream_program_tests;
 mod stream_provider;
+mod stream_resident_sparse_atlas;
 mod stream_resources;
 #[cfg(test)]
 mod stream_resources_tests;

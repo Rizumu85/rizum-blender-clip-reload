@@ -30,6 +30,11 @@ python scripts\benchmark_persistent_reload_cache.py `
   --output-json native\rust\target\reload-cache-benchmark.json
 ```
 
+Use `--request-timeout-seconds <seconds>` to fail a single worker request
+explicitly instead of blocking forever. The script writes worker stderr to a
+temporary file instead of a pipe so verbose Rust diagnostics cannot fill the
+pipe and stall the child process.
+
 `RIZUM_CLIP_RENDER_PROFILE=1` is set by the script so worker JSON includes
 `render_task_graph`, render profile counters, sparse atlas cache stats, and
 checkpoint cache stats.
@@ -275,3 +280,61 @@ Recommended smallest prototype:
   payload bytes.
 - Validate by comparing patch payload bytes against the current region renderer
   on `Test_RealArt reload_1` and `Ref_Terra404_Live2D reload_1`.
+
+## Resident Sparse Atlas RasterRun Prototype
+
+Prototype flag:
+
+```powershell
+$env:RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS = "1"
+```
+
+The prototype was added behind the env flag and kept fail-closed. It only tries
+to substitute resident sparse-atlas execution for region-fallback `RasterRun`
+segments when:
+
+- the render is a patch reload dirty-region render
+- the segment is a `RasterRun`
+- the source and event counts stay under the bounded prototype limits
+- all required resident RGBA/R8 atlas slots have matching GPU textures in the
+  session sparse atlas pool
+
+The benchmark now supports A/B payload comparison:
+
+```powershell
+python scripts\benchmark_persistent_reload_cache.py `
+  --clip-cli native\rust\target\release\clip_cli.exe `
+  --fixture-root E:\Documents\Claude\Projects\rizum-blender-clip-reload\img `
+  --samples Test_Clipping Test_RealArt Ref_Terra404_Live2D `
+  --iterations 5 `
+  --ab-region-resident-atlas `
+  --output-json resident_atlas_ab_results.json
+```
+
+Release-mode medians from the local run:
+
+| sample | off median reload ms | on median reload ms | payload equality | resident RasterRun hits | per-run RasterRun median | decision |
+| --- | ---: | ---: | --- | ---: | ---: | --- |
+| `Test_Clipping` | 6 | 6 | all equal | 0 | 0 | not applicable; dirty path is `RasterClippingRun` |
+| `Test_RealArt` | 261 | 325 | all equal | 0 | 11 | no-go |
+| `Ref_Terra404_Live2D` | 546 | 573 | all equal | 0 | 4 | no-go |
+
+Conclusion:
+
+- The prototype does not meet the performance acceptance criteria.
+- It must not become the default path.
+- It remains opt-in and fail-closed for now, but the current controlled reload
+  fixture does not exercise a resident GPU atlas path.
+- The root cause is cache lifecycle, not compositing semantics: the benchmark's
+  baseline full render builds logical sparse atlas cache entries, but it does
+  not populate the GPU sparse atlas texture pool. The synthetic reload then
+  reports `Reuse` for all atlas entries and produces no upload chunks, so the
+  resident GPU textures required by the prototype are absent. The correct
+  behavior is to fail closed to the existing region renderer.
+
+Next recommendation:
+
+- Do not continue this prototype until there is a narrow GPU sparse-atlas pool
+  warm-up or changed-tile fixture that proves the required resident textures are
+  actually present. Without that, the measured optimization target is not
+  executable and only adds branch overhead.

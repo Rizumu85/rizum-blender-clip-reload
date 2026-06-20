@@ -35,7 +35,13 @@ pub(crate) mod atlas_upload;
 #[cfg(test)]
 mod atlas_upload_tests;
 pub(crate) mod cache;
+mod region_resident_sparse;
 mod sparse;
+
+pub(crate) use region_resident_sparse::{
+    RuntimeRegionResidentSparseAtlas, RuntimeResidentAtlasSlot, RuntimeResidentSourceKey,
+    RuntimeResidentSourceKind,
+};
 
 #[derive(Clone, Debug)]
 struct PlannedRasterResourceMeta {
@@ -119,6 +125,7 @@ pub(crate) struct RuntimeGpuResourceProvider<'a> {
     pub(crate) mask_resources: Vec<clip_gpu::GpuMaskResourceInfo>,
     reported_masks: HashSet<clip_gpu::GpuMaskResourceKey>,
     texture_cache: Option<&'a mut cache::PersistentGpuTextureCache>,
+    region_resident_sparse_atlas: Option<RuntimeRegionResidentSparseAtlas<'a>>,
 }
 
 impl<'a> RuntimeGpuResourceProvider<'a> {
@@ -137,6 +144,7 @@ impl<'a> RuntimeGpuResourceProvider<'a> {
             mask_resources: Vec::new(),
             reported_masks: HashSet::new(),
             texture_cache: None,
+            region_resident_sparse_atlas: None,
         })
     }
 
@@ -149,6 +157,15 @@ impl<'a> RuntimeGpuResourceProvider<'a> {
         let mut provider = Self::new(container, canvas, plan)?;
         provider.texture_cache = Some(texture_cache);
         Ok(provider)
+    }
+
+    pub(crate) fn set_region_resident_sparse_atlas(
+        &mut self,
+        pool: &'a clip_gpu::GpuSparseAtlasTexturePool,
+        slots_by_source: HashMap<RuntimeResidentSourceKey, Vec<RuntimeResidentAtlasSlot>>,
+    ) {
+        self.region_resident_sparse_atlas =
+            Some(RuntimeRegionResidentSparseAtlas::new(pool, slots_by_source));
     }
 }
 
@@ -188,7 +205,7 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
     }
 
     fn raster_run_atlas_supports_masks(&self) -> bool {
-        self.texture_cache.is_none()
+        self.region_resident_sparse_atlas.is_some() || self.texture_cache.is_none()
     }
 
     fn mask_is_fully_opaque(&self, key: clip_gpu::GpuMaskResourceKey) -> Option<bool> {
@@ -233,6 +250,49 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         atlas_size: CanvasSize,
     ) -> Result<Option<Vec<clip_gpu::GpuMaskAtlasTileChunk>>, Self::Error> {
         self.build_mask_atlas_tile_pixels(sources, atlas_size)
+    }
+
+    fn with_resident_sparse_atlas_raster_run<R, F>(
+        &self,
+        output_size: CanvasSize,
+        target_origin: (i32, i32),
+        target_size: CanvasSize,
+        sources: &[clip_gpu::GpuNormalStackSource],
+        encode: F,
+    ) -> Result<Option<R>, Self::Error>
+    where
+        F: FnOnce(
+            &clip_gpu::GpuSparseAtlasTexturePool,
+            &[clip_gpu::GpuSparseAtlasRasterEventBatch],
+        ) -> Result<R, Self::Error>,
+    {
+        let Some(resident) = &self.region_resident_sparse_atlas else {
+            return Ok(None);
+        };
+        if output_size != self.canvas || target_size.width == 0 || target_size.height == 0 {
+            return Ok(None);
+        }
+        let (Ok(target_x), Ok(target_y)) = (
+            u32::try_from(target_origin.0),
+            u32::try_from(target_origin.1),
+        ) else {
+            return Ok(None);
+        };
+        if target_x
+            .checked_add(target_size.width)
+            .is_none_or(|right| right > self.canvas.width)
+            || target_y
+                .checked_add(target_size.height)
+                .is_none_or(|bottom| bottom > self.canvas.height)
+        {
+            return Ok(None);
+        }
+        let Some(batches) =
+            resident.raster_run_batches(self.canvas, target_origin, target_size, sources)
+        else {
+            return Ok(None);
+        };
+        encode(resident.pool, &batches).map(Some)
     }
 
     fn mask_resource(

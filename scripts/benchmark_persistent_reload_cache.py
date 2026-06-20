@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
+import queue
 import subprocess
 import sys
 import tempfile
+import threading
 from typing import Any
 
 
@@ -23,16 +26,23 @@ DEFAULT_SAMPLES = ["Test_Clipping", "Test_RealArt", "Ref_Terra404_Live2D"]
 
 
 class RenderServer:
-    def __init__(self, clip_cli: Path, env: dict[str, str]) -> None:
+    def __init__(
+        self, clip_cli: Path, env: dict[str, str], request_timeout_seconds: float
+    ) -> None:
+        self._request_timeout_seconds = request_timeout_seconds
+        self._responses: queue.Queue[str | None] = queue.Queue()
+        self._stderr_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
         self._process = subprocess.Popen(
             [str(clip_cli), "--blender-render-server"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=self._stderr_file,
             text=True,
             encoding="utf-8",
             env=env,
         )
+        self._reader = threading.Thread(target=self._read_stdout, daemon=True)
+        self._reader.start()
 
     def render(
         self,
@@ -52,31 +62,62 @@ class RenderServer:
 
     def close(self) -> None:
         if self._process.poll() is not None:
+            self._close_stderr()
             return
         try:
             self._send({"shutdown": True})
         finally:
             try:
-                self._process.communicate(timeout=10)
+                self._process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self._process.kill()
-                self._process.communicate()
+                self._process.wait()
+            self._reader.join(timeout=1)
+            self._close_stderr()
 
     def _send(self, request: dict[str, Any]) -> None:
         if self._process.stdin is None or self._process.stdout is None:
             raise RuntimeError("render server pipes are unavailable")
         self._process.stdin.write(json.dumps(request) + "\n")
         self._process.stdin.flush()
-        line = self._process.stdout.readline()
+        try:
+            line = self._responses.get(timeout=self._request_timeout_seconds)
+        except queue.Empty as exc:
+            self._process.kill()
+            raise TimeoutError(
+                f"render server request timed out after "
+                f"{self._request_timeout_seconds:.0f}s: {request}\n"
+                f"{self._stderr_tail()}"
+            ) from exc
         if not line:
-            stderr = self._process.stderr.read() if self._process.stderr else ""
-            raise RuntimeError(f"render server exited without a response: {stderr}")
+            raise RuntimeError(
+                f"render server exited without a response: {self._stderr_tail()}"
+            )
         response = json.loads(line)
         if not response.get("ok"):
-            stderr = self._process.stderr.read() if self._process.stderr else ""
             raise RuntimeError(
-                f"render server request failed: {response.get('error', '')}\n{stderr}"
+                f"render server request failed: {response.get('error', '')}\n"
+                f"{self._stderr_tail()}"
             )
+
+    def _read_stdout(self) -> None:
+        if self._process.stdout is None:
+            self._responses.put(None)
+            return
+        for line in self._process.stdout:
+            self._responses.put(line)
+        self._responses.put(None)
+
+    def _stderr_tail(self) -> str:
+        self._stderr_file.flush()
+        self._stderr_file.seek(0)
+        text = self._stderr_file.read()
+        self._stderr_file.seek(0, os.SEEK_END)
+        return text[-4000:]
+
+    def _close_stderr(self) -> None:
+        if not self._stderr_file.closed:
+            self._stderr_file.close()
 
 
 def find_mutation_candidates(manifest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -175,6 +216,7 @@ def summarize_metadata(
     sample: str,
     request_index: str,
     metadata: dict[str, Any],
+    rgba_path: Path | None = None,
     previous_checkpoint: dict[str, int] | None = None,
     mutation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -260,6 +302,13 @@ def summarize_metadata(
         "dirty_event_ranges": dirty_event_ranges,
         "readback_patch_bytes": int(reload_diff.get("payload_bytes") or 0),
         "region_fallback_executed": region_fallback,
+        "region_raster_resident_atlas_segment_count": int(
+            render_profile.get("region_raster_resident_atlas_segment_count") or 0
+        ),
+        "region_raster_per_run_atlas_segment_count": int(
+            render_profile.get("region_raster_per_run_atlas_segment_count") or 0
+        ),
+        "payload_sha256": payload_sha256(rgba_path),
         "first_skipped_sparse_task_reason": first_skipped_sparse_reason,
         "dominant_task": dominant_task,
         "top_reload_segments": top_reload_segments,
@@ -416,7 +465,14 @@ def benchmark_sample(
     server.render(clip_path, sample_dir / "baseline.rgba", baseline_json_path)
     baseline_metadata = read_json(baseline_json_path)
     baseline_manifest = baseline_metadata["reload_diff"]["manifest"]
-    rows = [summarize_metadata(sample, "baseline", baseline_metadata)]
+    rows = [
+        summarize_metadata(
+            sample,
+            "baseline",
+            baseline_metadata,
+            rgba_path=sample_dir / "baseline.rgba",
+        )
+    ]
     previous_checkpoint = checkpoint_snapshot(baseline_metadata)
     mutations = []
 
@@ -433,11 +489,13 @@ def benchmark_sample(
             manifest_path,
         )
         metadata = read_json(json_path)
+        rgba_path = sample_dir / f"reload_{iteration}.rgba"
         rows.append(
             summarize_metadata(
                 sample,
                 f"reload_{iteration}",
                 metadata,
+                rgba_path=rgba_path,
                 previous_checkpoint=previous_checkpoint,
                 mutation=mutation,
             )
@@ -450,6 +508,117 @@ def benchmark_sample(
         "rows": rows,
         "mutations": mutations,
     }
+
+
+def benchmark_sample_ab(
+    clip_cli: Path,
+    env: dict[str, str],
+    sample: str,
+    clip_path: Path,
+    temp_root: Path,
+    iterations: int,
+    request_timeout_seconds: float,
+) -> dict[str, Any]:
+    off_env = dict(env)
+    off_env.pop("RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS", None)
+    on_env = dict(env)
+    on_env["RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS"] = "1"
+    off_server = RenderServer(clip_cli, off_env, request_timeout_seconds)
+    on_server = RenderServer(clip_cli, on_env, request_timeout_seconds)
+    try:
+        off = benchmark_sample(
+            off_server, sample, clip_path, temp_root / f"{sample}_resident_off", iterations
+        )
+        on = benchmark_sample(
+            on_server, sample, clip_path, temp_root / f"{sample}_resident_on", iterations
+        )
+    finally:
+        off_server.close()
+        on_server.close()
+    return {
+        "sample": sample,
+        "clip_path": str(clip_path),
+        "resident_atlas_ab": True,
+        "off": off,
+        "on": on,
+        "comparisons": compare_ab_rows(off["rows"], on["rows"]),
+    }
+
+
+def compare_ab_rows(
+    off_rows: list[dict[str, Any]], on_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    on_by_request = {row["request"]: row for row in on_rows}
+    comparisons = []
+    for off in off_rows:
+        on = on_by_request.get(off["request"])
+        if on is None:
+            comparisons.append(
+                {
+                    "request": off["request"],
+                    "patch_payload_equal": False,
+                    "metadata_equal": False,
+                    "reason": "missing on-row",
+                }
+            )
+            continue
+        payload_equal = (
+            off.get("payload_sha256") is not None
+            and off.get("payload_sha256") == on.get("payload_sha256")
+        )
+        comparisons.append(
+            {
+                "request": off["request"],
+                "patch_payload_equal": payload_equal,
+                "dirty_rect_metadata_equal": comparable_dirty_rect_metadata(off)
+                == comparable_dirty_rect_metadata(on),
+                "support_metadata_equal": comparable_support_metadata(off)
+                == comparable_support_metadata(on),
+                "reload_diff_fields_equal": comparable_reload_fields(off)
+                == comparable_reload_fields(on),
+                "off_payload_sha256": off.get("payload_sha256"),
+                "on_payload_sha256": on.get("payload_sha256"),
+                "off_resident_segments": off.get(
+                    "region_raster_resident_atlas_segment_count"
+                ),
+                "on_resident_segments": on.get(
+                    "region_raster_resident_atlas_segment_count"
+                ),
+                "off_per_run_segments": off.get(
+                    "region_raster_per_run_atlas_segment_count"
+                ),
+                "on_per_run_segments": on.get(
+                    "region_raster_per_run_atlas_segment_count"
+                ),
+            }
+        )
+    return comparisons
+
+
+def comparable_dirty_rect_metadata(row: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        row.get("mode"),
+        row.get("readback_patch_bytes"),
+        row.get("dirty_segments"),
+        row.get("dirty_event_ranges"),
+        tuple(row.get("dirty_segment_details") or []),
+    )
+
+
+def comparable_support_metadata(row: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        row.get("legacy_barrier_segment_count"),
+        row.get("tile_local_segment_count"),
+    )
+
+
+def comparable_reload_fields(row: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        row.get("patch_renderer"),
+        row.get("patch_renderer_fallback_reason"),
+        row.get("readback_patch_bytes"),
+        row.get("region_fallback_executed"),
+    )
 
 
 def checkpoint_snapshot(metadata: dict[str, Any]) -> dict[str, int]:
@@ -467,8 +636,17 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def payload_sha256(path: Path | None) -> str | None:
+    if path is None or not path.exists():
+        return None
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def print_markdown(results: list[dict[str, Any]]) -> None:
     for result in results:
+        if result.get("resident_atlas_ab"):
+            print_ab_markdown(result)
+            continue
         print(f"## {result['sample']}")
         print()
         print(
@@ -497,6 +675,22 @@ def print_markdown(results: list[dict[str, Any]]) -> None:
                 f"{yes_no(row['sparse_upload_before_region_fallback'])} | "
                 f"{row['dominant_task'] or ''} |"
             )
+        if any(
+            row.get("region_raster_resident_atlas_segment_count")
+            or row.get("region_raster_per_run_atlas_segment_count")
+            for row in result["rows"]
+        ):
+            print()
+            print(
+                "| request | resident sparse RasterRun segs | per-run RasterRun segs |"
+            )
+            print("| --- | ---: | ---: |")
+            for row in result["rows"]:
+                print(
+                    f"| {row['request']} | "
+                    f"{row['region_raster_resident_atlas_segment_count']} | "
+                    f"{row['region_raster_per_run_atlas_segment_count']} |"
+                )
         print()
         first_patch = next(
             (row for row in result["rows"] if row["request"] == "reload_1"),
@@ -550,6 +744,32 @@ def print_markdown(results: list[dict[str, Any]]) -> None:
             print()
 
 
+def print_ab_markdown(result: dict[str, Any]) -> None:
+    print(f"## {result['sample']} A/B resident sparse atlas")
+    print()
+    print("### Current region path")
+    print_markdown([result["off"]])
+    print("### Resident sparse atlas prototype")
+    print_markdown([result["on"]])
+    print("### Equality")
+    print()
+    print(
+        "| request | payload equal | dirty rect metadata | support metadata | reload fields | resident segs off/on | per-run segs off/on |"
+    )
+    print("| --- | --- | --- | --- | --- | --- | --- |")
+    for row in result["comparisons"]:
+        print(
+            f"| {row['request']} | "
+            f"{yes_no(row.get('patch_payload_equal'))} | "
+            f"{yes_no(row.get('dirty_rect_metadata_equal'))} | "
+            f"{yes_no(row.get('support_metadata_equal'))} | "
+            f"{yes_no(row.get('reload_diff_fields_equal'))} | "
+            f"{row.get('off_resident_segments')}/{row.get('on_resident_segments')} | "
+            f"{row.get('off_per_run_segments')}/{row.get('on_per_run_segments')} |"
+        )
+    print()
+
+
 def yes_no(value: bool) -> str:
     return "yes" if value else "no"
 
@@ -575,8 +795,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Sample base names without .clip extension.",
     )
     parser.add_argument("--iterations", type=int, default=5)
+    parser.add_argument("--request-timeout-seconds", type=float, default=600.0)
     parser.add_argument("--output-json", type=Path)
     parser.add_argument("--keep-temp", action="store_true")
+    parser.add_argument(
+        "--ab-region-resident-atlas",
+        action="store_true",
+        help=(
+            "Run the current region path and RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS=1 "
+            "prototype in separate persistent servers and compare patch payload hashes."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -602,9 +831,8 @@ def main(argv: list[str] | None = None) -> int:
             prefix="rizum_reload_cache_benchmark_"
         )
         temp_root = Path(temp_context.name)
-    server = RenderServer(clip_cli, env)
     results: list[dict[str, Any]] = []
-    try:
+    if args.ab_region_resident_atlas:
         for sample in args.samples:
             clip_path = fixture_root / f"{sample}.clip"
             if not clip_path.exists():
@@ -618,10 +846,36 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 continue
             results.append(
-                benchmark_sample(server, sample, clip_path, temp_root, args.iterations)
+                benchmark_sample_ab(
+                    clip_cli,
+                    env,
+                    sample,
+                    clip_path,
+                    temp_root,
+                    args.iterations,
+                    args.request_timeout_seconds,
+                )
             )
-    finally:
-        server.close()
+    else:
+        server = RenderServer(clip_cli, env, args.request_timeout_seconds)
+        try:
+            for sample in args.samples:
+                clip_path = fixture_root / f"{sample}.clip"
+                if not clip_path.exists():
+                    results.append(
+                        {
+                            "sample": sample,
+                            "clip_path": str(clip_path),
+                            "missing": True,
+                            "rows": [],
+                        }
+                    )
+                    continue
+                results.append(
+                    benchmark_sample(server, sample, clip_path, temp_root, args.iterations)
+                )
+        finally:
+            server.close()
         if args.keep_temp:
             print(f"Temporary files kept at: {temp_root}", file=sys.stderr)
         else:

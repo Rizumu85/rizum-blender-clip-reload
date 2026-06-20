@@ -1,8 +1,9 @@
 use clip_model::{CanvasSize, Rect};
 
 use crate::{
-    GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuRasterResourceCache,
-    GpuRasterResourceInfo, GpuRenderError, GpuRenderer,
+    GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackSource,
+    GpuRasterResourceCache, GpuRasterResourceInfo, GpuRenderError, GpuRenderer,
+    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTexturePool,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -132,6 +133,28 @@ pub trait GpuNormalStackResourceProvider {
     ) -> Result<Option<Vec<GpuMaskAtlasTileChunk>>, Self::Error> {
         let _ = sources;
         let _ = atlas_size;
+        Ok(None)
+    }
+
+    fn with_resident_sparse_atlas_raster_run<R, F>(
+        &self,
+        output_size: CanvasSize,
+        target_origin: (i32, i32),
+        target_size: CanvasSize,
+        sources: &[GpuNormalStackSource],
+        encode: F,
+    ) -> Result<Option<R>, Self::Error>
+    where
+        F: FnOnce(
+            &GpuSparseAtlasTexturePool,
+            &[GpuSparseAtlasRasterEventBatch],
+        ) -> Result<R, Self::Error>,
+    {
+        let _ = output_size;
+        let _ = target_origin;
+        let _ = target_size;
+        let _ = sources;
+        let _ = encode;
         Ok(None)
     }
 

@@ -24,12 +24,12 @@ cd native/rust
 
 | Sample | planned_passes | tile_local_segments | barrier_segments | legacy_segments | top barrier reasons | tile_event_abi_version | debug CLI compare time | patch_renderer status |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- |
-| `Test_Clipping` | 2 | 1 | 1 | 1 | `SolidColorNotLowered=1` | 10 | 1.34s | worker fixture: `region`; fallback reason recorded |
+| `Test_Clipping` | 2 | 1 | 1 | 1 | `SolidColorNotLowered=1` | 10 | 1.34s | worker fixture: `region`; resident RasterRun A/B equal, 0 hits |
 | `Test_ClippingEdge` | 1 | 1 | 0 | 0 | none | 10 | 1.15s | not measured |
 | `Test_AddGlowMultiply` | 2 | 2 | 0 | 0 | none | 10 | 8.24s | not measured |
 | `Test_ToneCurve` | 1 | 1 | 0 | 0 | none | 10 | 1.45s | not measured |
-| `Test_RealArt` | 148 | 139 | 9 | 9 | `RasterBoundsOrResourceNotLowered=3; ThroughGroupNotLowered=3; ScopeDepthLimitExceeded=2; IsolatedContainerRequiresIntermediate=1` | 10 | 26.00s | not measured |
-| `Ref_Terra404_Live2D` | 481 | 468 | 13 | 13 | `ThroughGroupNotLowered=5; IsolatedContainerRequiresIntermediate=4; ClippingRunNotLowered=2; ScopeDepthLimitExceeded=2` | 10 | 47.23s | not measured |
+| `Test_RealArt` | 148 | 139 | 9 | 9 | `RasterBoundsOrResourceNotLowered=3; ThroughGroupNotLowered=3; ScopeDepthLimitExceeded=2; IsolatedContainerRequiresIntermediate=1` | 10 | 26.00s | reload fixture: `region`; resident RasterRun A/B equal, 0 hits |
+| `Ref_Terra404_Live2D` | 481 | 468 | 13 | 13 | `ThroughGroupNotLowered=5; IsolatedContainerRequiresIntermediate=4; ClippingRunNotLowered=2; ScopeDepthLimitExceeded=2` | 10 | 47.23s | reload fixture: `region`; resident RasterRun A/B equal, 0 hits |
 | `IllustrationBlendModes` | 2 | 1 | 1 | 1 | `SolidColorNotLowered=1` | 10 | 1.48s | not measured |
 | `IllustrationBlendModesB` | 2 | 1 | 1 | 1 | `SolidColorNotLowered=1` | 10 | 1.35s | not measured |
 | `Test_Gradiation` | 1 | 1 | 0 | 0 | none | 10 | 1.45s | not measured |

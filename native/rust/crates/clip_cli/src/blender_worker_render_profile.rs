@@ -36,6 +36,10 @@ pub(crate) fn render_profile_metadata(worker_total_ms: u64) -> Option<serde_json
             "checkpoint_cache_stores": profile.checkpoint_cache_stores,
             "checkpoint_cache_evictions": profile.checkpoint_cache_evictions,
             "checkpoint_cache_skipped_over_budget": profile.checkpoint_cache_skipped_over_budget,
+            "region_raster_resident_atlas_segment_count":
+                profile.region_raster_resident_atlas_segment_count,
+            "region_raster_per_run_atlas_segment_count":
+                profile.region_raster_per_run_atlas_segment_count,
             "top_segments": top_segments_json(&profile.top_segments),
             "worker_total_ms": worker_total_ms,
         })

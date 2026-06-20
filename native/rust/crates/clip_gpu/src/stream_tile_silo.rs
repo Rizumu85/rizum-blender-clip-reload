@@ -7,6 +7,9 @@ use crate::render_profile;
 use crate::stream::GpuNormalStackResourceProvider;
 use crate::stream_bounds::{CanvasRect, union_optional};
 use crate::stream_context::StreamingExecutionContext;
+use crate::stream_resident_sparse_atlas::{
+    RasterSiloEncodeOutcome, encode_resident_sparse_atlas_raster_run_with_provider,
+};
 use crate::stream_tile_silo_buffers::{
     create_params_buffer, create_tile_event_storage_buffers, create_u32_storage_buffer,
 };
@@ -34,12 +37,23 @@ pub(crate) fn encode_raster_silo_run_with_provider<P>(
     previous_view: &wgpu::TextureView,
     output_view: &wgpu::TextureView,
     dirty_bounds: &mut Option<CanvasRect>,
-) -> Result<bool, P::Error>
+) -> Result<RasterSiloEncodeOutcome, P::Error>
 where
     P: GpuNormalStackResourceProvider,
 {
     if sources.is_empty() {
-        return Ok(false);
+        return Ok(RasterSiloEncodeOutcome::not_written());
+    }
+    if let Some(outcome) = encode_resident_sparse_atlas_raster_run_with_provider(
+        context,
+        sources,
+        target_origin,
+        target_size,
+        previous_view,
+        output_view,
+        dirty_bounds,
+    )? {
+        return Ok(outcome);
     }
 
     let output_size = context.output_size;
@@ -51,7 +65,7 @@ where
         sources,
         crate::stream_tile_silo_plan::MAX_ATLAS_TEXTURE_SIZE,
     ) else {
-        return Ok(false);
+        return Ok(RasterSiloEncodeOutcome::not_written());
     };
     let Some(requests) = atlas_requests(
         &*context.provider,
@@ -61,7 +75,7 @@ where
         sources,
         &layout.sources,
     ) else {
-        return Ok(false);
+        return Ok(RasterSiloEncodeOutcome::not_written());
     };
     let run_has_masks = sources_have_masks(sources);
     let (prepared, atlas, mask_atlas, mask_atlas_bytes, drawn_resources) = if let Some(upload) =
@@ -126,7 +140,7 @@ where
         )
     } else {
         if run_has_masks {
-            return Ok(false);
+            return Ok(RasterSiloEncodeOutcome::not_written());
         }
         let prepared = prepare_sources_with_caches(
             context,
@@ -159,13 +173,13 @@ where
         .map(|source| source.bounds)
         .reduce(CanvasRect::union)
     else {
-        return Ok(false);
+        return Ok(RasterSiloEncodeOutcome::not_written());
     };
     let Some(pass_bounds) = context
         .state
         .clip_pass_bounds(union_optional(*dirty_bounds, Some(source_bounds)))
     else {
-        return Ok(false);
+        return Ok(RasterSiloEncodeOutcome::not_written());
     };
 
     let tile_cols = target_size.width.div_ceil(TILE_SIZE);
@@ -176,7 +190,7 @@ where
     let (work_indices, tile_spans) =
         tile_work_lists(tile_count, tile_cols, &prepared).map_err(P::Error::from)?;
     if work_indices.is_empty() {
-        return Ok(false);
+        return Ok(RasterSiloEncodeOutcome::not_written());
     }
 
     let atlas_view = atlas.create_view(&wgpu::TextureViewDescriptor::default());
@@ -302,7 +316,10 @@ where
     context.state.retain_texture(lut_atlas, lut_atlas_bytes);
     context.state.finish_pass()?;
     *dirty_bounds = Some(pass_bounds);
-    Ok(true)
+    if context.state.render_bounds().is_some() {
+        crate::render_profile::record_region_raster_per_run_atlas_segment();
+    }
+    Ok(RasterSiloEncodeOutcome::per_run_atlas(1))
 }
 
 fn sources_have_masks(sources: &[GpuNormalStackSource]) -> bool {

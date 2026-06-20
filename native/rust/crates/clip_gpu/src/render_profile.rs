@@ -33,6 +33,8 @@ pub struct RenderProfileSnapshot {
     pub checkpoint_cache_stores: u64,
     pub checkpoint_cache_evictions: u64,
     pub checkpoint_cache_skipped_over_budget: u64,
+    pub region_raster_resident_atlas_segment_count: u64,
+    pub region_raster_per_run_atlas_segment_count: u64,
     pub top_segments: Vec<RenderProfileSegment>,
 }
 
@@ -108,6 +110,8 @@ static CHECKPOINT_CACHE_MISSES: AtomicU64 = AtomicU64::new(0);
 static CHECKPOINT_CACHE_STORES: AtomicU64 = AtomicU64::new(0);
 static CHECKPOINT_CACHE_EVICTIONS: AtomicU64 = AtomicU64::new(0);
 static CHECKPOINT_CACHE_SKIPPED_OVER_BUDGET: AtomicU64 = AtomicU64::new(0);
+static REGION_RASTER_RESIDENT_ATLAS_SEGMENT_COUNT: AtomicU64 = AtomicU64::new(0);
+static REGION_RASTER_PER_RUN_ATLAS_SEGMENT_COUNT: AtomicU64 = AtomicU64::new(0);
 static SEGMENT_ORDINAL: AtomicU64 = AtomicU64::new(0);
 static TOP_SEGMENTS: OnceLock<Mutex<Vec<RenderProfileSegment>>> = OnceLock::new();
 
@@ -162,6 +166,10 @@ pub fn snapshot() -> RenderProfileSnapshot {
         checkpoint_cache_stores: CHECKPOINT_CACHE_STORES.load(Ordering::Relaxed),
         checkpoint_cache_evictions: CHECKPOINT_CACHE_EVICTIONS.load(Ordering::Relaxed),
         checkpoint_cache_skipped_over_budget: CHECKPOINT_CACHE_SKIPPED_OVER_BUDGET
+            .load(Ordering::Relaxed),
+        region_raster_resident_atlas_segment_count: REGION_RASTER_RESIDENT_ATLAS_SEGMENT_COUNT
+            .load(Ordering::Relaxed),
+        region_raster_per_run_atlas_segment_count: REGION_RASTER_PER_RUN_ATLAS_SEGMENT_COUNT
             .load(Ordering::Relaxed),
         top_segments: top_segments_snapshot(),
     }
@@ -421,7 +429,19 @@ pub fn record_checkpoint_cache_skipped_over_budget() {
     }
 }
 
-fn counters() -> [&'static AtomicU64; 27] {
+pub(crate) fn record_region_raster_resident_atlas_segment() {
+    if enabled() {
+        add(&REGION_RASTER_RESIDENT_ATLAS_SEGMENT_COUNT, 1);
+    }
+}
+
+pub(crate) fn record_region_raster_per_run_atlas_segment() {
+    if enabled() {
+        add(&REGION_RASTER_PER_RUN_ATLAS_SEGMENT_COUNT, 1);
+    }
+}
+
+fn counters() -> [&'static AtomicU64; 29] {
     [
         &SOURCE_SELECTION_MS,
         &GPU_DEVICE_INIT_MS,
@@ -450,6 +470,8 @@ fn counters() -> [&'static AtomicU64; 27] {
         &CHECKPOINT_CACHE_STORES,
         &CHECKPOINT_CACHE_EVICTIONS,
         &CHECKPOINT_CACHE_SKIPPED_OVER_BUDGET,
+        &REGION_RASTER_RESIDENT_ATLAS_SEGMENT_COUNT,
+        &REGION_RASTER_PER_RUN_ATLAS_SEGMENT_COUNT,
     ]
 }
 

@@ -1379,6 +1379,18 @@ next class is `E. Sparse resident atlas not used in region path`: tiny dirty
 RasterRun segments still use per-run atlases even though the persistent sparse
 atlas has complete resident tile reuse at the sample level.
 
+Fiftieth form: the region-fallback resident sparse-atlas `RasterRun` prototype
+is implemented behind `RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS=1` and kept
+fail-closed. A/B reload tests on `Test_Clipping`, `Test_RealArt`, and local
+`Ref_Terra404_Live2D` produced byte-identical payloads, but no resident
+RasterRun hit occurred. The benchmark revealed that the synthetic reload cache
+fixture keeps logical sparse atlas entries resident while the baseline full
+render does not populate the GPU sparse atlas texture pool; reused entries
+therefore have no GPU texture to sample. The prototype does not meet the
+performance acceptance criteria and must remain non-default. The benchmark
+harness now stores worker stderr in a temporary file and has per-request
+timeouts so child-worker errors do not masquerade as slow samples.
+
 Next Phase 6 work:
 
 - expand clipped container/folder siblings beyond the current simple child
