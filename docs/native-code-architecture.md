@@ -690,8 +690,10 @@ Persistence rules:
   `clip_studio_importer.zip` in Blender extension layout with
   `blender_manifest.toml`, `__init__.py`, `i18n.py`, `native_bridge.py`,
   `LICENSE`, `NOTICE.md`, and the local release native renderer library and
-  worker under `native/` on Windows, matching the add-on discovery path.
-  Equivalent `.so`/`.dylib` names are reserved for other platforms.
+  worker under `native/<platform>/`, matching the add-on discovery path.
+  Windows x64 is maintainer-tested. Linux x64, macOS x64, and macOS arm64
+  packages are supported by the package/runtime layout but remain
+  maintainer-untested until real devices verify them.
 - On Blender `load_post`, the current add-on scans native images with
   `clip_native_renderer` plus `clip_source`. If the source exists and is
   newer/different, it asks the native runtime to render and updates the image

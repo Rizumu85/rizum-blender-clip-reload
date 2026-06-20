@@ -98,7 +98,20 @@ python tools\build_blender_addon.py
 
 The script writes `clip_studio_importer.zip`. The zip contains the Blender
 extension files, `LICENSE`, `NOTICE.md`, and the native renderer files under
-`native/`.
+`native/<platform>/`.
+
+By default the script packages the current host platform. Windows x64 is tested
+on the maintainer's machine. Linux x64, macOS x64, and macOS arm64 package
+support is present but not maintainer-tested because the maintainer does not
+have those devices. Build those packages on matching machines, or pass explicit
+artifact directories:
+
+```powershell
+python tools\build_blender_addon.py --platform linux-x64
+python tools\build_blender_addon.py --platform macos-x64
+python tools\build_blender_addon.py --platform macos-arm64
+python tools\build_blender_addon.py --platform linux-x64 --native-artifact-dir linux-x64=path\to\linux\artifacts
+```
 
 To let Blender perform the final extension build, pass a Blender executable:
 

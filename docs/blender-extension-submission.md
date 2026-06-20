@@ -35,12 +35,12 @@ This is an engineering license review, not legal advice.
 
 ## Current Package Scope
 
-Initial upload target: Windows x64 only.
+Initial tested upload target: Windows x64.
 
-Reason: the current package builder includes `clip_capi.dll` and `clip_cli.exe`
-from the local release build. macOS and Linux packages should be produced as
-separate platform builds after native CI or release artifacts exist for those
-targets.
+The package builder can also produce Linux x64, macOS x64, and macOS arm64
+native packages when matching `clip_cli` and `clip_capi` artifacts are present.
+Those packages must be declared as maintainer-untested until Rizum or another
+tester verifies them on real Linux/macOS devices.
 
 Declared permissions:
 
@@ -77,8 +77,10 @@ can be copied for issue reports.
 
 Reviewer notes:
 
-- The extension is self-contained for Windows x64: it bundles the native
-  renderer worker and C ABI library.
+- The Windows x64 extension is self-contained and tested on the maintainer's
+  machine: it bundles the native renderer worker and C ABI library.
+- Linux x64, macOS x64, and macOS arm64 packages are packaging-supported but
+  maintainer-untested because the maintainer has no Linux/macOS device.
 - The extension does not download or execute remote code.
 - The extension does not require internet access.
 - The extension is not affiliated with Blender, CELSYS, or Clip Studio Paint.
@@ -88,10 +90,11 @@ Reviewer notes:
 - Project/source URL is set to
   `https://github.com/Rizumu85/rizum-blender-clip-reload` in
   `blender_manifest.toml`.
-- Build and smoke-test the Windows x64 extension package in Blender 4.2 or
-  newer.
+- Build and smoke-test the Windows x64 extension package in Blender 4.2 or newer.
+- For Linux/macOS uploads, build the native artifacts on matching machines and
+  clearly mark them maintainer-untested until real-device smoke tests pass.
 - Run Blender's extension validator/build command if available on the release
   machine.
 - Review `NOTICE.md` before upload.
-- Add macOS/Linux platform packages only after matching native artifacts are
-  available.
+- Add macOS/Linux platform packages only with matching native artifacts; keep
+  the listing/release notes explicit that they are not maintainer-tested.

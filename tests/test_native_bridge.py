@@ -150,6 +150,40 @@ class FakeRenderer:
 
 
 class NativeBridgeTests(unittest.TestCase):
+    def test_packaged_renderer_candidates_prefer_runtime_platform_directory(self) -> None:
+        original_platform_id = native_bridge._runtime_platform_id
+        try:
+            native_bridge._runtime_platform_id = lambda: "linux-x64"
+            module_dir = Path("/addon")
+
+            self.assertEqual(
+                native_bridge._packaged_renderer_library_candidates(module_dir)[0],
+                module_dir / "native" / "linux-x64" / "libclip_capi.so",
+            )
+            self.assertEqual(
+                native_bridge._packaged_renderer_worker_candidates(module_dir)[0],
+                module_dir / "native" / "linux-x64" / "clip_cli",
+            )
+        finally:
+            native_bridge._runtime_platform_id = original_platform_id
+
+    def test_packaged_renderer_candidates_use_macos_library_name(self) -> None:
+        original_platform_id = native_bridge._runtime_platform_id
+        try:
+            native_bridge._runtime_platform_id = lambda: "macos-arm64"
+            module_dir = Path("/addon")
+
+            self.assertEqual(
+                native_bridge._packaged_renderer_library_candidates(module_dir)[0],
+                module_dir / "native" / "macos-arm64" / "libclip_capi.dylib",
+            )
+            self.assertEqual(
+                native_bridge._packaged_renderer_worker_candidates(module_dir)[0],
+                module_dir / "native" / "macos-arm64" / "clip_cli",
+            )
+        finally:
+            native_bridge._runtime_platform_id = original_platform_id
+
     def test_resolve_renderer_library_uses_packaged_renderer(self) -> None:
         original = native_bridge.packaged_renderer_library_path
         old_env = os.environ.pop("RIZUM_CLIP_RENDERER_DLL", None)

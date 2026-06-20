@@ -152,7 +152,7 @@ Result:
   source path, source mtime, source size, source SHA-256, canvas metadata,
   renderer ABI, renderer version, reload status, and pack status custom
   properties. The installable extension zip includes the local release
-  `clip_cli` worker plus `clip_capi` library under `native/`; preferences expose reload/debug controls
+  `clip_cli` worker plus `clip_capi` library under `native/<platform>/`; preferences expose reload/debug controls
   instead of successful packaged-worker status or a user renderer override. The direct
   `clip_capi` path remains internal development/test plumbing because
   in-process wgpu rendering can crash Blender's UI redraw path on Blender
@@ -173,7 +173,7 @@ Result:
   exposes a `Use native renderer` off switch, and no longer writes or reloads
   sidecar PNGs. `tools/build_blender_addon.py` packages the Blender extension
   manifest, `__init__.py`, `i18n.py`, `native_bridge.py`, support modules,
-  `LICENSE`, `NOTICE.md`, and native libraries under `native/`.
+  `LICENSE`, `NOTICE.md`, and native libraries under `native/<platform>/`.
   The duplicate `clip_studio_importer/clip_loader.py` package copy and the
   project-root Python compositor have been removed; verification now uses CSP
   PNG exports and native `clip_cli --compare-png`.

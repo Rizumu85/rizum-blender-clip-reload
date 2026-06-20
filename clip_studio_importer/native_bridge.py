@@ -5,6 +5,7 @@ import ctypes
 import json
 import os
 from pathlib import Path
+import platform
 import subprocess
 import tempfile
 import threading
@@ -491,15 +492,7 @@ def resolve_renderer_library() -> str:
 
 def packaged_renderer_library_path() -> str | None:
     module_dir = Path(__file__).resolve().parent
-    candidates = [
-        module_dir / "clip_capi.dll",
-        module_dir / "libclip_capi.so",
-        module_dir / "libclip_capi.dylib",
-        module_dir / "native" / "clip_capi.dll",
-        module_dir / "native" / "libclip_capi.so",
-        module_dir / "native" / "libclip_capi.dylib",
-    ]
-    for candidate in candidates:
+    for candidate in _packaged_renderer_library_candidates(module_dir):
         if candidate.exists():
             return str(candidate)
     return None
@@ -507,16 +500,77 @@ def packaged_renderer_library_path() -> str | None:
 
 def packaged_renderer_worker_path() -> str | None:
     module_dir = Path(__file__).resolve().parent
-    candidates = [
-        module_dir / "clip_cli.exe",
-        module_dir / "clip_cli",
-        module_dir / "native" / "clip_cli.exe",
-        module_dir / "native" / "clip_cli",
-    ]
-    for candidate in candidates:
+    for candidate in _packaged_renderer_worker_candidates(module_dir):
         if candidate.exists():
             return str(candidate)
     return None
+
+
+def _runtime_platform_id() -> str | None:
+    machine = platform.machine().lower()
+    system = platform.system()
+    is_x64 = machine in {"amd64", "x86_64"}
+    is_arm64 = machine in {"arm64", "aarch64"}
+    if os.name == "nt" and is_x64:
+        return "windows-x64"
+    if system == "Linux" and is_x64:
+        return "linux-x64"
+    if system == "Darwin" and is_x64:
+        return "macos-x64"
+    if system == "Darwin" and is_arm64:
+        return "macos-arm64"
+    return None
+
+
+def _runtime_native_names() -> tuple[str, str]:
+    platform_id = _runtime_platform_id()
+    if platform_id == "windows-x64":
+        return "clip_capi.dll", "clip_cli.exe"
+    if platform_id == "linux-x64":
+        return "libclip_capi.so", "clip_cli"
+    if platform_id in {"macos-x64", "macos-arm64"}:
+        return "libclip_capi.dylib", "clip_cli"
+    return "clip_capi.dll", "clip_cli.exe"
+
+
+def _packaged_renderer_library_candidates(module_dir: Path) -> list[Path]:
+    platform_id = _runtime_platform_id()
+    library_name, _worker_name = _runtime_native_names()
+    candidates: list[Path] = []
+    if platform_id:
+        candidates.append(module_dir / "native" / platform_id / library_name)
+    candidates.extend(
+        [
+            module_dir / library_name,
+            module_dir / "native" / library_name,
+            module_dir / "clip_capi.dll",
+            module_dir / "libclip_capi.so",
+            module_dir / "libclip_capi.dylib",
+            module_dir / "native" / "clip_capi.dll",
+            module_dir / "native" / "libclip_capi.so",
+            module_dir / "native" / "libclip_capi.dylib",
+        ]
+    )
+    return list(dict.fromkeys(candidates))
+
+
+def _packaged_renderer_worker_candidates(module_dir: Path) -> list[Path]:
+    platform_id = _runtime_platform_id()
+    _library_name, worker_name = _runtime_native_names()
+    candidates: list[Path] = []
+    if platform_id:
+        candidates.append(module_dir / "native" / platform_id / worker_name)
+    candidates.extend(
+        [
+            module_dir / worker_name,
+            module_dir / "native" / worker_name,
+            module_dir / "clip_cli.exe",
+            module_dir / "clip_cli",
+            module_dir / "native" / "clip_cli.exe",
+            module_dir / "native" / "clip_cli",
+        ]
+    )
+    return list(dict.fromkeys(candidates))
 
 
 class NativeRendererWorker:

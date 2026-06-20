@@ -130,12 +130,14 @@ Current policy:
   and copyable/searchable diagnostics when failures exist. `tools/build_blender_addon.py`
   builds the installable extension zip with `blender_manifest.toml`,
   `__init__.py`, `native_bridge.py`, `LICENSE`, `NOTICE.md`, and the locally
-  built release `clip_cli` worker plus `clip_capi` library under `native/`;
+  built release `clip_cli` worker plus `clip_capi` library under `native/<platform>/`;
   it no longer packages the Python compositor/loader or `bl_info`. Preferences expose reload
   timing, debug logging, and Developer Mode; they only report packaged native
   worker status when the worker is missing. The project-root Python compositor
   has been removed; verification now uses CSP PNG exports and native
-  `clip_cli --compare-png`.
+  `clip_cli --compare-png`. Windows x64 is maintainer-tested; Linux x64,
+  macOS x64, and macOS arm64 packages are packaging-supported but
+  maintainer-untested until real-device smoke tests are available.
 - Strict GPU coverage status: ordinary raster blend modes `LayerComposite=1..26` plus `36` are enabled, isolated containers can resolve with supported non-NORMAL blend modes, clipping runs support non-NORMAL raster bases, container/folder clipping bases, and clipped sibling stacks whose members may be rasters or recursively rendered containers/folders. THROUGH groups clear the clip base for following clipped layers, and adjustment/filter layers now route through a dedicated GPU pass: Brightness/Contrast (`FilterLayerInfo` type `1`), Level Correction (`2`), Tone Curve (`3`), HSL (`4`, native HSV-adjust shader mode), Color Balance (`5`), Invert/Reverse Gradient (`6`), Posterization (`7`), Threshold (`8`), and Gradient Map (`9`). Unknown future filter types remain explicit unsupported filter work until faithful native models exist. A metadata-only scan of the current public/local `img/*.clip` fixtures reports `unsupported=0`, including `Ref_绫音Aya_Live2D.clip --gpu-support-json`, `Ref_Kabi_Live2D.clip --gpu-support-json`, and `Test_RealArt.clip --gpu-support-check`. These samples are fully routed but still have residual formula/quantization or performance work; distinguish native/Python parity from shared Python/CSP residuals before changing shaders, and improve correctness only with source-backed native evidence and guard samples.
 - HSL filter payload mapping is now sample-backed separately from the native
   per-pixel routine: the SQLite payload uses UI-degree hue plus UI-percent
