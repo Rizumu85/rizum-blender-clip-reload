@@ -187,6 +187,28 @@ def _short_diagnostic(message: str, limit: int = 120) -> str:
     return text[: limit - 3] + "..."
 
 
+def _show_render_error_popup(clip_path: str, message: str) -> None:
+    basename = os.path.basename(str(clip_path or "")) or ".clip"
+    detail = _ui("Failed to render {name}: {message}").format(
+        name=basename,
+        message=_short_diagnostic(message, 180),
+    )
+
+    def _draw(self, _context):
+        layout = getattr(self, "layout", None)
+        if layout is not None:
+            layout.label(text=detail, icon="ERROR")
+
+    try:
+        bpy.context.window_manager.popup_menu(
+            _draw,
+            title=_ui("Clip Studio render failed"),
+            icon="ERROR",
+        )
+    except Exception:
+        print(f"[clip_studio_importer] {detail}")
+
+
 def _image_int_property(img, key: str, default: int = 0) -> int:
     return image_state.int_property(img, key, default)
 
@@ -373,6 +395,7 @@ def _schedule_async_decode(
     create_on_success: bool = False,
     show_on_success: bool = False,
     auto_pack_on_success: bool = False,
+    notify_on_error: bool = False,
 ) -> bool:
     with _state_lock:
         if clip_path in _in_flight:
@@ -400,6 +423,7 @@ def _schedule_async_decode(
             create_on_success,
             show_on_success,
             auto_pack_on_success,
+            notify_on_error,
             previous_manifest_json,
         ),
         daemon=True,
@@ -429,6 +453,7 @@ class IMPORT_OT_clip_studio(Operator, ImportHelper):
             create_on_success=True,
             show_on_success=True,
             auto_pack_on_success=True,
+            notify_on_error=True,
         ):
             self.report(
                 {"WARNING"},
@@ -472,7 +497,7 @@ class IMAGE_OT_reload_clip_studio(Operator):
                 ),
             )
             return {"CANCELLED"}
-        if not _schedule_async_decode(clip_path, img.name):
+        if not _schedule_async_decode(clip_path, img.name, notify_on_error=True):
             self.report(
                 {"WARNING"},
                 _ui("Already rendering {name}").format(
@@ -637,6 +662,7 @@ def _async_decode(
     create_on_success: bool = False,
     show_on_success: bool = False,
     auto_pack_on_success: bool = False,
+    notify_on_error: bool = False,
     previous_manifest_json: str = "",
 ):
     """Worker-thread entry point for native render.
@@ -673,6 +699,8 @@ def _async_decode(
                         image_state.PACK_STATUS_ERROR,
                         error="Render failed before pixels were updated",
                     )
+            if notify_on_error:
+                _show_render_error_popup(clip_path, error_message)
             return None
 
         bpy.app.timers.register(_on_error, first_interval=0.0)

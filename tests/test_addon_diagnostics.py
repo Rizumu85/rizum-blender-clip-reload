@@ -116,6 +116,30 @@ def _load_addon_module():
         def unregister(self, callback) -> None:
             self.callbacks.remove(callback)
 
+    class FakePopupLayout:
+        def __init__(self) -> None:
+            self.labels = []
+
+        def label(self, *, text: str, icon: str | None = None) -> None:
+            self.labels.append((text, icon))
+
+    class FakeWindowManager:
+        def __init__(self) -> None:
+            self.popup_menus = []
+            self.clipboard = ""
+
+        def popup_menu(self, draw, *, title: str = "", icon: str = "NONE") -> None:
+            layout = FakePopupLayout()
+            popup = types.SimpleNamespace(layout=layout)
+            draw(popup, bpy.context)
+            self.popup_menus.append(
+                {
+                    "title": title,
+                    "icon": icon,
+                    "labels": layout.labels,
+                }
+            )
+
     bpy_app_handlers.persistent = persistent
     bpy_app_handlers.load_post = []
     bpy_app_handlers.save_pre = []
@@ -130,6 +154,7 @@ def _load_addon_module():
     bpy.types = bpy_types
     bpy.utils = types.SimpleNamespace()
     bpy.data = types.SimpleNamespace(images=FakeImages(), texts=FakeTexts())
+    window_manager = FakeWindowManager()
     bpy.context = types.SimpleNamespace(
         preferences=types.SimpleNamespace(
             addons={
@@ -141,7 +166,8 @@ def _load_addon_module():
                     )
                 )
             }
-        )
+        ),
+        window_manager=window_manager,
     )
     bpy_extras_io.ImportHelper = ImportHelper
 
@@ -645,6 +671,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
             create_on_success=False,
             show_on_success=False,
             auto_pack_on_success=False,
+            notify_on_error=False,
         ):
             scheduled.append(
                 (
@@ -653,6 +680,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
                     create_on_success,
                     show_on_success,
                     auto_pack_on_success,
+                    notify_on_error,
                 )
             )
             return True
@@ -675,6 +703,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
                 (
                     addon.os.path.abspath("C:/art/sample.clip"),
                     "sample.clip",
+                    True,
                     True,
                     True,
                     True,
@@ -702,6 +731,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
             create_on_success=False,
             show_on_success=False,
             auto_pack_on_success=False,
+            notify_on_error=False,
         ):
             scheduled.append(
                 (
@@ -710,6 +740,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
                     create_on_success,
                     show_on_success,
                     auto_pack_on_success,
+                    notify_on_error,
                 )
             )
             return True
@@ -731,6 +762,7 @@ class AddonDiagnosticsTests(unittest.TestCase):
                 (
                     addon.os.path.abspath("C:/art/sample.clip"),
                     "sample.clip.001",
+                    True,
                     True,
                     True,
                     True,
@@ -806,6 +838,46 @@ class AddonDiagnosticsTests(unittest.TestCase):
         self.assertEqual(image[addon.CLIP_PACK_STATUS_KEY], addon.PACK_STATUS_PACKED)
         self.assertIn(addon.CLIP_PACK_LAST_SECONDS_KEY, image)
 
+    def test_initial_async_decode_reports_failure_without_placeholder_image(self) -> None:
+        addon = _load_addon_module()
+
+        def fail_render(_path, **_kwargs):
+            raise addon.native_bridge.NativeBridgeError("text layer decode failed")
+
+        original_render = addon.native_bridge.render_clip_rgba8
+        original_register = addon.bpy.app.timers.register
+        timer_callbacks = []
+        addon.native_bridge.render_clip_rgba8 = fail_render
+        addon.bpy.app.timers.register = (
+            lambda callback, **kwargs: timer_callbacks.append((callback, kwargs))
+        )
+        try:
+            addon._async_decode(
+                "C:/art/text-layer.clip",
+                "text-layer.clip",
+                create_on_success=True,
+                show_on_success=True,
+                auto_pack_on_success=True,
+                notify_on_error=True,
+            )
+            self.assertEqual(len(timer_callbacks), 1)
+            self.assertEqual(timer_callbacks[0][1].get("first_interval"), 0.0)
+            timer_callbacks.pop(0)[0]()
+        finally:
+            addon.native_bridge.render_clip_rgba8 = original_render
+            addon.bpy.app.timers.register = original_register
+
+        self.assertIsNone(addon.bpy.data.images.get("text-layer.clip"))
+        popups = addon.bpy.context.window_manager.popup_menus
+        self.assertEqual(len(popups), 1)
+        self.assertEqual(popups[0]["title"], "Clip Studio render failed")
+        self.assertEqual(popups[0]["icon"], "ERROR")
+        self.assertIn(
+            "Failed to render text-layer.clip: text layer decode failed",
+            popups[0]["labels"][0][0],
+        )
+        self.assertEqual(popups[0]["labels"][0][1], "ERROR")
+
     def test_reload_operator_schedules_background_render(self) -> None:
         addon = _load_addon_module()
         image = addon.bpy.data.images.new(
@@ -822,7 +894,8 @@ class AddonDiagnosticsTests(unittest.TestCase):
         original_schedule = addon._schedule_async_decode
         addon.os.path.exists = lambda _path: True
         addon._schedule_async_decode = (
-            lambda path, name: scheduled.append((path, name)) or True
+            lambda path, name, **kwargs: scheduled.append((path, name, kwargs))
+            or True
         )
         try:
             operator = addon.IMAGE_OT_reload_clip_studio()
@@ -832,7 +905,10 @@ class AddonDiagnosticsTests(unittest.TestCase):
             addon.os.path.exists = original_exists
             addon._schedule_async_decode = original_schedule
 
-        self.assertEqual(scheduled, [("C:/art/sample.clip", "sample.clip")])
+        self.assertEqual(
+            scheduled,
+            [("C:/art/sample.clip", "sample.clip", {"notify_on_error": True})],
+        )
         self.assertEqual(operator.reported[0], {"INFO"})
 
     def test_async_decode_updates_without_packing_and_marks_dirty(self) -> None:

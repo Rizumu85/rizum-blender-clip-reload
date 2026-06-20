@@ -69,6 +69,9 @@ Out of scope:
   in diagnostics; they do not abort the import.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
+- Manual import/reload render failures show a Blender error popup on the main
+  thread; initial import failures must not fail silently just because no image
+  datablock exists yet.
 - UI translations exist for Simplified Chinese, Japanese, and Spanish. Add-on
   name and copied/opened diagnostics stay English.
 - Windows x64 packaging is maintainer-tested. Linux x64, macOS x64, and macOS
