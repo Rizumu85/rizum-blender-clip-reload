@@ -28,7 +28,7 @@
 
 <a id="why"></a>
 
-## Why
+## For What
 
 Rizum Clip Reload is for artists who draw in Clip Studio Paint and use Blender
 for materials, layout, animation, or reference work.
@@ -200,7 +200,7 @@ GPL-3.0-or-later. See [LICENSE](LICENSE).
   </p>
 </div>
 
-## 为什么
+## 用于什么
 
 Rizum Clip Reload 适合这样的流程：你在 Clip Studio Paint 里画图，在 Blender
 里做材质、排版、动画或参考。
