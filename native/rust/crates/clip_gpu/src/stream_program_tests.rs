@@ -1472,7 +1472,7 @@ fn planner_lowers_nested_through_direct_clipping_run_inside_through_scope() {
 }
 
 #[test]
-fn planner_lowers_through_child_container_at_scope_depth_limit() {
+fn planner_keeps_through_child_container_as_legacy_barrier() {
     let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
     let sources = vec![GpuNormalStackSource::Container {
         children: vec![GpuNormalStackSource::Container {
@@ -1512,18 +1512,24 @@ fn planner_lowers_through_child_container_at_scope_depth_limit() {
         program.segments(),
         &[RenderSegment {
             source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
+            kind: RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+                RenderProgramBarrierReason::IsolatedContainerRequiresIntermediate,
+            )),
             cost_hint: SegmentCostHint {
                 expected_passes: 1,
-                tile_events: 11,
-                legacy_sources: 0,
+                tile_events: 0,
+                legacy_sources: 1,
             },
         }]
     );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
+    assert_eq!(program.stats().simple_container_scope_segments, 0);
+    assert_eq!(program.stats().barrier_segments, 1);
     assert_eq!(
-        program.stats().barrier_reasons.scope_depth_limit_exceeded,
-        0
+        program
+            .stats()
+            .barrier_reasons
+            .isolated_container_requires_intermediate,
+        1
     );
 }
 

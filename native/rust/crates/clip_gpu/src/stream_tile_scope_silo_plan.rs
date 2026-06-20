@@ -318,6 +318,12 @@ where
                     ThroughBudget::Remaining(remaining) => remaining,
                 };
                 ensure_nested_through_scope_header(provider, *opacity, *mask_key, children)?;
+                if children
+                    .iter()
+                    .any(|child| matches!(child, GpuNormalStackSource::Container { .. }))
+                {
+                    return Err(SimpleScopeReject::NotSimple);
+                }
                 let KnownStackBounds::Bounded(bounds) =
                     known_stack_bounds(provider, children, output_size)
                 else {

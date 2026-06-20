@@ -221,6 +221,51 @@ fn through_group_resolves_before_after_delta_with_opacity() {
 }
 
 #[test]
+fn container_with_through_child_resolves_non_empty_cache() {
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let sources = [GpuNormalStackSource::Container {
+        children: vec![
+            GpuNormalStackSource::ThroughGroup {
+                children: vec![GpuNormalStackSource::SolidColor {
+                    color: Rgba8 {
+                        r: 8,
+                        g: 10,
+                        b: 15,
+                        a: 255,
+                    },
+                    opacity: 1.0,
+                }],
+                opacity: 1.0,
+                mask_key: None,
+            },
+            GpuNormalStackSource::SolidColor {
+                color: Rgba8 {
+                    r: 8,
+                    g: 10,
+                    b: 15,
+                    a: 255,
+                },
+                opacity: 1.0,
+            },
+        ],
+        opacity: 1.0,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }];
+
+    let output = renderer
+        .draw_normal_stack_to_rgba8(
+            &GpuRasterResourceCache::empty(),
+            None,
+            CanvasSize::new(1, 1),
+            &sources,
+        )
+        .expect("draw container with through child");
+
+    assert_eq!(output.pixels, [8, 10, 15, 255]);
+}
+
+#[test]
 fn add_raster_source_uses_standard_blend_formula() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
     let key = GpuRasterResourceKey {
