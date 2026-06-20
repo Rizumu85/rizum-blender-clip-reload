@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "rizum_clip_reload"
-version = "0.8.67"
+version = "0.8.68"
 name = "Rizum Clip Reload"
 tagline = "Import Clip Studio files as Blender images"
 maintainer = "Rizum"
