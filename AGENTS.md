@@ -20,6 +20,9 @@ Project-level instructions for Codex.
 - `docs/analysis.md`: append-only evidence, historical findings, and rejected hypotheses.
 - `docs/design.md`: Blender UX and user-facing behavior.
 - `docs/plan.md`: durable directions and open work.
+- `docs/native-code-architecture.md`: native crate/module boundaries.
+- `docs/native-tile-event-renderer.md`: tile-event renderer model and convergence gate.
+- `docs/native-performance-investigation.md`: compressed performance evidence and rejected detours.
 
 ## Engineering Rules
 

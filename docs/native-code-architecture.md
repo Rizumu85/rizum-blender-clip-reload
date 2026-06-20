@@ -1,782 +1,176 @@
 # Native Code Architecture
 
-Last updated: 2026-06-20
+Last reconciled: 2026-06-20
 
 ## Goal
 
-Build the native `.clip` loader as a set of deep modules, not a translated
-version of the current single-file Python compositor. The accepted renderer path
-is Rust plus `wgpu` GPU compositing. Host integration is split by boundary:
-
-- OpenImageIO `ImageInput` adapter for OIIO-level hosts and possible Blender
-  ImBuf/source integration.
-- Blender image-datablock bridge for stock Blender add-on integration when
-  external image filetype registration is unavailable.
-
-The temporary Python compositor has been removed now that the native path owns
-flattened raster rendering. It must not be reintroduced as a compatibility layer
-or runtime fallback.
-
-## Milestones
-
-Completed first milestone: OIIO format recognition only.
-
-- Build the smallest `.clip` `ImageInput` plugin.
-- Make OpenImageIO discover `.clip` as an image format.
-- Return deterministic placeholder image metadata and pixels.
-
-Result: Blender's bundled Python `OpenImageIO` can open the plugin, but
-Blender's stock image loader does not pass unknown extensions to external OIIO
-plugins. ImBuf uses a static filetype table.
-
-Completed second milestone: Blender image-datablock bridge.
-
-- Use native/OIIO RGBA bytes as the source.
-- Create or update a generated Blender `Image`.
-- Upload pixels through Blender's bulk pixel API.
-- Measure upload cost.
-
-Result: the bridge works in stock Blender 5.0.1 without sidecar PNG output. It
-is not a true file-backed image format; reload must be owned by the add-on unless
-Blender gains an ImBuf/filetype bridge. The accepted persistence model is to
-store `.clip` source tracking metadata immediately, keep rendered pixels in a
-generated image datablock, and pack dirty native images through `Pack` or
-Blender `save_pre`.
-
-Completed third milestone foundation: native `.clip` data path.
-
-- Implement Rust container probing and minimal metadata extraction.
-- Return real canvas metadata and deterministic placeholder pixels through the
-  runtime/C ABI boundary.
-- Keep OIIO and Blender bridge adapters thin.
-
-Result: `clip_file` owns `CSFCHUNK` walking and in-memory SQLite metadata reads,
-`clip_runtime` owns session summary plus deterministic placeholder region reads,
-and `clip_capi` exposes the minimal C ABI. `clip_cli` verifies both
-`Test_Clipping.clip` and `Ref_Terra404_Live2D.clip` metadata.
-
-Completed fourth milestone foundation: OIIO adapter wired to the Rust C ABI.
-
-- The C++ adapter must call `clip_capi` for open, metadata, and placeholder
-  pixels.
-- The adapter must stop owning hard-coded image dimensions.
-- Do not move parser or renderer behavior into C++.
-
-Result: the adapter uses `clip_renderer_session_open`,
-`clip_renderer_session_open_memory`, `clip_renderer_session_info`, and
-`clip_renderer_session_read_rgba8`. Filesystem opens and OIIO `IOProxy`
-memory opens both route into Rust sessions. Blender 5.0.1's Python OpenImageIO
-module now sees real `.clip` metadata through the plugin: `Test_Clipping.clip`
-opens as 512x512 and `Ref_Terra404_Live2D.clip` opens as 4800x6100. External
-plugin discovery still does not make stock Blender's image loader accept
-`.clip` as a native file-backed format without an ImBuf/source bridge.
-
-Completed fifth milestone foundation: native raster data extraction below
-`clip_file`.
-
-- Parse and decompress `CHNKExta` block payloads.
-- Map SQLite layer rows into typed Rust records needed for graph planning.
-- Decode one simple full-color raster layer into RGBA bytes for a targeted
-  fixture.
-- Keep compositing, blend modes, and GPU passes out of this milestone.
-
-Result: `clip_file` can resolve raster layer sources, parse/decompress
-`CHNKExta` block streams with `flate2`, decode full-color
-`alpha plane + BGRA plane`, grayscale `alpha + gray`, and monochrome
-`alpha bitplane + white bitplane` tiles into straight RGBA, and expose
-`read_raster_layer_rgba(path, LayerId)` for raster layers. Raster source
-metadata reads optional schema columns safely, including
-`LayerColorTypeIndex` and `LayerRenderOffscrOffsetX/Y`, and the public decode
-API crops/pastes decoded offscreen RGBA onto the canvas before returning.
-Fixture coverage locks `Test_Clipping.clip` layer graph records plus layers
-`10` and `11`, `Test_ Grayscale.clip` layer `5`,
-`Test_Monochrome.clip` layer `7`, and the known negative-X render offsets in
-`Ref_Terra404_Live2D`.
-
-Completed sixth milestone foundation: first render-graph planning skeleton.
-
-- Convert typed layer rows into a graph-facing node list.
-- Preserve sibling/child order and visibility filtering.
-- Identify paper and raster nodes without compositing them.
-- Add a runtime/CLI probe for planned node order on `Test_Clipping.clip`.
-
-Result: `clip_graph` owns the planning input and planned node types. It walks the
-root layer, child chains, and sibling chains deterministically, filters hidden
-subtrees with `LayerVisibility`, detects duplicate ids, missing links, and
-cycles, and emits typed nodes for containers, paper, raster, filters, and
-unsupported visible layers. `clip_runtime` converts `clip_file` metadata rows
-into `clip_graph` inputs and stores a `RenderPlan` in each session. `clip_cli`
-reports the plan for `Test_Clipping.clip` as root container `2`, paper `4`,
-raster `10`, and clipped raster `11`.
-
-Completed seventh milestone foundation: first `wgpu` resource/readback scaffold.
-
-- Upload one decoded full-color raster layer into a GPU texture.
-- Read that texture back through the `clip_gpu` and `clip_runtime` boundary for
-  a targeted fixture.
-- Keep the pass single-layer only; do not implement blend modes, folder
-  isolation, clipping semantics, or CPU compositing fallback in this milestone.
-
-Result: `clip_gpu` owns a real `wgpu 29.0.3` device/queue context and a
-single-layer `Rgba8Unorm` texture roundtrip path. It uploads straight RGBA bytes
-with `Queue::write_texture`, copies the texture into a padded readback buffer,
-maps the buffer, strips row padding, and returns RGBA bytes. `clip_runtime`
-exposes `ClipSession::read_raster_layer_rgba_via_gpu(LayerId)` as an explicit
-developer probe, and `clip_cli --gpu-roundtrip-layer 10` verifies
-`Test_Clipping.clip` layer `10` against the locked decode stats:
-nonzero alpha `37151`, sums `[8507579, 5832707, 5832707, 8933976]`.
-
-Completed eighth milestone foundation: planned raster GPU resource cache.
-
-- Resolve visible raster nodes from `RenderPlan` to decoded raster sources.
-- Upload each planned raster source as a GPU texture keyed by layer id and render
-  mipmap id.
-- Report the uploaded resource list through runtime/CLI for `Test_Clipping.clip`.
-- Do not implement blend modes, folder isolation, clipping semantics, shader
-  compositing, or CPU compositing fallback in this milestone.
-
-Result: `clip_gpu::resource` owns the resource-cache skeleton. It accepts decoded
-straight RGBA upload descriptors, pads rows to
-`COPY_BYTES_PER_ROW_ALIGNMENT`, writes mapped staging buffers, copies into
-`Rgba8Unorm` textures, waits for submission completion, and returns stable
-resource info keyed by layer id plus render mipmap id. `clip_runtime` resolves
-visible raster `RenderPlan` nodes through `clip_file` and calls the GPU upload
-path; `clip_cli --gpu-upload-planned-rasters` reports `Test_Clipping.clip` as
-two uploaded resources: node `2` layer `10` mipmap `15`, and node `3` layer
-`11` mipmap `16`.
-
-Completed ninth milestone foundation: first GPU output target and shader-pass
-skeleton.
-
-- Draw exactly one selected uploaded raster resource into an output texture.
-- Read the output texture back through the existing GPU readback path.
-- Keep the pass single-resource only; do not implement blend modes, folder
-  isolation, clipping semantics, full-stack compositing, or CPU compositing
-  fallback in this milestone.
-
-Result: `clip_gpu::pass` owns the first shader pass. It draws one selected
-uploaded raster resource with a WGSL full-screen triangle, uses `textureLoad` for
-per-pixel source fetches, writes into an `Rgba8Unorm` output texture, and reads
-back through the shared GPU readback helper. `clip_runtime` exposes
-`ClipSession::draw_raster_layer_rgba_via_gpu(LayerId)` as a developer probe that
-requires the layer to be a visible planned raster node and reports exact byte
-differences against the decoded source. `clip_cli --gpu-draw-layer 10` and
-`--gpu-draw-layer 11` on `Test_Clipping.clip` both return `differing_bytes=0`.
-
-Completed tenth milestone foundation: native-backed simple raster stack pass.
-
-- Draw planned raster resources in render-plan order for the subset whose
-  semantics are direct texture replacement/copy.
-- Report unsupported nodes and unsupported semantics explicitly.
-- Do not implement clipping, non-normal blend modes, folder isolation, masks, or
-  CPU compositing fallback in this milestone.
-
-Result: `clip_runtime` now has a strict partial-stack planner for the GPU
-developer path. It draws only visible planned raster nodes whose current
-semantics are direct texture replacement/copy, and it reports paper, clipping,
-mask, opacity, non-normal composite, non-canvas-sized raster, alpha-compositing,
-filter, and unsupported layer-kind requirements explicitly. The GPU side uses
-`GpuRenderer::draw_raster_stack_to_rgba8` to draw ordered resources through the
-shader framework. `clip_cli --gpu-simple-stack` on `Test_Clipping.clip` draws
-only node `2` layer `10`, reports paper node `1` and clipped raster node `3` as
-unsupported, and returns `differing_bytes_from_last_drawn=Some(0)`.
-
-Completed eleventh milestone foundation: NORMAL alpha-over shader pass.
-
-- Composite planned straight RGBA raster resources in render-plan order using
-  NORMAL alpha-over.
-- Keep the supported subset strict: no clipping, masks, non-normal blend modes,
-  folder isolation semantics, or CPU compositing fallback.
-- Continue reporting unsupported nodes and unsupported semantics explicitly.
-
-Result: `clip_gpu::pass` now owns a WGSL NORMAL alpha-over pass that keeps
-straight RGBA output by ping-ponging two `Rgba8Unorm` accumulation textures.
-`clip_runtime` shares one strict selector between the direct-copy probe and the
-NORMAL stack probe; the NORMAL path allows stacked alpha compositing while still
-rejecting clipping, masks, opacity, non-normal composites, paper, filters,
-unsupported layer kinds, non-canvas rasters, and non-trivial container semantics.
-Unsupported containers also block their child subtree so folder semantics are
-not bypassed. `clip_cli --gpu-normal-stack` verifies `Test_Clipping.clip`,
-`Test_ToneCurve.clip`, and `Illustration4K.clip`; the 4K sample draws three
-NORMAL raster layers with no unsupported nodes.
-
-Completed twelfth milestone foundation: paper/background and LayerOpacity for
-the strict NORMAL GPU path.
-
-- Parse or surface the metadata needed for paper/background colour.
-- Add shader/runtime inputs for `LayerOpacity` on otherwise supported NORMAL
-  rasters.
-- Keep clipping, masks, non-normal blend modes, folder isolation semantics, and
-  CPU compositing fallback unsupported until dedicated native models exist.
-
-Result: Paper colour is decoded in `clip_file::metadata` using the same observed
-schema order as the Python importer: `DrawColorMain*` when enabled/nonzero, then
-`LayerThumbnail.ThumbnailMainColor*`, then `LayerPalette*`. The colour travels
-through graph nodes as `Rgba8`. `clip_gpu` now has `GpuNormalStackSource` for
-ordered raster and solid-colour sources, and the NORMAL shader applies per-source
-opacity before alpha-over. `Test_Clipping.clip --gpu-normal-stack` draws Paper
-plus layer `10` and reports only the clipped raster unsupported.
-`Test_Opacity.clip --gpu-normal-stack` draws Paper plus two NORMAL rasters,
-including `LayerOpacity=128`, with no unsupported nodes.
-
-Completed thirteenth milestone foundation: host-facing strict NORMAL read path.
-
-- Replace deterministic placeholder region reads with native GPU output for the
-  strict supported subset.
-- Cache the rendered image inside `ClipSession` after the first read.
-- Return an explicit unsupported-plan error instead of returning a partial image.
-
-Result: `ClipSession::read_rgba8_region()` renders the strict NORMAL GPU stack
-once, caches the full image, and copies requested regions from that cache.
-If the plan contains unsupported semantics, it returns `UnsupportedRenderPlan`.
-The C ABI test reads a real Paper pixel from `Test_Opacity.clip`
-(`[226,226,226,255]`), while CLI probes continue to report unsupported plans
-without blocking developer flags.
-
-Completed fourteenth milestone foundation: layer masks for the strict NORMAL
-GPU path.
-
-- Decode mask mipmap resources below `clip_file`.
-- Upload mask textures alongside raster resources.
-- Multiply source alpha by mask alpha in the NORMAL shader.
-- Keep clipping, non-normal blend modes, folder isolation semantics, and CPU
-  compositing fallback unsupported until dedicated native models exist.
-
-Result: `clip_file::read_layer_mask_alpha()` resolves `LayerLayerMaskMipmap`,
-decodes single-channel mask tiles, applies Offscreen `InitColor` for omitted
-chunks, and pastes/crops through `LayerMaskOffscrOffsetX/Y` to canvas size.
-`clip_gpu` uploads mask resources as `R8Unorm` textures keyed by layer id plus
-mask mipmap id, and the NORMAL shader multiplies source alpha by the sampled
-mask value. `clip_runtime` now treats masked NORMAL rasters as supported in the
-strict NORMAL path, while `--gpu-simple-stack` still reports masks unsupported.
-`Test_Mask.clip --gpu-normal-stack` reports three sources, two raster resources,
-one mask resource, and zero unsupported nodes.
-
-Completed fifteenth milestone foundation: clipping runs for the strict NORMAL
-GPU path.
-
-- Model a base layer followed by clipped siblings as a native-owned clipping
-  run, not as independent flattened siblings.
-- Reuse the existing strict source model for Paper, opacity, and masks inside
-  the run where the native model allows it.
-- Keep non-normal blend modes, folder isolation semantics, filters, and CPU
-  compositing fallback unsupported until dedicated native models exist.
-
-Result: `clip_runtime` now consumes a same-depth raster base plus following
-raster clipped siblings as one `GpuNormalStackSource::ClippingRun`. `clip_gpu`
-renders the base into a white-transparent clipping cache, applies NORMAL clipped
-siblings with a preserve-RGB pass that does not grow the base alpha, and resolves
-the cache back into the main stack through NORMAL alpha-over. `Test_Clipping.clip
---gpu-normal-stack` reports `sources=2`, two raster resources, and zero
-unsupported nodes. `Test_ClippingEdge.clip --gpu-normal-stack` reports
-`sources=1`, two raster resources, and zero unsupported nodes; alpha matches the
-CSP PNG and transparent pixels retain white RGB.
-
-Completed sixteenth milestone foundation: strict NORMAL folder/container
-isolation.
-
-- Render supported child stacks into an owned offscreen cache before resolving
-  the folder into its parent stack.
-- Reuse Paper, opacity, masks, and clipping runs inside the folder cache only
-  when all children stay inside the strict NORMAL subset.
-- Keep THROUGH groups, non-normal blend modes, filters, unsupported container
-  semantics, and CPU compositing fallback unsupported until their dedicated
-  native models exist.
-
-Result: `GpuNormalStackSource` now has a recursive `Container` source.
-`clip_gpu` renders container children into a white-transparent cache, then
-resolves that cache into the parent with container opacity, optional container
-mask, and a container blend mode. `clip_runtime` uses a recursive strict
-selector, treats the root container as structural pass-through, and represents
-non-root containers whose `LayerComposite` maps to a supported raster blend as
-container sources. Verification covers the GPU container cache opacity path,
-Multiply container resolve, the selector's folder source shape, and a
-real-raster synthetic e2e test that wraps `Test_Clipping.clip`'s actual
-Paper/raster/clipped-raster stack in a NORMAL folder and checks exact equality
-with the flat output. `clip_cli --plan-only` now prints metadata and planned
-nodes without triggering host render, so large references can be scanned safely.
-Completed seventeenth milestone foundation: THROUGH groups for the strict GPU
-path.
-
-- Model THROUGH groups from native/Python evidence, not as ordinary NORMAL
-  isolated folders.
-- Render children against the parent stack contribution, then constrain the
-  before/after delta with the THROUGH group mask and opacity.
-- Keep non-normal blend modes, filters, unsupported container semantics, and CPU
-  compositing fallback unsupported until dedicated native models exist.
-
-Result: `GpuNormalStackSource` now has a recursive `ThroughGroup` source.
-`clip_gpu` renders THROUGH children against the current parent contribution and
-uses a dedicated before/after resolve pass so group opacity and masks affect only
-the contribution delta. `clip_runtime` maps `LayerComposite=30` containers to
-THROUGH sources instead of reporting them as unsupported containers. Verification
-covers GPU opacity blending, runtime selector shape, and both existing folder
-fixtures: `Test_FolderNested.clip` and `Test_FolderVisibility.clip` now report
-`unsupported=0`, and C ABI full-image comparisons against CSP PNGs are
-`raw_max=1` / `premul_max=1`.
-
-Current eighteenth milestone: non-NORMAL raster blend-mode support for the
-strict GPU path.
-
-- Add GPU/runtime structure for ordinary raster sources whose
-  `LayerComposite` is not NORMAL.
-- Enable each blend mode only after verifying the `.clip LayerComposite` to
-  native behavior mapping and preserving guard samples.
-- Keep filters, unsupported container semantics, and CPU compositing fallback
-  unsupported until dedicated native models exist.
-
-Progress:
-
-- Ordinary, non-clipped raster `LayerComposite=1` Darken, `2` Multiply,
-  `3` Color Burn, `4` Linear Burn, `5` Subtract, `6` Darker Color,
-  `7` Lighten, `8` Screen, `9` Color Dodge, `10` Glow Dodge, `11` Add,
-  `12` Add Glow, `13` Lighter Color, `14` Overlay, `15` Soft Light,
-  `16` Hard Light, `17` Vivid Light, `18` Linear Light, `19` Pin Light,
-  `20` Hard Mix, `21` Difference, `22` Exclusion, `23` Hue,
-  `24` Saturation, `25` Color, `26` Brightness/Luminosity, and `36` Divide
-  are supported.
-- `GpuNormalRasterSource` carries a blend mode, and the renderer selects a
-  byte-domain WGSL pass or the standard blend-over WGSL pass for supported
-  non-NORMAL sources.
-- The NORMAL alpha-over pass explicitly rounds to the u8 grid before writing
-  `Rgba8Unorm`, so later byte-domain blend passes do not inherit
-  backend-dependent UNORM truncation.
-- The standard blend pass quantizes the pure blend target to the u8 grid before
-  alpha-over.
-- Darker Color and Lighter Color use Rec.709 luma
-  (`0.2126/0.7152/0.0722`) for source/destination comparison. HSL blend modes
-  quantize `set_sat` tiny spans (`max-min <= 2/255`) to min/max channel
-  membership. Saturation and ordinary Color use CSP's sample-backed
-  `0.3/0.6/0.1` luminosity weights. Fully opaque Hue uses `0.3/0.59/0.11`,
-  while partially transparent Hue keeps the `0.3/0.6/0.1` path plus final
-  floor writeback. Color uses a rounded byte-domain `0.3/0.59/0.11` luminosity
-  path only for the low-side ClipColor branch; ordinary/high-clamp Color stays
-  on `0.3/0.6/0.1`.
-  Saturation additionally ceils the minimum output channel after the high-end
-  luminosity clamp when the quantized base span is greater than `4/255`;
-  near-neutral spans keep the tiny-span path.
-- Clipping runs can now use a non-NORMAL base plus clipped siblings for all
-  currently supported raster blend modes. The base renders into its owned cache
-  with NORMAL, clipped standard modes preserve the base alpha through the
-  standard preserve shader, clipped Add Glow/Color Burn/Color Dodge/Glow Dodge
-  use a byte-domain preserve shader, and the completed cache resolves into the
-  parent with the base blend mode.
-- Isolated containers can now use supported non-NORMAL blend modes when their
-  completed cache resolves into the parent stack. The selector also tracks
-  clip-base validity: THROUGH groups clear the clip base, and a clipped raster
-  with no effective base is routed as an ordinary raster source.
-- Strict GPU raster uploads now use source-sized offscreen textures with
-  shader-side canvas offsets instead of expanding every decoded raster to the
-  canvas. Upload staging buffers are submitted and released per resource, so
-  staging memory is not retained for the whole stack.
-- The host-facing normal render path now uses recursive provider streaming.
-  Runtime builds a metadata-only GPU source tree and resource plan, then
-  `clip_gpu` requests raster/mask resources from a provider at point of use
-  inside containers, clipping runs, THROUGH groups, and filters. Each encoded
-  source submits/polls before its temporary uploaded textures are dropped.
-  `ClipSession` keeps the opened `ClipContainer`, and provider decode uses
-  from-container raster/mask helpers instead of reopening the `.clip` file per
-  layer. A render-only optimization can elide an initial terminal
-  Normal/opacity=1/no-mask container when the parent contribution is empty;
-  support checks, selector tests, and trace diagnostics keep the original
-  container structure.
-- `Test_RealArt.clip --gpu-support-check` now reports `unsupported=0` and the
-  metadata-only resource stats are explicit: 343 raster sources total roughly
-  `33.5GB` of RGBA texture data if held globally, plus six masks totalling about
-  `151MB`. A release `--compare-png ..\..\img\Test_RealArt.png` probe now
-  completes without wgpu OOM at `raw_max=5` / `premul_max=2`, but still takes
-  about 89s on this machine. The next practical blocker is throughput: repeated
-  per-layer SQLite metadata queries, tile decode/upload, and full-canvas
-  intermediate caches are too slow for interactive use, so optimization should
-  target faithful scheduling/resource reuse rather than CPU fallback or
-  post-processing.
-- `clip_cli --gpu-trace-pixel <x> <y>` samples the native GPU output after each
-  top-level strict source prefix. This is developer instrumentation over the
-  real GPU renderer, not a CPU compositor, oracle, fallback, or post-processing
-  path. It also prints before/after RGBA plus the raw source RGBA and mask alpha
-  at that pixel for the source being applied.
-- `clip_cli --gpu-support-check` runs a metadata-only strict selector that
-  validates graph, raster source, mask source, and LUT-filter support without
-  decoding raster/mask tile pixels, creating a GPU device, or rendering an
-  image. It is developer support diagnostics, not a renderer, fallback, or
-  compositor path.
-- `clip_cli --compare-png <ref.png>` renders through the same host-facing
-  native GPU path as adapters and compares the result with a CSP-exported PNG in
-  raw and premultiplied byte domains. This is developer verification tooling
-  only; it does not introduce a CPU compositor, runtime fallback, or
-  post-processing path.
-- `Test_HardMix.clip`, `Test_ColorBurn.clip`, `Test_GlowDodge.clip`,
-  `Test_ColorDodge.clip`, `Test_FolderNested.clip`,
-  `Test_FolderVisibility.clip`, `Test_Clipping.clip`, and
-  `Test_SoftLight.clip`, `Test_ Grayscale.clip`, and
-  `Test_Monochrome.clip` compare exactly against CSP PNGs through the C ABI.
-  `Test_Hue.clip`, `Test_Saturation.clip`, `Test_Color.clip`,
-  `Test_VividLight.clip`, `Test_AddGlow.clip`, and `Test_Mask.clip` remain
-  within `raw_max=1` / `premul_max=1`. `Test_AddGlowMultiply.clip` now routes
-  without unsupported nodes and compares at `raw_max=5` / `premul_max=3`.
-- `IllustrationBlendModes.clip --gpu-normal-stack` and the renamed
-  `IllustrationBlendModesB.clip --gpu-normal-stack` report `unsupported=0`.
-  Latest C ABI comparison metrics are tracked in `docs/AI_MEMORY.md`; this
-  older architecture note remains historical evidence for the Subtract ->
-  Color Dodge -> Color Burn and Pin Light/Hue/Saturation trace paths.
-
-Completed nineteenth milestone foundation: native adjustment/filter GPU pass.
-
-- Read `FilterLayerInfo` records for filter layers without teaching `clip_gpu`
-  about SQLite or `.clip` storage.
-- Support the filter types whose Python-side formulas reduce to a faithful
-  1D LUT, luminosity LUT, or native HSV-adjust shader: Brightness/Contrast,
-  Level Correction, Tone Curve, HSL, Color Balance, Invert/Reverse Gradient,
-  Posterization, Threshold, and Gradient Map.
-- Keep unknown future filter types explicit until each has a dedicated native
-  parameter model and shader.
-
-Result: `clip_file::metadata` exposes `read_filter_layer_source_from_sqlite`
-for filter type and payload extraction. `clip_runtime/src/filter_lut.rs` owns
-filter-payload parsing and byte-domain 256-entry LUT construction for
-`FilterLayerInfo` type `1` Brightness/Contrast, type `2` Level Correction,
-type `3` Tone Curve, type `5` Color Balance, type `6`
-Invert/Reverse Gradient, type `7` Posterization, type `8` Threshold, and type
-`9` Gradient Map, and parses type `4` HSL parameters for the native HSV-adjust
-shader mode. Runtime accepts those filters when their composite/mask/opacity
-semantics are in the strict supported subset, uploads any layer mask through
-the existing mask cache, and passes a filter mode to `clip_gpu`: RGB channel
-indexing for channel-wise LUT filters, Python-matching threshold luminosity
-indexing for Threshold, byte-domain luminosity indexing for Gradient Map, and
-HSL hue/saturation/value adjustment using the sample-backed SQLite payload
-mapping plus CSP native luminosity/saturation coupling. `clip_gpu`
-applies the filter in one dedicated wgpu pass against the accumulated straight
-RGBA image while preserving alpha.
-`Test_ToneCurve.clip --gpu-normal-stack` and
-`Test_Gradiation.clip --gpu-normal-stack` report `unsupported=0` with one
-filter mask each; C ABI comparisons match the Python verifier baselines:
-`Test_ToneCurve` `raw_max=17` / `premul_max=17`, and `Test_Gradiation`
-`raw_max=10` / `premul_max=10`.
-
-## Repository Layout
-
-```text
-native/
-  README.md
-  rust/
-    Cargo.toml
-    crates/
-      clip_model/      # Pure domain types: canvas, rects, layer ids, modes.
-      clip_file/       # .clip container, SQLite metadata, external tile decode.
-      clip_graph/      # Render graph and tile dependency planning.
-      clip_gpu/        # wgpu device, resources, shaders, passes, readback.
-      clip_runtime/    # Session orchestration, runtime API types, cache lifetime.
-      clip_capi/       # Small C ABI exported to the C++ OIIO adapter.
-      clip_cli/        # Developer CLI for benchmarks and reference comparisons.
-  oiio/
-    README.md          # C++ OIIO ImageInput adapter contract.
-  spikes/
-    blender-image-bridge/
-      README.md        # Stock Blender generated Image upload probe.
-```
-
-## Module Contracts
-
-### `clip_model`
-
-Pure data model. It knows nothing about files, SQLite, GPU, OIIO, Blender, or
-tests.
-
-Owns:
-
-- Canvas size and rectangles.
-- Straight RGBA byte pixel conventions.
-- Layer ids, layer kinds, visibility, opacity, blend mode names.
-- Small value invariants shared by all other crates.
-
-Does not own:
-
-- File parsing.
-- Render graph decisions.
-- GPU resources.
-
-### `clip_file`
-
-The only module that understands `.clip` storage details.
-
-Owns:
-
-- `CSFCHUNK` walking.
-- `CHNKSQLi` extraction.
-- `CHNKExta` indexing and block decompression.
-- SQLite row mapping into `clip_model` values.
-- Source tile decode for raster, mask, grayscale, and monochrome tiles.
-- Full-color raster extraction through `read_raster_layer_rgba`.
-- Filter-layer payload extraction through typed metadata helpers.
-
-Does not own:
-
-- Layer compositing semantics.
-- GPU pipeline creation.
-- OIIO entry points.
-
-### `clip_graph`
-
-Turns model-level layers into a deterministic render plan.
-
-Owns:
-
-- Visibility filtering.
-- Folder/group structure.
-- Clipping run ownership.
-- Tile dependency planning.
-- Stable node ids for cacheable graph nodes.
-
-Does not own:
-
-- `.clip` bytes.
-- GPU execution.
-- Blend shader code.
-
-### `clip_gpu`
-
-The only module that talks to `wgpu`.
-
-Owns:
-
-- Adapter/device/queue setup.
-- Texture and buffer allocation.
-- Shader modules and pipeline layouts.
-- Layer upload strategy.
-- GPU compositing passes.
-- GPU adjustment/filter passes.
-- Final RGBA readback for OIIO.
-
-Current split:
-
-- `pass.rs`: direct raster-copy draw probes and pass module wiring.
-- `pass_pipeline.rs`: normal-stack pipeline, texture, clear, and pass encoding
-  helpers shared by direct and streaming renderers.
-- `pass_normal.rs` and `pass_normal_encode.rs`: direct/debug normal-stack entry
-  points and source dispatch.
-- `pass_clipping.rs`, `pass_container.rs`, and `pass_through.rs`: direct/debug
-  clipping cache, isolated container cache, and THROUGH group execution.
-- `stream*.rs`: host-facing recursive provider streaming renderer, cropped
-  cache state, resource retention, and streaming group/clipping/THROUGH helpers.
-
-Does not own:
-
-- `.clip` metadata interpretation.
-- OIIO plugin symbols.
-- Python-compatible fallback rendering.
-
-### `clip_runtime`
-
-The orchestration module.
-
-Owns:
-
-- Opening a `.clip` session.
-- Opening a `.clip` session from an owned byte buffer for host bridge paths
-  that do not provide a filesystem path.
-- Holding parsed file state, render graph, GPU renderer, and caches together.
-- Public Rust interface for reading full images or regions.
-- Error conversion into stable runtime errors.
-- Public runtime result and diagnostic types used by CLI/C ABI callers.
-
-Current split:
-
-- `lib.rs`: session construction, metadata preloading, and accessors.
-- `blend.rs`: strict raster blend-mode selection and GPU blend-mode mapping.
-- `error.rs`: `RuntimeError` and error-source/display conversion.
-- `results.rs`: public GPU/support/trace result structs and unsupported-reason
-  types.
-- `filter_lut.rs` plus filter helpers: filter payload parsing and LUT models.
-- `gpu_api.rs`: developer/runtime GPU entry points for layer draw, stack draw,
-  trace, and normal-stack render output.
-- `gpu_provider.rs`: runtime GPU resource provider and resource-plan helpers.
-- `region.rs`: host-facing cached `read_rgba8_region` path.
-- `selector_tree.rs`, `selector_gpu.rs`, `selector_gpu_resources.rs`,
-  `selector_strict.rs`, and `selector_strict_decode.rs`: strict selector
-  traversal, GPU resource planning, and decoded debug/trace selector support.
-- `source_crop.rs`: source/mask crop helpers.
-- `support.rs`, `support_select.rs`, and `support_checks.rs`: metadata-only
-  strict support selector and resource statistics.
-
-Does not own:
-
-- Low-level file parsing implementation.
-- Shader code.
-- C ABI details.
-
-### `clip_capi`
-
-Small, explicit ABI for C++.
-
-Owns:
-
-- Public C header at `native/rust/crates/clip_capi/include/clip_capi.h`.
-- `extern "C"` functions.
-- Opaque handles.
-- Filesystem-path and byte-buffer session open entry points.
-- Error code and error string conversion.
-- ABI versioning.
-- Support report text formatting in `support_report.rs`, separate from the
-  exported C ABI entry points.
-
-Does not own:
-
-- Rendering decisions.
-- OIIO classes.
-
-### `oiio`
-
-C++ adapter only.
-
-Owns:
-
-- OpenImageIO plugin registration.
-- `ImageInput` subclass and ImageSpec setup.
-- Calls into `clip_capi`.
-- Filesystem-path and `IOProxy` byte-buffer session opens.
-
-Does not own:
-
-- `.clip` parsing.
-- GPU implementation.
-- Sidecar PNG output.
-
-### Blender Datablock Bridge
-
-This is the stock Blender integration boundary if Blender cannot be taught about
-`.clip` through a public filetype registration API.
-
-Owns:
-
-- Creating and updating `bpy.types.Image` datablocks.
-- Passing file paths and reload events to the native runtime.
-- Uploading final RGBA bytes returned by the native runtime.
-- Deferring pixel persistence until explicit `Pack` or Blender `save_pre`
-  packing.
-- Storing and reading `.clip` source-tracking custom properties on images.
-- User-facing import/reload UI.
-- Discovering the packaged native C ABI library from `native/` inside the
-  extension package unless the user supplies an explicit override.
-
-Does not own:
-
-- `.clip` parsing.
-- Tile decoding.
-- Compositing.
-- Sidecar PNG writing.
-- Pixel post-processing to hide renderer defects.
-
-Persistence rules:
-
-- The image datablock is generated, not file-backed to a sidecar PNG.
-- Packed pixels are the last saved rendered result and must remain visible after
-  reopening the `.blend`, even if the `.clip` source is missing.
-- Custom properties must identify the source `.clip` and render freshness. Use
-  stable project-prefixed names such as:
-  - `rizum_clip_source`
-  - `rizum_clip_source_mtime_ns`
-  - `rizum_clip_source_hash`
-  - `rizum_clip_width`
-  - `rizum_clip_height`
-  - `rizum_clip_renderer_version`
-  - `rizum_clip_reload_status`
-- The current add-on bridge reuses the existing `clip_source` / `clip_mtime`
-  keys for panel/watch integration and also records `clip_size`,
-  `clip_sha256`, and native-specific keys such as `clip_native_renderer`,
-  `clip_renderer_abi`, `clip_renderer_version`, and `clip_reload_status`. This
-  is Blender add-on state, not a native runtime API; a final accepted native
-  path may migrate property names while deleting the sidecar workflow.
-- `tools/build_blender_addon.py` is the current package builder. It writes
-  `clip_studio_importer.zip` in Blender extension layout with
-  `blender_manifest.toml`, `__init__.py`, `i18n.py`, `native_bridge.py`,
-  `LICENSE`, `NOTICE.md`, and the local release native renderer library and
-  worker under `native/<platform>/`, matching the add-on discovery path.
-  Windows x64 is maintainer-tested. Linux x64, macOS x64, and macOS arm64
-  packages are supported by the package/runtime layout but remain
-  maintainer-untested until real devices verify them.
-- On Blender `load_post`, the current add-on scans native images with
-  `clip_native_renderer` plus `clip_source`. If the source exists and is
-  newer/different, it asks the native runtime to render and updates the image
-  pixels. If the source is missing, it keeps the packed pixels visible and
-  records `clip_reload_status = "missing_source"`.
-- Successful renders mark the image as needing pack instead of calling
-  `image.pack()` immediately. Users can pack the current pixels with `Pack`,
-  and the add-on's persistent `save_pre` handler packs dirty native images
-  before saving the `.blend`.
+The native renderer is the accepted `.clip` flattening engine for Blender. It
+should stay modular enough that parsing, semantic planning, GPU execution,
+worker protocol, and C ABI concerns can evolve independently.
+
+Non-goals:
+
+- Python compositor compatibility.
+- Runtime CPU compositor fallback.
+- Sidecar PNG product workflow.
+- Global full-canvas per-layer caches.
+- Vector/text/bubble/frame renderer compatibility.
+
+## Crate Layout
+
+`native/rust` is the Rust workspace.
+
+| Crate | Responsibility |
+| --- | --- |
+| `clip_model` | Shared IDs, geometry, color, layer, blend, and metadata types. |
+| `clip_file` | `.clip` container access, SQLite metadata reads, external chunk reads, and tile decode helpers. |
+| `clip_graph` | Visible render graph construction and source selection. |
+| `clip_gpu` | `wgpu` device resources, shaders, render passes, tile-event execution, barrier execution, and stream encoding. |
+| `clip_runtime` | `ClipSession`, persistent renderer, reload manifests, support reports, Blender worker JSON, and runtime orchestration. |
+| `clip_capi` | Small C ABI surface for host integration. |
+| `clip_cli` | CLI, compare tooling, Blender worker one-shot mode, and persistent render server mode. |
+
+Root files such as `lib.rs` and `main.rs` are wiring only. Do not add renderer
+behavior there.
+
+## Data Flow
+
+Normal render flow:
+
+1. `ClipSession` opens and owns a `ClipContainer`.
+2. `clip_file` reads metadata/resources from that container.
+3. `clip_graph` selects the visible strict native render stack.
+4. `clip_runtime` asks `clip_gpu` to plan and execute the stack.
+5. `clip_gpu` streams sources through tile-local programs and explicit barrier
+   segments.
+6. `clip_cli`, the persistent worker, or `clip_capi` returns RGBA8 output plus
+   diagnostics.
+
+Reload flow:
+
+1. A successful render emits a reload manifest.
+2. The next render compares canvas/root/source order and raster/mask tile
+   fingerprints.
+3. The worker returns `no_change`, `patch`, or `full`.
+4. Blender applies dirty patch rows to the existing generated image or replaces
+   the whole image.
+
+## `clip_file`
+
+`clip_file` owns file format IO. Keep SQLite and external chunk details here.
+
+Important boundaries:
+
+- Metadata records live in focused `metadata/*` modules.
+- `metadata.rs` is a small re-export/wiring surface.
+- External chunk readers live under `external/`.
+- From-container helpers are preferred when render code already owns a
+  `ClipContainer`; do not reopen the same `.clip` per layer.
+
+Useful helpers:
+
+- `read_raster_layer_source_info_from_container`
+- `read_raster_layer_source_rgba_from_container`
+- `read_layer_mask_alpha_from_container`
+
+## `clip_graph`
+
+`clip_graph` maps `.clip` metadata to renderable semantic sources. It should
+not decide GPU pass shapes or tile-event eligibility.
+
+Current main selector:
+
+- `select_gpu_normal_render_stack`
+
+Decoded/debug selectors may remain for trace and tests, but product rendering
+should use the metadata-first path.
+
+## `clip_gpu`
+
+`clip_gpu` owns GPU execution.
+
+Major areas:
+
+- `stream_program*`: render-program planning, segment classification, barrier
+  reasons, and tile-local lowering decisions.
+- `stream_sequence`: dispatches planned segments and handles provider fallback.
+  It should not add lowering or barrier classification logic.
+- `stream_tile_event*`: typed tile-event ABI, payload layout, buffer building,
+  and event execution entry points.
+- `pass*` and barrier modules: faithful legacy/barrier rendering for semantics
+  not yet tile-local.
+- WGSL shaders: execute the semantics encoded by the planner, not infer source
+  graph structure on their own.
+
+Every shader-visible tile-event payload layout change must bump
+`TILE_EVENT_ABI_VERSION` and keep a reload-manifest compatibility test that
+promotes old manifests to full render.
+
+## `clip_runtime`
+
+`clip_runtime` owns application-level native state.
+
+Key responsibilities:
+
+- `ClipSession` and container lifetime.
+- `RuntimeGpuRenderer` and reusable GPU/session resources.
+- Support reports and strict native support summaries.
+- Reload manifests and dirty patch planning.
+- Worker JSON emitted for the Blender bridge.
+- Render/decode/profile diagnostics.
+
+The runtime may cache sparse resources and checkpoints when keyed by source/tile
+fingerprints. It must not cache full-canvas layer textures as a product shortcut.
+
+## `clip_capi`
+
+`clip_capi` is an integration boundary, not a renderer implementation. Keep it
+small:
+
+- ABI structs and versioning.
+- Host-callable render/support functions.
+- Error/result conversion.
+- Focused tests for ABI behavior.
+
+Formatting and support-report text belongs in helper modules, not in the crate
+root.
+
+## Blender Bridge
+
+The Blender add-on uses generated images rather than a filetype loader:
+
+- Native worker returns top-row-first RGBA8.
+- `native_bridge.py` flips rows into Blender's bottom-row-first
+  `Image.pixels` storage.
+- The image is packed into `.blend` files.
+- Persistent reload applies patch rows when the worker returns dirty rects.
+
+Keep Blender state handling in Python, but keep `.clip` rendering semantics in
+Rust.
 
 ## Dependency Direction
 
+Allowed direction:
+
 ```text
 clip_model
-  -> clip_file
-  -> clip_graph -> clip_gpu
-
-clip_file + clip_graph + clip_gpu
-  -> clip_runtime
-  -> clip_capi
-  -> C++ OIIO adapter
+  <- clip_file
+  <- clip_graph
+  <- clip_gpu
+  <- clip_runtime
+  <- clip_capi / clip_cli
 ```
 
-Rules:
-
-- `clip_model` has no project-local dependencies.
-- `clip_file` and `clip_graph` may depend on `clip_model`, but not on each
-  other unless a narrow interface is documented first.
-- `clip_gpu` may depend on `clip_model` and `clip_graph`.
-- `clip_runtime` is the only place allowed to combine file, graph, and GPU
-  modules.
-- `clip_capi` depends on `clip_runtime`; the C++ OIIO adapter depends only on
-  the C ABI.
-
-## Runtime Flows
-
-Target OIIO/ImBuf flow if Blender gains an explicit `.clip` bridge:
-
-1. C++ OIIO adapter receives a `.clip` path.
-2. Adapter calls `clip_renderer_session_open`.
-3. Rust runtime parses container metadata and builds a render graph.
-4. Runtime initializes the selected `wgpu` backend.
-5. OIIO asks for image pixels.
-6. Runtime schedules tile decode and GPU compositing.
-7. GPU renders into an offscreen texture/buffer.
-8. Runtime reads back RGBA bytes.
-9. Adapter returns pixels to OIIO/Blender.
-
-Target stock Blender add-on flow:
-
-1. Blender add-on receives a `.clip` path.
-2. Add-on calls the native runtime through a small extension boundary.
-3. Rust runtime parses metadata, builds the graph, and runs the `wgpu`
-   compositor.
-4. Runtime returns final RGBA bytes and image metadata.
-5. Add-on creates or updates a generated `bpy.types.Image`.
-6. Add-on uploads the RGBA bytes with Blender's bulk pixel API.
-7. Add-on records source freshness custom properties and marks the image as
-   needing pack. `Pack` or Blender `save_pre` later packs the current pixels
-   into the `.blend`.
-
-This flow is still a native renderer path. Python only owns Blender UI and
-datablock wiring.
-
-## Anti-Monolith Rules
-
-- No source file owns more than one of: container parsing, SQLite mapping, tile
-  decode, graph planning, GPU resource setup, shader dispatch, ABI conversion,
-  OIIO class glue.
-- Root files are wiring only.
-- Spikes cannot land as production code until split into the module layout.
-- No Python compatibility path may be introduced in native code.
-- No sidecar PNG writer may be introduced in native code except a developer-only
-  CLI output command for tests and benchmarks.
+`clip_runtime` can coordinate lower crates; lower crates should not know about
+Blender, C ABI packaging, or CLI details.
 
 ## Test Strategy
 
-Native runtime tests compare against external references:
+Use the smallest test that covers the changed boundary:
 
-- CSP-exported PNGs.
-- Small hand-built `.clip` fixtures for parser and graph invariants.
-
-There is no native CPU compositor oracle. The GPU compositor is the only native
-renderer path. Use `clip_cli --compare-png <ref.png>` for native/CSP PNG
-smoke checks instead of ad-hoc local comparison scripts when the strict GPU plan
-supports the file.
+- File/metadata changes: `clip_file` tests and fixture reads.
+- Graph semantics: `clip_graph` or runtime planner tests.
+- Tile-event semantics: planner plus GPU legacy-vs-tile tests.
+- Worker/reload behavior: runtime worker tests or CLI smoke tests.
+- Blender image upload/patch behavior: Python unit tests.
+- Product samples: `clip_cli --compare-png`.
