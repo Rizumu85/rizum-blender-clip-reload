@@ -5,8 +5,8 @@
 
 Import Clip Studio Paint `.clip` files into Blender as packed, reloadable image textures.
 
-[Report Issues](https://github.com/Rizumu85/rizum-blender-clip-reload/issues) ·
-[Releases](https://github.com/Rizumu85/rizum-blender-clip-reload/releases) ·
+[Report Issues](https://github.com/Rizumu85/rizum-blender-clip-reload/issues) |
+[Releases](https://github.com/Rizumu85/rizum-blender-clip-reload/releases) |
 [Blender Extensions](https://extensions.blender.org/)
 
 ![Version](https://img.shields.io/badge/version-0.8.67-f2cfc7)
@@ -17,6 +17,15 @@ Import Clip Studio Paint `.clip` files into Blender as packed, reloadable image 
 </div>
 
 ---
+
+<p align="center">
+  <a href="#english">English</a> |
+  <a href="#zh-cn">中文</a>
+</p>
+
+<a id="english"></a>
+
+## English
 
 ## Why
 
@@ -152,6 +161,8 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 - `docs/AI_MEMORY.md` - compact current project state.
 - `docs/plan.md` - durable direction and open work.
 - `docs/analysis.md` - append-only historical evidence and rejected hypotheses.
+
+<a id="zh-cn"></a>
 
 ## 中文简介
 
