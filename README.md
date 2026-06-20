@@ -95,6 +95,17 @@ python tools\build_blender_addon.py --platform macos-arm64
 python tools\build_blender_addon.py --platform linux-x64 --native-artifact-dir linux-x64=path\to\linux\artifacts
 ```
 
+To build one zip containing all supported native packages, collect native
+artifacts under `native/artifacts/<platform>/` and run:
+
+```powershell
+python tools\build_blender_addon.py --platform all --output clip_studio_importer-universal.zip
+```
+
+The `Build extension package` GitHub Actions workflow builds the platform
+artifacts and uploads `clip_studio_importer-universal.zip` as a workflow
+artifact.
+
 To let Blender perform the final extension build, pass a Blender executable:
 
 ```powershell

@@ -90,6 +90,53 @@ class BuildBlenderAddonTests(unittest.TestCase):
         self.assertIn("native/macos-arm64/clip_cli", names)
         self.assertIn('platforms = ["macos-arm64"]', manifest)
 
+    def test_build_zip_can_package_multiple_native_platforms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            artifacts = {
+                "windows-x64": root / "windows-x64",
+                "linux-x64": root / "linux-x64",
+                "macos-arm64": root / "macos-arm64",
+            }
+            for path in artifacts.values():
+                path.mkdir()
+            (artifacts["windows-x64"] / "clip_capi.dll").write_bytes(b"fake windows library")
+            (artifacts["windows-x64"] / "clip_cli.exe").write_bytes(b"fake windows worker")
+            (artifacts["linux-x64"] / "libclip_capi.so").write_bytes(b"fake linux library")
+            (artifacts["linux-x64"] / "clip_cli").write_bytes(b"fake linux worker")
+            (artifacts["macos-arm64"] / "libclip_capi.dylib").write_bytes(b"fake mac library")
+            (artifacts["macos-arm64"] / "clip_cli").write_bytes(b"fake mac worker")
+            output = root / "clip_studio_importer_universal.zip"
+
+            written = build_blender_addon.build_zip(
+                output,
+                include_native=True,
+                platforms=("windows-x64", "linux-x64", "macos-arm64"),
+                native_artifact_dirs=artifacts,
+            )
+
+            self.assertIn("native/windows-x64/clip_capi.dll", written)
+            self.assertIn("native/windows-x64/clip_cli.exe", written)
+            self.assertIn("native/linux-x64/libclip_capi.so", written)
+            self.assertIn("native/linux-x64/clip_cli", written)
+            self.assertIn("native/macos-arm64/libclip_capi.dylib", written)
+            self.assertIn("native/macos-arm64/clip_cli", written)
+
+            with zipfile.ZipFile(output) as archive:
+                names = set(archive.namelist())
+                manifest = archive.read("blender_manifest.toml").decode("utf-8")
+
+        self.assertIn("native/windows-x64/clip_capi.dll", names)
+        self.assertIn("native/windows-x64/clip_cli.exe", names)
+        self.assertIn("native/linux-x64/libclip_capi.so", names)
+        self.assertIn("native/linux-x64/clip_cli", names)
+        self.assertIn("native/macos-arm64/libclip_capi.dylib", names)
+        self.assertIn("native/macos-arm64/clip_cli", names)
+        self.assertIn(
+            'platforms = ["windows-x64", "linux-x64", "macos-arm64"]',
+            manifest,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

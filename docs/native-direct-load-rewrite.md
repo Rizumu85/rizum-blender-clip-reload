@@ -82,6 +82,16 @@ fingerprints. They may return:
 Windows x64 is maintainer-tested. Linux x64, macOS x64, and macOS arm64 package
 support exists but is maintainer-untested.
 
+The package builder can also create a single multi-platform zip when native
+artifacts are available under `native/artifacts/<platform>/`:
+
+```powershell
+python tools\build_blender_addon.py --platform all --output clip_studio_importer-universal.zip
+```
+
+The `Build extension package` GitHub Actions workflow builds the native
+artifacts on platform runners and uploads that universal zip for release review.
+
 ## Future Integration
 
 True file-backed `.clip` image loading can be revisited later if Blender exposes

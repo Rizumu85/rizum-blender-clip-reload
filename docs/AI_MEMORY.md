@@ -70,6 +70,10 @@ Out of scope:
   name and copied/opened diagnostics stay English.
 - Windows x64 packaging is maintainer-tested. Linux x64, macOS x64, and macOS
   arm64 packaging support exists but is maintainer-untested.
+- `tools/build_blender_addon.py --platform all` can build one universal zip when
+  `native/artifacts/<platform>/` contains each platform's native artifacts. The
+  `Build extension package` GitHub Actions workflow builds and uploads that
+  universal zip.
 
 ## Native Renderer State
 

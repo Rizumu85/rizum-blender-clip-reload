@@ -1,0 +1,111 @@
+name: Build extension package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  native-artifact:
+    name: Native ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            library: clip_capi.dll
+            worker: clip_cli.exe
+          - platform: linux-x64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            library: libclip_capi.so
+            worker: clip_cli
+          - platform: macos-x64
+            os: macos-13
+            target: x86_64-apple-darwin
+            library: libclip_capi.dylib
+            worker: clip_cli
+          - platform: macos-arm64
+            os: macos-14
+            target: aarch64-apple-darwin
+            library: libclip_capi.dylib
+            worker: clip_cli
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build native renderer
+        shell: pwsh
+        run: |
+          cd native/rust
+          cargo build --release --target ${{ matrix.target }} -p clip_capi -p clip_cli
+
+      - name: Stage native artifacts
+        shell: pwsh
+        run: |
+          $source = "native/rust/target/${{ matrix.target }}/release"
+          $dest = "native-artifacts/${{ matrix.platform }}"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item "$source/${{ matrix.library }}" "$dest/${{ matrix.library }}"
+          Copy-Item "$source/${{ matrix.worker }}" "$dest/${{ matrix.worker }}"
+
+      - name: Upload native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: native-artifacts/${{ matrix.platform }}
+          if-no-files-found: error
+
+  extension-package:
+    name: Universal extension zip
+    runs-on: windows-latest
+    needs: native-artifact
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: native/artifacts
+          merge-multiple: false
+
+      - name: Normalize artifact directories
+        shell: pwsh
+        run: |
+          foreach ($dir in Get-ChildItem native/artifacts -Directory) {
+            if ($dir.Name.StartsWith("native-")) {
+              $platform = $dir.Name.Substring("native-".Length)
+              $target = Join-Path "native/artifacts" $platform
+              if (Test-Path $target) {
+                Remove-Item -Recurse -Force $target
+              }
+              Move-Item $dir.FullName $target
+            }
+          }
+
+      - name: Build universal extension package
+        shell: pwsh
+        run: |
+          python tools/build_blender_addon.py --platform all --output clip_studio_importer-universal.zip
+
+      - name: Upload universal extension package
+        uses: actions/upload-artifact@v4
+        with:
+          name: clip_studio_importer-universal
+          path: clip_studio_importer-universal.zip
+          if-no-files-found: error
