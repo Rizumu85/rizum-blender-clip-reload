@@ -23,6 +23,7 @@ pub fn decode_external_tile_blocks(
         wanted.len(),
         wanted.last().copied(),
         true,
+        None,
         |tile_index| {
             if wanted.get(next_wanted).copied() != Some(tile_index) {
                 return false;

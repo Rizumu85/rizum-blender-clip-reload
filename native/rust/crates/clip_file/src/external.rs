@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::time::Instant;
 
 use flate2::read::ZlibDecoder;
 
@@ -8,6 +9,7 @@ mod stats;
 mod types;
 
 use crate::ClipFileError;
+use crate::decode_profile::{self, DecodeTileKind};
 use crate::tile_region::TileBlockSelection;
 use reader::{read_be_u32, read_be_u64, read_le_u32, read_utf16_be, skip};
 pub use selection::decode_external_tile_blocks;
@@ -83,6 +85,7 @@ where
         selection.count(),
         selection.last_tile_index(),
         true,
+        None,
         |tile_index| selection.contains(tile_index),
         visit_block,
     )
@@ -93,6 +96,7 @@ pub(crate) fn visit_external_non_empty_tile_block_selection<F>(
     per_tile_len: usize,
     expected_tile_count: usize,
     selection: TileBlockSelection,
+    kind: DecodeTileKind,
     visit_block: F,
 ) -> Result<String, ClipFileError>
 where
@@ -106,6 +110,7 @@ where
         selection.count(),
         selection.last_tile_index(),
         false,
+        Some(kind),
         |tile_index| selection.contains(tile_index),
         visit_block,
     )
@@ -119,6 +124,7 @@ fn visit_external_tile_blocks_matching<F, V>(
     wanted_count: usize,
     last_wanted: Option<usize>,
     visit_empty_blocks: bool,
+    profile_kind: Option<DecodeTileKind>,
     mut is_wanted: F,
     mut visit_block: V,
 ) -> Result<String, ClipFileError>
@@ -131,6 +137,22 @@ where
             expected: expected_tile_count,
             actual: last_wanted.unwrap_or(0) + 1,
         });
+    }
+
+    if !visit_empty_blocks
+        && parallel_tile_decode_enabled()
+        && let Some(kind) = profile_kind
+    {
+        return visit_external_non_empty_tile_blocks_parallel(
+            body,
+            per_tile_len,
+            expected_tile_count,
+            wanted_count,
+            last_wanted,
+            kind,
+            is_wanted,
+            visit_block,
+        );
     }
 
     let mut found_count = 0usize;
@@ -153,11 +175,17 @@ where
 
         match block.payload {
             ExternalBlockPayload::Compressed(compressed) => {
+                if profile_kind.is_some() {
+                    decode_profile::record_compressed_bytes(compressed.len());
+                }
                 scratch.resize(block.uncompressed_len, 0);
                 inflate_block_into_slice(compressed, &mut scratch)?;
                 visit_block(block.index, &scratch)?;
             }
             ExternalBlockPayload::Empty => {
+                if let Some(kind) = profile_kind {
+                    decode_profile::record_skipped_empty(kind);
+                }
                 if visit_empty_blocks {
                     scratch.resize(block.uncompressed_len, empty_fill);
                     scratch.fill(empty_fill);
@@ -179,6 +207,173 @@ where
     }
 
     Ok(visited.external_id)
+}
+
+#[derive(Clone)]
+struct SelectedCompressedBlock<'a> {
+    order: usize,
+    index: usize,
+    compressed: std::borrow::Cow<'a, [u8]>,
+    uncompressed_len: usize,
+}
+
+struct InflatedSelectedBlock {
+    order: usize,
+    index: usize,
+    bytes: Vec<u8>,
+}
+
+fn visit_external_non_empty_tile_blocks_parallel<F, V>(
+    body: &[u8],
+    per_tile_len: usize,
+    expected_tile_count: usize,
+    wanted_count: usize,
+    last_wanted: Option<usize>,
+    kind: DecodeTileKind,
+    mut is_wanted: F,
+    mut visit_block: V,
+) -> Result<String, ClipFileError>
+where
+    F: FnMut(usize) -> bool,
+    V: FnMut(usize, &[u8]) -> Result<(), ClipFileError>,
+{
+    let mut found_count = 0usize;
+    let mut compressed_blocks = Vec::new();
+    let mut compressed_bytes = 0usize;
+    let visited = visit_external_data_blocks(body, |block| {
+        if block.index >= expected_tile_count {
+            return Ok(false);
+        }
+        if last_wanted.is_some_and(|last_wanted| block.index > last_wanted) {
+            return Ok(false);
+        }
+        if !is_wanted(block.index) {
+            return Ok(true);
+        }
+        if block.uncompressed_len != per_tile_len {
+            return Err(ClipFileError::InvalidExternalDataBlock(
+                "unexpected tile block size",
+            ));
+        }
+
+        match block.payload {
+            ExternalBlockPayload::Compressed(compressed) => {
+                compressed_bytes = compressed_bytes
+                    .checked_add(compressed.len())
+                    .ok_or(ClipFileError::TileSizeOverflow)?;
+                compressed_blocks.push(SelectedCompressedBlock {
+                    order: found_count,
+                    index: block.index,
+                    compressed: std::borrow::Cow::Owned(compressed.to_vec()),
+                    uncompressed_len: block.uncompressed_len,
+                });
+            }
+            ExternalBlockPayload::Empty => {
+                decode_profile::record_skipped_empty(kind);
+            }
+        }
+        found_count = found_count
+            .checked_add(1)
+            .ok_or(ClipFileError::TileSizeOverflow)?;
+        Ok(found_count < wanted_count)
+    })?;
+
+    if found_count != wanted_count {
+        return Err(ClipFileError::UnexpectedTileCount {
+            expected: wanted_count,
+            actual: found_count,
+        });
+    }
+    decode_profile::record_compressed_bytes(compressed_bytes);
+
+    let policy = choose_parallel_tile_decode_policy(compressed_blocks.len(), compressed_bytes);
+    let mut inflated = if policy.parallel {
+        inflate_selected_blocks_parallel(&compressed_blocks, policy.threads)?
+    } else {
+        inflate_selected_blocks_sequential(&compressed_blocks)?
+    };
+    inflated.sort_by_key(|block| block.order);
+    for block in inflated {
+        visit_block(block.index, &block.bytes)?;
+    }
+
+    Ok(visited.external_id)
+}
+
+fn inflate_selected_blocks_sequential(
+    blocks: &[SelectedCompressedBlock<'_>],
+) -> Result<Vec<InflatedSelectedBlock>, ClipFileError> {
+    blocks.iter().cloned().map(inflate_selected_block).collect()
+}
+
+fn inflate_selected_blocks_parallel(
+    blocks: &[SelectedCompressedBlock<'_>],
+    threads: usize,
+) -> Result<Vec<InflatedSelectedBlock>, ClipFileError> {
+    let worker_count = threads.max(1).min(blocks.len().max(1));
+    let chunk_len = blocks.len().div_ceil(worker_count);
+    let mut results = Vec::new();
+    std::thread::scope(|scope| {
+        let mut handles = Vec::new();
+        for chunk in blocks.chunks(chunk_len) {
+            handles.push(scope.spawn(move || {
+                chunk
+                    .iter()
+                    .cloned()
+                    .map(inflate_selected_block)
+                    .collect::<Result<Vec<_>, _>>()
+            }));
+        }
+        for handle in handles {
+            results.push(handle.join().map_err(|_| {
+                ClipFileError::InvalidExternalDataBlock("tile decode worker panicked")
+            })??);
+        }
+        Ok::<(), ClipFileError>(())
+    })?;
+    Ok(results.into_iter().flatten().collect())
+}
+
+fn inflate_selected_block(
+    block: SelectedCompressedBlock<'_>,
+) -> Result<InflatedSelectedBlock, ClipFileError> {
+    let mut bytes = vec![0u8; block.uncompressed_len];
+    inflate_block_into_slice(&block.compressed, &mut bytes)?;
+    Ok(InflatedSelectedBlock {
+        order: block.order,
+        index: block.index,
+        bytes,
+    })
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct ParallelTileDecodePolicy {
+    parallel: bool,
+    threads: usize,
+}
+
+fn choose_parallel_tile_decode_policy(
+    compressed_tile_count: usize,
+    compressed_bytes: usize,
+) -> ParallelTileDecodePolicy {
+    if compressed_tile_count < 16 || compressed_bytes < 1024 * 1024 {
+        return ParallelTileDecodePolicy {
+            parallel: false,
+            threads: 1,
+        };
+    }
+    let available = std::thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(1);
+    let threads = available.min(8).min(compressed_tile_count).max(1);
+    ParallelTileDecodePolicy {
+        parallel: threads > 1,
+        threads,
+    }
+}
+
+fn parallel_tile_decode_enabled() -> bool {
+    std::env::var_os("RIZUM_CLIP_PARALLEL_TILE_DECODE").is_some()
 }
 
 struct VisitedExternalBlocks {
@@ -357,9 +552,11 @@ where
 }
 
 fn inflate_block_into_slice(compressed: &[u8], output: &mut [u8]) -> Result<(), ClipFileError> {
+    let start = Instant::now();
     let mut decoder = ZlibDecoder::new(compressed);
     let written = read_into_slice(&mut decoder, output)?;
     let discarded = drain_reader(&mut decoder)?;
+    decode_profile::record_zlib_inflate(start.elapsed());
     let actual = written
         .checked_add(discarded)
         .ok_or(ClipFileError::TileSizeOverflow)?;
@@ -379,6 +576,7 @@ fn append_inflated_bytes(
     uncompressed_len: usize,
     expected_len: Option<usize>,
 ) -> Result<(), ClipFileError> {
+    let start = Instant::now();
     let mut decoder = ZlibDecoder::new(compressed);
     if let Some(expected_len) = expected_len {
         let remaining = expected_len.saturating_sub(*output_len);
@@ -391,6 +589,7 @@ fn append_inflated_bytes(
         let actual = written
             .checked_add(discarded)
             .ok_or(ClipFileError::TileSizeOverflow)?;
+        decode_profile::record_zlib_inflate(start.elapsed());
         if actual != uncompressed_len {
             return Err(ClipFileError::UnexpectedDecompressedSize {
                 expected: uncompressed_len,
@@ -405,6 +604,7 @@ fn append_inflated_bytes(
             .len()
             .checked_sub(start_len)
             .ok_or(ClipFileError::TileSizeOverflow)?;
+        decode_profile::record_zlib_inflate(start.elapsed());
         if actual != uncompressed_len {
             return Err(ClipFileError::UnexpectedDecompressedSize {
                 expected: uncompressed_len,

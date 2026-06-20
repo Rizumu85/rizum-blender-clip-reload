@@ -1,4 +1,5 @@
 use clip_model::CanvasSize;
+use std::time::Instant;
 
 use super::{
     MaskUploadPayload, PlannedMaskResourceMeta, RuntimeError, RuntimeGpuResourceProvider,
@@ -209,6 +210,7 @@ fn mask_pixels_for_chunk(
     canvas_offset: (i32, i32),
     mask: &MaskUploadPayload,
 ) -> Result<Vec<u8>, RuntimeError> {
+    let start = Instant::now();
     let width =
         usize::try_from(size.width).map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?;
     let height =
@@ -239,6 +241,7 @@ fn mask_pixels_for_chunk(
             pixels.push(mask_value);
         }
     }
+    clip_file::decode_profile::record_mask_crop(start.elapsed());
     Ok(pixels)
 }
 

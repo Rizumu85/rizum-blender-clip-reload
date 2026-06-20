@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::Path;
+use std::time::Instant;
 
 use clip_runtime::{
     ClipSession, ReloadDiffManifest, ReloadDiffMode, ReloadPatchRect, RuntimeError,
@@ -25,6 +26,8 @@ pub(crate) fn write_blender_render_files_with_renderer(
     previous_manifest: Option<&ReloadDiffManifest>,
     renderer: Option<&RuntimeGpuRenderer>,
 ) -> Result<(), String> {
+    clip_file::decode_profile::reset_if_enabled();
+    let worker_start = Instant::now();
     let summary = session.summary();
     let root_layer_id = summary.root_layer_id.0;
     let layer_count = summary.layer_count;
@@ -51,6 +54,11 @@ pub(crate) fn write_blender_render_files_with_renderer(
             clip_runtime::GpuTextureCacheStats::default(),
             sparse_atlas,
             reload_plan_metadata(&reload_plan, 0, None, None),
+            worker_start
+                .elapsed()
+                .as_millis()
+                .try_into()
+                .unwrap_or(u64::MAX),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -122,6 +130,11 @@ pub(crate) fn write_blender_render_files_with_renderer(
                 Some(patch_renderer),
                 patch_renderer_fallback_reason,
             ),
+            worker_start
+                .elapsed()
+                .as_millis()
+                .try_into()
+                .unwrap_or(u64::MAX),
         );
         let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
         fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -182,6 +195,11 @@ pub(crate) fn write_blender_render_files_with_renderer(
             patch_renderer,
             patch_renderer_fallback_reason,
         ),
+        worker_start
+            .elapsed()
+            .as_millis()
+            .try_into()
+            .unwrap_or(u64::MAX),
     );
     let metadata = serde_json::to_vec_pretty(&metadata).map_err(|err| err.to_string())?;
     fs::write(json_path, metadata).map_err(|err| err.to_string())?;
@@ -199,6 +217,7 @@ fn base_metadata(
     texture_cache: clip_runtime::GpuTextureCacheStats,
     sparse_atlas: clip_runtime::GpuSparseAtlasReloadPlan,
     reload_diff: serde_json::Value,
+    worker_total_ms: u64,
 ) -> serde_json::Value {
     let canvas = session.summary().canvas;
     let (unsupported_items, source_count) = support.unwrap_or((&[], 0));
@@ -224,6 +243,23 @@ fn base_metadata(
         )
     };
     let stats = stats.unwrap_or_default();
+    let decode_profile = clip_file::decode_profile::snapshot_if_enabled().map(|profile| {
+        json!({
+            "selected_raster_tiles": profile.selected_raster_tiles,
+            "selected_mask_tiles": profile.selected_mask_tiles,
+            "skipped_empty_raster_tiles": profile.skipped_empty_raster_tiles,
+            "skipped_empty_mask_tiles": profile.skipped_empty_mask_tiles,
+            "compressed_bytes_read": profile.compressed_bytes_read,
+            "zlib_inflate_ms": profile.zlib_inflate_ms,
+            "tile_swizzle_rgba_ms": profile.tile_swizzle_rgba_ms,
+            "mask_r8_decode_ms": profile.mask_r8_decode_ms,
+            "mask_crop_ms": profile.mask_crop_ms,
+            "atlas_chunk_build_ms": profile.atlas_chunk_build_ms,
+            "sparse_atlas_pool_update_ms": profile.sparse_atlas_pool_update_ms,
+            "region_patch_render_ms": profile.region_patch_render_ms,
+            "worker_total_ms": worker_total_ms,
+        })
+    });
     json!({
         "width": canvas.width,
         "height": canvas.height,
@@ -233,6 +269,7 @@ fn base_metadata(
         "renderer_version": env!("CARGO_PKG_VERSION"),
         "payload_bytes": payload_bytes,
         "reload_diff": reload_diff,
+        "decode_profile": decode_profile,
         "texture_cache": {
             "raster_hits": texture_cache.raster_hits,
             "raster_misses": texture_cache.raster_misses,

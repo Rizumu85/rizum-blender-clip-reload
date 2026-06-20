@@ -5,7 +5,8 @@ use std::io::Write;
 use clip_model::Rect;
 
 use super::{
-    decode_external_tile_blocks, inspect_external_tile_blocks,
+    SelectedCompressedBlock, choose_parallel_tile_decode_policy, decode_external_tile_blocks,
+    inflate_selected_blocks_parallel, inspect_external_tile_blocks,
     inspect_external_tile_blocks_with_compressed_tiles,
     visit_external_non_empty_tile_block_selection, visit_external_tile_block_selection,
 };
@@ -127,6 +128,7 @@ fn non_empty_tile_visitor_skips_empty_blocks_without_inflating_them() {
         4,
         2,
         selection,
+        crate::decode_profile::DecodeTileKind::Raster,
         |tile_index, bytes| {
             visited.push((tile_index, bytes.to_vec()));
             Ok(())
@@ -136,6 +138,74 @@ fn non_empty_tile_visitor_skips_empty_blocks_without_inflating_them() {
 
     assert_eq!(external_id, "external");
     assert_eq!(visited, vec![(0, vec![1, 2, 3, 4])]);
+}
+
+#[test]
+fn parallel_tile_decode_policy_keeps_tiny_work_sequential() {
+    let policy = choose_parallel_tile_decode_policy(15, 2 * 1024 * 1024);
+    assert!(!policy.parallel);
+    assert_eq!(policy.threads, 1);
+
+    let policy = choose_parallel_tile_decode_policy(16, 1024 * 1024 - 1);
+    assert!(!policy.parallel);
+    assert_eq!(policy.threads, 1);
+}
+
+#[test]
+fn parallel_tile_decode_policy_uses_workers_for_many_compressed_tiles() {
+    let policy = choose_parallel_tile_decode_policy(32, 2 * 1024 * 1024);
+    if std::thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(1)
+        > 1
+    {
+        assert!(policy.parallel);
+        assert!(policy.threads >= 2);
+        assert!(policy.threads <= 8);
+    }
+}
+
+#[test]
+fn parallel_selected_tile_decode_preserves_deterministic_order_after_sort() {
+    let first = compressed_payload(&[1, 2, 3, 4]);
+    let second = compressed_payload(&[5, 6, 7, 8]);
+    let third = compressed_payload(&[9, 10, 11, 12]);
+    let blocks = vec![
+        SelectedCompressedBlock {
+            order: 2,
+            index: 12,
+            compressed: std::borrow::Cow::Borrowed(&third),
+            uncompressed_len: 4,
+        },
+        SelectedCompressedBlock {
+            order: 0,
+            index: 10,
+            compressed: std::borrow::Cow::Borrowed(&first),
+            uncompressed_len: 4,
+        },
+        SelectedCompressedBlock {
+            order: 1,
+            index: 11,
+            compressed: std::borrow::Cow::Borrowed(&second),
+            uncompressed_len: 4,
+        },
+    ];
+
+    let mut inflated = inflate_selected_blocks_parallel(&blocks, 2).unwrap();
+    inflated.sort_by_key(|block| block.order);
+    let ordered = inflated
+        .into_iter()
+        .map(|block| (block.index, block.bytes))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        ordered,
+        vec![
+            (10, vec![1, 2, 3, 4]),
+            (11, vec![5, 6, 7, 8]),
+            (12, vec![9, 10, 11, 12]),
+        ]
+    );
 }
 
 fn external_body(blocks: &[Vec<u8>]) -> Vec<u8> {
@@ -151,10 +221,14 @@ fn external_body(blocks: &[Vec<u8>]) -> Vec<u8> {
 }
 
 fn compressed_data_block(uncompressed: &[u8]) -> Vec<u8> {
+    let compressed = compressed_payload(uncompressed);
+    data_block(uncompressed.len(), 1, &compressed)
+}
+
+fn compressed_payload(uncompressed: &[u8]) -> Vec<u8> {
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
     encoder.write_all(uncompressed).unwrap();
-    let compressed = encoder.finish().unwrap();
-    data_block(uncompressed.len(), 1, &compressed)
+    encoder.finish().unwrap()
 }
 
 fn corrupt_compressed_data_block(uncompressed_len: usize) -> Vec<u8> {

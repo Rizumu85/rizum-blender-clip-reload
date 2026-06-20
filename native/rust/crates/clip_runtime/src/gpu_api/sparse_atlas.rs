@@ -11,6 +11,7 @@ use crate::{
     ClipSession, GpuTextureCacheStats, NormalRasterStackGpuPatchResult, RuntimeError,
     stack_plan::GpuRenderStackSelection,
 };
+use std::time::Instant;
 
 impl RuntimeGpuRenderer {
     pub fn plan_sparse_atlas_reload(
@@ -32,6 +33,7 @@ impl RuntimeGpuRenderer {
             session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        let update_start = Instant::now();
         let texture_pool_stats = self
             .renderer
             .update_sparse_atlas_texture_pool(
@@ -39,6 +41,7 @@ impl RuntimeGpuRenderer {
                 &updates,
             )
             .map_err(RuntimeError::from)?;
+        clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
         Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
             texture_pool_stats,
             event_plan: sparse_atlas_raster_event_plan(plan, &reload, &selection.sources).into(),
@@ -54,6 +57,7 @@ impl RuntimeGpuRenderer {
             session.select_gpu_normal_render_stack(crate::tile_silo_options::tile_silo_options())?;
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        let update_start = Instant::now();
         let texture_pool_stats = self
             .renderer
             .update_sparse_atlas_texture_pool(
@@ -61,6 +65,7 @@ impl RuntimeGpuRenderer {
                 &updates,
             )
             .map_err(RuntimeError::from)?;
+        clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
         Ok(crate::GpuSparseAtlasPreparedRasterEventPlan {
             texture_pool_stats,
             event_plan: sparse_atlas_raster_affected_event_plan(plan, &reload, &selection.sources)
@@ -101,12 +106,14 @@ impl RuntimeGpuRenderer {
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let sparse_atlas = reload.clone().into();
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        let update_start = Instant::now();
         self.renderer
             .update_sparse_atlas_texture_pool(
                 &mut self.sparse_atlas_textures.borrow_mut(),
                 &updates,
             )
             .map_err(RuntimeError::from)?;
+        clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
         let event_plan = sparse_atlas_raster_affected_event_plan(plan, &reload, &sources);
         if !event_plan.skipped_segments.is_empty() || event_plan.segments.is_empty() {
             return Ok(None);
@@ -122,6 +129,7 @@ impl RuntimeGpuRenderer {
             .map(|rect| clip_model::Rect::new(rect.x, rect.y, rect.width, rect.height))
             .collect::<Vec<_>>();
         let base = initial_transparent_rgba8(session.summary.canvas)?;
+        let render_start = Instant::now();
         let output = self
             .renderer
             .draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
@@ -131,6 +139,7 @@ impl RuntimeGpuRenderer {
                 &base,
                 &rects,
             )?;
+        clip_file::decode_profile::record_region_patch_render(render_start.elapsed());
         Ok(Some((
             NormalRasterStackGpuPatchResult {
                 payload: output.payload,
@@ -200,12 +209,14 @@ impl RuntimeGpuRenderer {
             checkpoint_candidate.priority,
         )?;
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
+        let update_start = Instant::now();
         self.renderer
             .update_sparse_atlas_texture_pool(
                 &mut self.sparse_atlas_textures.borrow_mut(),
                 &updates,
             )
             .map_err(RuntimeError::from)?;
+        clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
 
         let batches = event_plan
             .segments
@@ -217,6 +228,7 @@ impl RuntimeGpuRenderer {
             .iter()
             .map(|rect| clip_model::Rect::new(rect.x, rect.y, rect.width, rect.height))
             .collect::<Vec<_>>();
+        let render_start = Instant::now();
         let output = self
             .renderer
             .draw_sparse_atlas_raster_event_batch_patches_over_rgba8(
@@ -226,6 +238,7 @@ impl RuntimeGpuRenderer {
                 &checkpoint.pixels,
                 &rects,
             )?;
+        clip_file::decode_profile::record_region_patch_render(render_start.elapsed());
         Ok(Some((
             NormalRasterStackGpuPatchResult {
                 payload: output.payload,
@@ -247,12 +260,16 @@ impl RuntimeGpuRenderer {
     ) -> Result<clip_gpu::GpuSparseAtlasTexturePoolStats, RuntimeError> {
         let reload = self.sparse_atlas_cache.borrow_mut().plan_reload_diff(plan);
         let updates = sparse_atlas_texture_pool_updates(session, &reload.cache)?;
-        self.renderer
+        let update_start = Instant::now();
+        let result = self
+            .renderer
             .update_sparse_atlas_texture_pool(
                 &mut self.sparse_atlas_textures.borrow_mut(),
                 &updates,
             )
-            .map_err(RuntimeError::from)
+            .map_err(RuntimeError::from);
+        clip_file::decode_profile::record_sparse_atlas_pool_update(update_start.elapsed());
+        result
     }
 
     pub fn draw_sparse_atlas_raster_event_segment_to_rgba8(

@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::time::Instant;
 
 use clip_graph::RenderNodeKind;
 use clip_model::{LayerId, Rect, Rgba8};
@@ -425,6 +426,7 @@ impl ClipSession {
         };
         let mut payload = Vec::new();
         let mut drawn_resources = Vec::new();
+        let render_start = Instant::now();
         for rect in rects {
             let output = renderer.draw_normal_stack_region_with_provider_to_rgba8(
                 self.summary.canvas,
@@ -435,6 +437,7 @@ impl ClipSession {
             payload.extend_from_slice(&output.pixels);
             drawn_resources.extend(output.drawn_resources);
         }
+        clip_file::decode_profile::record_region_patch_render(render_start.elapsed());
         let mask_resources = std::mem::take(&mut provider.mask_resources);
         drop(provider);
         let texture_cache_stats = texture_cache

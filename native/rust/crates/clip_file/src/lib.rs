@@ -2,6 +2,7 @@
 
 mod atlas_chunks;
 pub mod container;
+pub mod decode_profile;
 mod error;
 pub mod external;
 pub mod metadata;

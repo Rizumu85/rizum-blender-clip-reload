@@ -5,6 +5,7 @@ use clip_model::{CanvasSize, LayerId, Rect};
 use crate::ClipFileError;
 use crate::atlas_chunks::{RgbaAtlasChunkCollector, RgbaAtlasChunkTarget, RgbaAtlasTileChunk};
 use crate::container::ClipContainer;
+use crate::decode_profile::{self, DecodeTileKind};
 use crate::external::{decode_external_tile_blob, visit_external_non_empty_tile_block_selection};
 use crate::metadata::{
     self, read_layer_render_source_from_sqlite, read_mask_layer_source_from_sqlite,
@@ -271,6 +272,7 @@ fn decode_mask_source_alpha_region(
         source_region,
     )?;
     let expected_tile_count = expected_len / MASK_TILE_BYTES;
+    decode_profile::record_selected(DecodeTileKind::Mask, tile_selection.count());
     let mut writer = AlphaTileRegionWriter::new_with_fill(
         source.pixel_size.width,
         source.pixel_size.height,
@@ -282,6 +284,7 @@ fn decode_mask_source_alpha_region(
         MASK_TILE_BYTES,
         expected_tile_count,
         tile_selection,
+        DecodeTileKind::Mask,
         |tile_index, bytes| writer.write_alpha_block(TileBlockRef { tile_index, bytes }),
     )?;
     writer.finish()
@@ -364,6 +367,7 @@ fn decode_raster_source_rgba_region(
         source_region,
     )?;
     let expected_tile_count = expected_len / per_tile_len;
+    decode_profile::record_selected(DecodeTileKind::Raster, tile_selection.count());
     let mut writer = TileRegionWriter::new(
         source.pixel_size.width,
         source.pixel_size.height,
@@ -374,6 +378,7 @@ fn decode_raster_source_rgba_region(
         per_tile_len,
         expected_tile_count,
         tile_selection,
+        DecodeTileKind::Raster,
         |tile_index, bytes| {
             let block = TileBlockRef { tile_index, bytes };
             match color_type {
@@ -426,11 +431,13 @@ fn read_raster_source_rgba_region_atlas_chunks(
         target,
     )?;
     let tile_selection = collector.selection()?;
+    decode_profile::record_selected(DecodeTileKind::Raster, tile_selection.count());
     visit_external_non_empty_tile_block_selection(
         body,
         per_tile_len,
         expected_tile_count,
         tile_selection,
+        DecodeTileKind::Raster,
         |tile_index, bytes| {
             let block = TileBlockRef { tile_index, bytes };
             match color_type {

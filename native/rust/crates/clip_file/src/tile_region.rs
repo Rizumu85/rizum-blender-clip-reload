@@ -1,6 +1,8 @@
 use clip_model::Rect;
+use std::time::Instant;
 
 use crate::ClipFileError;
+use crate::decode_profile;
 use crate::tiles::{
     AlphaTileImage, GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES,
     RgbaTileImage, TILE_SIZE,
@@ -69,6 +71,7 @@ impl TileRegionWriter {
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, RGBA_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -98,6 +101,7 @@ impl TileRegionWriter {
                 dst[3] = *alpha;
             }
         }
+        decode_profile::record_tile_swizzle_rgba(start.elapsed());
         Ok(())
     }
 
@@ -105,6 +109,7 @@ impl TileRegionWriter {
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, GRAY_RGBA_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -130,6 +135,7 @@ impl TileRegionWriter {
                 dst[3] = *alpha;
             }
         }
+        decode_profile::record_tile_swizzle_rgba(start.elapsed());
         Ok(())
     }
 
@@ -137,6 +143,7 @@ impl TileRegionWriter {
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, MONO_RGBA_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -163,6 +170,7 @@ impl TileRegionWriter {
                 }
             }
         }
+        decode_profile::record_tile_swizzle_rgba(start.elapsed());
         Ok(())
     }
 
@@ -209,6 +217,7 @@ impl AlphaTileRegionWriter {
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, MASK_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -223,6 +232,7 @@ impl AlphaTileRegionWriter {
             self.pixels[dest_start..dest_start + copy.width]
                 .copy_from_slice(&block.bytes[source_start..source_start + copy.width]);
         }
+        decode_profile::record_mask_r8_decode(start.elapsed());
         Ok(())
     }
 

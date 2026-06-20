@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::time::Instant;
 
 use clip_model::Rect;
 use clip_runtime::ClipSession;
@@ -28,6 +29,7 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
             return 1;
         }
     };
+    clip_file::decode_profile::reset_if_enabled();
 
     if let (Some(rgba_path), Some(json_path)) = (
         &options.blender_render_rgba_path,
@@ -133,7 +135,8 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
         return 0;
     }
 
-    if !options.gpu_support_check {
+    let decode_profile_active = clip_file::decode_profile::enabled();
+    if !options.gpu_support_check && !decode_profile_active {
         let mut first_pixel = [0u8; 4];
         match session.read_rgba8_region(Rect::new(0, 0, 1, 1), &mut first_pixel) {
             Ok(()) => println!("host first_pixel={first_pixel:?}"),
@@ -163,6 +166,7 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
                 return 1;
             }
         };
+        let render_start = Instant::now();
         let rendered = match compare_png::render_full_image(&mut session) {
             Ok(image) => image,
             Err(err) => {
@@ -170,6 +174,11 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
                 return 1;
             }
         };
+        let worker_total_ms = render_start
+            .elapsed()
+            .as_millis()
+            .try_into()
+            .unwrap_or(u64::MAX);
         match compare_png::compare_png_report(reference_path, &rendered, &reference) {
             Ok(report) => println!("{report}"),
             Err(err) => {
@@ -177,6 +186,7 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
                 return 1;
             }
         }
+        print_decode_profile(worker_total_ms);
     }
 
     if let Some(layer_id) = options.gpu_roundtrip_layer_id {
@@ -421,6 +431,28 @@ pub fn run_file_command(path: PathBuf, options: CliOptions) -> i32 {
     }
 
     0
+}
+
+fn print_decode_profile(worker_total_ms: u64) {
+    let Some(profile) = clip_file::decode_profile::snapshot_if_enabled() else {
+        return;
+    };
+    println!(
+        "decode_profile selected_raster_tiles={} selected_mask_tiles={} skipped_empty_raster_tiles={} skipped_empty_mask_tiles={} compressed_bytes_read={} zlib_inflate_ms={} tile_swizzle_rgba_ms={} mask_r8_decode_ms={} mask_crop_ms={} atlas_chunk_build_ms={} sparse_atlas_pool_update_ms={} region_patch_render_ms={} worker_total_ms={}",
+        profile.selected_raster_tiles,
+        profile.selected_mask_tiles,
+        profile.skipped_empty_raster_tiles,
+        profile.skipped_empty_mask_tiles,
+        profile.compressed_bytes_read,
+        profile.zlib_inflate_ms,
+        profile.tile_swizzle_rgba_ms,
+        profile.mask_r8_decode_ms,
+        profile.mask_crop_ms,
+        profile.atlas_chunk_build_ms,
+        profile.sparse_atlas_pool_update_ms,
+        profile.region_patch_render_ms,
+        worker_total_ms,
+    );
 }
 
 #[derive(Debug, Eq, PartialEq)]

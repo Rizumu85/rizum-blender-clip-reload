@@ -1,6 +1,8 @@
 use clip_model::{CanvasSize, Rect};
+use std::time::Instant;
 
 use crate::ClipFileError;
+use crate::decode_profile;
 use crate::tile_region::{TileBlockRef, TileBlockSelection, tile_block_selection_for_region};
 use crate::tiles::{
     GRAY_RGBA_TILE_BYTES, MASK_TILE_BYTES, MONO_RGBA_TILE_BYTES, RGBA_TILE_BYTES, TILE_SIZE,
@@ -65,6 +67,7 @@ impl RgbaAtlasChunkCollector {
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, RGBA_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -95,13 +98,17 @@ impl RgbaAtlasChunkCollector {
                 dst[3] = *alpha;
             }
         }
-        self.push_chunk(copy, pixels)
+        let result = self.push_chunk(copy, pixels);
+        decode_profile::record_tile_swizzle_rgba(start.elapsed());
+        decode_profile::record_atlas_chunk_build(start.elapsed());
+        result
     }
 
     pub(crate) fn write_gray_block(
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, GRAY_RGBA_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -128,13 +135,17 @@ impl RgbaAtlasChunkCollector {
                 dst[3] = *alpha;
             }
         }
-        self.push_chunk(copy, pixels)
+        let result = self.push_chunk(copy, pixels);
+        decode_profile::record_tile_swizzle_rgba(start.elapsed());
+        decode_profile::record_atlas_chunk_build(start.elapsed());
+        result
     }
 
     pub(crate) fn write_mono_block(
         &mut self,
         block: TileBlockRef<'_>,
     ) -> Result<(), ClipFileError> {
+        let start = Instant::now();
         validate_block(&block, self.tile_count, MONO_RGBA_TILE_BYTES)?;
         let tile_x = block.tile_index % self.cols;
         let tile_y = block.tile_index / self.cols;
@@ -162,7 +173,10 @@ impl RgbaAtlasChunkCollector {
                 }
             }
         }
-        self.push_chunk(copy, pixels)
+        let result = self.push_chunk(copy, pixels);
+        decode_profile::record_tile_swizzle_rgba(start.elapsed());
+        decode_profile::record_atlas_chunk_build(start.elapsed());
+        result
     }
 
     pub(crate) fn finish(self) -> Vec<RgbaAtlasTileChunk> {
