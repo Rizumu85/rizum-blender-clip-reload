@@ -163,7 +163,7 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 ## 简体中文
 
 Rizum Clip Reload 可以把 Clip Studio Paint 的 `.clip` 文件导入 Blender，
-作为打包在 `.blend` 里的可重载扁平图片纹理使用。
+作为打包在 `.blend` 里的可重载的图片纹理使用。
 
 ## 它能做什么
 
