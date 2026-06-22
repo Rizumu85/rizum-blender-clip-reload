@@ -296,6 +296,15 @@ def _copy_package_sources(
         shutil.copy2(source, staging_dir / name)
         written.append(name)
 
+    fonts_dir = package_dir / "fonts"
+    if fonts_dir.is_dir():
+        target = staging_dir / "fonts"
+        shutil.copytree(fonts_dir, target)
+        written.extend(
+            source.relative_to(staging_dir).as_posix()
+            for source in sorted(path for path in target.rglob("*") if path.is_file())
+        )
+
     return written
 
 

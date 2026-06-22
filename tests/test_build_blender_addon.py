@@ -22,6 +22,7 @@ class BuildBlenderAddonTests(unittest.TestCase):
             self.assertIn("image_state.py", written)
             self.assertIn("native_bridge.py", written)
             self.assertIn("worker_protocol.py", written)
+            self.assertIn("fonts/README.md", written)
             self.assertNotIn("clip_loader.py", written)
 
             with zipfile.ZipFile(output) as archive:
@@ -34,6 +35,7 @@ class BuildBlenderAddonTests(unittest.TestCase):
         self.assertIn("image_state.py", names)
         self.assertIn("native_bridge.py", names)
         self.assertIn("worker_protocol.py", names)
+        self.assertIn("fonts/README.md", names)
         self.assertNotIn("clip_loader.py", names)
 
     def test_build_zip_can_package_linux_native_artifacts(self) -> None:

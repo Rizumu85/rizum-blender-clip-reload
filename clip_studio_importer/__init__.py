@@ -59,6 +59,22 @@ def _ui(message: str) -> str:
     return i18n.translate(bpy, message)
 
 
+def _sync_native_font_directories(context=None):
+    prefs_context = context or bpy.context
+    addon = prefs_context.preferences.addons.get(ADDON_PKG)
+    if addon is None:
+        native_bridge.set_extra_font_directories(())
+        return
+    font_directory = str(getattr(addon.preferences, "font_directory", "") or "").strip()
+    if font_directory:
+        font_directory = bpy.path.abspath(font_directory)
+    native_bridge.set_extra_font_directories((font_directory,) if font_directory else ())
+
+
+def _update_native_font_directory(_self, context):
+    _sync_native_font_directories(context)
+
+
 def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
     started_at = time.time()
     image = native_bridge.import_clip_as_image(
@@ -922,6 +938,13 @@ class CSI_AddonPreferences(AddonPreferences):
         description="Show render timing and diagnostic actions in the image panel.",
         default=False,
     )
+    font_directory: StringProperty(
+        name="Text Font Directory",
+        description="Optional directory of .ttf, .otf, or .ttc fonts used by native text rendering.",
+        subtype="DIR_PATH",
+        default="",
+        update=_update_native_font_directory,
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -930,6 +953,9 @@ class CSI_AddonPreferences(AddonPreferences):
         row = reload_box.row()
         row.enabled = self.auto_reload
         row.prop(self, "poll_interval")
+
+        text_box = layout.box()
+        text_box.prop(self, "font_directory")
 
         developer_box = layout.box()
         developer_box.prop(self, "debug")
@@ -1133,6 +1159,7 @@ def register():
     i18n.register(bpy, ADDON_PKG)
     for cls in _classes:
         bpy.utils.register_class(cls)
+    _sync_native_font_directories()
     bpy.types.TOPBAR_MT_file_import.append(_menu_func_import)
     _register_load_post_handler()
     _register_save_pre_handler()

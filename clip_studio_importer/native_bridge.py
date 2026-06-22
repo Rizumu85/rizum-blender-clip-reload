@@ -88,6 +88,8 @@ from .worker_protocol import (
 
 
 EXPECTED_ABI_VERSION = 1
+FONT_DIRS_ENV = "RIZUM_CLIP_FONT_DIRS"
+FONT_DIR_ENV = "RIZUM_CLIP_FONT_DIR"
 
 
 class NativeBridgeError(RuntimeError):
@@ -100,6 +102,8 @@ class NativeWorkerTransportError(NativeBridgeError):
 
 _PERSISTENT_WORKER_LOCK = threading.Lock()
 _PERSISTENT_WORKER: "PersistentNativeRendererWorker | None" = None
+_FONT_DIRS_LOCK = threading.Lock()
+_EXTRA_FONT_DIRS: tuple[str, ...] = ()
 
 
 class _ClipRendererImageInfo(ctypes.Structure):
@@ -350,6 +354,21 @@ def render_clip_rgba8(
     raise NativeBridgeError("packaged native renderer worker not found; rebuild the add-on package")
 
 
+def set_extra_font_directories(font_dirs: list[str] | tuple[str, ...]) -> None:
+    """Set add-on configured font directories for future native worker starts."""
+    global _EXTRA_FONT_DIRS
+    normalized = tuple(
+        str(Path(font_dir).resolve())
+        for font_dir in font_dirs
+        if str(font_dir or "").strip()
+    )
+    with _FONT_DIRS_LOCK:
+        if normalized == _EXTRA_FONT_DIRS:
+            return
+        _EXTRA_FONT_DIRS = normalized
+    shutdown_renderer_worker()
+
+
 def _persistent_worker_enabled() -> bool:
     disabled = os.environ.get("RIZUM_CLIP_DISABLE_PERSISTENT_WORKER", "")
     return disabled.lower() not in {"1", "true", "yes", "on"}
@@ -506,6 +525,48 @@ def packaged_renderer_worker_path() -> str | None:
     return None
 
 
+def packaged_font_dir() -> str | None:
+    font_dir = Path(__file__).resolve().parent / "fonts"
+    if font_dir.is_dir():
+        return str(font_dir)
+    return None
+
+
+def _worker_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    font_dirs = _font_dirs_for_worker_env(env)
+    if font_dirs:
+        env[FONT_DIRS_ENV] = os.pathsep.join(font_dirs)
+    return env
+
+
+def _font_dirs_for_worker_env(env: dict[str, str]) -> list[str]:
+    dirs: list[str] = []
+    packaged = packaged_font_dir()
+    if packaged:
+        dirs.append(packaged)
+    with _FONT_DIRS_LOCK:
+        dirs.extend(_EXTRA_FONT_DIRS)
+    dirs.extend(_split_path_list(env.get(FONT_DIRS_ENV, "")))
+    dirs.extend(_split_path_list(env.get(FONT_DIR_ENV, "")))
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for font_dir in dirs:
+        if not font_dir:
+            continue
+        key = os.path.normcase(os.path.abspath(font_dir))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(font_dir)
+    return deduped
+
+
+def _split_path_list(value: str) -> list[str]:
+    return [part for part in value.split(os.pathsep) if part]
+
+
 def _runtime_platform_id() -> str | None:
     machine = platform.machine().lower()
     system = platform.system()
@@ -599,6 +660,7 @@ class NativeRendererWorker:
                 capture_output=True,
                 text=True,
                 creationflags=creationflags,
+                env=_worker_environment(),
             )
             worker_seconds = time.perf_counter() - worker_started
             if completed.returncode != 0:
@@ -694,6 +756,7 @@ class PersistentNativeRendererWorker:
                 stderr=subprocess.DEVNULL,
                 text=True,
                 creationflags=creationflags,
+                env=_worker_environment(),
             )
         except OSError as exc:
             raise NativeWorkerTransportError(

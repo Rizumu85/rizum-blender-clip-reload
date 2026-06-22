@@ -70,6 +70,9 @@ Out of scope:
   unknown layer records are skipped during flattened import and recorded in
   diagnostics; they do not abort the import. Simple text layers are rendered as
   flattened pixels by the native path.
+- Native text rendering loads system fonts plus optional fonts from the packaged
+  `fonts/` directory, the add-on `Text Font Directory` preference, and
+  `RIZUM_CLIP_FONT_DIRS` / `RIZUM_CLIP_FONT_DIR`.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
 - Manual import/reload render failures show a Blender error popup on the main

@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::env;
+use std::ffi::OsString;
+use std::path::PathBuf;
 
 use ab_glyph::{Font, FontArc, FontVec, PxScale, ScaleFont, point};
 use clip_model::{CanvasSize, Rect, Rgba8};
@@ -389,6 +392,7 @@ struct FontRequest {
 impl FontResolver {
     fn new() -> Self {
         let mut db = fontdb::Database::new();
+        load_extra_font_dirs(&mut db);
         db.load_system_fonts();
         Self {
             db,
@@ -478,6 +482,29 @@ impl FontResolver {
     }
 }
 
+fn load_extra_font_dirs(db: &mut fontdb::Database) {
+    for dir in extra_font_dirs_from_env() {
+        if dir.is_dir() {
+            db.load_fonts_dir(dir);
+        }
+    }
+}
+
+fn extra_font_dirs_from_env() -> Vec<PathBuf> {
+    font_dirs_from_os_values(
+        ["RIZUM_CLIP_FONT_DIRS", "RIZUM_CLIP_FONT_DIR"]
+            .into_iter()
+            .filter_map(env::var_os),
+    )
+}
+
+fn font_dirs_from_os_values(values: impl IntoIterator<Item = OsString>) -> Vec<PathBuf> {
+    values
+        .into_iter()
+        .flat_map(|value| env::split_paths(&value).collect::<Vec<_>>())
+        .collect()
+}
+
 fn rgba_len(width: u32, height: u32) -> Result<usize, RuntimeError> {
     usize::try_from(
         u64::from(width)
@@ -545,5 +572,15 @@ mod tests {
         .unwrap();
 
         assert!(image.pixels.chunks_exact(4).any(|pixel| pixel[3] > 0));
+    }
+
+    #[test]
+    fn parses_extra_font_dir_path_lists() {
+        let joined = env::join_paths(["fonts-a", "fonts-b"]).expect("join font paths");
+        let dirs = font_dirs_from_os_values([joined]);
+
+        assert_eq!(dirs.len(), 2);
+        assert_eq!(dirs[0], PathBuf::from("fonts-a"));
+        assert_eq!(dirs[1], PathBuf::from("fonts-b"));
     }
 }
