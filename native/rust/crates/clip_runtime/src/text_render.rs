@@ -417,14 +417,18 @@ impl FontResolver {
     fn load_font(&self, request: &FontRequest) -> Option<FontArc> {
         let mut names = Vec::new();
         if let Some(name) = &request.name {
-            names.push(name.as_str());
+            names.extend(font_name_candidates(name));
         }
         if let Some(name) = &request.fallback {
-            names.push(name.as_str());
+            names.extend(font_name_candidates(name));
         }
-        names.extend(["Microsoft YaHei", "Arial", "Tahoma"]);
+        names.extend([
+            "Microsoft YaHei".to_owned(),
+            "Arial".to_owned(),
+            "Tahoma".to_owned(),
+        ]);
         for name in names {
-            if let Some(font) = self.load_named_font(name, request.bold, request.italic) {
+            if let Some(font) = self.load_named_font(&name, request.bold, request.italic) {
                 return Some(font);
             }
         }
@@ -433,6 +437,21 @@ impl FontResolver {
 
     fn load_named_font(&self, name: &str, bold: bool, italic: bool) -> Option<FontArc> {
         self.load_family_font(fontdb::Family::Name(name), bold, italic)
+            .or_else(|| self.load_postscript_font(name, bold, italic))
+    }
+
+    fn load_postscript_font(&self, name: &str, bold: bool, italic: bool) -> Option<FontArc> {
+        let normalized_name = normalize_font_lookup_name(name);
+        let id = self
+            .db
+            .faces()
+            .find(|face| {
+                normalize_font_lookup_name(&face.post_script_name) == normalized_name
+                    && (!bold || face.weight >= fontdb::Weight::BOLD)
+                    && (!italic || face.style == fontdb::Style::Italic)
+            })
+            .map(|face| face.id)?;
+        self.load_font_id(id)
     }
 
     fn load_family_font(
@@ -457,13 +476,15 @@ impl FontResolver {
             },
         };
         let id = self.db.query(&query)?;
+        self.load_font_id(id)
+    }
+
+    fn load_font_id(&self, id: fontdb::ID) -> Option<FontArc> {
         if std::env::var_os("RIZUM_CLIP_TEXT_PROFILE").is_some()
             && let Some(face) = self.db.face(id)
         {
             eprintln!(
-                "text font query bold={} italic={} -> families={:?} post_script={} weight={:?} style={:?} index={} source={:?}",
-                bold,
-                italic,
+                "text font -> families={:?} post_script={} weight={:?} style={:?} index={} source={:?}",
                 face.families,
                 face.post_script_name,
                 face.weight,
@@ -480,6 +501,64 @@ impl FontResolver {
         });
         font
     }
+}
+
+fn font_name_candidates(name: &str) -> Vec<String> {
+    let mut candidates = Vec::new();
+    push_unique_font_candidate(&mut candidates, name.trim());
+    let spaced = name.replace(['_', '-'], " ");
+    push_unique_font_candidate(&mut candidates, spaced.trim());
+    let without_style = strip_font_style_suffix(&spaced);
+    push_unique_font_candidate(&mut candidates, without_style.trim());
+    candidates
+}
+
+fn push_unique_font_candidate(candidates: &mut Vec<String>, name: &str) {
+    if name.is_empty() {
+        return;
+    }
+    if !candidates
+        .iter()
+        .any(|candidate| candidate.eq_ignore_ascii_case(name))
+    {
+        candidates.push(name.to_owned());
+    }
+}
+
+fn strip_font_style_suffix(name: &str) -> String {
+    let mut words: Vec<&str> = name.split_whitespace().collect();
+    while words
+        .last()
+        .map(|word| font_style_suffix(word))
+        .unwrap_or(false)
+    {
+        words.pop();
+    }
+    words.join(" ")
+}
+
+fn font_style_suffix(word: &str) -> bool {
+    matches!(
+        word.to_ascii_lowercase().as_str(),
+        "regular"
+            | "normal"
+            | "bold"
+            | "semibold"
+            | "demibold"
+            | "black"
+            | "heavy"
+            | "light"
+            | "medium"
+            | "italic"
+            | "oblique"
+    )
+}
+
+fn normalize_font_lookup_name(name: &str) -> String {
+    name.chars()
+        .filter(|ch| ch.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
 }
 
 fn load_extra_font_dirs(db: &mut fontdb::Database) {
@@ -582,5 +661,17 @@ mod tests {
         assert_eq!(dirs.len(), 2);
         assert_eq!(dirs[0], PathBuf::from("fonts-a"));
         assert_eq!(dirs[1], PathBuf::from("fonts-b"));
+    }
+
+    #[test]
+    fn font_name_candidates_strip_style_suffixes() {
+        assert_eq!(
+            font_name_candidates("HarmonyOS_Sans_Bold"),
+            vec![
+                "HarmonyOS_Sans_Bold".to_owned(),
+                "HarmonyOS Sans Bold".to_owned(),
+                "HarmonyOS Sans".to_owned(),
+            ],
+        );
     }
 }

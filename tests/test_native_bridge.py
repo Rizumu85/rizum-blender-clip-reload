@@ -185,10 +185,8 @@ class NativeBridgeTests(unittest.TestCase):
             native_bridge._runtime_platform_id = original_platform_id
 
     def test_worker_environment_combines_font_directories(self) -> None:
-        original_packaged_font_dir = native_bridge.packaged_font_dir
         original_extra_font_dirs = native_bridge._EXTRA_FONT_DIRS
         try:
-            native_bridge.packaged_font_dir = lambda: "packaged-fonts"
             native_bridge._EXTRA_FONT_DIRS = ("prefs-fonts",)
             env = {
                 native_bridge.FONT_DIRS_ENV: os.pathsep.join(["env-fonts", "prefs-fonts"]),
@@ -197,10 +195,9 @@ class NativeBridgeTests(unittest.TestCase):
 
             self.assertEqual(
                 native_bridge._font_dirs_for_worker_env(env),
-                ["packaged-fonts", "prefs-fonts", "env-fonts", "legacy-fonts"],
+                ["prefs-fonts", "env-fonts", "legacy-fonts"],
             )
         finally:
-            native_bridge.packaged_font_dir = original_packaged_font_dir
             native_bridge._EXTRA_FONT_DIRS = original_extra_font_dirs
 
     def test_resolve_renderer_library_uses_packaged_renderer(self) -> None:

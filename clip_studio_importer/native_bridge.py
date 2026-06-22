@@ -525,13 +525,6 @@ def packaged_renderer_worker_path() -> str | None:
     return None
 
 
-def packaged_font_dir() -> str | None:
-    font_dir = Path(__file__).resolve().parent / "fonts"
-    if font_dir.is_dir():
-        return str(font_dir)
-    return None
-
-
 def _worker_environment() -> dict[str, str]:
     env = os.environ.copy()
     font_dirs = _font_dirs_for_worker_env(env)
@@ -542,9 +535,6 @@ def _worker_environment() -> dict[str, str]:
 
 def _font_dirs_for_worker_env(env: dict[str, str]) -> list[str]:
     dirs: list[str] = []
-    packaged = packaged_font_dir()
-    if packaged:
-        dirs.append(packaged)
     with _FONT_DIRS_LOCK:
         dirs.extend(_EXTRA_FONT_DIRS)
     dirs.extend(_split_path_list(env.get(FONT_DIRS_ENV, "")))
