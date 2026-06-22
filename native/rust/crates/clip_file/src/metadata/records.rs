@@ -77,6 +77,8 @@ pub struct TextLayerAttributes {
     pub quad_verts_100: Option<[i32; 8]>,
     pub box_size: Option<(i32, i32)>,
     pub align: Option<u8>,
+    pub underline_spans: Vec<TextLayerSpan>,
+    pub strikethrough_spans: Vec<TextLayerSpan>,
     pub runs: Vec<TextLayerRun>,
 }
 
@@ -95,6 +97,12 @@ pub struct TextLayerRun {
     pub color: Rgba8,
     pub font_scale: i32,
     pub font: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TextLayerSpan {
+    pub start: i32,
+    pub length: u32,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

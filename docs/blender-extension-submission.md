@@ -35,13 +35,13 @@ This is an engineering license review, not legal advice.
 
 ## Current Package Scope
 
-Initial tested upload target: Windows x64.
+Initial fully tested upload target: Windows x64.
 
 The package builder can also produce Linux x64, macOS x64, and macOS arm64
 native packages when matching `clip_cli` and `clip_capi` artifacts are present.
 Those packages must be uploaded as separate platform-specific zip files, not as
-one universal package. Keep Linux/macOS releases unpublished until Rizum or
-another tester verifies them on real Linux/macOS devices.
+one universal package. Mark Linux/macOS packages as test candidates until Rizum
+or another tester verifies them on real Linux/macOS devices.
 
 Declared permissions:
 
@@ -80,8 +80,12 @@ Reviewer notes:
 
 - The Windows x64 extension is self-contained and tested on the maintainer's
   machine: it bundles the native renderer worker and C ABI library.
-- Linux x64, macOS x64, and macOS arm64 packages are not part of the initial
-  upload.
+- Linux x64 and macOS packages are separate zip files and should be labeled as
+  test candidates until real-device smoke tests pass.
+- Platform native file names differ by OS:
+  `windows-x64` uses `clip_cli.exe` and `clip_capi.dll`,
+  `linux-x64` uses `clip_cli` and `libclip_capi.so`, and macOS uses `clip_cli`
+  and `libclip_capi.dylib`.
 - The extension does not download or execute remote code.
 - The extension does not require internet access.
 - The extension is not affiliated with Blender, CELSYS, or Clip Studio Paint.
@@ -90,17 +94,18 @@ Reviewer notes:
 
 Hello.
 
-Thank you for the review. I will not upload the previous universal package. The
-initial release is now limited to Windows x64 only, and the manifest declares
-only `windows-x64`. If Linux or macOS builds are published later, I will build
-and upload them as separate platform-specific zip files, with each zip
-containing only the native files for its matching operating system.
+Thank you for the review. I will not upload the previous universal package. I
+will upload separate platform-specific zip files instead, with each zip
+containing only the native files for its matching operating system. The Windows
+x64 package contains `clip_cli.exe` and `clip_capi.dll`; Linux contains
+`clip_cli` and `libclip_capi.so`; macOS contains `clip_cli` and
+`libclip_capi.dylib`.
 
-About the `.exe`: it is not third-party software and it is not copied from
-another application. `clip_cli.exe` is built from this repository's own Rust
-source code, mainly `native/rust/crates/clip_cli`. The paired C ABI library is
-built from `native/rust/crates/clip_capi`. The add-on uses this native worker to
-parse and render `.clip` files out of Blender's UI process, then uploads the
+About the Windows `.exe`: it is not third-party software and it is not copied
+from another application. `clip_cli.exe` is built from this repository's own
+Rust source code, mainly `native/rust/crates/clip_cli`. The paired C ABI library
+is built from `native/rust/crates/clip_capi`. The add-on uses this native worker
+to parse and render `.clip` files out of Blender's UI process, then uploads the
 rendered pixels into a Blender generated image.
 
 The project source is here:
@@ -117,10 +122,14 @@ own binaries, with their license notices kept in the repository.
   `https://github.com/Rizumu85/rizum-blender-clip-reload` in
   `blender_manifest.toml`.
 - Build and smoke-test the Windows x64 extension package in Blender 4.2 or newer.
+- Smoke-test macOS packages on matching Intel/Apple Silicon machines when
+  possible.
+- Smoke-test the Linux x64 package on Steam Deck or another x86_64 Linux
+  machine.
 - Do not upload a universal package containing native files for several
   operating systems.
 - For Linux/macOS uploads, build one platform-specific zip per operating system
-  and smoke-test it on a matching machine first.
+  and label packages honestly until matching-machine smoke tests pass.
 - Run Blender's extension validator/build command if available on the release
   machine.
 - Review `NOTICE.md` before upload.

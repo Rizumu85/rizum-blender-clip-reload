@@ -20,7 +20,7 @@ pub use raster_source::{
 pub use records::{
     CanvasRecord, FilterLayerSource, LayerGraphRecord, LayerRecord, MaskLayerSource,
     RasterLayerSource, TextLayerAttributes, TextLayerEntry, TextLayerFontMapping, TextLayerRect,
-    TextLayerRun, TextLayerSource,
+    TextLayerRun, TextLayerSource, TextLayerSpan,
 };
 pub use summary::read_summary_from_sqlite;
 pub use text_source::{read_text_layer_source_from_sqlite, read_text_layer_sources_from_sqlite};

@@ -188,9 +188,12 @@ fn draw_line(
     fonts: &mut FontResolver,
 ) -> Result<(), RuntimeError> {
     let mut x = origin.0;
+    let mut char_positions = Vec::with_capacity(chars.len());
     for (ch, style) in chars.iter().zip(styles.iter()) {
         let Some(font) = fonts.resolve(style) else {
-            x += style.font_size_px * 0.55;
+            let next_x = x + style.font_size_px * 0.55;
+            char_positions.push((x, next_x));
+            x = next_x;
             continue;
         };
         let scale = PxScale::from(style.font_size_px);
@@ -222,9 +225,83 @@ fn draw_line(
                 );
             });
         }
-        x += scaled.h_advance(glyph_id);
+        let next_x = x + scaled.h_advance(glyph_id);
+        char_positions.push((x, next_x));
+        x = next_x;
     }
+    draw_text_decorations(pixels, region, origin, styles, &char_positions);
     Ok(())
+}
+
+fn draw_text_decorations(
+    pixels: &mut [u8],
+    region: Rect,
+    origin: (f32, f32),
+    styles: &[TextCharStyle],
+    char_positions: &[(f32, f32)],
+) {
+    let mut start = 0usize;
+    while start < styles.len() {
+        if !styles[start].underline && !styles[start].strikethrough {
+            start += 1;
+            continue;
+        }
+        let mut end = start + 1;
+        while end < styles.len()
+            && styles[end].underline == styles[start].underline
+            && styles[end].strikethrough == styles[start].strikethrough
+            && styles[end].color == styles[start].color
+            && (styles[end].font_size_px - styles[start].font_size_px).abs() < f32::EPSILON
+        {
+            end += 1;
+        }
+        let x0 = char_positions
+            .get(start)
+            .map(|pos| pos.0)
+            .unwrap_or(origin.0);
+        let x1 = char_positions
+            .get(end.saturating_sub(1))
+            .map(|pos| pos.1)
+            .unwrap_or(x0);
+        let thickness = (styles[start].font_size_px / 24.0).round().clamp(1.0, 3.0) as i32;
+        if styles[start].underline {
+            let y = origin.1 + styles[start].font_size_px * 0.82;
+            draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
+        }
+        if styles[start].strikethrough {
+            let y = origin.1 + styles[start].font_size_px * 0.52;
+            draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
+        }
+        start = end;
+    }
+}
+
+fn draw_decoration_rect(
+    pixels: &mut [u8],
+    region: Rect,
+    x0: f32,
+    x1: f32,
+    y: f32,
+    thickness: i32,
+    color: Rgba8,
+) {
+    let left = x0.floor() as i32;
+    let right = x1.ceil() as i32;
+    let top = y.round() as i32;
+    for source_y in top..top + thickness.max(1) {
+        for source_x in left..right {
+            if source_x < region.x as i32
+                || source_y < region.y as i32
+                || source_x >= region.x.saturating_add(region.width) as i32
+                || source_y >= region.y.saturating_add(region.height) as i32
+            {
+                continue;
+            }
+            let target_x = (source_x - region.x as i32) as u32;
+            let target_y = (source_y - region.y as i32) as u32;
+            blend_pixel(pixels, region.width, target_x, target_y, color, 255);
+        }
+    }
 }
 
 fn blend_pixel(pixels: &mut [u8], width: u32, x: u32, y: u32, color: Rgba8, coverage_alpha: u8) {
@@ -250,6 +327,8 @@ struct TextCharStyle {
     color: Rgba8,
     bold: bool,
     italic: bool,
+    underline: bool,
+    strikethrough: bool,
 }
 
 fn text_char_styles(
@@ -279,6 +358,8 @@ fn text_char_styles(
         color: default_color,
         bold: font_name_implies_bold(attrs.default_font.as_deref()),
         italic: font_name_implies_italic(attrs.default_font.as_deref()),
+        underline: false,
+        strikethrough: false,
     };
     let mut styles = vec![default_style; char_count];
     for run in &attrs.runs {
@@ -316,7 +397,43 @@ fn text_char_styles(
             style.italic = italic;
         }
     }
+    apply_text_decoration_spans(
+        &mut styles,
+        &attrs.underline_spans,
+        TextDecoration::Underline,
+    );
+    apply_text_decoration_spans(
+        &mut styles,
+        &attrs.strikethrough_spans,
+        TextDecoration::Strikethrough,
+    );
     styles
+}
+
+#[derive(Clone, Copy)]
+enum TextDecoration {
+    Underline,
+    Strikethrough,
+}
+
+fn apply_text_decoration_spans(
+    styles: &mut [TextCharStyle],
+    spans: &[clip_file::metadata::TextLayerSpan],
+    decoration: TextDecoration,
+) {
+    for span in spans {
+        let start = span.start.max(0) as usize;
+        let end = start.saturating_add(span.length as usize).min(styles.len());
+        if start >= end {
+            continue;
+        }
+        for style in &mut styles[start..end] {
+            match decoration {
+                TextDecoration::Underline => style.underline = true,
+                TextDecoration::Strikethrough => style.strikethrough = true,
+            }
+        }
+    }
 }
 
 fn font_name_implies_bold(name: Option<&str>) -> bool {
@@ -611,6 +728,8 @@ mod tests {
                     quad_verts_100: None,
                     box_size: None,
                     align: Some(0),
+                    underline_spans: Vec::new(),
+                    strikethrough_spans: Vec::new(),
                     runs: Vec::new(),
                 },
             }],
@@ -636,5 +755,41 @@ mod tests {
                 "HarmonyOS Sans".to_owned(),
             ],
         );
+    }
+
+    #[test]
+    fn text_char_styles_expand_decoration_spans() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "Test".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                font_size_100: Some(3200),
+                color: None,
+                bbox: None,
+                quad_verts_100: None,
+                box_size: None,
+                align: None,
+                underline_spans: vec![clip_file::metadata::TextLayerSpan {
+                    start: 0,
+                    length: 2,
+                }],
+                strikethrough_spans: vec![clip_file::metadata::TextLayerSpan {
+                    start: 1,
+                    length: 2,
+                }],
+                runs: Vec::new(),
+            },
+        };
+
+        let styles = text_char_styles(&entry, 72);
+
+        assert!(styles[0].underline);
+        assert!(styles[1].underline);
+        assert!(!styles[2].underline);
+        assert!(!styles[0].strikethrough);
+        assert!(styles[1].strikethrough);
+        assert!(styles[2].strikethrough);
     }
 }

@@ -82,18 +82,18 @@ fingerprints. They may return:
 Windows x64 is the current maintainer-tested release platform. Linux x64,
 macOS x64, and macOS arm64 package support exists in the builder, but those
 packages must be built and uploaded as separate platform-specific extension
-zips after real-device testing.
+zips. Treat Linux/macOS zips as test candidates until real-device testing.
 
 ```powershell
-python tools\build_blender_addon.py --platform windows-x64 --output clip_studio_importer-windows-x64.zip
+python tools\build_blender_addon.py --platform all --output-dir dist
 ```
 
-When more than one platform is requested through `--blender`, the package
-builder rejects the request because Blender's wheel-oriented
-`--split-platforms` output does not filter this repo's `native/<platform>/`
-binary directories. Build and upload one platform zip at a time. The `Build
-extension package` GitHub Actions workflow currently uploads only the Windows
-x64 package for release review.
+The package builder stages one platform at a time, so every output zip contains
+only the matching `native/<platform>/` binary directory. Blender's
+wheel-oriented `--split-platforms` output was checked and does not filter this
+repo's `native/<platform>/` directories by itself. The `Build extension package`
+GitHub Actions workflow builds Windows, Linux, and macOS native artifacts and
+uploads split platform zips for release review.
 
 ## Future Integration
 

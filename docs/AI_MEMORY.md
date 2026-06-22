@@ -40,8 +40,9 @@ In scope:
 - Flattened raster layers.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
-- Simple text layers rendered as flattened native raster pixels. This is not
-  editable text import and is currently a first-pass renderer.
+- Simple text layers rendered as flattened native raster pixels, including
+  underline and strikethrough decoration spans. This is not editable text import
+  and is currently a first-pass renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
@@ -81,14 +82,14 @@ Out of scope:
 - UI translations exist for Simplified Chinese, Japanese, and Spanish. Add-on
   name and copied/opened diagnostics stay English.
 - Windows x64 packaging is the current maintainer-tested release target.
-  Linux x64, macOS x64, and macOS arm64 packaging support exists but should stay
-  unpublished until real-device testing or user feedback.
+  Linux x64, macOS x64, and macOS arm64 packages are built as separate zip files
+  and should be treated as test candidates until real-device testing.
 - Do not upload one universal extension zip containing several native platform
   binaries. Blender Extensions expects separate platform-specific zips.
-  `tools/build_blender_addon.py` rejects multi-platform builds because
-  Blender's wheel-oriented `--split-platforms` output does not filter this
-  repo's `native/<platform>/` binary directories. The `Build extension package`
-  GitHub Actions workflow currently uploads only the Windows x64 package.
+  `tools/build_blender_addon.py --platform all --output-dir dist` writes one
+  zip per platform instead of combining native binaries. The `Build extension
+  package` GitHub Actions workflow builds Windows, Linux, and macOS native
+  artifacts and uploads split platform zips.
 
 ## Native Renderer State
 

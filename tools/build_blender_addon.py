@@ -102,7 +102,19 @@ def parse_args() -> argparse.Namespace:
         "--output",
         type=Path,
         default=root / "clip_studio_importer.zip",
-        help="Output extension zip path.",
+        help=(
+            "Output extension zip path for a single platform. When several "
+            "platforms are requested, this is used as the naming base unless "
+            "--output-dir is set."
+        ),
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help=(
+            "Directory for separate per-platform zips when several platforms "
+            "are requested."
+        ),
     )
     parser.add_argument(
         "--no-native",
@@ -373,22 +385,66 @@ def build_zip(
     return written
 
 
+def _output_for_platform(
+    output: Path,
+    output_dir: Path | None,
+    platform_id: str,
+    platform_count: int,
+) -> Path:
+    if output_dir is not None:
+        return output_dir / f"clip_studio_importer-{platform_id}.zip"
+    if platform_count == 1:
+        return output
+    suffix = output.suffix or ".zip"
+    stem = output.stem if output.suffix else output.name
+    return output.with_name(f"{stem}-{platform_id}{suffix}")
+
+
+def build_platform_zips(
+    output: Path,
+    *,
+    output_dir: Path | None = None,
+    include_native: bool,
+    blender: Path | None = None,
+    platforms: tuple[str, ...],
+    native_artifact_dirs: dict[str, Path] | None = None,
+) -> dict[str, list[str]]:
+    written_by_platform: dict[str, list[str]] = {}
+    for platform_id in platforms:
+        platform_output = _output_for_platform(
+            output.resolve(),
+            output_dir.resolve() if output_dir is not None else None,
+            platform_id,
+            len(platforms),
+        )
+        written_by_platform[str(platform_output)] = build_zip(
+            platform_output,
+            include_native=include_native,
+            blender=blender,
+            platforms=(platform_id,),
+            native_artifact_dirs=native_artifact_dirs,
+        )
+    return written_by_platform
+
+
 def main() -> None:
     args = parse_args()
     platforms = _parse_platforms(args.platform)
-    written = build_zip(
+    written_by_output = build_platform_zips(
         args.output,
+        output_dir=args.output_dir,
         include_native=not args.no_native,
         blender=args.blender,
         platforms=platforms,
         native_artifact_dirs=_parse_native_artifact_dirs(args.native_artifact_dir),
     )
-    print(f"Wrote {args.output.resolve()}")
     print(f"Platforms: {', '.join(platforms)}")
     for platform_id in platforms:
         print(f"  {platform_id}: {NATIVE_PLATFORMS[platform_id].tested_status}")
-    for name in written:
-        print(f"  {name}")
+    for output, written in written_by_output.items():
+        print(f"Wrote {output}")
+        for name in written:
+            print(f"  {name}")
 
 
 if __name__ == "__main__":

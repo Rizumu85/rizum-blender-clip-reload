@@ -90,7 +90,7 @@ class BuildBlenderAddonTests(unittest.TestCase):
         self.assertIn("native/macos-arm64/clip_cli", names)
         self.assertIn('platforms = ["macos-arm64"]', manifest)
 
-    def test_build_zip_rejects_multi_platform_without_blender_split(self) -> None:
+    def test_build_platform_zips_writes_separate_native_packages(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
             artifacts = {
@@ -106,17 +106,43 @@ class BuildBlenderAddonTests(unittest.TestCase):
             (artifacts["linux-x64"] / "clip_cli").write_bytes(b"fake linux worker")
             (artifacts["macos-arm64"] / "libclip_capi.dylib").write_bytes(b"fake mac library")
             (artifacts["macos-arm64"] / "clip_cli").write_bytes(b"fake mac worker")
-            output = root / "clip_studio_importer_universal.zip"
+            output_dir = root / "dist"
 
-            with self.assertRaisesRegex(SystemExit, "one platform at a time"):
-                build_blender_addon.build_zip(
-                    output,
-                    include_native=True,
-                    platforms=("windows-x64", "linux-x64", "macos-arm64"),
-                    native_artifact_dirs=artifacts,
-                )
+            build_blender_addon.build_platform_zips(
+                root / "clip_studio_importer.zip",
+                output_dir=output_dir,
+                include_native=True,
+                platforms=("windows-x64", "linux-x64", "macos-arm64"),
+                native_artifact_dirs=artifacts,
+            )
 
-        self.assertFalse(output.exists())
+            with zipfile.ZipFile(output_dir / "clip_studio_importer-windows-x64.zip") as archive:
+                windows_names = set(archive.namelist())
+                windows_manifest = archive.read("blender_manifest.toml").decode("utf-8")
+            with zipfile.ZipFile(output_dir / "clip_studio_importer-linux-x64.zip") as archive:
+                linux_names = set(archive.namelist())
+                linux_manifest = archive.read("blender_manifest.toml").decode("utf-8")
+            with zipfile.ZipFile(output_dir / "clip_studio_importer-macos-arm64.zip") as archive:
+                mac_names = set(archive.namelist())
+                mac_manifest = archive.read("blender_manifest.toml").decode("utf-8")
+
+        self.assertIn("native/windows-x64/clip_capi.dll", windows_names)
+        self.assertIn("native/windows-x64/clip_cli.exe", windows_names)
+        self.assertNotIn("native/linux-x64/clip_cli", windows_names)
+        self.assertNotIn("native/macos-arm64/clip_cli", windows_names)
+        self.assertIn('platforms = ["windows-x64"]', windows_manifest)
+
+        self.assertIn("native/linux-x64/libclip_capi.so", linux_names)
+        self.assertIn("native/linux-x64/clip_cli", linux_names)
+        self.assertNotIn("native/windows-x64/clip_cli.exe", linux_names)
+        self.assertNotIn("native/macos-arm64/clip_cli", linux_names)
+        self.assertIn('platforms = ["linux-x64"]', linux_manifest)
+
+        self.assertIn("native/macos-arm64/libclip_capi.dylib", mac_names)
+        self.assertIn("native/macos-arm64/clip_cli", mac_names)
+        self.assertNotIn("native/windows-x64/clip_cli.exe", mac_names)
+        self.assertNotIn("native/linux-x64/clip_cli", mac_names)
+        self.assertIn('platforms = ["macos-arm64"]', mac_manifest)
 
 
 if __name__ == "__main__":

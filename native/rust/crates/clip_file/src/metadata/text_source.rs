@@ -6,7 +6,7 @@ use crate::ClipFileError;
 
 use super::records::{
     LayerRecord, TextLayerAttributes, TextLayerEntry, TextLayerFontMapping, TextLayerRect,
-    TextLayerRun, TextLayerSource,
+    TextLayerRun, TextLayerSource, TextLayerSpan,
 };
 use super::schema::{checked_i64_to_u32, connect_sqlite, optional_text_expr, table_columns};
 
@@ -121,6 +121,8 @@ pub fn parse_text_layer_attributes(data: &[u8]) -> Result<TextLayerAttributes, C
         quad_verts_100: None,
         box_size: None,
         align: None,
+        underline_spans: Vec::new(),
+        strikethrough_spans: Vec::new(),
         runs: Vec::new(),
     };
     while reader.left() >= 8 {
@@ -198,6 +200,12 @@ fn parse_text_param(
                 .max_by_key(|(align, total)| (*total, std::cmp::Reverse(*align)))
                 .map(|(align, _)| align);
         }
+        16 => {
+            attributes.underline_spans = parse_text_span_param(payload)?;
+        }
+        20 => {
+            attributes.strikethrough_spans = parse_text_span_param(payload)?;
+        }
         26 => {
             if payload.len() >= 24 {
                 attributes.box_size =
@@ -259,6 +267,26 @@ fn parse_text_param(
         _ => {}
     }
     Ok(())
+}
+
+fn parse_text_span_param(payload: &[u8]) -> Result<Vec<TextLayerSpan>, ClipFileError> {
+    if payload.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut reader = DataReader::new(payload);
+    let count = reader.read_u32_le()?;
+    let mut spans = Vec::with_capacity(count as usize);
+    for _ in 0..count {
+        let start = reader.read_i32_le()?;
+        let length = reader.read_u32_le()?;
+        let _unknown = reader.read_u32_le()?;
+        let enabled = reader.read_u8()? != 0;
+        let _unknown2 = reader.read_u8()?;
+        if enabled {
+            spans.push(TextLayerSpan { start, length });
+        }
+    }
+    Ok(spans)
 }
 
 fn optional_blob_expr(columns: &std::collections::HashSet<String>, column: &str) -> String {
@@ -459,6 +487,41 @@ mod tests {
                 bottom: 145
             })
         );
+    }
+
+    #[test]
+    fn parses_text_decoration_spans() {
+        let mut data = Vec::new();
+        push_param(&mut data, 16, &span_payload(1));
+        push_param(&mut data, 20, &span_payload(1));
+
+        let parsed = parse_text_layer_attributes(&data).unwrap();
+
+        assert_eq!(
+            parsed.underline_spans,
+            vec![TextLayerSpan {
+                start: 0,
+                length: 4
+            }]
+        );
+        assert_eq!(
+            parsed.strikethrough_spans,
+            vec![TextLayerSpan {
+                start: 0,
+                length: 4
+            }]
+        );
+    }
+
+    fn span_payload(enabled: u8) -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(&1u32.to_le_bytes());
+        payload.extend_from_slice(&0i32.to_le_bytes());
+        payload.extend_from_slice(&4u32.to_le_bytes());
+        payload.extend_from_slice(&2u32.to_le_bytes());
+        payload.push(enabled);
+        payload.push(0);
+        payload
     }
 
     fn push_param(data: &mut Vec<u8>, id: u32, payload: &[u8]) {
