@@ -5,6 +5,8 @@ use clip_model::{CanvasSize, Rect, Rgba8};
 
 use crate::RuntimeError;
 
+const SYNTHETIC_ITALIC_SUPERSAMPLE: f32 = 3.0;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TextRasterLayout {
     pub(crate) size: CanvasSize,
@@ -203,35 +205,34 @@ fn draw_line(
         let scaled = font.as_scaled(scale);
         let glyph_id = font.glyph_id(*ch);
         let baseline_y = origin.1 + scaled.ascent();
-        let glyph = glyph_id.with_scale_and_position(scale, point(x, baseline_y));
-        if let Some(outlined) = font.outline_glyph(glyph) {
-            let bounds = outlined.px_bounds();
-            outlined.draw(|local_x, local_y, coverage| {
-                let source_x = bounds.min.x.floor() as i32 + local_x as i32;
-                let source_y = bounds.min.y.floor() as i32 + local_y as i32;
-                let source_x = if resolved.synthetic_italic {
-                    source_x + synthetic_italic_shift(baseline_y, source_y)
-                } else {
-                    source_x
-                };
-                if source_x < region.x as i32
-                    || source_y < region.y as i32
-                    || source_x >= region.x.saturating_add(region.width) as i32
-                    || source_y >= region.y.saturating_add(region.height) as i32
-                {
-                    return;
-                }
-                let target_x = (source_x - region.x as i32) as u32;
-                let target_y = (source_y - region.y as i32) as u32;
-                blend_pixel(
-                    pixels,
-                    region.width,
-                    target_x,
-                    target_y,
-                    style.color,
-                    (coverage * 255.0).round().clamp(0.0, 255.0) as u8,
-                );
-            });
+        if resolved.synthetic_italic {
+            draw_synthetic_italic_glyph(
+                pixels,
+                region,
+                font,
+                glyph_id,
+                scale,
+                x,
+                baseline_y,
+                style.color,
+            );
+        } else {
+            let glyph = glyph_id.with_scale_and_position(scale, point(x, baseline_y));
+            if let Some(outlined) = font.outline_glyph(glyph) {
+                let bounds = outlined.px_bounds();
+                outlined.draw(|local_x, local_y, coverage| {
+                    let source_x = bounds.min.x.floor() as i32 + local_x as i32;
+                    let source_y = bounds.min.y.floor() as i32 + local_y as i32;
+                    blend_pixel_at_source(
+                        pixels,
+                        region,
+                        source_x,
+                        source_y,
+                        style.color,
+                        coverage,
+                    );
+                });
+            }
         }
         let next_x = x + scaled.h_advance(glyph_id);
         char_positions.push((x, next_x));
@@ -249,8 +250,52 @@ fn draw_line(
     Ok(())
 }
 
-fn synthetic_italic_shift(baseline_y: f32, source_y: i32) -> i32 {
-    ((baseline_y - source_y as f32) * 0.23).round() as i32
+fn draw_synthetic_italic_glyph(
+    pixels: &mut [u8],
+    region: Rect,
+    font: &FontArc,
+    glyph_id: ab_glyph::GlyphId,
+    scale: PxScale,
+    x: f32,
+    baseline_y: f32,
+    color: Rgba8,
+) {
+    let high_scale = PxScale::from(scale.x * SYNTHETIC_ITALIC_SUPERSAMPLE);
+    let high_glyph = glyph_id.with_scale_and_position(
+        high_scale,
+        point(
+            x * SYNTHETIC_ITALIC_SUPERSAMPLE,
+            baseline_y * SYNTHETIC_ITALIC_SUPERSAMPLE,
+        ),
+    );
+    let Some(outlined) = font.outline_glyph(high_glyph) else {
+        return;
+    };
+    let bounds = outlined.px_bounds();
+    let mut coverage_by_pixel: HashMap<(i32, i32), f32> = HashMap::new();
+    let sample_area = SYNTHETIC_ITALIC_SUPERSAMPLE * SYNTHETIC_ITALIC_SUPERSAMPLE;
+    outlined.draw(|local_x, local_y, coverage| {
+        let source_x = (bounds.min.x.floor() + local_x as f32) / SYNTHETIC_ITALIC_SUPERSAMPLE;
+        let source_y = (bounds.min.y.floor() + local_y as f32) / SYNTHETIC_ITALIC_SUPERSAMPLE;
+        let shifted_x = source_x + synthetic_italic_shift(baseline_y, source_y);
+        let source_x = shifted_x.floor() as i32;
+        let source_y = source_y.floor() as i32;
+        if source_x < region.x as i32
+            || source_y < region.y as i32
+            || source_x >= region.x.saturating_add(region.width) as i32
+            || source_y >= region.y.saturating_add(region.height) as i32
+        {
+            return;
+        }
+        *coverage_by_pixel.entry((source_x, source_y)).or_insert(0.0) += coverage / sample_area;
+    });
+    for ((source_x, source_y), coverage) in coverage_by_pixel {
+        blend_pixel_at_source(pixels, region, source_x, source_y, color, coverage.min(1.0));
+    }
+}
+
+fn synthetic_italic_shift(baseline_y: f32, source_y: f32) -> f32 {
+    (baseline_y - source_y) * 0.23
 }
 
 fn draw_text_decorations(
@@ -333,18 +378,41 @@ fn draw_decoration_rect(
     let top = y.round() as i32;
     for source_y in top..top + thickness.max(1) {
         for source_x in left..right {
-            if source_x < region.x as i32
-                || source_y < region.y as i32
-                || source_x >= region.x.saturating_add(region.width) as i32
-                || source_y >= region.y.saturating_add(region.height) as i32
-            {
-                continue;
-            }
-            let target_x = (source_x - region.x as i32) as u32;
-            let target_y = (source_y - region.y as i32) as u32;
-            blend_pixel(pixels, region.width, target_x, target_y, color, 255);
+            blend_pixel_at_source(pixels, region, source_x, source_y, color, 1.0);
         }
     }
+}
+
+fn blend_pixel_at_source(
+    pixels: &mut [u8],
+    region: Rect,
+    source_x: i32,
+    source_y: i32,
+    color: Rgba8,
+    coverage: f32,
+) {
+    if coverage <= 0.0
+        || source_x < region.x as i32
+        || source_y < region.y as i32
+        || source_x >= region.x.saturating_add(region.width) as i32
+        || source_y >= region.y.saturating_add(region.height) as i32
+    {
+        return;
+    }
+    let target_x = (source_x - region.x as i32) as u32;
+    let target_y = (source_y - region.y as i32) as u32;
+    blend_pixel(
+        pixels,
+        region.width,
+        target_x,
+        target_y,
+        color,
+        coverage_alpha(coverage),
+    );
+}
+
+fn coverage_alpha(coverage: f32) -> u8 {
+    (coverage * 255.0).round().clamp(0.0, 255.0) as u8
 }
 
 fn blend_pixel(pixels: &mut [u8], width: u32, x: u32, y: u32, color: Rgba8, coverage_alpha: u8) {
