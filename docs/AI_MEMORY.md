@@ -40,9 +40,10 @@ In scope:
 - Flattened raster layers.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
-- Simple text layers rendered as flattened native raster pixels, including
-  underline and strikethrough decoration spans. This is not editable text import
-  and is currently a first-pass renderer.
+- Simple text layers rendered as flattened native raster pixels. Underline and
+  strikethrough spans are parsed, decoration thickness uses OpenType font line
+  metrics, and missing italic faces use synthetic oblique. This is not editable
+  text import and remains a first-pass renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

@@ -170,11 +170,11 @@ fn measure_line_width(chars: &[char], styles: &[TextCharStyle], fonts: &mut Font
         .iter()
         .zip(styles.iter())
         .map(|(ch, style)| {
-            let Some(font) = fonts.resolve(style) else {
+            let Some(resolved) = fonts.resolve(style) else {
                 return style.font_size_px * 0.55;
             };
-            let scaled = font.as_scaled(PxScale::from(style.font_size_px));
-            scaled.h_advance(font.glyph_id(*ch))
+            let scaled = resolved.font.as_scaled(PxScale::from(style.font_size_px));
+            scaled.h_advance(resolved.font.glyph_id(*ch))
         })
         .sum()
 }
@@ -189,13 +189,16 @@ fn draw_line(
 ) -> Result<(), RuntimeError> {
     let mut x = origin.0;
     let mut char_positions = Vec::with_capacity(chars.len());
+    let mut char_metrics = Vec::with_capacity(chars.len());
     for (ch, style) in chars.iter().zip(styles.iter()) {
-        let Some(font) = fonts.resolve(style) else {
+        let Some(resolved) = fonts.resolve(style) else {
             let next_x = x + style.font_size_px * 0.55;
             char_positions.push((x, next_x));
+            char_metrics.push(None);
             x = next_x;
             continue;
         };
+        let font = &resolved.font;
         let scale = PxScale::from(style.font_size_px);
         let scaled = font.as_scaled(scale);
         let glyph_id = font.glyph_id(*ch);
@@ -206,6 +209,11 @@ fn draw_line(
             outlined.draw(|local_x, local_y, coverage| {
                 let source_x = bounds.min.x.floor() as i32 + local_x as i32;
                 let source_y = bounds.min.y.floor() as i32 + local_y as i32;
+                let source_x = if resolved.synthetic_italic {
+                    source_x + synthetic_italic_shift(baseline_y, source_y)
+                } else {
+                    source_x
+                };
                 if source_x < region.x as i32
                     || source_y < region.y as i32
                     || source_x >= region.x.saturating_add(region.width) as i32
@@ -227,10 +235,22 @@ fn draw_line(
         }
         let next_x = x + scaled.h_advance(glyph_id);
         char_positions.push((x, next_x));
+        char_metrics.push(Some(resolved.metrics));
         x = next_x;
     }
-    draw_text_decorations(pixels, region, origin, styles, &char_positions);
+    draw_text_decorations(
+        pixels,
+        region,
+        origin,
+        styles,
+        &char_positions,
+        &char_metrics,
+    );
     Ok(())
+}
+
+fn synthetic_italic_shift(baseline_y: f32, source_y: i32) -> i32 {
+    ((baseline_y - source_y as f32) * 0.23).round() as i32
 }
 
 fn draw_text_decorations(
@@ -239,6 +259,7 @@ fn draw_text_decorations(
     origin: (f32, f32),
     styles: &[TextCharStyle],
     char_positions: &[(f32, f32)],
+    char_metrics: &[Option<TextFontMetrics>],
 ) {
     let mut start = 0usize;
     while start < styles.len() {
@@ -263,17 +284,39 @@ fn draw_text_decorations(
             .get(end.saturating_sub(1))
             .map(|pos| pos.1)
             .unwrap_or(x0);
-        let thickness = (styles[start].font_size_px / 24.0).round().clamp(1.0, 3.0) as i32;
+        let metrics = char_metrics.get(start).and_then(|metrics| *metrics);
         if styles[start].underline {
-            let y = origin.1 + styles[start].font_size_px * 0.82;
+            let y = decoration_y(origin.1, styles[start].font_size_px, 0.82);
+            let thickness = decoration_thickness(
+                styles[start].font_size_px,
+                metrics.and_then(|metrics| metrics.underline_thickness),
+                24.0,
+            );
             draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
         }
         if styles[start].strikethrough {
-            let y = origin.1 + styles[start].font_size_px * 0.52;
+            let y = decoration_y(origin.1, styles[start].font_size_px, 0.52);
+            let thickness = decoration_thickness(
+                styles[start].font_size_px,
+                metrics.and_then(|metrics| metrics.strikethrough_thickness),
+                24.0,
+            );
             draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
         }
         start = end;
     }
+}
+
+fn decoration_y(origin_y: f32, font_size_px: f32, ratio: f32) -> f32 {
+    origin_y + font_size_px * ratio
+}
+
+fn decoration_thickness(font_size_px: f32, metric: Option<f32>, fallback_divisor: f32) -> i32 {
+    metric
+        .map(|ratio| ratio * font_size_px)
+        .unwrap_or(font_size_px / fallback_divisor)
+        .round()
+        .clamp(1.0, 16.0) as i32
 }
 
 fn draw_decoration_rect(
@@ -492,7 +535,20 @@ fn text_lines(chars: &[char]) -> Vec<(usize, usize)> {
 
 struct FontResolver {
     db: fontdb::Database,
-    cache: HashMap<FontRequest, Option<FontArc>>,
+    cache: HashMap<FontRequest, Option<ResolvedFont>>,
+}
+
+#[derive(Clone)]
+struct ResolvedFont {
+    font: FontArc,
+    metrics: TextFontMetrics,
+    synthetic_italic: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+struct TextFontMetrics {
+    underline_thickness: Option<f32>,
+    strikethrough_thickness: Option<f32>,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -513,7 +569,7 @@ impl FontResolver {
         }
     }
 
-    fn resolve(&mut self, style: &TextCharStyle) -> Option<FontArc> {
+    fn resolve(&mut self, style: &TextCharStyle) -> Option<ResolvedFont> {
         let request = FontRequest {
             name: style.font_name.clone(),
             fallback: style.fallback_font.clone(),
@@ -527,7 +583,7 @@ impl FontResolver {
         self.cache.get(&request).cloned().flatten()
     }
 
-    fn load_font(&self, request: &FontRequest) -> Option<FontArc> {
+    fn load_font(&self, request: &FontRequest) -> Option<ResolvedFont> {
         let mut names = Vec::new();
         if let Some(name) = &request.name {
             names.extend(font_name_candidates(name));
@@ -548,23 +604,18 @@ impl FontResolver {
         self.load_family_font(fontdb::Family::SansSerif, request.bold, request.italic)
     }
 
-    fn load_named_font(&self, name: &str, bold: bool, italic: bool) -> Option<FontArc> {
+    fn load_named_font(&self, name: &str, bold: bool, italic: bool) -> Option<ResolvedFont> {
         self.load_family_font(fontdb::Family::Name(name), bold, italic)
             .or_else(|| self.load_postscript_font(name, bold, italic))
     }
 
-    fn load_postscript_font(&self, name: &str, bold: bool, italic: bool) -> Option<FontArc> {
+    fn load_postscript_font(&self, name: &str, bold: bool, italic: bool) -> Option<ResolvedFont> {
         let normalized_name = normalize_font_lookup_name(name);
-        let id = self
-            .db
-            .faces()
-            .find(|face| {
-                normalize_font_lookup_name(&face.post_script_name) == normalized_name
-                    && (!bold || face.weight >= fontdb::Weight::BOLD)
-                    && (!italic || face.style == fontdb::Style::Italic)
-            })
-            .map(|face| face.id)?;
-        self.load_font_id(id)
+        let face = self.db.faces().find(|face| {
+            normalize_font_lookup_name(&face.post_script_name) == normalized_name
+                && (!bold || face.weight >= fontdb::Weight::BOLD)
+        })?;
+        self.load_font_id(face.id, italic && face.style != fontdb::Style::Italic)
     }
 
     fn load_family_font(
@@ -572,7 +623,7 @@ impl FontResolver {
         family: fontdb::Family<'_>,
         bold: bool,
         italic: bool,
-    ) -> Option<FontArc> {
+    ) -> Option<ResolvedFont> {
         let families = [family];
         let query = fontdb::Query {
             families: &families,
@@ -588,39 +639,86 @@ impl FontResolver {
                 fontdb::Style::Normal
             },
         };
-        let id = self.db.query(&query)?;
-        self.load_font_id(id)
+        if let Some(id) = self.db.query(&query) {
+            let synthetic_italic = italic
+                && self
+                    .db
+                    .face(id)
+                    .map(|face| face.style != fontdb::Style::Italic)
+                    .unwrap_or(false);
+            return self.load_font_id(id, synthetic_italic);
+        }
+        if !italic {
+            return None;
+        }
+        let normal_query = fontdb::Query {
+            families: &families,
+            weight: if bold {
+                fontdb::Weight::BOLD
+            } else {
+                fontdb::Weight::NORMAL
+            },
+            stretch: fontdb::Stretch::Normal,
+            style: fontdb::Style::Normal,
+        };
+        let id = self.db.query(&normal_query)?;
+        self.load_font_id(id, true)
     }
 
-    fn load_font_id(&self, id: fontdb::ID) -> Option<FontArc> {
+    fn load_font_id(&self, id: fontdb::ID, synthetic_italic: bool) -> Option<ResolvedFont> {
         if std::env::var_os("RIZUM_CLIP_TEXT_PROFILE").is_some()
             && let Some(face) = self.db.face(id)
         {
             eprintln!(
-                "text font -> families={:?} post_script={} weight={:?} style={:?} index={} source={:?}",
+                "text font -> families={:?} post_script={} weight={:?} style={:?} index={} source={:?} synthetic_italic={}",
                 face.families,
                 face.post_script_name,
                 face.weight,
                 face.style,
                 face.index,
                 face.source,
+                synthetic_italic,
             );
         }
         let mut font = None;
+        let mut metrics = TextFontMetrics::default();
         self.db.with_face_data(id, |data, face_index| {
+            if let Ok(face) = ttf_parser::Face::parse(data, face_index) {
+                metrics = text_font_metrics(&face);
+            }
             font = FontVec::try_from_vec_and_index(data.to_vec(), face_index)
                 .ok()
                 .map(FontArc::from);
         });
-        font
+        font.map(|font| ResolvedFont {
+            font,
+            metrics,
+            synthetic_italic,
+        })
+    }
+}
+
+fn text_font_metrics(face: &ttf_parser::Face<'_>) -> TextFontMetrics {
+    let units_per_em = f32::from(face.units_per_em()).max(1.0);
+    let underline = face.underline_metrics();
+    let strikethrough = face.strikeout_metrics();
+    TextFontMetrics {
+        underline_thickness: underline
+            .map(|metrics| f32::from(metrics.thickness.max(1)) / units_per_em),
+        strikethrough_thickness: strikethrough
+            .map(|metrics| f32::from(metrics.thickness.max(1)) / units_per_em),
     }
 }
 
 fn font_name_candidates(name: &str) -> Vec<String> {
     let mut candidates = Vec::new();
     push_unique_font_candidate(&mut candidates, name.trim());
+    let without_vf_dash = name.replace("VF-", "-").replace("VF_", "_");
+    push_unique_font_candidate(&mut candidates, without_vf_dash.trim());
     let spaced = name.replace(['_', '-'], " ");
     push_unique_font_candidate(&mut candidates, spaced.trim());
+    push_unique_font_candidate(&mut candidates, spaced.replace("VF ", " VF ").trim());
+    push_unique_font_candidate(&mut candidates, spaced.replace("VF ", " ").trim());
     let without_style = strip_font_style_suffix(&spaced);
     push_unique_font_candidate(&mut candidates, without_style.trim());
     candidates
@@ -754,6 +852,16 @@ mod tests {
                 "HarmonyOS Sans Bold".to_owned(),
                 "HarmonyOS Sans".to_owned(),
             ],
+        );
+    }
+
+    #[test]
+    fn font_name_candidates_map_variable_font_style_names() {
+        assert!(
+            font_name_candidates("MiSansVF-ExtraLight").contains(&"MiSans-ExtraLight".to_owned())
+        );
+        assert!(
+            font_name_candidates("MiSansVF-ExtraLight").contains(&"MiSans ExtraLight".to_owned())
         );
     }
 
