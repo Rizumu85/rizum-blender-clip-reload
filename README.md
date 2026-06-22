@@ -6,6 +6,7 @@
   <p style="margin-top: 0; margin-bottom: 10px;">
     <a href="https://github.com/Rizumu85/rizum-blender-clip-reload/issues">Report Issues</a> |
     <a href="https://github.com/Rizumu85/rizum-blender-clip-reload/releases">Releases</a> |
+    <a href="https://ko-fi.com/rizum85">Ko-fi</a> |
     <a href="https://extensions.blender.org/">Blender Extensions</a>
   </p>
 
@@ -168,6 +169,11 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 - `docs/plan.md` - durable direction and open work.
 - `docs/analysis.md` - append-only historical evidence and rejected hypotheses.
 
+## Support
+
+If this project helps your workflow, you can support development on
+[Ko-fi](https://ko-fi.com/rizum85).
+
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
@@ -184,6 +190,7 @@ GPL-3.0-or-later. See [LICENSE](LICENSE).
   <p style="margin-top: 0; margin-bottom: 10px;">
     <a href="https://github.com/Rizumu85/rizum-blender-clip-reload/issues">反馈问题</a> |
     <a href="https://github.com/Rizumu85/rizum-blender-clip-reload/releases">下载发布版</a> |
+    <a href="https://ko-fi.com/rizum85">Ko-fi 支持</a> |
     <a href="https://extensions.blender.org/">Blender Extensions</a>
   </p>
 
@@ -335,6 +342,11 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 - `docs/AI_MEMORY.md` - 给 agent 使用的当前项目状态摘要。
 - `docs/plan.md` - 稳定方向和后续计划。
 - `docs/analysis.md` - 历史证据和被拒绝假设的 append-only 记录。
+
+## 支持
+
+如果这个项目帮到了你的工作流，可以在 [Ko-fi](https://ko-fi.com/rizum85)
+支持后续开发。
 
 ## 许可证
 
