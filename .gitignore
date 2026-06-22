@@ -3,6 +3,7 @@ __pycache__/
 tmp_compare/
 local/
 local_artifacts/
+/clip_studio_importer*.zip
 
 # Private/customer reference art stays local only.
 img/Ref*

@@ -71,9 +71,8 @@ Out of scope:
   diagnostics; they do not abort the import. Simple text layers are rendered as
   flattened pixels by the native path.
 - Native text rendering resolves the font names stored in `.clip` against the
-  user's system fonts. The add-on `Text Font Directory` preference and
-  `RIZUM_CLIP_FONT_DIRS` / `RIZUM_CLIP_FONT_DIR` are only optional extra search
-  paths for fonts that are not installed system-wide.
+  user's installed system fonts. The add-on does not bundle fonts and does not
+  expose extra font directory configuration.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
 - Manual import/reload render failures show a Blender error popup on the main
@@ -81,12 +80,15 @@ Out of scope:
   datablock exists yet.
 - UI translations exist for Simplified Chinese, Japanese, and Spanish. Add-on
   name and copied/opened diagnostics stay English.
-- Windows x64 packaging is maintainer-tested. Linux x64, macOS x64, and macOS
-  arm64 packaging support exists but is maintainer-untested.
-- `tools/build_blender_addon.py --platform all` can build one universal zip when
-  `native/artifacts/<platform>/` contains each platform's native artifacts. The
-  `Build extension package` GitHub Actions workflow builds and uploads that
-  universal zip.
+- Windows x64 packaging is the current maintainer-tested release target.
+  Linux x64, macOS x64, and macOS arm64 packaging support exists but should stay
+  unpublished until real-device testing or user feedback.
+- Do not upload one universal extension zip containing several native platform
+  binaries. Blender Extensions expects separate platform-specific zips.
+  `tools/build_blender_addon.py` rejects multi-platform builds because
+  Blender's wheel-oriented `--split-platforms` output does not filter this
+  repo's `native/<platform>/` binary directories. The `Build extension package`
+  GitHub Actions workflow currently uploads only the Windows x64 package.
 
 ## Native Renderer State
 

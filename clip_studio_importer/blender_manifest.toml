@@ -14,8 +14,7 @@ copyright = [
   "2026 Rizum",
   "2024 KazuhitoTakahashi",
 ]
-# Linux and macOS package support is present but not maintainer-tested.
-platforms = ["windows-x64", "linux-x64", "macos-x64", "macos-arm64"]
+platforms = ["windows-x64"]
 
 [permissions]
 files = "Import Clip Studio files and reload changed sources from disk"

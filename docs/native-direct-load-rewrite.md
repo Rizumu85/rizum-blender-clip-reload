@@ -79,18 +79,21 @@ fingerprints. They may return:
 - `LICENSE` and `NOTICE.md`.
 - Native `clip_cli` worker and `clip_capi` library under `native/<platform>/`.
 
-Windows x64 is maintainer-tested. Linux x64, macOS x64, and macOS arm64 package
-support exists but is maintainer-untested.
-
-The package builder can also create a single multi-platform zip when native
-artifacts are available under `native/artifacts/<platform>/`:
+Windows x64 is the current maintainer-tested release platform. Linux x64,
+macOS x64, and macOS arm64 package support exists in the builder, but those
+packages must be built and uploaded as separate platform-specific extension
+zips after real-device testing.
 
 ```powershell
-python tools\build_blender_addon.py --platform all --output clip_studio_importer-universal.zip
+python tools\build_blender_addon.py --platform windows-x64 --output clip_studio_importer-windows-x64.zip
 ```
 
-The `Build extension package` GitHub Actions workflow builds the native
-artifacts on platform runners and uploads that universal zip for release review.
+When more than one platform is requested through `--blender`, the package
+builder rejects the request because Blender's wheel-oriented
+`--split-platforms` output does not filter this repo's `native/<platform>/`
+binary directories. Build and upload one platform zip at a time. The `Build
+extension package` GitHub Actions workflow currently uploads only the Windows
+x64 package for release review.
 
 ## Future Integration
 

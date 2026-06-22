@@ -39,8 +39,9 @@ Initial tested upload target: Windows x64.
 
 The package builder can also produce Linux x64, macOS x64, and macOS arm64
 native packages when matching `clip_cli` and `clip_capi` artifacts are present.
-Those packages must be declared as maintainer-untested until Rizum or another
-tester verifies them on real Linux/macOS devices.
+Those packages must be uploaded as separate platform-specific zip files, not as
+one universal package. Keep Linux/macOS releases unpublished until Rizum or
+another tester verifies them on real Linux/macOS devices.
 
 Declared permissions:
 
@@ -79,11 +80,36 @@ Reviewer notes:
 
 - The Windows x64 extension is self-contained and tested on the maintainer's
   machine: it bundles the native renderer worker and C ABI library.
-- Linux x64, macOS x64, and macOS arm64 packages are packaging-supported but
-  maintainer-untested because the maintainer has no Linux/macOS device.
+- Linux x64, macOS x64, and macOS arm64 packages are not part of the initial
+  upload.
 - The extension does not download or execute remote code.
 - The extension does not require internet access.
 - The extension is not affiliated with Blender, CELSYS, or Clip Studio Paint.
+
+## Reviewer Reply Draft
+
+Hello.
+
+Thank you for the review. I will not upload the previous universal package. The
+initial release is now limited to Windows x64 only, and the manifest declares
+only `windows-x64`. If Linux or macOS builds are published later, I will build
+and upload them as separate platform-specific zip files, with each zip
+containing only the native files for its matching operating system.
+
+About the `.exe`: it is not third-party software and it is not copied from
+another application. `clip_cli.exe` is built from this repository's own Rust
+source code, mainly `native/rust/crates/clip_cli`. The paired C ABI library is
+built from `native/rust/crates/clip_capi`. The add-on uses this native worker to
+parse and render `.clip` files out of Blender's UI process, then uploads the
+rendered pixels into a Blender generated image.
+
+The project source is here:
+https://github.com/Rizumu85/rizum-blender-clip-reload
+
+The package does not bundle Clip Studio Paint, CELSYS binaries, or any other
+third-party executable application for processing `.clip` files. Third-party
+code is limited to normal Rust crate dependencies used to build the project's
+own binaries, with their license notices kept in the repository.
 
 ## Pre-upload Checklist
 
@@ -91,10 +117,12 @@ Reviewer notes:
   `https://github.com/Rizumu85/rizum-blender-clip-reload` in
   `blender_manifest.toml`.
 - Build and smoke-test the Windows x64 extension package in Blender 4.2 or newer.
-- For Linux/macOS uploads, build the native artifacts on matching machines and
-  clearly mark them maintainer-untested until real-device smoke tests pass.
+- Do not upload a universal package containing native files for several
+  operating systems.
+- For Linux/macOS uploads, build one platform-specific zip per operating system
+  and smoke-test it on a matching machine first.
 - Run Blender's extension validator/build command if available on the release
   machine.
 - Review `NOTICE.md` before upload.
-- Add macOS/Linux platform packages only with matching native artifacts; keep
-  the listing/release notes explicit that they are not maintainer-tested.
+- Add macOS/Linux platform packages only with matching native artifacts and
+  real-device smoke tests.

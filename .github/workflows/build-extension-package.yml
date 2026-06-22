@@ -5,32 +5,13 @@ on:
 
 jobs:
   native-artifact:
-    name: Native ${{ matrix.platform }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-x64
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            library: clip_capi.dll
-            worker: clip_cli.exe
-          - platform: linux-x64
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            library: libclip_capi.so
-            worker: clip_cli
-          - platform: macos-x64
-            os: macos-15-intel
-            target: x86_64-apple-darwin
-            library: libclip_capi.dylib
-            worker: clip_cli
-          - platform: macos-arm64
-            os: macos-14
-            target: aarch64-apple-darwin
-            library: libclip_capi.dylib
-            worker: clip_cli
+    name: Native windows-x64
+    runs-on: windows-latest
+    env:
+      PLATFORM: windows-x64
+      TARGET: x86_64-pc-windows-msvc
+      LIBRARY: clip_capi.dll
+      WORKER: clip_cli.exe
 
     steps:
       - name: Check out repository
@@ -39,32 +20,32 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ env.TARGET }}
 
       - name: Build native renderer
         shell: pwsh
         run: |
           cd native/rust
-          cargo build --release --target ${{ matrix.target }} -p clip_capi -p clip_cli
+          cargo build --release --target $env:TARGET -p clip_capi -p clip_cli
 
       - name: Stage native artifacts
         shell: pwsh
         run: |
-          $source = "native/rust/target/${{ matrix.target }}/release"
-          $dest = "native-artifacts/${{ matrix.platform }}"
+          $source = "native/rust/target/$env:TARGET/release"
+          $dest = "native-artifacts/$env:PLATFORM"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item "$source/${{ matrix.library }}" "$dest/${{ matrix.library }}"
-          Copy-Item "$source/${{ matrix.worker }}" "$dest/${{ matrix.worker }}"
+          Copy-Item "$source/$env:LIBRARY" "$dest/$env:LIBRARY"
+          Copy-Item "$source/$env:WORKER" "$dest/$env:WORKER"
 
       - name: Upload native artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: native-${{ matrix.platform }}
-          path: native-artifacts/${{ matrix.platform }}
+          name: native-windows-x64
+          path: native-artifacts/windows-x64
           if-no-files-found: error
 
   extension-package:
-    name: Universal extension zip
+    name: Windows x64 extension zip
     runs-on: windows-latest
     needs: native-artifact
 
@@ -80,7 +61,7 @@ jobs:
       - name: Download native artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: native-*
+          pattern: native-windows-x64
           path: native/artifacts
           merge-multiple: false
 
@@ -98,14 +79,14 @@ jobs:
             }
           }
 
-      - name: Build universal extension package
+      - name: Build Windows x64 extension package
         shell: pwsh
         run: |
-          python tools/build_blender_addon.py --platform all --output clip_studio_importer-universal.zip
+          python tools/build_blender_addon.py --platform windows-x64 --output clip_studio_importer-windows-x64.zip
 
-      - name: Upload universal extension package
+      - name: Upload Windows x64 extension package
         uses: actions/upload-artifact@v4
         with:
-          name: clip_studio_importer-universal
-          path: clip_studio_importer-universal.zip
+          name: clip_studio_importer-windows-x64
+          path: clip_studio_importer-windows-x64.zip
           if-no-files-found: error

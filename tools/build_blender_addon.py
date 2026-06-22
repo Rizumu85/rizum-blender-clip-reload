@@ -115,7 +115,8 @@ def parse_args() -> argparse.Namespace:
         choices=(*ALL_NATIVE_PLATFORM_IDS, "all"),
         help=(
             "Blender extension platform to package. Defaults to the current "
-            "host platform. Repeat to build a multi-platform zip, or pass all."
+            "host platform. Build one platform per zip; do not upload a "
+            "multi-platform package with native binaries."
         ),
     )
     parser.add_argument(
@@ -315,6 +316,18 @@ def build_zip(
     for platform_id in platforms:
         if platform_id not in NATIVE_PLATFORMS:
             raise SystemExit(f"Unknown native platform: {platform_id}")
+    if blender is None and len(platforms) > 1:
+        raise SystemExit(
+            "This extension bundles native/<platform> binaries, so each "
+            "platform must be staged and built as its own zip. Build one "
+            "platform at a time; do not upload a multi-platform package."
+        )
+    if blender is not None and len(platforms) > 1:
+        raise SystemExit(
+            "Blender's --split-platforms does not filter this repo's "
+            "native/<platform> binary directories. Build one platform at a "
+            "time so each uploaded zip contains only its matching native files."
+        )
 
     with tempfile.TemporaryDirectory(prefix="rizum_clip_extension_") as tmp_dir:
         staging_dir = Path(tmp_dir)
