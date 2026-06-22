@@ -245,6 +245,71 @@ impl ClipSession {
         Ok(true)
     }
 
+    pub(super) fn check_strict_text_node_support(
+        &self,
+        node: &clip_graph::RenderNode,
+        options: StrictRasterStackOptions,
+        resource_stats: &mut NormalRasterStackResourceStats,
+        unsupported: &mut Vec<SimpleRasterStackUnsupported>,
+    ) -> Result<bool, RuntimeError> {
+        if node.clip {
+            unsupported.push(unsupported_node(
+                node.id,
+                node.layer_id,
+                node.kind,
+                SimpleRasterStackUnsupportedReason::Clipping,
+            ));
+            return Ok(false);
+        }
+        if strict_raster_blend_mode(node, options, false).is_none() {
+            unsupported.push(unsupported_node(
+                node.id,
+                node.layer_id,
+                node.kind,
+                SimpleRasterStackUnsupportedReason::Composite(node.composite),
+            ));
+            return Ok(false);
+        }
+        if !options.allow_layer_opacity && node.opacity != clip_model::LayerOpacity::MAX {
+            unsupported.push(unsupported_node(
+                node.id,
+                node.layer_id,
+                node.kind,
+                SimpleRasterStackUnsupportedReason::Opacity(node.opacity.0),
+            ));
+            return Ok(false);
+        }
+        if opacity_factor(node.opacity).is_none() {
+            unsupported.push(unsupported_node(
+                node.id,
+                node.layer_id,
+                node.kind,
+                SimpleRasterStackUnsupportedReason::OpacityOutOfRange(node.opacity.0),
+            ));
+            return Ok(false);
+        }
+        if node.mask_mipmap_id.is_some() {
+            unsupported.push(unsupported_node(
+                node.id,
+                node.layer_id,
+                node.kind,
+                SimpleRasterStackUnsupportedReason::Mask,
+            ));
+            return Ok(false);
+        }
+
+        let source = self
+            .text_sources
+            .get(&node.layer_id)
+            .ok_or(clip_file::ClipFileError::MissingLayer(node.layer_id))?;
+        let layout = crate::text_render::measure_text_source(source, self.summary.canvas)?;
+        if layout.size.width == 0 || layout.size.height == 0 {
+            return Ok(false);
+        }
+        resource_stats.add_text_source(node.layer_id, layout.size);
+        Ok(true)
+    }
+
     pub(super) fn check_strict_lut_filter_support(
         &self,
         node: &clip_graph::RenderNode,
@@ -378,6 +443,15 @@ impl ClipSession {
                         node.layer_id,
                         node.kind,
                         SimpleRasterStackUnsupportedReason::Filter,
+                    ));
+                    index += 1;
+                }
+                RenderNodeKind::Text => {
+                    unsupported.push(unsupported_node(
+                        node.id,
+                        node.layer_id,
+                        node.kind,
+                        SimpleRasterStackUnsupportedReason::Clipping,
                     ));
                     index += 1;
                 }

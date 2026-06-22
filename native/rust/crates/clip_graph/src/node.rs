@@ -9,6 +9,7 @@ pub enum RenderNodeKind {
     Paper,
     Raster,
     Filter,
+    Text,
     Unsupported(u32),
 }
 
@@ -19,6 +20,7 @@ impl RenderNodeKind {
             LayerKind::Paper => Self::Paper,
             LayerKind::Raster | LayerKind::MaskedRaster => Self::Raster,
             LayerKind::Filter => Self::Filter,
+            LayerKind::Text => Self::Text,
             LayerKind::Unsupported(raw) => Self::Unsupported(raw),
         }
     }

@@ -186,6 +186,7 @@ fn strict_normal_selector_clears_clip_base_after_through_group() {
         raster_sources: HashMap::new(),
         mask_sources: HashMap::new(),
         filter_sources: HashMap::new(),
+        text_sources: HashMap::new(),
         rendered_image: None,
     };
 
@@ -817,6 +818,7 @@ fn normal_folder_with_real_test_clipping_children_matches_flat_stack() {
         raster_sources: folder_raster_sources,
         mask_sources: HashMap::new(),
         filter_sources: HashMap::new(),
+        text_sources: HashMap::new(),
         rendered_image: None,
     };
 
@@ -846,6 +848,35 @@ fn normal_gpu_result_reuses_support_resource_stats() {
     assert_eq!(render.source_count, support.source_count);
     assert_eq!(render.resource_stats, support.resource_stats);
     assert_eq!(render.unsupported, support.unsupported);
+}
+
+#[test]
+fn text_sample_is_supported_and_draws_pixels() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Text_1.clip");
+    let session = ClipSession::open(&path).expect("open Text_1.clip");
+
+    let support = session
+        .check_normal_raster_stack_support()
+        .expect("check Text_1 support");
+    assert!(support.unsupported.is_empty());
+
+    let render = session
+        .draw_normal_raster_stack_via_gpu()
+        .expect("draw Text_1 stack");
+    assert!(render.unsupported.is_empty());
+    let image = render.image.expect("Text_1 output image");
+    let background = &image.pixels[0..4];
+    let dark_pixel_count = image
+        .pixels
+        .chunks_exact(4)
+        .filter(|pixel| {
+            pixel[3] == 255
+                && pixel[0] < background[0].saturating_sub(32)
+                && pixel[1] < background[1].saturating_sub(32)
+                && pixel[2] < background[2].saturating_sub(32)
+        })
+        .count();
+    assert!(dark_pixel_count > 500);
 }
 
 #[test]
@@ -1044,6 +1075,7 @@ fn synthetic_session(nodes: Vec<RenderNode>) -> ClipSession {
         raster_sources: HashMap::new(),
         mask_sources: HashMap::new(),
         filter_sources: HashMap::new(),
+        text_sources: HashMap::new(),
         rendered_image: None,
     }
 }

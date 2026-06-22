@@ -54,6 +54,58 @@ pub struct FilterLayerSource {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TextLayerSource {
+    pub layer: LayerRecord,
+    pub entries: Vec<TextLayerEntry>,
+    pub resolution_dpi: u32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TextLayerEntry {
+    pub text: String,
+    pub attributes: TextLayerAttributes,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TextLayerAttributes {
+    pub default_font: Option<String>,
+    pub fallback_font: Option<String>,
+    pub fonts: Vec<TextLayerFontMapping>,
+    pub font_size_100: Option<i32>,
+    pub color: Option<Rgba8>,
+    pub bbox: Option<TextLayerRect>,
+    pub quad_verts_100: Option<[i32; 8]>,
+    pub box_size: Option<(i32, i32)>,
+    pub align: Option<u8>,
+    pub runs: Vec<TextLayerRun>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TextLayerFontMapping {
+    pub display_name: String,
+    pub font_name: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TextLayerRun {
+    pub start: i32,
+    pub length: u32,
+    pub style_flags: u8,
+    pub field_defaults_flags: u8,
+    pub color: Rgba8,
+    pub font_scale: i32,
+    pub font: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TextLayerRect {
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LayerGraphRecord {
     pub id: LayerId,
     pub name: String,

@@ -195,6 +195,20 @@ impl ClipSession {
                     }
                     index += 1;
                 }
+                RenderNodeKind::Text => {
+                    if self.check_strict_text_node_support(
+                        node,
+                        options,
+                        resource_stats,
+                        unsupported,
+                    )? {
+                        source_count += 1;
+                        clip_base_state = ClipBaseState::Available;
+                    } else {
+                        clip_base_state = ClipBaseState::Blocked;
+                    }
+                    index += 1;
+                }
                 RenderNodeKind::Unsupported(raw_kind) => {
                     unsupported.push(unsupported_node(
                         node.id,

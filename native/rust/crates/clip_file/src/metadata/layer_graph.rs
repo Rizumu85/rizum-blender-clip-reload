@@ -24,12 +24,27 @@ pub fn read_layer_graph_records_from_sqlite(
             "DrawColorMainBlue",
         ],
     );
+    let text_present_expr = if layer_columns.contains("TextLayerString")
+        || layer_columns.contains("TextLayerStringArray")
+        || layer_columns.contains("TextLayerAttributes")
+        || layer_columns.contains("TextLayerAttributesArray")
+    {
+        format!(
+            "CASE WHEN {} IS NOT NULL OR {} IS NOT NULL OR {} IS NOT NULL OR {} IS NOT NULL THEN 1 ELSE 0 END AS TextLayerPresent",
+            optional_text_presence_column(&layer_columns, "TextLayerString"),
+            optional_text_presence_column(&layer_columns, "TextLayerStringArray"),
+            optional_text_presence_column(&layer_columns, "TextLayerAttributes"),
+            optional_text_presence_column(&layer_columns, "TextLayerAttributesArray"),
+        )
+    } else {
+        "0 AS TextLayerPresent".to_owned()
+    };
     let query = format!(
         "SELECT \
             MainId, {}, LayerType, LayerVisibility, LayerClip, LayerOpacity, \
             LayerComposite, LayerNextIndex, LayerFirstChildIndex, \
             LayerRenderMipmap, LayerLayerMaskMipmap, \
-            {}, {}, {}, {}, {}, {}, {} \
+            {}, {}, {}, {}, {}, {}, {}, {} \
          FROM Layer \
          ORDER BY MainId",
         optional_text_expr(&layer_columns, "LayerName"),
@@ -40,6 +55,7 @@ pub fn read_layer_graph_records_from_sqlite(
         optional_i64_expr(&layer_columns, "LayerPaletteRed"),
         optional_i64_expr(&layer_columns, "LayerPaletteGreen"),
         optional_i64_expr(&layer_columns, "LayerPaletteBlue"),
+        text_present_expr,
     );
     let mut stmt = conn.prepare(&query)?;
 
@@ -62,6 +78,7 @@ pub fn read_layer_graph_records_from_sqlite(
         let palette_red: i64 = row.get::<_, Option<i64>>(15)?.unwrap_or(0);
         let palette_green: i64 = row.get::<_, Option<i64>>(16)?.unwrap_or(0);
         let palette_blue: i64 = row.get::<_, Option<i64>>(17)?.unwrap_or(0);
+        let text_present: i64 = row.get(18)?;
         Ok((
             id,
             name,
@@ -81,6 +98,7 @@ pub fn read_layer_graph_records_from_sqlite(
             palette_red,
             palette_green,
             palette_blue,
+            text_present,
         ))
     })?;
 
@@ -105,10 +123,15 @@ pub fn read_layer_graph_records_from_sqlite(
             palette_red,
             palette_green,
             palette_blue,
+            text_present,
         ) = row?;
         let layer_type = checked_i64_to_u32(layer_type, "Layer.LayerType")?;
         let id = LayerId(checked_i64_to_u32(id, "Layer.MainId")?);
-        let kind = layer_kind(layer_type);
+        let kind = if text_present != 0 {
+            LayerKind::Text
+        } else {
+            layer_kind(layer_type)
+        };
         let paper_color = if kind == LayerKind::Paper {
             read_paper_color(
                 &conn,
@@ -141,4 +164,15 @@ pub fn read_layer_graph_records_from_sqlite(
         });
     }
     Ok(records)
+}
+
+fn optional_text_presence_column(
+    columns: &std::collections::HashSet<String>,
+    column: &str,
+) -> String {
+    if columns.contains(column) {
+        column.to_owned()
+    } else {
+        "NULL".to_owned()
+    }
 }

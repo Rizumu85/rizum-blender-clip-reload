@@ -52,6 +52,15 @@ struct PlannedRasterResourceMeta {
 }
 
 #[derive(Clone, Debug)]
+pub(crate) struct PlannedTextResourceMeta {
+    render_node_id: RenderNodeId,
+    layer_id: LayerId,
+    render_mipmap_id: u32,
+    source: clip_file::metadata::TextLayerSource,
+    layout: crate::text_render::TextRasterLayout,
+}
+
+#[derive(Clone, Debug)]
 struct PlannedMaskResourceMeta {
     render_node_id: RenderNodeId,
     layer_id: LayerId,
@@ -62,6 +71,7 @@ struct PlannedMaskResourceMeta {
 #[derive(Debug, Default)]
 pub(crate) struct GpuResourcePlan {
     rasters: HashMap<clip_gpu::GpuRasterResourceKey, PlannedRasterResourceMeta>,
+    text_rasters: HashMap<clip_gpu::GpuRasterResourceKey, PlannedTextResourceMeta>,
     masks: HashMap<clip_gpu::GpuMaskResourceKey, PlannedMaskResourceMeta>,
 }
 
@@ -85,6 +95,27 @@ impl GpuResourcePlan {
         );
     }
 
+    pub(crate) fn insert_text(
+        &mut self,
+        key: clip_gpu::GpuRasterResourceKey,
+        render_node_id: RenderNodeId,
+        layer_id: LayerId,
+        render_mipmap_id: u32,
+        source: clip_file::metadata::TextLayerSource,
+        layout: crate::text_render::TextRasterLayout,
+    ) {
+        self.text_rasters.insert(
+            key,
+            PlannedTextResourceMeta {
+                render_node_id,
+                layer_id,
+                render_mipmap_id,
+                source,
+                layout,
+            },
+        );
+    }
+
     #[cfg(test)]
     pub(crate) fn mask_resource_count(&self) -> usize {
         self.masks.len()
@@ -97,12 +128,33 @@ impl GpuResourcePlan {
         for meta in rasters {
             stats.add_raster_source(&meta.source);
         }
+        let mut text_rasters: Vec<_> = self.text_rasters.values().collect();
+        text_rasters.sort_by_key(|meta| meta.render_node_id.0);
+        for meta in text_rasters {
+            stats.add_text_source(meta.layer_id, meta.layout.size);
+        }
         let mut masks: Vec<_> = self.masks.values().collect();
         masks.sort_by_key(|meta| meta.render_node_id.0);
         for meta in masks {
             stats.add_mask_source(&meta.source);
         }
         stats
+    }
+
+    pub(crate) fn raster_source_extent(
+        &self,
+        key: clip_gpu::GpuRasterResourceKey,
+    ) -> Option<(CanvasSize, i32, i32)> {
+        if let Some(meta) = self.rasters.get(&key) {
+            return Some((
+                meta.source.pixel_size,
+                meta.source.offset_x,
+                meta.source.offset_y,
+            ));
+        }
+        self.text_rasters
+            .get(&key)
+            .map(|meta| (meta.layout.size, meta.layout.offset_x, meta.layout.offset_y))
     }
 }
 
@@ -182,6 +234,12 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
             .rasters
             .get(&source.key)
             .map(|meta| meta.source.pixel_size)
+            .or_else(|| {
+                self.plan
+                    .text_rasters
+                    .get(&source.key)
+                    .map(|meta| meta.layout.size)
+            })
     }
 
     fn raster_resource_offset(
@@ -201,6 +259,12 @@ impl clip_gpu::GpuNormalStackResourceProvider for RuntimeGpuResourceProvider<'_>
         self.raster_offsets
             .get(&source.key)
             .copied()
+            .or_else(|| {
+                self.plan
+                    .text_rasters
+                    .get(&source.key)
+                    .map(|meta| (meta.layout.offset_x, meta.layout.offset_y))
+            })
             .or_else(|| self.raster_resource_offset(source))
     }
 
@@ -325,7 +389,21 @@ impl RuntimeGpuResourceProvider<'_> {
                 layer_id: source.key.layer_id,
                 render_mipmap_id: source.key.render_mipmap_id,
             })
-        })?;
+        });
+        let meta = match meta {
+            Ok(meta) => meta,
+            Err(err) => {
+                if let Some(text_meta) = self.plan.text_rasters.get(&source.key).cloned() {
+                    return self.text_raster_resource_for_bounds(
+                        renderer,
+                        source,
+                        text_meta,
+                        render_bounds,
+                    );
+                }
+                return Err(err);
+            }
+        };
         let visible = self
             .decode_region_for_source(source, &meta.source, render_bounds)?
             .ok_or(clip_gpu::GpuRenderError::InvalidImageSize)?;
@@ -356,6 +434,33 @@ impl RuntimeGpuResourceProvider<'_> {
             texture_cache.insert_raster(cache_key, cache.clone());
         }
         Ok(cache)
+    }
+
+    fn text_raster_resource_for_bounds(
+        &mut self,
+        renderer: &clip_gpu::GpuRenderer,
+        source: clip_gpu::GpuNormalRasterSource,
+        meta: PlannedTextResourceMeta,
+        render_bounds: Option<Rect>,
+    ) -> Result<clip_gpu::GpuRasterResourceCache, RuntimeError> {
+        let Some(visible) = self.decode_region_for_text(&meta, render_bounds)? else {
+            return Err(clip_gpu::GpuRenderError::InvalidImageSize.into());
+        };
+        let image = crate::text_render::render_text_source_region(
+            &meta.source,
+            &meta.layout,
+            visible.source_rect,
+        )?;
+        self.raster_offsets
+            .insert(source.key, (visible.offset_x, visible.offset_y));
+        let upload = clip_gpu::GpuRasterUpload {
+            layer_id: meta.layer_id,
+            render_node_id: meta.render_node_id,
+            render_mipmap_id: meta.render_mipmap_id,
+            size: CanvasSize::new(image.width, image.height),
+            pixels: &image.pixels,
+        };
+        Ok(renderer.upload_raster_resources(&[upload])?)
     }
 
     fn mask_resource_for_bounds(
@@ -425,6 +530,20 @@ impl RuntimeGpuResourceProvider<'_> {
                 self.canvas,
             )?
         };
+        clip_region_to_render_bounds(region, render_bounds)
+    }
+
+    pub(crate) fn decode_region_for_text(
+        &self,
+        meta: &PlannedTextResourceMeta,
+        render_bounds: Option<Rect>,
+    ) -> Result<Option<source_crop::RasterSourceDecodeRegion>, RuntimeError> {
+        let region = source_crop::visible_raster_source_decode_region(
+            meta.layout.size,
+            meta.layout.offset_x,
+            meta.layout.offset_y,
+            self.canvas,
+        )?;
         clip_region_to_render_bounds(region, render_bounds)
     }
 

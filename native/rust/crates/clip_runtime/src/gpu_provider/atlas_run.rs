@@ -20,6 +20,17 @@ impl RuntimeGpuResourceProvider<'_> {
         let mut mask_chunks = Vec::new();
         let mut resources = Vec::with_capacity(sources.len());
         for request in sources {
+            if let Some(meta) = self.plan.text_rasters.get(&request.source.key).cloned() {
+                self.append_text_atlas_request(
+                    request,
+                    &meta,
+                    atlas_size,
+                    &mut chunks,
+                    &mut resources,
+                )?;
+                continue;
+            }
+
             let meta = self
                 .plan
                 .rasters
@@ -129,6 +140,69 @@ impl RuntimeGpuResourceProvider<'_> {
             mask_chunks,
             resources,
         }))
+    }
+
+    fn append_text_atlas_request(
+        &mut self,
+        request: &clip_gpu::GpuRasterAtlasSource,
+        meta: &super::PlannedTextResourceMeta,
+        atlas_size: CanvasSize,
+        chunks: &mut Vec<clip_gpu::GpuRasterAtlasTileChunk>,
+        resources: &mut Vec<clip_gpu::GpuRasterResourceInfo>,
+    ) -> Result<(), RuntimeError> {
+        if request.source.mask_key.is_some() {
+            return Err(RuntimeError::Gpu(
+                clip_gpu::GpuRenderError::MissingMaskResource {
+                    layer_id: request.source.key.layer_id,
+                    mask_mipmap_id: request.source.key.render_mipmap_id,
+                },
+            ));
+        }
+        let Some(visible) = self.decode_region_for_text(meta, None)? else {
+            return Ok(());
+        };
+        if request.size != CanvasSize::new(visible.source_rect.width, visible.source_rect.height)
+            || request.offset_x != visible.offset_x
+            || request.offset_y != visible.offset_y
+        {
+            return Ok(());
+        }
+        if request
+            .atlas_x
+            .checked_add(request.size.width)
+            .is_none_or(|right| right > atlas_size.width)
+            || request
+                .atlas_y
+                .checked_add(request.size.height)
+                .is_none_or(|bottom| bottom > atlas_size.height)
+        {
+            return Ok(());
+        }
+        let image = crate::text_render::render_text_source_region(
+            &meta.source,
+            &meta.layout,
+            visible.source_rect,
+        )?;
+        chunks.push(clip_gpu::GpuRasterAtlasTileChunk {
+            source: request.source,
+            atlas_x: request.atlas_x,
+            atlas_y: request.atlas_y,
+            mask_atlas_x: None,
+            mask_atlas_y: None,
+            size: request.size,
+            offset_x: visible.offset_x,
+            offset_y: visible.offset_y,
+            pixels: image.pixels,
+        });
+        self.raster_offsets
+            .insert(request.source.key, (visible.offset_x, visible.offset_y));
+        resources.push(clip_gpu::GpuRasterResourceInfo {
+            key: request.source.key,
+            render_node_id: meta.render_node_id,
+            size: request.size,
+            byte_len: rgba_byte_len(request.size)?,
+        });
+        Ok(())
     }
 
     pub(super) fn build_mask_atlas_tile_pixels(

@@ -9,6 +9,7 @@ pub enum LayerKind {
     Group,
     Paper,
     Filter,
+    Text,
     Unsupported(u32),
 }
 

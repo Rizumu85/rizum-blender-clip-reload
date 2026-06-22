@@ -207,6 +207,31 @@ impl ClipSession {
                     }
                     index += 1;
                 }
+                RenderNodeKind::Text => {
+                    let Some(raster) =
+                        self.plan_gpu_text_source(node, options, unsupported, resource_plan)?
+                    else {
+                        clip_base_state = ClipBaseState::Blocked;
+                        index += 1;
+                        continue;
+                    };
+
+                    if !options.allow_alpha_compositing && has_drawn_output {
+                        unsupported.push(SimpleRasterStackUnsupported {
+                            render_node_id: node.id,
+                            layer_id: node.layer_id,
+                            kind: node.kind,
+                            reason: SimpleRasterStackUnsupportedReason::RequiresAlphaCompositing,
+                        });
+                        index += 1;
+                        continue;
+                    }
+
+                    has_drawn_output = true;
+                    clip_base_state = ClipBaseState::Available;
+                    sources.push(clip_gpu::GpuNormalStackSource::Raster(raster));
+                    index += 1;
+                }
                 RenderNodeKind::Unsupported(raw_kind) => {
                     unsupported.push(SimpleRasterStackUnsupported {
                         render_node_id: node.id,

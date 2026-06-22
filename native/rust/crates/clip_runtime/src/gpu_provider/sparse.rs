@@ -25,6 +25,17 @@ pub(super) fn planned_sparse_raster_regions(
             sparse_raster_source_decode_region(container, canvas, &meta.source)?,
         );
     }
+    for (key, meta) in &plan.text_rasters {
+        regions.insert(
+            *key,
+            source_crop::visible_raster_source_decode_region(
+                meta.layout.size,
+                meta.layout.offset_x,
+                meta.layout.offset_y,
+                canvas,
+            )?,
+        );
+    }
     Ok(regions)
 }
 

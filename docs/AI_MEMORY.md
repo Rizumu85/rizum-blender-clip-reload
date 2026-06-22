@@ -40,14 +40,16 @@ In scope:
 - Flattened raster layers.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
+- Simple text layers rendered as flattened native raster pixels. This is not
+  editable text import and is currently a first-pass renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
 Out of scope:
 
 - Editable layer import.
-- Vector strokes/fills, text, bubble/frame renderers, 3D layers, animation, and
-  `.clip` write-back.
+- Vector strokes/fills, bubble/frame renderers, 3D layers, animation, and `.clip`
+  write-back.
 - Python compositor fallback, sidecar PNG workflows, post-processing bandages,
   and full-canvas per-layer caches.
 
@@ -64,9 +66,10 @@ Out of scope:
   images before saving the `.blend`.
 - Missing source files keep the packed pixels visible and mark the image
   `missing_source`.
-- Unsupported out-of-scope layer kinds such as vector, text, bubble/frame, or
-  future unknown layer records are skipped during flattened import and recorded
-  in diagnostics; they do not abort the import.
+- Unsupported out-of-scope layer kinds such as vector, bubble/frame, or future
+  unknown layer records are skipped during flattened import and recorded in
+  diagnostics; they do not abort the import. Simple text layers are rendered as
+  flattened pixels by the native path.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
 - Manual import/reload render failures show a Blender error popup on the main
@@ -97,9 +100,10 @@ Out of scope:
 - `TILE_EVENT_ABI_VERSION` is `10`. Any shader-visible payload layout change
   must bump it and keep reload-manifest compatibility tests.
 
-Strict native support currently covers the project scope: raster sources,
-folders, masks, clipping, common blend modes, and the supported adjustment/filter
-set. Unknown future filters remain explicitly unsupported.
+Strict native support currently covers the project scope: raster sources, simple
+text rasterization, folders, masks, clipping, common blend modes, and the
+supported adjustment/filter set. Unknown future filters remain explicitly
+unsupported.
 
 ## Fidelity Anchors
 

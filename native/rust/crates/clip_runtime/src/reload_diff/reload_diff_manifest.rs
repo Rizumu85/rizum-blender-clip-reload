@@ -174,6 +174,7 @@ pub(crate) fn render_node_kind_name(kind: RenderNodeKind) -> &'static str {
         RenderNodeKind::Paper => "Paper",
         RenderNodeKind::Raster => "Raster",
         RenderNodeKind::Filter => "Filter",
+        RenderNodeKind::Text => "Text",
         RenderNodeKind::Unsupported(_) => "Unsupported",
     }
 }

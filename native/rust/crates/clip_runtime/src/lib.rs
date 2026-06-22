@@ -24,6 +24,7 @@ mod selector_tree;
 mod source_crop;
 mod stack_plan;
 mod support;
+mod text_render;
 mod tile_silo_estimate;
 mod tile_silo_occupancy;
 mod tile_silo_options;
@@ -77,6 +78,7 @@ pub struct ClipSession {
     summary: ClipFileSummary,
     render_plan: RenderPlan,
     raster_sources: HashMap<LayerId, clip_file::metadata::RasterLayerSource>,
+    text_sources: HashMap<LayerId, clip_file::metadata::TextLayerSource>,
     mask_sources: HashMap<LayerId, clip_file::metadata::MaskLayerSource>,
     filter_sources: HashMap<LayerId, clip_file::metadata::FilterLayerSource>,
     rendered_image: Option<clip_file::tiles::RgbaTileImage>,
@@ -115,6 +117,12 @@ impl ClipSession {
             .filter(|node| node.kind == RenderNodeKind::Raster)
             .map(|node| node.layer_id)
             .collect();
+        let text_layer_ids: Vec<_> = render_plan
+            .nodes
+            .iter()
+            .filter(|node| node.kind == RenderNodeKind::Text)
+            .map(|node| node.layer_id)
+            .collect();
         let mask_layer_ids: Vec<_> = render_plan
             .nodes
             .iter()
@@ -132,6 +140,10 @@ impl ClipSession {
             &raster_layer_ids,
             summary.canvas,
         )?;
+        let text_sources = clip_file::metadata::read_text_layer_sources_from_sqlite(
+            container.sqlite_bytes(),
+            &text_layer_ids,
+        )?;
         let mask_sources = clip_file::metadata::read_mask_layer_sources_from_sqlite(
             container.sqlite_bytes(),
             &mask_layer_ids,
@@ -147,6 +159,7 @@ impl ClipSession {
             summary,
             render_plan,
             raster_sources,
+            text_sources,
             mask_sources,
             filter_sources,
             rendered_image: None,

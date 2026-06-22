@@ -100,6 +100,95 @@ impl ClipSession {
         }))
     }
 
+    pub(super) fn plan_gpu_text_source(
+        &self,
+        node: &clip_graph::RenderNode,
+        options: StrictRasterStackOptions,
+        unsupported: &mut Vec<SimpleRasterStackUnsupported>,
+        resource_plan: &mut GpuResourcePlan,
+    ) -> Result<Option<clip_gpu::GpuNormalRasterSource>, RuntimeError> {
+        if node.clip {
+            unsupported.push(SimpleRasterStackUnsupported {
+                render_node_id: node.id,
+                layer_id: node.layer_id,
+                kind: node.kind,
+                reason: SimpleRasterStackUnsupportedReason::Clipping,
+            });
+            return Ok(None);
+        }
+        let Some(blend_mode) = strict_raster_blend_mode(node, options, false) else {
+            unsupported.push(SimpleRasterStackUnsupported {
+                render_node_id: node.id,
+                layer_id: node.layer_id,
+                kind: node.kind,
+                reason: SimpleRasterStackUnsupportedReason::Composite(node.composite),
+            });
+            return Ok(None);
+        };
+        if !options.allow_layer_opacity && node.opacity != LayerOpacity::MAX {
+            unsupported.push(SimpleRasterStackUnsupported {
+                render_node_id: node.id,
+                layer_id: node.layer_id,
+                kind: node.kind,
+                reason: SimpleRasterStackUnsupportedReason::Opacity(node.opacity.0),
+            });
+            return Ok(None);
+        }
+        let Some(opacity) = opacity_factor(node.opacity) else {
+            unsupported.push(SimpleRasterStackUnsupported {
+                render_node_id: node.id,
+                layer_id: node.layer_id,
+                kind: node.kind,
+                reason: SimpleRasterStackUnsupportedReason::OpacityOutOfRange(node.opacity.0),
+            });
+            return Ok(None);
+        };
+        if node.mask_mipmap_id.is_some() {
+            unsupported.push(SimpleRasterStackUnsupported {
+                render_node_id: node.id,
+                layer_id: node.layer_id,
+                kind: node.kind,
+                reason: SimpleRasterStackUnsupportedReason::Mask,
+            });
+            return Ok(None);
+        }
+
+        let render_mipmap_id = node.render_mipmap_id.unwrap_or(node.layer_id.0);
+        let source = self
+            .text_sources
+            .get(&node.layer_id)
+            .cloned()
+            .ok_or(clip_file::ClipFileError::MissingLayer(node.layer_id))?;
+        let layout = crate::text_render::measure_text_source(&source, self.summary.canvas)?;
+        if layout.size.width == 0 || layout.size.height == 0 {
+            return Ok(None);
+        }
+        let key = clip_gpu::GpuRasterResourceKey {
+            layer_id: node.layer_id,
+            render_mipmap_id,
+        };
+        resource_plan.insert_text(
+            key,
+            node.id,
+            node.layer_id,
+            render_mipmap_id,
+            source,
+            layout,
+        );
+        let (mask_key, opacity) = apply_planned_gpu_mask(
+            plan_gpu_mask_resource(&self.mask_sources, node, self.summary.canvas, resource_plan)?,
+            opacity,
+        );
+        Ok(Some(clip_gpu::GpuNormalRasterSource {
+            key,
+            opacity,
+            mask_key,
+            offset_x: layout.offset_x,
+            offset_y: layout.offset_y,
+            blend_mode: gpu_raster_blend_mode(blend_mode),
+        }))
+    }
+
     pub(super) fn plan_gpu_lut_filter_source(
         &self,
         node: &clip_graph::RenderNode,
@@ -236,6 +325,15 @@ impl ClipSession {
                         layer_id: node.layer_id,
                         kind: node.kind,
                         reason: SimpleRasterStackUnsupportedReason::Filter,
+                    });
+                    index += 1;
+                }
+                RenderNodeKind::Text => {
+                    unsupported.push(SimpleRasterStackUnsupported {
+                        render_node_id: node.id,
+                        layer_id: node.layer_id,
+                        kind: node.kind,
+                        reason: SimpleRasterStackUnsupportedReason::Clipping,
                     });
                     index += 1;
                 }

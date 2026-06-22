@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use clip_gpu::{GpuClippedStackSource, GpuMaskResourceKey, GpuNormalStackSource};
 use clip_model::CanvasSize;
 
+use crate::gpu_provider::GpuResourcePlan;
 use crate::results::NativeTileSiloEstimateResult;
 use crate::stack_plan::GpuRenderStackSelection;
 use crate::tile_silo_occupancy;
@@ -21,11 +22,16 @@ impl ClipSession {
         let selection = self.select_gpu_normal_render_stack(tile_silo_options())?;
         let GpuRenderStackSelection {
             sources,
-            resource_plan: _,
+            resource_plan,
             unsupported,
         } = selection;
-        let mut estimate =
-            TileSiloEstimateBuilder::new(self, tile_size, sources.len(), unsupported.len())?;
+        let mut estimate = TileSiloEstimateBuilder::new(
+            self,
+            &resource_plan,
+            tile_size,
+            sources.len(),
+            unsupported.len(),
+        )?;
         estimate.walk_sources(&sources, &mut SegmentState::default())?;
         Ok(estimate.finish())
     }
@@ -33,6 +39,7 @@ impl ClipSession {
 
 struct TileSiloEstimateBuilder<'a> {
     session: &'a ClipSession,
+    resource_plan: &'a GpuResourcePlan,
     result: NativeTileSiloEstimateResult,
     raster_events_by_tile: Vec<u32>,
     compressed_raster_events_by_tile: Vec<u32>,
@@ -43,6 +50,7 @@ struct TileSiloEstimateBuilder<'a> {
 impl<'a> TileSiloEstimateBuilder<'a> {
     fn new(
         session: &'a ClipSession,
+        resource_plan: &'a GpuResourcePlan,
         tile_size: u32,
         top_level_source_count: usize,
         unsupported_count: usize,
@@ -56,6 +64,7 @@ impl<'a> TileSiloEstimateBuilder<'a> {
 
         Ok(Self {
             session,
+            resource_plan,
             result: NativeTileSiloEstimateResult {
                 canvas,
                 tile_size,
@@ -248,33 +257,45 @@ impl<'a> TileSiloEstimateBuilder<'a> {
             self.result.clipped_raster_source_count += 1;
         }
 
-        let metadata = self
-            .session
-            .raster_sources
-            .get(&source.key.layer_id)
-            .ok_or(clip_file::ClipFileError::InvalidMetadata(
-                "missing planned raster source",
-            ))?;
-        let tile_count = self.source_tile_count(
-            metadata.pixel_size,
-            metadata.offset_x,
-            metadata.offset_y,
-            true,
-        )?;
-        self.result.raster_tile_event_count += tile_count;
-        let block_inspection = tile_silo_occupancy::inspect_raster_blocks(self.session, metadata)?;
-        tile_silo_occupancy::add_compressed_raster_tile_events(
-            &mut self.compressed_raster_events_by_tile,
-            self.result.canvas,
-            self.result.canvas_tiles_x,
-            self.result.tile_size,
-            metadata,
-            &block_inspection.compressed_tiles,
-        )?;
+        let (tile_count, block_stats) =
+            if let Some(metadata) = self.session.raster_sources.get(&source.key.layer_id) {
+                let tile_count = self.source_tile_count(
+                    metadata.pixel_size,
+                    metadata.offset_x,
+                    metadata.offset_y,
+                    true,
+                )?;
+                self.result.raster_tile_event_count += tile_count;
+                let block_inspection =
+                    tile_silo_occupancy::inspect_raster_blocks(self.session, metadata)?;
+                tile_silo_occupancy::add_compressed_raster_tile_events(
+                    &mut self.compressed_raster_events_by_tile,
+                    self.result.canvas,
+                    self.result.canvas_tiles_x,
+                    self.result.tile_size,
+                    metadata,
+                    &block_inspection.compressed_tiles,
+                )?;
+                (tile_count, Some(block_inspection.stats))
+            } else {
+                let Some((size, offset_x, offset_y)) =
+                    self.resource_plan.raster_source_extent(source.key)
+                else {
+                    return Err(clip_file::ClipFileError::InvalidMetadata(
+                        "missing planned raster source",
+                    )
+                    .into());
+                };
+                let tile_count = self.source_tile_count(size, offset_x, offset_y, true)?;
+                self.result.raster_tile_event_count += tile_count;
+                (tile_count, None)
+            };
         if self.seen_rasters.insert(source.key) {
             self.result.unique_raster_resource_count += 1;
             self.result.raster_tile_slot_count += tile_count;
-            self.add_raster_block_stats(block_inspection.stats);
+            if let Some(stats) = block_stats {
+                self.add_raster_block_stats(stats);
+            }
         }
         Ok(())
     }

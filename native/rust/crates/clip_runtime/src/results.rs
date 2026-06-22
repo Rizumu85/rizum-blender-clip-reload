@@ -193,15 +193,11 @@ pub struct NormalRasterStackResourceStats {
 
 impl NormalRasterStackResourceStats {
     pub(crate) fn add_raster_source(&mut self, source: &clip_file::metadata::RasterLayerSource) {
-        let bytes = u64::from(source.pixel_size.width) * u64::from(source.pixel_size.height) * 4;
-        self.raster_count += 1;
-        self.raster_bytes += bytes;
-        if bytes > self.max_raster_bytes {
-            self.max_raster_bytes = bytes;
-            self.max_raster_layer_id = Some(source.layer.id);
-            self.max_raster_width = source.pixel_size.width;
-            self.max_raster_height = source.pixel_size.height;
-        }
+        self.add_raster_extent(source.layer.id, source.pixel_size);
+    }
+
+    pub(crate) fn add_text_source(&mut self, layer_id: LayerId, size: CanvasSize) {
+        self.add_raster_extent(layer_id, size);
     }
 
     pub(crate) fn add_mask_source(&mut self, source: &clip_file::metadata::MaskLayerSource) {
@@ -213,6 +209,18 @@ impl NormalRasterStackResourceStats {
             self.max_mask_layer_id = Some(source.layer_id);
             self.max_mask_width = source.pixel_size.width;
             self.max_mask_height = source.pixel_size.height;
+        }
+    }
+
+    fn add_raster_extent(&mut self, layer_id: LayerId, size: CanvasSize) {
+        let bytes = u64::from(size.width) * u64::from(size.height) * 4;
+        self.raster_count += 1;
+        self.raster_bytes += bytes;
+        if bytes > self.max_raster_bytes {
+            self.max_raster_bytes = bytes;
+            self.max_raster_layer_id = Some(layer_id);
+            self.max_raster_width = size.width;
+            self.max_raster_height = size.height;
         }
     }
 }
@@ -321,6 +329,7 @@ pub enum SimpleRasterStackUnsupportedReason {
     ContainerSemantics,
     InsideUnsupportedContainer,
     Filter,
+    Text,
     UnsupportedLayerKind(u32),
 }
 
@@ -364,6 +373,7 @@ impl fmt::Display for SimpleRasterStackUnsupportedReason {
                 f.write_str("node is inside an unsupported container")
             }
             Self::Filter => f.write_str("filter layer is not in the strict raster stack pass"),
+            Self::Text => f.write_str("text layer requires native text rasterization"),
             Self::UnsupportedLayerKind(kind) => write!(f, "unsupported layer kind {kind}"),
         }
     }

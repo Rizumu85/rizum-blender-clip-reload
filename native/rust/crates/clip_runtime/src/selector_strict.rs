@@ -160,6 +160,16 @@ impl ClipSession {
                     }
                     index += 1;
                 }
+                RenderNodeKind::Text => {
+                    unsupported.push(SimpleRasterStackUnsupported {
+                        render_node_id: node.id,
+                        layer_id: node.layer_id,
+                        kind: node.kind,
+                        reason: SimpleRasterStackUnsupportedReason::Text,
+                    });
+                    clip_base_state = ClipBaseState::Blocked;
+                    index += 1;
+                }
                 RenderNodeKind::Unsupported(raw_kind) => {
                     unsupported.push(SimpleRasterStackUnsupported {
                         render_node_id: node.id,

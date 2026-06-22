@@ -6,6 +6,7 @@ mod raster_source;
 mod records;
 mod schema;
 mod summary;
+mod text_source;
 
 pub use filter_source::{
     read_filter_layer_source_from_sqlite, read_filter_layer_sources_from_sqlite,
@@ -18,6 +19,8 @@ pub use raster_source::{
 };
 pub use records::{
     CanvasRecord, FilterLayerSource, LayerGraphRecord, LayerRecord, MaskLayerSource,
-    RasterLayerSource,
+    RasterLayerSource, TextLayerAttributes, TextLayerEntry, TextLayerFontMapping, TextLayerRect,
+    TextLayerRun, TextLayerSource,
 };
 pub use summary::read_summary_from_sqlite;
+pub use text_source::{read_text_layer_source_from_sqlite, read_text_layer_sources_from_sqlite};

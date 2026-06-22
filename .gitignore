@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 tmp_compare/
+local/
 local_artifacts/
 
 # Private/customer reference art stays local only.

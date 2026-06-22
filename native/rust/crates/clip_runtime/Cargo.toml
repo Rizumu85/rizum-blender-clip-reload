@@ -7,10 +7,12 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+ab_glyph = "0.2"
 clip_file = { path = "../clip_file" }
 clip_gpu = { path = "../clip_gpu" }
 clip_graph = { path = "../clip_graph" }
 clip_model = { path = "../clip_model" }
+fontdb = "0.23"
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
