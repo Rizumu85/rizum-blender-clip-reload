@@ -4294,3 +4294,38 @@ premultiplied pixels (`13643 -> 13908` in the measured run), and
 the 8192 atlas cap and keeps the faithful fallback. Do not re-enable larger
 scope atlases as a performance optimization until a focused legacy-vs-tile test
 proves the affected large ThroughScope/container shapes faithful.
+
+## Text decoration and synthetic italic follow-up
+
+The first text decoration fix uses OpenType line metrics for decoration
+thickness and supersampled synthetic oblique when the requested italic face is
+not installed. Further probes on `Text_6` through `Text_12` narrowed the
+remaining visible differences:
+
+- `Text_7` underline and `Text_8` strikethrough are effectively aligned with the
+  CSP exports. Their long dark decoration rows match the reference ranges
+  (`Text_7`: y `85..88`, `Text_8`: y `58..61` native versus `57..60`
+  reference).
+- `Text_9` still differs because the italic HarmonyOS Sans decoration becomes
+  wider and one pixel thicker in native (`x=13..173`, 5 rows) while CSP keeps the
+  decoration close to the upright logical run (`x=15..169`, 4 rows).
+- `Text_11` is dominated by synthetic italic/layout differences for
+  `OldNewspaperTypes`; the font resolves correctly to the installed
+  `OldNewspaperTypes.ttf`, so this is not a fallback-font problem.
+- `Text_12` resolves correctly to `MiSans-ExtraLight.ttf`, but underline and
+  strikethrough still differ in vertical placement and width.
+
+Two tempting shortcuts were rejected:
+
+- Disabling `fit_single_line_to_quad_width` badly regressed `Text_6`, `Text_9`,
+  and `Text_11`, although it slightly improved `Text_12`. The quad-fit heuristic
+  remains necessary for current italic glyph placement.
+- Drawing decorations from pre-fit "logical" styles instead of fitted styles
+  regressed `Text_9` and `Text_12`. CSP appears to couple decoration placement
+  to fitted text layout, but with an additional italic-decoration rule that the
+  current importer has not recovered.
+
+The remaining safe next step is to find the native text decoration rule for
+italic/synthetic italic runs, not to tune per-font offsets. In particular, avoid
+changing the now-good upright underline/strikethrough path from `Text_7` and
+`Text_8`.
