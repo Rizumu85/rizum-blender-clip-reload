@@ -4523,3 +4523,15 @@ kept inside the bounding circle. This fixes the previous failure where Text_5's
 ordinary horizontal baseline landed below the canvas. Focused metric:
 `Text_5` raw mean `12.114187 -> 1.291969`; `Text_1`, `Text_4`, `Text_6`, and
 `Test_AddGlowMultiply` guards stayed stable.
+
+New Chinese text samples `Text_13` through `Text_15` split the remaining text
+scope into horizontal CJK, upright vertical CJK, and mixed vertical CJK/Latin.
+`Text_13` follows the existing horizontal Skia path and compares at raw mean
+`1.048331`. `Text_14` and `Text_15` showed that CJK vertical writing is not the
+same as the earlier Latin vertical mode: CJK glyphs remain upright, columns are
+anchored near the text raster center line, explicit newlines create new
+right-to-left columns, and short ASCII runs such as `hu` are drawn as a
+horizontal tate-chu-yoko-style item instead of individual rotated letters. The
+focused CJK vertical path now compares at `Text_14` raw mean `3.375075` and
+`Text_15` raw mean `5.222719`; the full `Text_1..Text_15` guard matrix stayed
+stable.

@@ -8,6 +8,10 @@ use skia_safe::{
 use crate::RuntimeError;
 
 const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.25;
+const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.90;
+const CJK_VERTICAL_RIGHT_COLUMN_X_EM: f32 = 0.08;
+const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.06;
+const CJK_VERTICAL_MIDPOINT_Y_EM: f32 = 0.93;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TextRasterLayout {
@@ -302,7 +306,12 @@ fn render_vertical_entry_surface(
     styles: &[TextCharStyle],
     fonts: &mut FontResolver,
 ) -> Result<(), RuntimeError> {
-    let Some((box_x, box_y, box_width, box_height)) = vertical_text_box(entry, layout) else {
+    let upright_layout = vertical_text_uses_upright_layout(chars);
+    if upright_layout {
+        return render_upright_vertical_entry_surface(canvas, layout, entry, chars, styles, fonts);
+    }
+    let Some((box_x, box_y, box_width, box_height)) = vertical_text_box(entry, layout, false)
+    else {
         return Ok(());
     };
     let max_font_size = styles
@@ -314,17 +323,14 @@ fn render_vertical_entry_surface(
     let column_step = (max_font_size * 1.208).max(1.0);
     let rows_per_column = ((box_height / row_step).round() as usize).max(1);
     let advances = char_advances(chars, styles, fonts);
-    for column_start in (0..chars.len()).step_by(rows_per_column) {
-        let column_end = column_start
-            .saturating_add(rows_per_column)
-            .min(chars.len());
+    let columns = vertical_text_columns(chars, rows_per_column);
+    for (column, (column_start, column_end)) in columns.into_iter().enumerate() {
         let row_positions = vertical_column_row_positions(
             &advances[column_start..column_end],
             box_y
                 + max_font_size * 0.318
                 + row_step * (rows_per_column.saturating_sub(1)) as f32 * 0.5,
         );
-        let column = column_start / rows_per_column;
         let center_x = box_x + box_width - right_column_inset - column as f32 * column_step;
         for (row, index) in (column_start..column_end).enumerate() {
             let ch = chars[index];
@@ -339,10 +345,205 @@ fn render_vertical_entry_surface(
                 .get(row)
                 .copied()
                 .unwrap_or_else(|| box_y + max_font_size * 0.31 + row as f32 * row_step);
-            draw_rotated_vertical_char(canvas, ch, style, &resolved, center_x, center_y);
+            draw_vertical_char(canvas, ch, style, &resolved, center_x, center_y, false);
         }
     }
     Ok(())
+}
+
+fn render_upright_vertical_entry_surface(
+    canvas: &Canvas,
+    layout: &TextRasterLayout,
+    entry: &clip_file::metadata::TextLayerEntry,
+    chars: &[char],
+    styles: &[TextCharStyle],
+    fonts: &mut FontResolver,
+) -> Result<(), RuntimeError> {
+    let Some((_, box_y, _, box_height)) = vertical_text_box(entry, layout, true) else {
+        return Ok(());
+    };
+    let max_font_size = styles
+        .iter()
+        .map(|style| style.font_size_px)
+        .fold(1.0f32, f32::max);
+    let item_step = (max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM).max(1.0);
+    let rows_per_column = ((box_height / item_step).floor() as usize).max(1);
+    let columns = vertical_upright_item_columns(chars, rows_per_column);
+    let right_column_x =
+        layout.size.width as f32 * 0.5 + max_font_size * CJK_VERTICAL_RIGHT_COLUMN_X_EM;
+    let column_step = (max_font_size * CJK_VERTICAL_COLUMN_ADVANCE_EM).max(1.0);
+    let midpoint_y = box_y + max_font_size * CJK_VERTICAL_MIDPOINT_Y_EM;
+    for (column, items) in columns.into_iter().enumerate() {
+        let advances = items
+            .iter()
+            .map(|item| vertical_upright_item_advance(item, chars, styles, max_font_size, fonts))
+            .collect::<Vec<_>>();
+        let row_positions = vertical_column_row_positions(&advances, midpoint_y);
+        let center_x = right_column_x - column as f32 * column_step;
+        for (row, item) in items.iter().enumerate() {
+            let center_y = row_positions.get(row).copied().unwrap_or(midpoint_y);
+            match item.kind {
+                VerticalTextItemKind::UprightChar => {
+                    let ch = chars[item.start];
+                    let style = &styles[item.start];
+                    let Some(resolved) = fonts.resolve(style) else {
+                        continue;
+                    };
+                    draw_upright_vertical_char(canvas, ch, style, &resolved, center_x, center_y);
+                }
+                VerticalTextItemKind::HorizontalRun => {
+                    draw_horizontal_vertical_run(
+                        canvas,
+                        &chars[item.start..item.end],
+                        &styles[item.start..item.end],
+                        fonts,
+                        center_x,
+                        center_y,
+                    )?;
+                }
+                VerticalTextItemKind::RotatedChar => {
+                    let ch = chars[item.start];
+                    let style = &styles[item.start];
+                    let Some(resolved) = fonts.resolve(style) else {
+                        continue;
+                    };
+                    draw_rotated_vertical_char(canvas, ch, style, &resolved, center_x, center_y);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct VerticalTextItem {
+    start: usize,
+    end: usize,
+    kind: VerticalTextItemKind,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum VerticalTextItemKind {
+    UprightChar,
+    HorizontalRun,
+    RotatedChar,
+}
+
+fn vertical_text_uses_upright_layout(chars: &[char]) -> bool {
+    let cjk_count = chars
+        .iter()
+        .filter(|ch| vertical_char_is_upright(**ch))
+        .count();
+    let visible_count = chars
+        .iter()
+        .filter(|ch| **ch != '\r' && **ch != '\n')
+        .count();
+    cjk_count > 0 && cjk_count * 2 >= visible_count
+}
+
+fn vertical_char_is_upright(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x3000..=0x303f
+            | 0x3040..=0x30ff
+            | 0x3400..=0x4dbf
+            | 0x4e00..=0x9fff
+            | 0xf900..=0xfaff
+            | 0xff00..=0xffef
+    )
+}
+
+fn vertical_char_starts_horizontal_run(ch: char) -> bool {
+    ch.is_ascii_alphanumeric()
+}
+
+fn vertical_upright_item_columns(
+    chars: &[char],
+    rows_per_column: usize,
+) -> Vec<Vec<VerticalTextItem>> {
+    let mut columns = Vec::new();
+    for (line_start, line_end) in text_lines(chars) {
+        let mut line_items = Vec::new();
+        let mut index = line_start;
+        while index < line_end {
+            let ch = chars[index];
+            if vertical_char_is_upright(ch) {
+                line_items.push(VerticalTextItem {
+                    start: index,
+                    end: index + 1,
+                    kind: VerticalTextItemKind::UprightChar,
+                });
+                index += 1;
+                continue;
+            }
+            if vertical_char_starts_horizontal_run(ch) {
+                let start = index;
+                index += 1;
+                while index < line_end && vertical_char_starts_horizontal_run(chars[index]) {
+                    index += 1;
+                }
+                line_items.push(VerticalTextItem {
+                    start,
+                    end: index,
+                    kind: VerticalTextItemKind::HorizontalRun,
+                });
+                continue;
+            }
+            line_items.push(VerticalTextItem {
+                start: index,
+                end: index + 1,
+                kind: VerticalTextItemKind::RotatedChar,
+            });
+            index += 1;
+        }
+        let mut start = 0usize;
+        while start < line_items.len() {
+            let end = start.saturating_add(rows_per_column).min(line_items.len());
+            columns.push(line_items[start..end].to_vec());
+            start = end;
+        }
+    }
+    columns
+}
+
+fn vertical_upright_item_advance(
+    item: &VerticalTextItem,
+    chars: &[char],
+    styles: &[TextCharStyle],
+    max_font_size: f32,
+    fonts: &mut FontResolver,
+) -> f32 {
+    match item.kind {
+        VerticalTextItemKind::HorizontalRun => {
+            let height = text_run_bounds(
+                &chars[item.start..item.end],
+                &styles[item.start..item.end],
+                fonts,
+            )
+            .map(|(_, top, bottom)| bottom - top)
+            .unwrap_or(max_font_size * 0.75);
+            height.max(max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM)
+        }
+        VerticalTextItemKind::UprightChar | VerticalTextItemKind::RotatedChar => {
+            max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM
+        }
+    }
+}
+
+fn vertical_text_columns(chars: &[char], rows_per_column: usize) -> Vec<(usize, usize)> {
+    let mut columns = Vec::new();
+    for (line_start, line_end) in text_lines(chars) {
+        if line_start >= line_end {
+            continue;
+        }
+        let mut start = line_start;
+        while start < line_end {
+            let end = start.saturating_add(rows_per_column).min(line_end);
+            columns.push((start, end));
+            start = end;
+        }
+    }
+    columns
 }
 
 fn vertical_column_row_positions(advances: &[f32], midpoint_y: f32) -> Vec<f32> {
@@ -370,6 +571,7 @@ fn vertical_column_row_positions(advances: &[f32], midpoint_y: f32) -> Vec<f32> 
 fn vertical_text_box(
     entry: &clip_file::metadata::TextLayerEntry,
     layout: &TextRasterLayout,
+    center_in_layout: bool,
 ) -> Option<(f32, f32, f32, f32)> {
     let (box_width, box_height) = entry.attributes.box_size?;
     if box_width <= 0 || box_height <= 0 {
@@ -382,6 +584,14 @@ fn vertical_text_box(
     let min_y = *ys.iter().min()? as f32 / 100.0;
     let box_width = box_width as f32;
     let box_height = box_height as f32;
+    if center_in_layout {
+        return Some((
+            (layout.size.width as f32 - box_width) * 0.5,
+            (layout.size.height as f32 - box_height) * 0.5,
+            box_width,
+            box_height,
+        ));
+    }
     let x = if min_x < 0.0 {
         layout.size.width as f32 + min_x
     } else {
@@ -393,6 +603,98 @@ fn vertical_text_box(
         min_y
     };
     Some((x, y, box_width, box_height))
+}
+
+fn draw_vertical_char(
+    canvas: &Canvas,
+    ch: char,
+    style: &TextCharStyle,
+    resolved: &ResolvedFont,
+    center_x: f32,
+    center_y: f32,
+    upright: bool,
+) {
+    if upright {
+        draw_upright_vertical_char(canvas, ch, style, resolved, center_x, center_y);
+    } else {
+        draw_rotated_vertical_char(canvas, ch, style, resolved, center_x, center_y);
+    }
+}
+
+fn draw_upright_vertical_char(
+    canvas: &Canvas,
+    ch: char,
+    style: &TextCharStyle,
+    resolved: &ResolvedFont,
+    center_x: f32,
+    center_y: f32,
+) {
+    let font = skia_font(resolved, style);
+    let paint = text_paint(style.color);
+    let text = ch.to_string();
+    let (_, bounds) = font.measure_str(&text, Some(&paint));
+    canvas.draw_str(
+        &text,
+        Point::new(
+            center_x - bounds.left - bounds.width() * 0.5,
+            center_y - bounds.top - bounds.height() * 0.5,
+        ),
+        &font,
+        &paint,
+    );
+}
+
+fn draw_horizontal_vertical_run(
+    canvas: &Canvas,
+    chars: &[char],
+    styles: &[TextCharStyle],
+    fonts: &mut FontResolver,
+    center_x: f32,
+    center_y: f32,
+) -> Result<(), RuntimeError> {
+    let Some((width, top, bottom)) = text_run_bounds(chars, styles, fonts) else {
+        return Ok(());
+    };
+    let baseline_y = center_y - (top + bottom) * 0.5;
+    let mut x = center_x - width * 0.5;
+    for (ch, style) in chars.iter().zip(styles.iter()) {
+        let Some(resolved) = fonts.resolve(style) else {
+            x += style.font_size_px * 0.55;
+            continue;
+        };
+        let font = skia_font(&resolved, style);
+        let paint = text_paint(style.color);
+        let text = ch.to_string();
+        canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
+        x += font.measure_str(&text, Some(&paint)).0;
+    }
+    Ok(())
+}
+
+fn text_run_bounds(
+    chars: &[char],
+    styles: &[TextCharStyle],
+    fonts: &mut FontResolver,
+) -> Option<(f32, f32, f32)> {
+    let mut width = 0.0f32;
+    let mut top = f32::INFINITY;
+    let mut bottom = f32::NEG_INFINITY;
+    for (ch, style) in chars.iter().zip(styles.iter()) {
+        let Some(resolved) = fonts.resolve(style) else {
+            width += style.font_size_px * 0.55;
+            top = top.min(0.0);
+            bottom = bottom.max(style.font_size_px);
+            continue;
+        };
+        let font = skia_font(&resolved, style);
+        let paint = text_paint(style.color);
+        let text = ch.to_string();
+        let (advance, bounds) = font.measure_str(&text, Some(&paint));
+        width += advance;
+        top = top.min(bounds.top);
+        bottom = bottom.max(bounds.bottom);
+    }
+    (width > 0.0 && top.is_finite() && bottom.is_finite()).then_some((width, top, bottom))
 }
 
 fn draw_rotated_vertical_char(
@@ -1261,7 +1563,7 @@ mod tests {
             offset_y: 35,
         };
 
-        let (x, y, width, height) = vertical_text_box(&entry, &layout).unwrap();
+        let (x, y, width, height) = vertical_text_box(&entry, &layout, false).unwrap();
 
         assert_eq!(x.round() as i32, 57);
         assert_eq!(y.round() as i32, 10);
@@ -1307,6 +1609,35 @@ mod tests {
         assert_eq!(
             (wide_pair[0] + wide_pair[1]).round() as i32,
             (narrow_pair[0] + narrow_pair[1]).round() as i32
+        );
+    }
+
+    #[test]
+    fn vertical_upright_layout_detects_cjk_majority() {
+        let pure_cjk = "测试一下".chars().collect::<Vec<_>>();
+        let mixed_cjk = "测试hu\r\n一下".chars().collect::<Vec<_>>();
+        let latin = "Test".chars().collect::<Vec<_>>();
+
+        assert!(vertical_text_uses_upright_layout(&pure_cjk));
+        assert!(vertical_text_uses_upright_layout(&mixed_cjk));
+        assert!(!vertical_text_uses_upright_layout(&latin));
+    }
+
+    #[test]
+    fn vertical_upright_items_group_short_ascii_runs() {
+        let chars = "测试hu\r\n一下".chars().collect::<Vec<_>>();
+        let columns = vertical_upright_item_columns(&chars, 16);
+
+        assert_eq!(columns.len(), 2);
+        assert_eq!(columns[0][0].kind, VerticalTextItemKind::UprightChar);
+        assert_eq!(columns[0][1].kind, VerticalTextItemKind::UprightChar);
+        assert_eq!(columns[0][2].kind, VerticalTextItemKind::HorizontalRun);
+        assert_eq!(&chars[columns[0][2].start..columns[0][2].end], &['h', 'u']);
+        assert_eq!(columns[1].len(), 2);
+        assert!(
+            columns[1]
+                .iter()
+                .all(|item| item.kind == VerticalTextItemKind::UprightChar)
         );
     }
 
