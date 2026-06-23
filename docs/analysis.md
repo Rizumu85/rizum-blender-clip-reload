@@ -4509,5 +4509,10 @@ surface box `(57, 10, 165, 98)`.
 `Text_5` remains separate. It is a circular/arc text sample, not the same
 vertical-writing mode. Its raw attributes differ with param `66 = 1`; params
 `70` and `71` decode as big-endian doubles in the useful range (`195.0`,
-`165.0` for Text_5), and param `72` stores `(171, 171)`. The current vertical
-fix deliberately does not guess that arc renderer.
+`165.0` for Text_5), and param `72` stores `(171, 171)`. A basic path-text
+branch now treats mode `66 = 1` plus a path center as circular arc text: glyph
+advances distribute the string along the upper arc, while the baseline radius is
+kept inside the bounding circle. This fixes the previous failure where Text_5's
+ordinary horizontal baseline landed below the canvas. Focused metric:
+`Text_5` raw mean `12.114187 -> 1.291969`; `Text_1`, `Text_4`, `Text_6`, and
+`Test_AddGlowMultiply` guards stayed stable.

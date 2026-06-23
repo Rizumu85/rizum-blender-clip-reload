@@ -46,9 +46,9 @@ In scope:
   are parsed, decoration thickness uses OpenType font line metrics at the
   logical pre-fit font size, unusually high OpenType strikeout positions are
   honored for display-font strikethroughs, missing italic faces use Skia
-  synthetic oblique, and vertical text flag `0x10` uses a basic right-to-left
-  column layout. This is not editable text import and remains a first-pass
-  renderer. Circular/arc text is still not implemented.
+  synthetic oblique, vertical text flag `0x10` uses a basic right-to-left column
+  layout, and text path mode `66 = 1` uses a basic circular arc layout. This is
+  not editable text import and remains a first-pass renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

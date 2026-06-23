@@ -116,6 +116,10 @@ pub fn parse_text_layer_attributes(data: &[u8]) -> Result<TextLayerAttributes, C
         fallback_font: None,
         fonts: Vec::new(),
         layout_flags: None,
+        path_mode: None,
+        path_angle_a_degrees: None,
+        path_angle_b_degrees: None,
+        path_center: None,
         font_size_100: None,
         color: None,
         bbox: None,
@@ -267,6 +271,18 @@ fn parse_text_param(
                 *value = reader.read_i32_le()?;
             }
             attributes.quad_verts_100 = Some(verts);
+        }
+        66 => {
+            attributes.path_mode = Some(reader.read_i32_le()?);
+        }
+        70 => {
+            attributes.path_angle_a_degrees = Some(reader.read_f64_be()?.round() as i32);
+        }
+        71 => {
+            attributes.path_angle_b_degrees = Some(reader.read_f64_be()?.round() as i32);
+        }
+        72 => {
+            attributes.path_center = Some((reader.read_i32_le()?, reader.read_i32_le()?));
         }
         _ => {}
     }
@@ -434,6 +450,11 @@ impl<'a> DataReader<'a> {
         Ok(f64::from_le_bytes(bytes.try_into().unwrap()))
     }
 
+    fn read_f64_be(&mut self) -> Result<f64, ClipFileError> {
+        let bytes = self.read_bytes(8)?;
+        Ok(f64::from_be_bytes(bytes.try_into().unwrap()))
+    }
+
     fn read_utf8_string(&mut self, len: usize) -> Result<String, ClipFileError> {
         read_utf8_lossless(self.read_bytes(len)?)
     }
@@ -459,6 +480,13 @@ mod tests {
         push_param(&mut data, 31, b"HarmonyOS Sans Bold");
         push_param(&mut data, 32, &900i32.to_le_bytes());
         push_param(&mut data, 33, &16i32.to_le_bytes());
+        push_param(&mut data, 66, &1i32.to_le_bytes());
+        push_param(&mut data, 70, &195f64.to_be_bytes());
+        push_param(&mut data, 71, &165f64.to_be_bytes());
+        let mut path_center = Vec::new();
+        path_center.extend_from_slice(&171i32.to_le_bytes());
+        path_center.extend_from_slice(&171i32.to_le_bytes());
+        push_param(&mut data, 72, &path_center);
         let mut color = Vec::new();
         color.extend_from_slice(&0x27272727u32.to_le_bytes());
         color.extend_from_slice(&0x27272727u32.to_le_bytes());
@@ -475,6 +503,10 @@ mod tests {
         assert_eq!(parsed.default_font.as_deref(), Some("HarmonyOS Sans Bold"));
         assert_eq!(parsed.font_size_100, Some(900));
         assert_eq!(parsed.layout_flags, Some(16));
+        assert_eq!(parsed.path_mode, Some(1));
+        assert_eq!(parsed.path_angle_a_degrees, Some(195));
+        assert_eq!(parsed.path_angle_b_degrees, Some(165));
+        assert_eq!(parsed.path_center, Some((171, 171)));
         assert_eq!(
             parsed.color,
             Some(Rgba8 {

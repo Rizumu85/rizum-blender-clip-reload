@@ -150,6 +150,9 @@ fn render_entry_surface(
     }
     let logical_styles = styles.clone();
     let chars: Vec<char> = entry.text.chars().collect();
+    if text_layout_is_arc(entry) {
+        return render_arc_entry_surface(canvas, entry, &chars, &styles, fonts);
+    }
     if text_layout_is_vertical(entry) {
         return render_vertical_entry_surface(canvas, layout, entry, &chars, &styles, fonts);
     }
@@ -188,6 +191,107 @@ fn text_layout_is_vertical(entry: &clip_file::metadata::TextLayerEntry) -> bool 
         .layout_flags
         .map(|flags| flags & 0x10 != 0)
         .unwrap_or(false)
+}
+
+fn text_layout_is_arc(entry: &clip_file::metadata::TextLayerEntry) -> bool {
+    entry.attributes.path_mode == Some(1) && entry.attributes.path_center.is_some()
+}
+
+fn render_arc_entry_surface(
+    canvas: &Canvas,
+    entry: &clip_file::metadata::TextLayerEntry,
+    chars: &[char],
+    styles: &[TextCharStyle],
+    fonts: &mut FontResolver,
+) -> Result<(), RuntimeError> {
+    let Some((center_x, center_y)) = entry.attributes.path_center else {
+        return Ok(());
+    };
+    let outer_radius = arc_outer_radius(entry).unwrap_or(0.0);
+    if outer_radius <= 1.0 {
+        return Ok(());
+    }
+    let max_font_size = styles
+        .iter()
+        .map(|style| style.font_size_px)
+        .fold(1.0f32, f32::max);
+    let baseline_radius = (outer_radius - max_font_size * 0.945).max(max_font_size * 0.35);
+    let angular_radius = (outer_radius * 0.57).max(baseline_radius);
+    let advances = char_advances(chars, styles, fonts);
+    let total_advance = advances.iter().sum::<f32>();
+    if total_advance <= 0.0 {
+        return Ok(());
+    }
+    let center_angle = -std::f32::consts::FRAC_PI_2;
+    let mut advance_cursor = 0.0f32;
+    for ((ch, style), advance) in chars.iter().zip(styles.iter()).zip(advances.iter()) {
+        if *ch == '\r' || *ch == '\n' {
+            advance_cursor += *advance;
+            continue;
+        }
+        let Some(resolved) = fonts.resolve(style) else {
+            advance_cursor += *advance;
+            continue;
+        };
+        let arc_offset = advance_cursor + *advance * 0.5 - total_advance * 0.5;
+        let angle = center_angle + arc_offset / angular_radius;
+        let baseline_x = center_x as f32 + baseline_radius * angle.cos();
+        let baseline_y = center_y as f32 + baseline_radius * angle.sin();
+        draw_arc_char(canvas, *ch, style, &resolved, baseline_x, baseline_y, angle);
+        advance_cursor += *advance;
+    }
+    Ok(())
+}
+
+fn arc_outer_radius(entry: &clip_file::metadata::TextLayerEntry) -> Option<f32> {
+    let (width, height) = entry.attributes.box_size?;
+    let from_box = width.min(height) as f32 * 0.5;
+    if from_box > 0.0 {
+        return Some(from_box);
+    }
+    let (center_x, center_y) = entry.attributes.path_center?;
+    Some(center_x.min(center_y).max(0) as f32)
+}
+
+fn char_advances(chars: &[char], styles: &[TextCharStyle], fonts: &mut FontResolver) -> Vec<f32> {
+    chars
+        .iter()
+        .zip(styles.iter())
+        .map(|(ch, style)| {
+            let Some(resolved) = fonts.resolve(style) else {
+                return style.font_size_px * 0.55;
+            };
+            let font = skia_font(&resolved, style);
+            let paint = text_paint(style.color);
+            let advance = font.measure_str(ch.to_string(), Some(&paint)).0;
+            advance.max(style.font_size_px * 0.25)
+        })
+        .collect()
+}
+
+fn draw_arc_char(
+    canvas: &Canvas,
+    ch: char,
+    style: &TextCharStyle,
+    resolved: &ResolvedFont,
+    baseline_x: f32,
+    baseline_y: f32,
+    angle: f32,
+) {
+    let font = skia_font(resolved, style);
+    let paint = text_paint(style.color);
+    let text = ch.to_string();
+    let (advance, bounds) = font.measure_str(&text, Some(&paint));
+    let save_count = canvas.save();
+    canvas.translate(Point::new(baseline_x, baseline_y));
+    canvas.rotate(angle.to_degrees() + 90.0, None);
+    canvas.draw_str(
+        &text,
+        Point::new(-advance * 0.5 - bounds.left, 0.0),
+        &font,
+        &paint,
+    );
+    canvas.restore_to_count(save_count);
 }
 
 fn render_vertical_entry_surface(
@@ -988,6 +1092,10 @@ mod tests {
                     fallback_font: Some("Tahoma".to_owned()),
                     fonts: Vec::new(),
                     layout_flags: None,
+                    path_mode: None,
+                    path_angle_a_degrees: None,
+                    path_angle_b_degrees: None,
+                    path_center: None,
                     font_size_100: Some(3200),
                     color: Some(Rgba8 {
                         r: 39,
@@ -1052,6 +1160,10 @@ mod tests {
                 fallback_font: None,
                 fonts: Vec::new(),
                 layout_flags: None,
+                path_mode: None,
+                path_angle_a_degrees: None,
+                path_angle_b_degrees: None,
+                path_center: None,
                 font_size_100: Some(3200),
                 color: None,
                 bbox: None,
@@ -1089,6 +1201,10 @@ mod tests {
                 fallback_font: None,
                 fonts: Vec::new(),
                 layout_flags: Some(0x10),
+                path_mode: None,
+                path_angle_a_degrees: None,
+                path_angle_b_degrees: None,
+                path_center: None,
                 font_size_100: Some(900),
                 color: None,
                 bbox: None,
@@ -1112,6 +1228,35 @@ mod tests {
         assert_eq!(y.round() as i32, 10);
         assert_eq!(width.round() as i32, 165);
         assert_eq!(height.round() as i32, 98);
+    }
+
+    #[test]
+    fn arc_text_mode_uses_path_center_and_box_radius() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "Test".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                layout_flags: Some(0),
+                path_mode: Some(1),
+                path_angle_a_degrees: Some(195),
+                path_angle_b_degrees: Some(165),
+                path_center: Some((171, 171)),
+                font_size_100: Some(900),
+                color: None,
+                bbox: None,
+                quad_verts_100: Some([-17100, -17100, 17100, -17100, 17100, 17100, -17100, 17100]),
+                box_size: Some((342, 342)),
+                align: Some(2),
+                underline_spans: Vec::new(),
+                strikethrough_spans: Vec::new(),
+                runs: Vec::new(),
+            },
+        };
+
+        assert!(text_layout_is_arc(&entry));
+        assert_eq!(arc_outer_radius(&entry).unwrap().round() as i32, 171);
     }
 
     #[test]
