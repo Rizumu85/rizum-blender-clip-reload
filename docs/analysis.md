@@ -4506,6 +4506,13 @@ the parsed `box_size` plus the quad minimum; negative quad x coordinates are
 anchored from the right edge of the text raster bbox, matching the Text_4
 surface box `(57, 10, 165, 98)`.
 
+Text_4 vertical refinement: replacing the fixed vertical row step with adjacent
+glyph-advance spacing matches the observed per-column behavior: the `T/e`
+column is looser than the `s/t` column. A small right-column inset adjustment
+then moves the right column without disturbing the left column. Focused metric:
+`Text_4` raw mean `4.590094 -> 0.943425`; `Text_1`, `Text_5`, and
+`Test_AddGlowMultiply` guards stayed stable.
+
 `Text_5` remains separate. It is a circular/arc text sample, not the same
 vertical-writing mode. Its raw attributes differ with param `66 = 1`; params
 `70` and `71` decode as big-endian doubles in the useful range (`195.0`,

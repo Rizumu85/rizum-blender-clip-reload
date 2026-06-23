@@ -310,22 +310,61 @@ fn render_vertical_entry_surface(
         .map(|style| style.font_size_px)
         .fold(1.0f32, f32::max);
     let row_step = (max_font_size * 0.55).max(1.0);
-    let column_step = (max_font_size * 1.23).max(1.0);
+    let right_column_inset = max_font_size * 0.522;
+    let column_step = (max_font_size * 1.208).max(1.0);
     let rows_per_column = ((box_height / row_step).round() as usize).max(1);
-    for (index, (ch, style)) in chars.iter().zip(styles.iter()).enumerate() {
-        if *ch == '\r' || *ch == '\n' {
-            continue;
+    let advances = char_advances(chars, styles, fonts);
+    for column_start in (0..chars.len()).step_by(rows_per_column) {
+        let column_end = column_start
+            .saturating_add(rows_per_column)
+            .min(chars.len());
+        let row_positions = vertical_column_row_positions(
+            &advances[column_start..column_end],
+            box_y
+                + max_font_size * 0.318
+                + row_step * (rows_per_column.saturating_sub(1)) as f32 * 0.5,
+        );
+        let column = column_start / rows_per_column;
+        let center_x = box_x + box_width - right_column_inset - column as f32 * column_step;
+        for (row, index) in (column_start..column_end).enumerate() {
+            let ch = chars[index];
+            let style = &styles[index];
+            if ch == '\r' || ch == '\n' {
+                continue;
+            }
+            let Some(resolved) = fonts.resolve(style) else {
+                continue;
+            };
+            let center_y = row_positions
+                .get(row)
+                .copied()
+                .unwrap_or_else(|| box_y + max_font_size * 0.31 + row as f32 * row_step);
+            draw_rotated_vertical_char(canvas, ch, style, &resolved, center_x, center_y);
         }
-        let Some(resolved) = fonts.resolve(style) else {
-            continue;
-        };
-        let row = index % rows_per_column;
-        let column = index / rows_per_column;
-        let center_x = box_x + box_width - max_font_size * 0.5 - column as f32 * column_step;
-        let center_y = box_y + max_font_size * 0.31 + row as f32 * row_step;
-        draw_rotated_vertical_char(canvas, *ch, style, &resolved, center_x, center_y);
     }
     Ok(())
+}
+
+fn vertical_column_row_positions(advances: &[f32], midpoint_y: f32) -> Vec<f32> {
+    if advances.is_empty() {
+        return Vec::new();
+    }
+    if advances.len() == 1 {
+        return vec![midpoint_y];
+    }
+    let gaps = advances
+        .windows(2)
+        .map(|pair| ((pair[0] + pair[1]) * 0.5).max(1.0))
+        .collect::<Vec<_>>();
+    let total_span = gaps.iter().sum::<f32>();
+    let mut y = midpoint_y - total_span * 0.5;
+    let mut positions = Vec::with_capacity(advances.len());
+    positions.push(y);
+    for gap in gaps {
+        y += gap;
+        positions.push(y);
+    }
+    positions
 }
 
 fn vertical_text_box(
@@ -1257,6 +1296,18 @@ mod tests {
 
         assert!(text_layout_is_arc(&entry));
         assert_eq!(arc_outer_radius(&entry).unwrap().round() as i32, 171);
+    }
+
+    #[test]
+    fn vertical_row_positions_follow_adjacent_glyph_advances() {
+        let wide_pair = vertical_column_row_positions(&[55.0, 50.0], 100.0);
+        let narrow_pair = vertical_column_row_positions(&[42.0, 39.0], 100.0);
+
+        assert!((wide_pair[1] - wide_pair[0]) > (narrow_pair[1] - narrow_pair[0]));
+        assert_eq!(
+            (wide_pair[0] + wide_pair[1]).round() as i32,
+            (narrow_pair[0] + narrow_pair[1]).round() as i32
+        );
     }
 
     #[test]
