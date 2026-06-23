@@ -1,6 +1,6 @@
 # AI Memory
 
-Last reconciled: 2026-06-20
+Last reconciled: 2026-06-23
 
 ## Read First
 
@@ -50,6 +50,11 @@ In scope:
   layout, CJK-majority vertical text keeps CJK glyphs upright and groups short
   ASCII runs horizontally, and text path mode `66 = 1` uses a basic circular arc
   layout. This is not editable text import and remains a first-pass renderer.
+  Current reverse evidence shows CSP's simple text path uses SkShaper run
+  iterators, `SkTextBlobBuilder::allocRunTextPos`, `SkCanvas::drawTextBlob`, and
+  separate `SkCanvas::drawLine` decoration strokes. The remaining text residuals
+  should therefore be fixed by a shaped text-blob/run-coordinate model, not by
+  per-sample offsets or more hand-tuned underline/vertical constants.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

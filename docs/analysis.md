@@ -4535,3 +4535,68 @@ horizontal tate-chu-yoko-style item instead of individual rotated letters. The
 focused CJK vertical path now compares at `Text_14` raw mean `3.375075` and
 `Text_15` raw mean `5.222719`; the full `Text_1..Text_15` guard matrix stayed
 stable.
+
+## Text residual reverse-analysis consolidation
+
+A read-only r2/PE import pass over the local CSP executable confirms that the
+remaining focused text differences should be treated as text-run pipeline
+differences, not as per-sample offsets. IDA MCP was not active for this pass, so
+the evidence came from static import thunks and focused disassembly in
+`CLIPStudioPaint.exe`.
+
+The relevant native Skia imports resolve as follows:
+
+- `0x1439e457c -> SkShaper::MakeShapeThenWrap`;
+- `0x1439e4582 -> SkShaper::MakeFontMgrRunIterator`;
+- `0x1439e4588 -> SkShaper::MakeBiDiRunIterator`;
+- `0x1439e458e -> SkShaper::MakeScriptRunIterator`;
+- `0x1439e4462 -> SkTextBlobBuilder::allocRunTextPos`;
+- `0x1439e4528 -> SkCanvas::drawTextBlob`;
+- `0x1439e44fe -> SkCanvas::drawLine`;
+- `0x1439e43b4/426/42c/432/438/43e -> SkFont::setSize`,
+  `setSubpixel`, `setEmbolden`, `setEdging`, `setHinting`, and `setSkewX`.
+
+Focused disassembly confirms this is an active text path, not just dead imports:
+
+- `0x14363c883` calls `SkShaper::MakeShapeThenWrap`, and the same function later
+  calls the BiDi, script, and font-manager run iterators.
+- `0x14363d94b` calls `SkFont::setSkewX`; the italic branch loads
+  `0xbe800000` (`-0.25f`) from `0x144551e18`, while the non-italic branch passes
+  zero.
+- `0x14363d968` calls `SkTextBlobBuilder::allocRunTextPos` and then copies
+  glyph/run data into the run buffer.
+- `0x14363eb1e` calls `SkCanvas::drawTextBlob`.
+- `0x14363e9f8` calls `SkCanvas::drawLine` after a helper fills paint/line
+  state, matching the observed underline/strikethrough residual family.
+
+This supersedes the older tempting "text path equals `SkTextUtils::GetPath ->
+drawPath`" interpretation for the focused simple text samples. `drawPath` is
+still present in nearby general canvas code, but the observed text-raster route
+builds shaped text blobs and draws decoration strokes separately.
+
+The current runtime already uses Skia CPU surfaces and native-like font flags,
+but it still lays out most text as one `canvas.draw_str` call per character and
+computes decorations in importer code. That explains the current residual
+clusters:
+
+- `Text_7`, `Text_9`, `Text_11`, and `Text_12` are dominated by long horizontal
+  underline/strike rows and italic text-run width differences. Their common
+  cause is decoration draw-list coordinates plus shaped run positioning, not a
+  font-specific y-offset.
+- `Text_14` and `Text_15` are CJK vertical-writing/tate-chu-yoko layout cases.
+  They should not be tuned from the Latin vertical constants used for `Text_4`.
+- `Text_5` remains a path-text case. The basic circular arc branch is useful,
+  but CSP likely feeds shaped glyph runs through a path-text transform rather
+  than placing independent per-character `draw_str` calls.
+- `Text_1` through `Text_3`, `Text_10`, and `Text_13` are comparatively small
+  horizontal glyph-position/raster differences.
+
+The next general implementation target is therefore a CSP-shaped text source
+rasterizer: construct line/run data through Skia shaping or an equivalent
+`allocRunTextPos` model, draw with `drawTextBlob`, and derive decoration line
+geometry from that shaped run data. A naive `TextBlobBuilderRunHandler`
+replacement was already rejected because its coordinate model was wrong; the
+next attempt must first recover the run-handler origin, font-run grouping, and
+decoration draw-line state. Avoid more per-sample constants unless this native
+run model is already in place and a specific parameter is independently
+verified.
