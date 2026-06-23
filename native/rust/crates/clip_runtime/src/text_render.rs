@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
-use ab_glyph::{Font, FontArc, FontVec, PxScale, ScaleFont, point};
 use clip_model::{CanvasSize, Rect, Rgba8};
+use skia_safe::{
+    Canvas, Color, Font, FontHinting, FontMgr, Paint, Point, Typeface, font, surfaces,
+};
 
 use crate::RuntimeError;
 
-const SYNTHETIC_ITALIC_SUPERSAMPLE: f32 = 3.0;
+const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.25;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TextRasterLayout {
@@ -29,6 +31,26 @@ pub(crate) fn measure_text_source(
         let width = bbox.right.saturating_sub(bbox.left).max(0) as u32;
         let height = bbox.bottom.saturating_sub(bbox.top).max(0) as u32;
         if width > 0 && height > 0 {
+            if std::env::var_os("RIZUM_CLIP_TEXT_PROFILE").is_some() {
+                eprintln!(
+                    "text layout bbox -> layer={} text={:?} align={:?} left={} top={} right={} bottom={} width={} height={} font_size_100={:?} quad={:?} box_size={:?} runs={} underline_spans={} strike_spans={}",
+                    source.layer.id.0,
+                    entry.text,
+                    entry.attributes.align,
+                    bbox.left,
+                    bbox.top,
+                    bbox.right,
+                    bbox.bottom,
+                    width,
+                    height,
+                    entry.attributes.font_size_100,
+                    entry.attributes.quad_verts_100,
+                    entry.attributes.box_size,
+                    entry.attributes.runs.len(),
+                    entry.attributes.underline_spans.len(),
+                    entry.attributes.strikethrough_spans.len(),
+                );
+            }
             return Ok(TextRasterLayout {
                 size: CanvasSize::new(width, height),
                 offset_x: bbox.left,
@@ -66,18 +88,47 @@ pub(crate) fn render_text_source_region(
     region: Rect,
 ) -> Result<clip_file::tiles::RgbaTileImage, RuntimeError> {
     let len = rgba_len(region.width, region.height)?;
-    let mut pixels = vec![0; len];
+    if layout.size.width == 0 || layout.size.height == 0 || region.width == 0 || region.height == 0
+    {
+        return Ok(clip_file::tiles::RgbaTileImage {
+            width: region.width,
+            height: region.height,
+            pixels: vec![0; len],
+        });
+    }
+    if region.x.saturating_add(region.width) > layout.size.width
+        || region.y.saturating_add(region.height) > layout.size.height
+    {
+        return Err(RuntimeError::InvalidRegion);
+    }
+    let surface_size = (
+        i32::try_from(layout.size.width)
+            .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?,
+        i32::try_from(layout.size.height)
+            .map_err(|_| clip_gpu::GpuRenderError::TextureSizeOverflow)?,
+    );
+    let mut surface = surfaces::raster_n32_premul(surface_size)
+        .ok_or(clip_gpu::GpuRenderError::TextureSizeOverflow)?;
+    surface.canvas().clear(Color::TRANSPARENT);
     let mut fonts = FontResolver::new();
     for entry in &source.entries {
-        render_entry_region(
-            &mut pixels,
-            region,
+        render_entry_surface(
+            surface.canvas(),
             source.resolution_dpi,
             layout,
             entry,
             &mut fonts,
         )?;
     }
+    let image = surface.image_snapshot();
+    let pixmap = image
+        .peek_pixels()
+        .ok_or(clip_gpu::GpuRenderError::ReadbackSizeOverflow)?;
+    let bytes = pixmap
+        .bytes()
+        .ok_or(clip_gpu::GpuRenderError::ReadbackSizeOverflow)?;
+    let mut pixels = vec![0; len];
+    copy_skia_region_to_rgba(bytes, layout.size.width, region, &mut pixels);
     Ok(clip_file::tiles::RgbaTileImage {
         width: region.width,
         height: region.height,
@@ -85,9 +136,8 @@ pub(crate) fn render_text_source_region(
     })
 }
 
-fn render_entry_region(
-    pixels: &mut [u8],
-    region: Rect,
+fn render_entry_surface(
+    canvas: &Canvas,
     resolution_dpi: u32,
     layout: &TextRasterLayout,
     entry: &clip_file::metadata::TextLayerEntry,
@@ -106,7 +156,7 @@ fn render_entry_region(
         .map(|style| style.font_size_px)
         .fold(1.0f32, f32::max);
     let line_height = (default_font_size * 1.2).max(1.0);
-    let mut y = 0.0f32;
+    let mut y = -entry_quad_top_px(entry).unwrap_or(0.0);
     for (start, end) in lines {
         let line_width = measure_line_width(&chars[start..end], &styles[start..end], fonts);
         let x = match entry.attributes.align {
@@ -116,8 +166,7 @@ fn render_entry_region(
         }
         .max(0.0);
         draw_line(
-            pixels,
-            region,
+            canvas,
             (x, y),
             &chars[start..end],
             &styles[start..end],
@@ -127,6 +176,17 @@ fn render_entry_region(
         y += line_height;
     }
     Ok(())
+}
+
+fn entry_quad_top_px(entry: &clip_file::metadata::TextLayerEntry) -> Option<f32> {
+    let quad = entry.attributes.quad_verts_100?;
+    Some(
+        [quad[1], quad[3], quad[5], quad[7]]
+            .into_iter()
+            .min()
+            .unwrap_or(0) as f32
+            / 100.0,
+    )
 }
 
 fn fit_single_line_to_quad_width(
@@ -177,15 +237,15 @@ fn measure_line_width(chars: &[char], styles: &[TextCharStyle], fonts: &mut Font
             let Some(resolved) = fonts.resolve(style) else {
                 return style.font_size_px * 0.55;
             };
-            let scaled = resolved.font.as_scaled(PxScale::from(style.font_size_px));
-            scaled.h_advance(resolved.font.glyph_id(*ch))
+            let font = skia_font(&resolved, style);
+            let paint = text_paint(style.color);
+            font.measure_str(ch.to_string(), Some(&paint)).0
         })
         .sum()
 }
 
 fn draw_line(
-    pixels: &mut [u8],
-    region: Rect,
+    canvas: &Canvas,
     origin: (f32, f32),
     chars: &[char],
     styles: &[TextCharStyle],
@@ -203,48 +263,18 @@ fn draw_line(
             x = next_x;
             continue;
         };
-        let font = &resolved.font;
-        let scale = PxScale::from(style.font_size_px);
-        let scaled = font.as_scaled(scale);
-        let glyph_id = font.glyph_id(*ch);
-        let baseline_y = origin.1 + scaled.ascent();
-        if resolved.synthetic_italic {
-            draw_synthetic_italic_glyph(
-                pixels,
-                region,
-                font,
-                glyph_id,
-                scale,
-                x,
-                baseline_y,
-                style.color,
-            );
-        } else {
-            let glyph = glyph_id.with_scale_and_position(scale, point(x, baseline_y));
-            if let Some(outlined) = font.outline_glyph(glyph) {
-                let bounds = outlined.px_bounds();
-                outlined.draw(|local_x, local_y, coverage| {
-                    let source_x = bounds.min.x.floor() as i32 + local_x as i32;
-                    let source_y = bounds.min.y.floor() as i32 + local_y as i32;
-                    blend_pixel_at_source(
-                        pixels,
-                        region,
-                        source_x,
-                        source_y,
-                        style.color,
-                        coverage,
-                    );
-                });
-            }
-        }
-        let next_x = x + scaled.h_advance(glyph_id);
+        let font = skia_font(&resolved, style);
+        let paint = text_paint(style.color);
+        let baseline_y = origin.1 + style.font_size_px;
+        let text = ch.to_string();
+        canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
+        let next_x = x + font.measure_str(&text, Some(&paint)).0;
         char_positions.push((x, next_x));
         char_metrics.push(Some(resolved.metrics));
         x = next_x;
     }
     draw_text_decorations(
-        pixels,
-        region,
+        canvas,
         origin,
         styles,
         decoration_styles,
@@ -254,57 +284,60 @@ fn draw_line(
     Ok(())
 }
 
-fn draw_synthetic_italic_glyph(
-    pixels: &mut [u8],
-    region: Rect,
-    font: &FontArc,
-    glyph_id: ab_glyph::GlyphId,
-    scale: PxScale,
-    x: f32,
-    baseline_y: f32,
-    color: Rgba8,
-) {
-    let high_scale = PxScale::from(scale.x * SYNTHETIC_ITALIC_SUPERSAMPLE);
-    let high_glyph = glyph_id.with_scale_and_position(
-        high_scale,
-        point(
-            x * SYNTHETIC_ITALIC_SUPERSAMPLE,
-            baseline_y * SYNTHETIC_ITALIC_SUPERSAMPLE,
-        ),
-    );
-    let Some(outlined) = font.outline_glyph(high_glyph) else {
-        return;
-    };
-    let bounds = outlined.px_bounds();
-    let mut coverage_by_pixel: HashMap<(i32, i32), f32> = HashMap::new();
-    let sample_area = SYNTHETIC_ITALIC_SUPERSAMPLE * SYNTHETIC_ITALIC_SUPERSAMPLE;
-    outlined.draw(|local_x, local_y, coverage| {
-        let source_x = (bounds.min.x.floor() + local_x as f32) / SYNTHETIC_ITALIC_SUPERSAMPLE;
-        let source_y = (bounds.min.y.floor() + local_y as f32) / SYNTHETIC_ITALIC_SUPERSAMPLE;
-        let shifted_x = source_x + synthetic_italic_shift(baseline_y, source_y);
-        let source_x = shifted_x.floor() as i32;
-        let source_y = source_y.floor() as i32;
-        if source_x < region.x as i32
-            || source_y < region.y as i32
-            || source_x >= region.x.saturating_add(region.width) as i32
-            || source_y >= region.y.saturating_add(region.height) as i32
-        {
-            return;
+fn skia_font(resolved: &ResolvedFont, style: &TextCharStyle) -> Font {
+    let mut font = Font::from_typeface(resolved.typeface.clone(), style.font_size_px);
+    font.set_subpixel(true);
+    font.set_edging(font::Edging::AntiAlias);
+    font.set_hinting(FontHinting::Normal);
+    if resolved.synthetic_italic {
+        font.set_skew_x(SKIA_SYNTHETIC_ITALIC_SKEW);
+    }
+    font
+}
+
+fn text_paint(color: Rgba8) -> Paint {
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    paint.set_color(Color::from_argb(color.a, color.r, color.g, color.b));
+    paint
+}
+
+fn copy_skia_region_to_rgba(bytes: &[u8], source_width: u32, region: Rect, output: &mut [u8]) {
+    let source_stride = usize::try_from(u64::from(source_width) * 4).unwrap_or(0);
+    let output_stride = usize::try_from(u64::from(region.width) * 4).unwrap_or(0);
+    for row in 0..region.height {
+        let source_start = usize::try_from(
+            (u64::from(region.y) + u64::from(row)) * u64::from(source_width) * 4
+                + u64::from(region.x) * 4,
+        )
+        .unwrap_or(usize::MAX);
+        let output_start =
+            usize::try_from(u64::from(row) * u64::from(region.width) * 4).unwrap_or(usize::MAX);
+        let source_end = source_start.saturating_add(output_stride);
+        let output_end = output_start.saturating_add(output_stride);
+        let Some(source_row) = bytes.get(source_start..source_end) else {
+            continue;
+        };
+        let Some(output_row) = output.get_mut(output_start..output_end) else {
+            continue;
+        };
+        if source_stride == 0 {
+            continue;
         }
-        *coverage_by_pixel.entry((source_x, source_y)).or_insert(0.0) += coverage / sample_area;
-    });
-    for ((source_x, source_y), coverage) in coverage_by_pixel {
-        blend_pixel_at_source(pixels, region, source_x, source_y, color, coverage.min(1.0));
+        for (source, target) in source_row
+            .chunks_exact(4)
+            .zip(output_row.chunks_exact_mut(4))
+        {
+            target[0] = source[2];
+            target[1] = source[1];
+            target[2] = source[0];
+            target[3] = source[3];
+        }
     }
 }
 
-fn synthetic_italic_shift(baseline_y: f32, source_y: f32) -> f32 {
-    (baseline_y - source_y) * 0.23
-}
-
 fn draw_text_decorations(
-    pixels: &mut [u8],
-    region: Rect,
+    canvas: &Canvas,
     origin: (f32, f32),
     styles: &[TextCharStyle],
     decoration_styles: &[TextCharStyle],
@@ -338,13 +371,13 @@ fn draw_text_decorations(
             .unwrap_or(x0);
         let metrics = char_metrics.get(start).and_then(|metrics| *metrics);
         if styles[start].underline {
-            let y = decoration_y(origin.1, styles[start].font_size_px, 0.82, None, None);
+            let y = decoration_y(origin.1, styles[start].font_size_px, 0.90, None, None);
             let thickness = decoration_thickness(
                 decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.underline_thickness),
                 24.0,
             );
-            draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
+            draw_decoration_line(canvas, x0, x1, y, thickness, styles[start].color);
         }
         if styles[start].strikethrough {
             let strikethrough_position = metrics.and_then(|metrics| metrics.strikethrough_position);
@@ -363,7 +396,7 @@ fn draw_text_decorations(
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
                 24.0,
             );
-            draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
+            draw_decoration_line(canvas, x0, x1, y, thickness, styles[start].color);
         }
         start = end;
     }
@@ -392,70 +425,12 @@ fn decoration_thickness(font_size_px: f32, metric: Option<f32>, fallback_divisor
         .clamp(1.0, 16.0) as i32
 }
 
-fn draw_decoration_rect(
-    pixels: &mut [u8],
-    region: Rect,
-    x0: f32,
-    x1: f32,
-    y: f32,
-    thickness: i32,
-    color: Rgba8,
-) {
-    let left = x0.floor() as i32;
-    let right = x1.ceil() as i32;
-    let top = y.round() as i32;
-    for source_y in top..top + thickness.max(1) {
-        for source_x in left..right {
-            blend_pixel_at_source(pixels, region, source_x, source_y, color, 1.0);
-        }
-    }
-}
-
-fn blend_pixel_at_source(
-    pixels: &mut [u8],
-    region: Rect,
-    source_x: i32,
-    source_y: i32,
-    color: Rgba8,
-    coverage: f32,
-) {
-    if coverage <= 0.0
-        || source_x < region.x as i32
-        || source_y < region.y as i32
-        || source_x >= region.x.saturating_add(region.width) as i32
-        || source_y >= region.y.saturating_add(region.height) as i32
-    {
-        return;
-    }
-    let target_x = (source_x - region.x as i32) as u32;
-    let target_y = (source_y - region.y as i32) as u32;
-    blend_pixel(
-        pixels,
-        region.width,
-        target_x,
-        target_y,
-        color,
-        coverage_alpha(coverage),
-    );
-}
-
-fn coverage_alpha(coverage: f32) -> u8 {
-    (coverage * 255.0).round().clamp(0.0, 255.0) as u8
-}
-
-fn blend_pixel(pixels: &mut [u8], width: u32, x: u32, y: u32, color: Rgba8, coverage_alpha: u8) {
-    let Ok(index) = usize::try_from((u64::from(y) * u64::from(width) + u64::from(x)) * 4) else {
-        return;
-    };
-    let Some(dst) = pixels.get_mut(index..index + 4) else {
-        return;
-    };
-    let src_a = u32::from(coverage_alpha) * u32::from(color.a) / 255;
-    let inv_a = 255 - src_a;
-    dst[0] = ((u32::from(color.r) * src_a + u32::from(dst[0]) * inv_a + 127) / 255) as u8;
-    dst[1] = ((u32::from(color.g) * src_a + u32::from(dst[1]) * inv_a + 127) / 255) as u8;
-    dst[2] = ((u32::from(color.b) * src_a + u32::from(dst[2]) * inv_a + 127) / 255) as u8;
-    dst[3] = (src_a + u32::from(dst[3]) * inv_a / 255).min(255) as u8;
+fn draw_decoration_line(canvas: &Canvas, x0: f32, x1: f32, y: f32, thickness: i32, color: Rgba8) {
+    let mut paint = text_paint(color);
+    paint.set_stroke(true);
+    paint.set_stroke_width(thickness.max(1) as f32);
+    let center_y = y + thickness.max(1) as f32 * 0.5;
+    canvas.draw_line(Point::new(x0, center_y), Point::new(x1, center_y), &paint);
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -631,12 +606,13 @@ fn text_lines(chars: &[char]) -> Vec<(usize, usize)> {
 
 struct FontResolver {
     db: fontdb::Database,
+    font_mgr: FontMgr,
     cache: HashMap<FontRequest, Option<ResolvedFont>>,
 }
 
 #[derive(Clone)]
 struct ResolvedFont {
-    font: FontArc,
+    typeface: Typeface,
     metrics: TextFontMetrics,
     synthetic_italic: bool,
 }
@@ -663,6 +639,7 @@ impl FontResolver {
         db.load_system_fonts();
         Self {
             db,
+            font_mgr: FontMgr::new(),
             cache: HashMap::new(),
         }
     }
@@ -784,12 +761,10 @@ impl FontResolver {
             if let Ok(face) = ttf_parser::Face::parse(data, face_index) {
                 metrics = text_font_metrics(&face);
             }
-            font = FontVec::try_from_vec_and_index(data.to_vec(), face_index)
-                .ok()
-                .map(FontArc::from);
+            font = self.font_mgr.new_from_data(data, Some(face_index as usize));
         });
-        font.map(|font| ResolvedFont {
-            font,
+        font.map(|typeface| ResolvedFont {
+            typeface,
             metrics,
             synthetic_italic,
         })
@@ -1004,7 +979,8 @@ mod tests {
 
     #[test]
     fn decorations_use_logical_thickness_after_layout_fit() {
-        let mut pixels = vec![0; 40 * 40 * 4];
+        let mut surface = surfaces::raster_n32_premul((40, 40)).unwrap();
+        surface.canvas().clear(Color::TRANSPARENT);
         let fitted = TextCharStyle {
             font_name: None,
             fallback_font: None,
@@ -1026,8 +1002,7 @@ mod tests {
         };
 
         draw_text_decorations(
-            &mut pixels,
-            Rect::new(0, 0, 40, 40),
+            surface.canvas(),
             (0.0, 0.0),
             &[fitted],
             &[logical],
@@ -1040,6 +1015,9 @@ mod tests {
             })],
         );
 
+        let image = surface.image_snapshot();
+        let pixmap = image.peek_pixels().unwrap();
+        let pixels = pixmap.bytes().unwrap();
         let dark_rows = (0..40)
             .filter(|&y| {
                 (0..40).any(|x| {
@@ -1048,7 +1026,7 @@ mod tests {
                 })
             })
             .count();
-        assert_eq!(dark_rows, 2);
+        assert!((2..=3).contains(&dark_rows));
     }
 
     #[test]

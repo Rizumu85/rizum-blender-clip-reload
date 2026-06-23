@@ -40,12 +40,12 @@ In scope:
 - Flattened raster layers.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
-- Simple text layers rendered as flattened native raster pixels. Underline and
-  strikethrough spans are parsed, decoration thickness uses OpenType font line
-  metrics at the logical pre-fit font size, unusually high OpenType strikeout
-  positions are honored for display-font strikethroughs, and missing italic
-  faces use supersampled synthetic oblique. This is not editable text import and
-  remains a first-pass renderer.
+- Simple text layers rendered as flattened native raster pixels through Skia
+  CPU raster surfaces. Underline and strikethrough spans are parsed, decoration
+  thickness uses OpenType font line metrics at the logical pre-fit font size,
+  unusually high OpenType strikeout positions are honored for display-font
+  strikethroughs, and missing italic faces use Skia synthetic oblique. This is
+  not editable text import and remains a first-pass renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
@@ -75,8 +75,9 @@ Out of scope:
   diagnostics; they do not abort the import. Simple text layers are rendered as
   flattened pixels by the native path.
 - Native text rendering resolves the font names stored in `.clip` against the
-  user's installed system fonts. The add-on does not bundle fonts and does not
-  expose extra font directory configuration.
+  user's installed system fonts, then creates Skia typefaces from those matched
+  font bytes. The add-on does not bundle fonts and does not expose extra font
+  directory configuration.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
 - Manual import/reload render failures show a Blender error popup on the main

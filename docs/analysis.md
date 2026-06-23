@@ -4441,10 +4441,34 @@ the current native renderer's `3.732506`. This is only a glyph-body probe, not a
 full `.clip` text integration, but it proves that a Skia-backed text path is
 worth pursuing as a real milestone.
 
-The next milestone should promote the spike into a gated native text backend:
-keep the current ab_glyph renderer as fallback during development, resolve
-fonts through the existing system-font lookup, render through Skia CPU surfaces,
-then compare `Text_6` through `Text_12`. A later step can use
-`skia-safe`'s `textlayout`/`Shaper` bindings to match CSP's observed
-`SkShaper -> SkTextBlobBuilder` path, rather than stopping at simple
-`draw_str`.
+The spike was promoted into the native runtime without keeping an ab_glyph
+product fallback. `clip_runtime` now resolves fonts through the existing
+system-font lookup, creates Skia `Typeface` values from the matched font bytes,
+and renders simple text layers through Skia CPU raster surfaces. The
+`native/spikes/skia_text_probe` package was deleted after promotion.
+
+Two integration rules survived the first promotion:
+
+- glyph baselines follow CSP's text layout more closely when the Skia draw
+  baseline uses `origin_y + font_size` rather than `-SkFontMetrics::ascent`;
+- the text entry quad's minimum y is a real local layout origin term
+  (`line_origin_y = -quad_min_y / 100`), explaining why HarmonyOS samples and
+  OldNewspaperTypes samples wanted opposite baseline shifts.
+
+Current representative text compare means after the Skia promotion:
+
+- `Text_1`: `0.203794`;
+- `Text_2`: `0.670275`;
+- `Text_3`: `0.336094`;
+- `Text_6`: `2.780737`;
+- `Text_7`: `3.399619`;
+- `Text_8`: `2.294287`;
+- `Text_9`: `7.361119`;
+- `Text_10`: `0.789900`;
+- `Text_11`: `4.595794`;
+- `Text_12`: `12.209344`.
+
+`Text_4` and `Text_5` remain large layout/quad/align cases rather than glyph
+rasterization cases. Dependency trimming should wait until the Skia path is
+closer to CSP's observed `SkShaper -> SkTextBlobBuilder` path; feature shaving
+before then would optimize the wrong stage.
