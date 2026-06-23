@@ -4349,3 +4349,24 @@ the font/path rasterizer with its own transform origin, subpixel positioning,
 edging, and hinting; changing only the importer shear scalar is not equivalent.
 Keep the current `0.23` approximation until the renderer either reproduces the
 full Skia coordinate model or switches to a Skia-backed text rasterizer.
+
+Follow-up implementation: keep glyph layout/positioning on the existing
+quad-fit path, but compute underline/strikethrough stroke thickness from the
+logical pre-fit font size. This matches the native evidence better than scaling
+decoration thickness by the importer-only quad-fit adjustment: Skia receives a
+font/paint and then draws decoration-like strokes through the normal draw-list
+paint path, while the importer's `fit_single_line_to_quad_width` is a local
+layout heuristic rather than a recovered CSP font-size mutation. The focused
+samples improved without regressing the already-good upright cases:
+
+- `Text_7` unchanged at raw mean `0.947925`;
+- `Text_8` unchanged at raw mean `1.477481`;
+- `Text_9` improved from `8.256263` to `7.453594`;
+- `Text_11` improved from `11.436844` to `10.896206`;
+- `Text_12` improved from `11.122837` to `11.008219`;
+- `Text_6` unchanged at raw mean `3.732506`.
+
+This still does not solve the full Skia text parity problem. `Text_12` and
+`Text_11` retain visible layout/position residuals, so further work should focus
+on Skia's text blob positioning, hinting, and decoration draw-list coordinates
+rather than changing the now-separated decoration thickness rule.

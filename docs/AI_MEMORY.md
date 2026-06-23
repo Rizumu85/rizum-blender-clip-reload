@@ -42,8 +42,9 @@ In scope:
 - Adjustment/filter layers covered by current native strict support.
 - Simple text layers rendered as flattened native raster pixels. Underline and
   strikethrough spans are parsed, decoration thickness uses OpenType font line
-  metrics, and missing italic faces use supersampled synthetic oblique. This is
-  not editable text import and remains a first-pass renderer.
+  metrics at the logical pre-fit font size, and missing italic faces use
+  supersampled synthetic oblique. This is not editable text import and remains a
+  first-pass renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

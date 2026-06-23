@@ -97,6 +97,7 @@ fn render_entry_region(
     if styles.is_empty() {
         return Ok(());
     }
+    let logical_styles = styles.clone();
     let chars: Vec<char> = entry.text.chars().collect();
     let lines = text_lines(&chars);
     fit_single_line_to_quad_width(entry, &chars, &lines, &mut styles, fonts);
@@ -120,6 +121,7 @@ fn render_entry_region(
             (x, y),
             &chars[start..end],
             &styles[start..end],
+            &logical_styles[start..end],
             fonts,
         )?;
         y += line_height;
@@ -187,6 +189,7 @@ fn draw_line(
     origin: (f32, f32),
     chars: &[char],
     styles: &[TextCharStyle],
+    decoration_styles: &[TextCharStyle],
     fonts: &mut FontResolver,
 ) -> Result<(), RuntimeError> {
     let mut x = origin.0;
@@ -244,6 +247,7 @@ fn draw_line(
         region,
         origin,
         styles,
+        decoration_styles,
         &char_positions,
         &char_metrics,
     );
@@ -303,6 +307,7 @@ fn draw_text_decorations(
     region: Rect,
     origin: (f32, f32),
     styles: &[TextCharStyle],
+    decoration_styles: &[TextCharStyle],
     char_positions: &[(f32, f32)],
     char_metrics: &[Option<TextFontMetrics>],
 ) {
@@ -318,6 +323,8 @@ fn draw_text_decorations(
             && styles[end].strikethrough == styles[start].strikethrough
             && styles[end].color == styles[start].color
             && (styles[end].font_size_px - styles[start].font_size_px).abs() < f32::EPSILON
+            && (decoration_styles[end].font_size_px - decoration_styles[start].font_size_px).abs()
+                < f32::EPSILON
         {
             end += 1;
         }
@@ -333,7 +340,7 @@ fn draw_text_decorations(
         if styles[start].underline {
             let y = decoration_y(origin.1, styles[start].font_size_px, 0.82);
             let thickness = decoration_thickness(
-                styles[start].font_size_px,
+                decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.underline_thickness),
                 24.0,
             );
@@ -342,7 +349,7 @@ fn draw_text_decorations(
         if styles[start].strikethrough {
             let y = decoration_y(origin.1, styles[start].font_size_px, 0.52);
             let thickness = decoration_thickness(
-                styles[start].font_size_px,
+                decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
                 24.0,
             );
@@ -967,5 +974,52 @@ mod tests {
         assert!(!styles[0].strikethrough);
         assert!(styles[1].strikethrough);
         assert!(styles[2].strikethrough);
+    }
+
+    #[test]
+    fn decorations_use_logical_thickness_after_layout_fit() {
+        let mut pixels = vec![0; 40 * 40 * 4];
+        let fitted = TextCharStyle {
+            font_name: None,
+            fallback_font: None,
+            font_size_px: 20.0,
+            color: Rgba8 {
+                r: 39,
+                g: 39,
+                b: 39,
+                a: 255,
+            },
+            bold: false,
+            italic: true,
+            underline: true,
+            strikethrough: false,
+        };
+        let logical = TextCharStyle {
+            font_size_px: 10.0,
+            ..fitted.clone()
+        };
+
+        draw_text_decorations(
+            &mut pixels,
+            Rect::new(0, 0, 40, 40),
+            (0.0, 0.0),
+            &[fitted],
+            &[logical],
+            &[(2.0, 20.0)],
+            &[Some(TextFontMetrics {
+                underline_thickness: Some(0.2),
+                strikethrough_thickness: None,
+            })],
+        );
+
+        let dark_rows = (0..40)
+            .filter(|&y| {
+                (0..40).any(|x| {
+                    let index = (y * 40 + x) * 4;
+                    pixels[index + 3] != 0
+                })
+            })
+            .count();
+        assert_eq!(dark_rows, 2);
     }
 }
