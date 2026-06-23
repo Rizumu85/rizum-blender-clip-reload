@@ -4398,3 +4398,29 @@ The practical remaining path is either a real Skia-compatible text rasterizer
 or more native evidence for the draw-list command that emits text decoration
 lines. Small local tweaks to the current ab_glyph rasterizer are now more likely
 to trade one text sample against another than to recover a general rule.
+
+One small decoration-position rule did hold up. The focused fonts expose these
+OpenType metrics:
+
+- HarmonyOS Sans Bold: strikeout position `0.300em`, strikeout size `0.050em`;
+- OldNewspaperTypes: strikeout position `0.512em`, strikeout size `0.102em`;
+- MiSans ExtraLight: strikeout position `0.265em`, strikeout size `0.050em`.
+
+Using all OpenType underline/strike positions regressed the upright guards and
+most italic samples (`Text_7` `0.947925 -> 5.295675`, `Text_8`
+`1.477481 -> 2.970469`, `Text_9` `7.453594 -> 10.288913`, `Text_12`
+`11.008219 -> 13.035262`). However, only honoring very high strikeout positions
+(`> 0.45em`) improves the display-font case without moving the ordinary-font
+guards. This matches `OldNewspaperTypes`, whose CSP strikethrough sits much
+higher than the importer's legacy `0.52 * font_size` fallback:
+
+- `Text_7` unchanged at raw mean `0.947925`;
+- `Text_8` unchanged at raw mean `1.477481`;
+- `Text_9` unchanged at raw mean `7.453594`;
+- `Text_11` improves from `10.896206` to `10.201762`;
+- `Text_12` unchanged at raw mean `11.008219`;
+- `Text_6` unchanged at raw mean `3.732506`.
+
+This is still not a font-name special case; it is a guarded use of an unusually
+high OpenType strikeout metric. Ordinary strikeout metrics continue through the
+legacy fallback because that remains closer to CSP on HarmonyOS Sans and MiSans.

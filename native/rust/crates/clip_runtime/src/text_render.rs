@@ -338,7 +338,7 @@ fn draw_text_decorations(
             .unwrap_or(x0);
         let metrics = char_metrics.get(start).and_then(|metrics| *metrics);
         if styles[start].underline {
-            let y = decoration_y(origin.1, styles[start].font_size_px, 0.82);
+            let y = decoration_y(origin.1, styles[start].font_size_px, 0.82, None, None);
             let thickness = decoration_thickness(
                 decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.underline_thickness),
@@ -347,7 +347,17 @@ fn draw_text_decorations(
             draw_decoration_rect(pixels, region, x0, x1, y, thickness, styles[start].color);
         }
         if styles[start].strikethrough {
-            let y = decoration_y(origin.1, styles[start].font_size_px, 0.52);
+            let strikethrough_position = metrics.and_then(|metrics| metrics.strikethrough_position);
+            // CSP follows unusually high strikeout metrics for display fonts, but
+            // ordinary fonts match the legacy fallback better in the focused samples.
+            let metric_position = strikethrough_position.filter(|position| *position > 0.45);
+            let y = decoration_y(
+                origin.1,
+                styles[start].font_size_px,
+                0.52,
+                metric_position,
+                metrics.and_then(|metrics| metrics.strikethrough_thickness),
+            );
             let thickness = decoration_thickness(
                 decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
@@ -359,8 +369,19 @@ fn draw_text_decorations(
     }
 }
 
-fn decoration_y(origin_y: f32, font_size_px: f32, ratio: f32) -> f32 {
-    origin_y + font_size_px * ratio
+fn decoration_y(
+    origin_y: f32,
+    font_size_px: f32,
+    fallback_ratio: f32,
+    metric_position: Option<f32>,
+    metric_thickness: Option<f32>,
+) -> f32 {
+    let Some(position) = metric_position else {
+        return origin_y + font_size_px * fallback_ratio;
+    };
+    let thickness = metric_thickness.unwrap_or(1.0 / 24.0) * font_size_px;
+    let baseline_y = origin_y + font_size_px;
+    baseline_y - position * font_size_px - thickness * 0.5
 }
 
 fn decoration_thickness(font_size_px: f32, metric: Option<f32>, fallback_divisor: f32) -> i32 {
@@ -623,7 +644,9 @@ struct ResolvedFont {
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 struct TextFontMetrics {
     underline_thickness: Option<f32>,
+    underline_position: Option<f32>,
     strikethrough_thickness: Option<f32>,
+    strikethrough_position: Option<f32>,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -780,8 +803,11 @@ fn text_font_metrics(face: &ttf_parser::Face<'_>) -> TextFontMetrics {
     TextFontMetrics {
         underline_thickness: underline
             .map(|metrics| f32::from(metrics.thickness.max(1)) / units_per_em),
+        underline_position: underline.map(|metrics| f32::from(metrics.position) / units_per_em),
         strikethrough_thickness: strikethrough
             .map(|metrics| f32::from(metrics.thickness.max(1)) / units_per_em),
+        strikethrough_position: strikethrough
+            .map(|metrics| f32::from(metrics.position) / units_per_em),
     }
 }
 
@@ -1008,7 +1034,9 @@ mod tests {
             &[(2.0, 20.0)],
             &[Some(TextFontMetrics {
                 underline_thickness: Some(0.2),
+                underline_position: None,
                 strikethrough_thickness: None,
+                strikethrough_position: None,
             })],
         );
 
@@ -1021,5 +1049,14 @@ mod tests {
             })
             .count();
         assert_eq!(dark_rows, 2);
+    }
+
+    #[test]
+    fn high_strikethrough_metric_position_overrides_fallback_y() {
+        let fallback_y = decoration_y(0.0, 100.0, 0.52, None, Some(0.1));
+        let metric_y = decoration_y(0.0, 100.0, 0.52, Some(0.512), Some(0.102));
+
+        assert_eq!(fallback_y.round() as i32, 52);
+        assert_eq!(metric_y.round() as i32, 44);
     }
 }
