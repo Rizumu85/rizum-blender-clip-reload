@@ -4370,3 +4370,31 @@ This still does not solve the full Skia text parity problem. `Text_12` and
 `Text_11` retain visible layout/position residuals, so further work should focus
 on Skia's text blob positioning, hinting, and decoration draw-list coordinates
 rather than changing the now-separated decoration thickness rule.
+
+Additional rejected probes:
+
+- Replacing the synthetic italic coverage drop with bilinear distribution after
+  shear made edges smoother but regressed the focused samples (`Text_6`
+  `3.732506 -> 4.585406`, `Text_9` `7.453594 -> 8.105588`, `Text_11`
+  `10.896206 -> 11.674387`, `Text_12` `11.008219 -> 11.216925`). Skia's
+  antialiasing difference is therefore not reproduced by simply distributing
+  the importer supersamples across neighboring pixels.
+- Treating the quad fit as an x-only text transform instead of scaling the local
+  importer font size badly regressed the already-good upright samples
+  (`Text_7` `0.947925 -> 16.884000`, `Text_8` `1.477481 -> 15.460725`) and the
+  italic samples. The current quad-fit heuristic is not a faithful model, but it
+  remains closer to the saved CSP samples than a naive x-only transform.
+- Enabling `ab_glyph` pair kerning for same-font runs left HarmonyOS/MiSans
+  samples unchanged and regressed `Text_11` (`10.896206 -> 12.837938`). CSP uses
+  `SkShaper`/text-blob glyph positions, but substituting ab_glyph's legacy kern
+  table is not equivalent to Skia shaping.
+- Text-layer render mipmaps are not usable as a fidelity shortcut in the focused
+  samples. For example, attempting to dump `Text_9` layer `5` follows the
+  `render_mipmap` but fails on a missing external body
+  `extrnlidEA23111439854ECFA48F5F99D2D39DD6`. The importer cannot rely on a
+  saved CSP text raster cache for these files.
+
+The practical remaining path is either a real Skia-compatible text rasterizer
+or more native evidence for the draw-list command that emits text decoration
+lines. Small local tweaks to the current ab_glyph rasterizer are now more likely
+to trade one text sample against another than to recover a general rule.
