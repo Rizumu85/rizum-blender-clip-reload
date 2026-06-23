@@ -4329,3 +4329,23 @@ The remaining safe next step is to find the native text decoration rule for
 italic/synthetic italic runs, not to tune per-font offsets. In particular, avoid
 changing the now-good upright underline/strikethrough path from `Text_7` and
 `Text_8`.
+
+IDA follow-up on `CLIPStudioPaint.exe.working.i64` found the relevant Skia text
+setup path. `sub_14363D830` constructs an `SkFont`, calls `SkFont::setEmbolden`,
+then calls `SkFont::setSkewX` before `SkTextBlobBuilder::allocRunTextPos`. The
+skew constant passed for the italic path is `-0.25`; the non-italic path passes
+`0.0`. `sub_14363C820` also sets `SkFont::setSubpixel(true)`,
+`SkFont::setEdging(1)`, and `SkFont::setHinting(1)`. Related metrics functions
+`sub_143639750` and `sub_14363DA10` call `SkFont::getMetrics`, but the observed
+decompilation covers general font bounds aggregation rather than a recovered
+underline/strike placement formula.
+
+A direct importer probe that changed the current bitmap-shear approximation from
+`0.23` to the native `0.25` skew constant was rejected. It regressed the focused
+italic text samples (`Text_6` raw mean `3.732506 -> 4.300237`, `Text_9`
+`8.256263 -> 8.701725`, `Text_11` `11.436844 -> 11.954869`, `Text_12`
+`11.122837 -> 11.314950`). The likely reason is that Skia applies skew inside
+the font/path rasterizer with its own transform origin, subpixel positioning,
+edging, and hinting; changing only the importer shear scalar is not equivalent.
+Keep the current `0.23` approximation until the renderer either reproduces the
+full Skia coordinate model or switches to a Skia-backed text rasterizer.
