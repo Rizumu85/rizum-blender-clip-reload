@@ -71,6 +71,7 @@ pub struct TextLayerAttributes {
     pub default_font: Option<String>,
     pub fallback_font: Option<String>,
     pub fonts: Vec<TextLayerFontMapping>,
+    pub layout_flags: Option<i32>,
     pub font_size_100: Option<i32>,
     pub color: Option<Rgba8>,
     pub bbox: Option<TextLayerRect>,

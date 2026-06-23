@@ -115,6 +115,7 @@ pub fn parse_text_layer_attributes(data: &[u8]) -> Result<TextLayerAttributes, C
         default_font: None,
         fallback_font: None,
         fonts: Vec::new(),
+        layout_flags: None,
         font_size_100: None,
         color: None,
         bbox: None,
@@ -219,6 +220,9 @@ fn parse_text_param(
         }
         32 => {
             attributes.font_size_100 = Some(reader.read_i32_le()?);
+        }
+        33 => {
+            attributes.layout_flags = Some(reader.read_i32_le()?);
         }
         34 => {
             attributes.color = Some(Rgba8 {
@@ -454,6 +458,7 @@ mod tests {
         let mut data = Vec::new();
         push_param(&mut data, 31, b"HarmonyOS Sans Bold");
         push_param(&mut data, 32, &900i32.to_le_bytes());
+        push_param(&mut data, 33, &16i32.to_le_bytes());
         let mut color = Vec::new();
         color.extend_from_slice(&0x27272727u32.to_le_bytes());
         color.extend_from_slice(&0x27272727u32.to_le_bytes());
@@ -469,6 +474,7 @@ mod tests {
 
         assert_eq!(parsed.default_font.as_deref(), Some("HarmonyOS Sans Bold"));
         assert_eq!(parsed.font_size_100, Some(900));
+        assert_eq!(parsed.layout_flags, Some(16));
         assert_eq!(
             parsed.color,
             Some(Rgba8 {

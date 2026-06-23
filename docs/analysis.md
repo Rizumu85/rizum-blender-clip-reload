@@ -4496,3 +4496,18 @@ Therefore the product path remains Skia `draw_str` source rasterization for now,
 and the `textlayout` feature is not kept. A future shaper attempt needs the
 exact CSP run-handler coordinate model and font-run setup, not just
 `shape_text_blob` dropped into the current layout loop.
+
+Vertical text follow-up: `Text_4` is not a whole-layer rotation; it serializes
+text param `33 = 16`, while ordinary horizontal samples use `0` and italic
+samples use `2`. Treating bit `0x10` as vertical writing mode and laying Latin
+glyphs in right-to-left columns improves `Text_4` from raw mean `18.292500` to
+`4.590094` without moving the horizontal text guards. The vertical text box uses
+the parsed `box_size` plus the quad minimum; negative quad x coordinates are
+anchored from the right edge of the text raster bbox, matching the Text_4
+surface box `(57, 10, 165, 98)`.
+
+`Text_5` remains separate. It is a circular/arc text sample, not the same
+vertical-writing mode. Its raw attributes differ with param `66 = 1`; params
+`70` and `71` decode as big-endian doubles in the useful range (`195.0`,
+`165.0` for Text_5), and param `72` stores `(171, 171)`. The current vertical
+fix deliberately does not guess that arc renderer.

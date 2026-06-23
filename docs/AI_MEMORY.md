@@ -45,9 +45,10 @@ In scope:
   tile-event/barrier path as raster sources. Underline and strikethrough spans
   are parsed, decoration thickness uses OpenType font line metrics at the
   logical pre-fit font size, unusually high OpenType strikeout positions are
-  honored for display-font strikethroughs, and missing italic faces use Skia
-  synthetic oblique. This is not editable text import and remains a first-pass
-  renderer.
+  honored for display-font strikethroughs, missing italic faces use Skia
+  synthetic oblique, and vertical text flag `0x10` uses a basic right-to-left
+  column layout. This is not editable text import and remains a first-pass
+  renderer. Circular/arc text is still not implemented.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

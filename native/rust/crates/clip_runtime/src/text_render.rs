@@ -33,10 +33,11 @@ pub(crate) fn measure_text_source(
         if width > 0 && height > 0 {
             if std::env::var_os("RIZUM_CLIP_TEXT_PROFILE").is_some() {
                 eprintln!(
-                    "text layout bbox -> layer={} text={:?} align={:?} left={} top={} right={} bottom={} width={} height={} font_size_100={:?} quad={:?} box_size={:?} runs={} underline_spans={} strike_spans={}",
+                    "text layout bbox -> layer={} text={:?} align={:?} layout_flags={:?} left={} top={} right={} bottom={} width={} height={} font_size_100={:?} quad={:?} box_size={:?} runs={} underline_spans={} strike_spans={}",
                     source.layer.id.0,
                     entry.text,
                     entry.attributes.align,
+                    entry.attributes.layout_flags,
                     bbox.left,
                     bbox.top,
                     bbox.right,
@@ -149,6 +150,9 @@ fn render_entry_surface(
     }
     let logical_styles = styles.clone();
     let chars: Vec<char> = entry.text.chars().collect();
+    if text_layout_is_vertical(entry) {
+        return render_vertical_entry_surface(canvas, layout, entry, &chars, &styles, fonts);
+    }
     let lines = text_lines(&chars);
     fit_single_line_to_quad_width(entry, &chars, &lines, &mut styles, fonts);
     let default_font_size = styles
@@ -176,6 +180,103 @@ fn render_entry_surface(
         y += line_height;
     }
     Ok(())
+}
+
+fn text_layout_is_vertical(entry: &clip_file::metadata::TextLayerEntry) -> bool {
+    entry
+        .attributes
+        .layout_flags
+        .map(|flags| flags & 0x10 != 0)
+        .unwrap_or(false)
+}
+
+fn render_vertical_entry_surface(
+    canvas: &Canvas,
+    layout: &TextRasterLayout,
+    entry: &clip_file::metadata::TextLayerEntry,
+    chars: &[char],
+    styles: &[TextCharStyle],
+    fonts: &mut FontResolver,
+) -> Result<(), RuntimeError> {
+    let Some((box_x, box_y, box_width, box_height)) = vertical_text_box(entry, layout) else {
+        return Ok(());
+    };
+    let max_font_size = styles
+        .iter()
+        .map(|style| style.font_size_px)
+        .fold(1.0f32, f32::max);
+    let row_step = (max_font_size * 0.55).max(1.0);
+    let column_step = (max_font_size * 1.23).max(1.0);
+    let rows_per_column = ((box_height / row_step).round() as usize).max(1);
+    for (index, (ch, style)) in chars.iter().zip(styles.iter()).enumerate() {
+        if *ch == '\r' || *ch == '\n' {
+            continue;
+        }
+        let Some(resolved) = fonts.resolve(style) else {
+            continue;
+        };
+        let row = index % rows_per_column;
+        let column = index / rows_per_column;
+        let center_x = box_x + box_width - max_font_size * 0.5 - column as f32 * column_step;
+        let center_y = box_y + max_font_size * 0.31 + row as f32 * row_step;
+        draw_rotated_vertical_char(canvas, *ch, style, &resolved, center_x, center_y);
+    }
+    Ok(())
+}
+
+fn vertical_text_box(
+    entry: &clip_file::metadata::TextLayerEntry,
+    layout: &TextRasterLayout,
+) -> Option<(f32, f32, f32, f32)> {
+    let (box_width, box_height) = entry.attributes.box_size?;
+    if box_width <= 0 || box_height <= 0 {
+        return None;
+    }
+    let quad = entry.attributes.quad_verts_100?;
+    let xs = [quad[0], quad[2], quad[4], quad[6]];
+    let ys = [quad[1], quad[3], quad[5], quad[7]];
+    let min_x = *xs.iter().min()? as f32 / 100.0;
+    let min_y = *ys.iter().min()? as f32 / 100.0;
+    let box_width = box_width as f32;
+    let box_height = box_height as f32;
+    let x = if min_x < 0.0 {
+        layout.size.width as f32 + min_x
+    } else {
+        min_x
+    };
+    let y = if min_y < 0.0 {
+        layout.size.height as f32 + min_y
+    } else {
+        min_y
+    };
+    Some((x, y, box_width, box_height))
+}
+
+fn draw_rotated_vertical_char(
+    canvas: &Canvas,
+    ch: char,
+    style: &TextCharStyle,
+    resolved: &ResolvedFont,
+    center_x: f32,
+    center_y: f32,
+) {
+    let font = skia_font(resolved, style);
+    let paint = text_paint(style.color);
+    let text = ch.to_string();
+    let (_, bounds) = font.measure_str(&text, Some(&paint));
+    let save_count = canvas.save();
+    canvas.translate(Point::new(center_x, center_y));
+    canvas.rotate(90.0, None);
+    canvas.draw_str(
+        &text,
+        Point::new(
+            -bounds.width() * 0.5 - bounds.left,
+            style.font_size_px * 0.35,
+        ),
+        &font,
+        &paint,
+    );
+    canvas.restore_to_count(save_count);
 }
 
 fn entry_quad_top_px(entry: &clip_file::metadata::TextLayerEntry) -> Option<f32> {
@@ -886,6 +987,7 @@ mod tests {
                     default_font: Some("Arial".to_owned()),
                     fallback_font: Some("Tahoma".to_owned()),
                     fonts: Vec::new(),
+                    layout_flags: None,
                     font_size_100: Some(3200),
                     color: Some(Rgba8 {
                         r: 39,
@@ -949,6 +1051,7 @@ mod tests {
                 default_font: Some("Arial".to_owned()),
                 fallback_font: None,
                 fonts: Vec::new(),
+                layout_flags: None,
                 font_size_100: Some(3200),
                 color: None,
                 bbox: None,
@@ -975,6 +1078,40 @@ mod tests {
         assert!(!styles[0].strikethrough);
         assert!(styles[1].strikethrough);
         assert!(styles[2].strikethrough);
+    }
+
+    #[test]
+    fn vertical_text_box_maps_negative_quad_x_from_right_edge() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "Test".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                layout_flags: Some(0x10),
+                font_size_100: Some(900),
+                color: None,
+                bbox: None,
+                quad_verts_100: Some([-16500, 1000, 0, 1000, 0, 9800, -16500, 9800]),
+                box_size: Some((165, 98)),
+                align: Some(2),
+                underline_spans: Vec::new(),
+                strikethrough_spans: Vec::new(),
+                runs: Vec::new(),
+            },
+        };
+        let layout = TextRasterLayout {
+            size: CanvasSize::new(222, 108),
+            offset_x: -8,
+            offset_y: 35,
+        };
+
+        let (x, y, width, height) = vertical_text_box(&entry, &layout).unwrap();
+
+        assert_eq!(x.round() as i32, 57);
+        assert_eq!(y.round() as i32, 10);
+        assert_eq!(width.round() as i32, 165);
+        assert_eq!(height.round() as i32, 98);
     }
 
     #[test]
