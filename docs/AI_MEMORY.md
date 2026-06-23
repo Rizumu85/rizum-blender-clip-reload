@@ -40,12 +40,14 @@ In scope:
 - Flattened raster layers.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
-- Simple text layers rendered as flattened native raster pixels through Skia
-  CPU raster surfaces. Underline and strikethrough spans are parsed, decoration
-  thickness uses OpenType font line metrics at the logical pre-fit font size,
-  unusually high OpenType strikeout positions are honored for display-font
-  strikethroughs, and missing italic faces use Skia synthetic oblique. This is
-  not editable text import and remains a first-pass renderer.
+- Simple text layers are rasterized as native source pixels through Skia CPU
+  surfaces, then composited by the existing Rust/wgpu renderer with the same
+  tile-event/barrier path as raster sources. Underline and strikethrough spans
+  are parsed, decoration thickness uses OpenType font line metrics at the
+  logical pre-fit font size, unusually high OpenType strikeout positions are
+  honored for display-font strikethroughs, and missing italic faces use Skia
+  synthetic oblique. This is not editable text import and remains a first-pass
+  renderer.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

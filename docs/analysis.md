@@ -4442,9 +4442,12 @@ full `.clip` text integration, but it proves that a Skia-backed text path is
 worth pursuing as a real milestone.
 
 The spike was promoted into the native runtime without keeping an ab_glyph
-product fallback. `clip_runtime` now resolves fonts through the existing
-system-font lookup, creates Skia `Typeface` values from the matched font bytes,
-and renders simple text layers through Skia CPU raster surfaces. The
+product fallback. This is not a Skia compositor. `clip_runtime` now resolves
+fonts through the existing system-font lookup, creates Skia `Typeface` values
+from the matched font bytes, and uses Skia only to rasterize simple text layers
+into source pixels. Those pixels still enter the existing Rust/wgpu native
+compositor, so masks, blend modes, clipping, tile-event execution, barrier
+segments, and final readback remain on the current GPU path. The
 `native/spikes/skia_text_probe` package was deleted after promotion.
 
 Two integration rules survived the first promotion:
@@ -4469,6 +4472,8 @@ Current representative text compare means after the Skia promotion:
 - `Text_12`: `12.209344`.
 
 `Text_4` and `Text_5` remain large layout/quad/align cases rather than glyph
-rasterization cases. Dependency trimming should wait until the Skia path is
-closer to CSP's observed `SkShaper -> SkTextBlobBuilder` path; feature shaving
-before then would optimize the wrong stage.
+rasterization cases. Dependency trimming should wait until the Skia
+source-raster path is closer to CSP's observed `SkShaper -> SkTextBlobBuilder`
+path; feature shaving before then would optimize the wrong stage. The long-term
+dependency goal is still a minimal Skia feature set for source rasterization
+only, not replacing the Rust/wgpu compositor.
