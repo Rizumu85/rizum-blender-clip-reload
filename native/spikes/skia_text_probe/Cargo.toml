@@ -1,0 +1,9 @@
+[package]
+name = "skia_text_probe"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+png = "0.17"
+skia-safe = "0.99"

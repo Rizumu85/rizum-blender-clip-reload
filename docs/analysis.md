@@ -4424,3 +4424,27 @@ higher than the importer's legacy `0.52 * font_size` fallback:
 This is still not a font-name special case; it is a guarded use of an unusually
 high OpenType strikeout metric. Ordinary strikeout metrics continue through the
 legacy fallback because that remains closer to CSP on HarmonyOS Sans and MiSans.
+
+Skia-backed text rasterizer feasibility probe: a standalone spike under
+`native/spikes/skia_text_probe` verifies that `skia-safe 0.99` can build and run
+on the maintainer Windows machine using a CPU raster surface and a font loaded
+from local font bytes. The release probe executable is about `3.3 MiB`; the
+linked Skia static library produced by the build is about `16 MiB`. This is a
+real packaging cost but not an obvious blocker.
+
+The probe renders `Text_6`-style HarmonyOS synthetic italic using Skia
+`Font::set_subpixel(true)`, `set_edging(AntiAlias)`, `set_hinting(Normal)`, and
+`set_skew_x(-0.25)`, matching the IDA-observed CSP text setup more closely than
+the current ab_glyph shear. A coarse grid over size/x/baseline found a Skia
+`draw_str` result with raw mean `2.650125` against the CSP `Text_6.png`, versus
+the current native renderer's `3.732506`. This is only a glyph-body probe, not a
+full `.clip` text integration, but it proves that a Skia-backed text path is
+worth pursuing as a real milestone.
+
+The next milestone should promote the spike into a gated native text backend:
+keep the current ab_glyph renderer as fallback during development, resolve
+fonts through the existing system-font lookup, render through Skia CPU surfaces,
+then compare `Text_6` through `Text_12`. A later step can use
+`skia-safe`'s `textlayout`/`Shaper` bindings to match CSP's observed
+`SkShaper -> SkTextBlobBuilder` path, rather than stopping at simple
+`draw_str`.
