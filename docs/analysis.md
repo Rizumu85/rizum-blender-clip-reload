@@ -4477,3 +4477,22 @@ source-raster path is closer to CSP's observed `SkShaper -> SkTextBlobBuilder`
 path; feature shaving before then would optimize the wrong stage. The long-term
 dependency goal is still a minimal Skia feature set for source rasterization
 only, not replacing the Rust/wgpu compositor.
+
+A direct `skia-safe` `Shaper::shape_text_blob` integration was tested and
+rejected for the current product path. Enabling `skia-safe/textlayout` and
+replacing per-character `draw_str` with `TextBlobBuilderRunHandler` initially
+placed glyphs about `78-79px` too low because the run-handler offset is not the
+same coordinate as the `draw_str` baseline. After compensating the y origin, the
+blob path still produced narrower Latin advances and worse focused metrics than
+the simpler Skia source-raster path:
+
+- `Text_1`: `0.203794 -> 9.393450`;
+- `Text_6`: `2.780737 -> 8.732306`;
+- `Text_10`: `0.789900 -> 5.981494`;
+- `Text_11`: `4.595794 -> 9.192375`;
+- `Text_12`: `12.209344 -> 9.885000`.
+
+Therefore the product path remains Skia `draw_str` source rasterization for now,
+and the `textlayout` feature is not kept. A future shaper attempt needs the
+exact CSP run-handler coordinate model and font-run setup, not just
+`shape_text_blob` dropped into the current layout loop.
