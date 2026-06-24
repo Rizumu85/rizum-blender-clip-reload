@@ -17,6 +17,8 @@ const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.22;
 const CJK_VERTICAL_MIDPOINT_Y_EM: f32 = 0.93;
 const CJK_VERTICAL_PURE_MIDPOINT_Y_EM: f32 = 1.00;
 const CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM: f32 = 0.01;
+const CJK_VERTICAL_HORIZONTAL_RUN_X_OFFSET_EM: f32 = -0.02;
+const CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM: f32 = 0.02;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TextRasterLayout {
@@ -705,8 +707,15 @@ fn draw_horizontal_vertical_run(
     let Some((width, top, bottom)) = text_run_bounds(chars, styles, fonts) else {
         return Ok(());
     };
-    let baseline_y = center_y - (top + bottom) * 0.5;
-    let mut x = center_x - width * 0.5;
+    let max_font_size = styles
+        .iter()
+        .map(|style| style.font_size_px)
+        .fold(1.0f32, f32::max);
+    let (offset_x, offset_y) = cjk_vertical_horizontal_run_offset(max_font_size);
+    let adjusted_center_x = center_x + offset_x;
+    let adjusted_center_y = center_y + offset_y;
+    let baseline_y = adjusted_center_y - (top + bottom) * 0.5;
+    let mut x = adjusted_center_x - width * 0.5;
     let mut start = 0usize;
     while start < chars.len() {
         let style = &styles[start];
@@ -724,6 +733,13 @@ fn draw_horizontal_vertical_run(
         start = end;
     }
     Ok(())
+}
+
+fn cjk_vertical_horizontal_run_offset(max_font_size: f32) -> (f32, f32) {
+    (
+        max_font_size * CJK_VERTICAL_HORIZONTAL_RUN_X_OFFSET_EM,
+        max_font_size * CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM,
+    )
 }
 
 fn text_run_bounds(
@@ -1958,6 +1974,14 @@ mod tests {
                 .iter()
                 .all(|item| item.kind == VerticalTextItemKind::UprightChar)
         );
+    }
+
+    #[test]
+    fn cjk_vertical_horizontal_runs_use_focused_center_offset() {
+        let (x, y) = cjk_vertical_horizontal_run_offset(50.0);
+
+        assert_eq!(x.round() as i32, -1);
+        assert_eq!(y.round() as i32, 1);
     }
 
     #[test]

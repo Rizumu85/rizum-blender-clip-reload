@@ -4871,3 +4871,15 @@ Fitted synthetic italic glyph-body follow-up:
   `5.188837 -> 5.100506`; `Text_6`, `Text_9`, and `Text_11` stayed stable.
   A lighter fitted skew (`-0.16`) regressed `Text_12`, and `-0.19` was worse
   than `-0.18` in the same focused guard.
+
+CJK vertical horizontal-run offset follow-up:
+
+- `Text_15` remained dominated by the mixed CJK/Latin tate-chu-yoko region after
+  the pure/mixed column alignment split. A diagnostic window search over the
+  `hu` run showed the best local movement was approximately one pixel left and
+  one pixel down, while the surrounding CJK columns should stay fixed.
+- Accepted rule: the short ASCII horizontal run inside CJK-majority vertical
+  text gets an em-based center offset of about `-0.02em` in x and `+0.02em` in
+  y before drawing the run. This moves `Text_15` `3.565331 -> 3.276225` while
+  pure CJK vertical `Text_14` stays stable at `1.592175`; a follow-up local
+  window search found the new run position is already locally optimal.

@@ -58,9 +58,10 @@ In scope:
   vertical text flag `0x10` uses a basic right-to-left column layout,
   CJK-majority vertical text keeps CJK glyphs upright, uses a slightly wider
   pure-CJK row advance plus a pure-CJK right-column/midpoint alignment, groups
-  short ASCII runs horizontally with baseline snapping disabled, keeps a compact
-  mixed-run advance plus separate mixed right-column/midpoint alignment for
-  embedded Latin runs, and advances multi-column upright text by about `1.22em`;
+  short ASCII runs horizontally with baseline snapping disabled and a focused
+  horizontal-run center offset, keeps a compact mixed-run advance plus separate
+  mixed right-column/midpoint alignment for embedded Latin runs, and advances
+  multi-column upright text by about `1.22em`;
   text path mode `66 = 1` uses a basic circular arc layout. This is not
   editable text import and remains a first-pass renderer.
   Current reverse evidence shows CSP's simple text path uses SkShaper run
