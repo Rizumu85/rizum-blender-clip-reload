@@ -406,7 +406,15 @@ fn render_upright_vertical_entry_surface(
                     let Some(resolved) = fonts.resolve(style) else {
                         continue;
                     };
-                    draw_upright_vertical_char(canvas, ch, style, &resolved, center_x, center_y);
+                    draw_upright_vertical_char(
+                        canvas,
+                        ch,
+                        style,
+                        &resolved,
+                        center_x,
+                        center_y,
+                        !has_horizontal_run,
+                    );
                 }
                 VerticalTextItemKind::HorizontalRun => {
                     draw_horizontal_vertical_run(
@@ -667,7 +675,7 @@ fn draw_vertical_char(
     upright: bool,
 ) {
     if upright {
-        draw_upright_vertical_char(canvas, ch, style, resolved, center_x, center_y);
+        draw_upright_vertical_char(canvas, ch, style, resolved, center_x, center_y, false);
     } else {
         draw_rotated_vertical_char(canvas, ch, style, resolved, center_x, center_y);
     }
@@ -680,8 +688,9 @@ fn draw_upright_vertical_char(
     resolved: &ResolvedFont,
     center_x: f32,
     center_y: f32,
+    disable_baseline_snap: bool,
 ) {
-    let font = skia_font(resolved, style);
+    let font = vertical_upright_font(resolved, style, disable_baseline_snap);
     let paint = text_paint(style.color);
     let text = ch.to_string();
     let (_, bounds) = font.measure_str(&text, Some(&paint));
@@ -694,6 +703,18 @@ fn draw_upright_vertical_char(
         &font,
         &paint,
     );
+}
+
+fn vertical_upright_font(
+    resolved: &ResolvedFont,
+    style: &TextCharStyle,
+    disable_baseline_snap: bool,
+) -> Font {
+    let mut font = skia_font(resolved, style);
+    if disable_baseline_snap {
+        font.set_baseline_snap(false);
+    }
+    font
 }
 
 fn draw_horizontal_vertical_run(
@@ -1174,8 +1195,7 @@ fn draw_decoration_line(
     color: Rgba8,
     inset_ends: bool,
 ) {
-    let mut paint = text_paint(color);
-    paint.set_stroke(true);
+    let mut paint = decoration_line_paint(color, inset_ends);
     let thickness = thickness.max(1.0);
     paint.set_stroke_width(thickness);
     let center_y = y + thickness * 0.5;
@@ -1185,6 +1205,13 @@ fn draw_decoration_line(
         Point::new((x1 - inset).max(x0 + inset), center_y),
         &paint,
     );
+}
+
+fn decoration_line_paint(color: Rgba8, fitted_decoration_span: bool) -> Paint {
+    let mut paint = text_paint(color);
+    paint.set_anti_alias(!fitted_decoration_span);
+    paint.set_stroke(true);
+    paint
 }
 
 fn decoration_line_end_inset(thickness: f32, inset_ends: bool) -> f32 {
@@ -1775,6 +1802,39 @@ mod tests {
     }
 
     #[test]
+    fn pure_cjk_vertical_upright_font_can_disable_baseline_snap() {
+        let typeface = FontMgr::new()
+            .legacy_make_typeface(None, FontStyle::normal())
+            .expect("default typeface");
+        let resolved = ResolvedFont {
+            typeface,
+            metrics: TextFontMetrics::default(),
+            synthetic_italic: false,
+        };
+        let style = TextCharStyle {
+            font_name: Some("Default".to_owned()),
+            fallback_font: None,
+            font_size_px: 24.0,
+            color: Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+        };
+
+        let pure_cjk_font = vertical_upright_font(&resolved, &style, true);
+        let mixed_run_font = vertical_upright_font(&resolved, &style, false);
+
+        assert!(!pure_cjk_font.is_baseline_snap());
+        assert!(mixed_run_font.is_baseline_snap());
+    }
+
+    #[test]
     fn glyph_runs_ignore_decoration_but_split_glyph_style() {
         let base = TextCharStyle {
             font_name: Some("Arial".to_owned()),
@@ -2151,6 +2211,22 @@ mod tests {
         assert_eq!(decoration_line_end_inset(4.0, false), 0.0);
         assert_eq!(decoration_line_end_inset(4.0, true), 2.0);
         assert_eq!(decoration_line_end_inset(0.25, true), 0.5);
+    }
+
+    #[test]
+    fn fitted_decoration_lines_use_hard_edges() {
+        let color = Rgba8 {
+            r: 39,
+            g: 39,
+            b: 39,
+            a: 255,
+        };
+
+        let regular = decoration_line_paint(color, false);
+        let fitted = decoration_line_paint(color, true);
+
+        assert!(regular.is_anti_alias());
+        assert!(!fitted.is_anti_alias());
     }
 
     #[test]

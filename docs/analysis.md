@@ -4883,3 +4883,24 @@ CJK vertical horizontal-run offset follow-up:
   y before drawing the run. This moves `Text_15` `3.565331 -> 3.276225` while
   pure CJK vertical `Text_14` stays stable at `1.592175`; a follow-up local
   window search found the new run position is already locally optimal.
+
+Fitted decoration hard-edge and pure-CJK baseline-snap follow-up:
+
+- `Text_12` visual inspection showed the remaining decoration residual was not a
+  whole-layer shift: the best image-space shift stayed `(0, 0)`, while fitted
+  decoration strokes still carried an extra antialias fringe compared with CSP's
+  harder exported lines. Disabling antialiasing for every decoration stroke
+  improved several decoration samples but regressed ordinary `Text_7`, so the
+  broad rule was rejected.
+- Accepted narrow rule: only quad-width-fitted decoration strokes use hard-edge
+  Skia paint; ordinary underline/strikethrough strokes keep antialiasing. This
+  moves `Text_12` `5.100506 -> 4.967231` while `Text_7`, `Text_8`, `Text_9`,
+  and `Text_11` stay at their previous guard metrics. A follow-up half-pixel
+  fitted-stroke center probe regressed `Text_12` to `5.713331`, so no fitted
+  center quantization is retained.
+- A separate vertical probe showed pure CJK upright glyphs benefit from
+  disabling baseline snap, but mixed CJK/Latin vertical text does not. Applying
+  it globally moved `Text_14` `1.592175 -> 1.432050` but regressed `Text_15`
+  `3.276225 -> 3.322256`; the retained rule disables baseline snap only when
+  the upright vertical entry has no embedded horizontal run. Final focused
+  metrics are `Text_14=1.432050` and `Text_15=3.276225`.
