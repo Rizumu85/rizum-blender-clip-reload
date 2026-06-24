@@ -53,7 +53,8 @@ In scope:
   ordinary strikethrough fallback sits at about
   `0.66em`, unusually high OpenType strikeout positions are honored for
   display-font strikethroughs, missing italic faces use Skia synthetic oblique
-  with a focused-matrix shear of about `-0.17`,
+  with a focused-matrix shear of about `-0.17`, while quad-width fitted
+  synthetic italic glyph bodies use a slightly stronger `-0.18` shear,
   vertical text flag `0x10` uses a basic right-to-left column layout,
   CJK-majority vertical text keeps CJK glyphs upright, uses a slightly wider
   pure-CJK row advance plus a pure-CJK right-column/midpoint alignment, groups

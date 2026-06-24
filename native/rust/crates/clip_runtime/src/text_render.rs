@@ -8,6 +8,7 @@ use skia_safe::{
 use crate::RuntimeError;
 
 const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.17;
+const SKIA_FITTED_SYNTHETIC_ITALIC_SKEW: f32 = -0.18;
 const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.90;
 const CJK_VERTICAL_PURE_ITEM_ADVANCE_EM: f32 = 0.99;
 const CJK_VERTICAL_MIXED_RIGHT_COLUMN_X_EM: f32 = 0.04;
@@ -880,7 +881,7 @@ fn draw_line(
             start = end;
             continue;
         };
-        let font = skia_font(&resolved, style);
+        let font = horizontal_glyph_font(&resolved, style, &decoration_styles[start]);
         let paint = text_paint(style.color);
         let baseline_y = horizontal_glyph_baseline_y(origin.1, &decoration_styles[start]);
         let text = chars[start..end].iter().collect::<String>();
@@ -945,6 +946,30 @@ fn skia_font(resolved: &ResolvedFont, style: &TextCharStyle) -> Font {
         font.set_skew_x(SKIA_SYNTHETIC_ITALIC_SKEW);
     }
     font
+}
+
+fn horizontal_glyph_font(
+    resolved: &ResolvedFont,
+    style: &TextCharStyle,
+    logical_style: &TextCharStyle,
+) -> Font {
+    let mut font = skia_font(resolved, style);
+    if resolved.synthetic_italic && text_style_is_quad_fitted(style, logical_style) {
+        font.set_skew_x(horizontal_synthetic_italic_skew(style, logical_style));
+    }
+    font
+}
+
+fn horizontal_synthetic_italic_skew(style: &TextCharStyle, logical_style: &TextCharStyle) -> f32 {
+    if text_style_is_quad_fitted(style, logical_style) {
+        SKIA_FITTED_SYNTHETIC_ITALIC_SKEW
+    } else {
+        SKIA_SYNTHETIC_ITALIC_SKEW
+    }
+}
+
+fn text_style_is_quad_fitted(style: &TextCharStyle, logical_style: &TextCharStyle) -> bool {
+    (style.font_size_px - logical_style.font_size_px).abs() > f32::EPSILON
 }
 
 fn vertical_horizontal_run_font(resolved: &ResolvedFont, style: &TextCharStyle) -> Font {
@@ -2107,6 +2132,41 @@ mod tests {
     #[test]
     fn synthetic_italic_skew_matches_focused_text_matrix() {
         assert!((SKIA_SYNTHETIC_ITALIC_SKEW + 0.17).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn fitted_synthetic_italic_uses_stronger_skew() {
+        let fitted = TextCharStyle {
+            font_name: None,
+            fallback_font: None,
+            font_size_px: 80.0,
+            color: Rgba8 {
+                r: 39,
+                g: 39,
+                b: 39,
+                a: 255,
+            },
+            bold: false,
+            italic: true,
+            underline: false,
+            strikethrough: false,
+        };
+        let logical = TextCharStyle {
+            font_size_px: 75.0,
+            ..fitted.clone()
+        };
+
+        assert!(
+            (horizontal_synthetic_italic_skew(&logical, &logical) - SKIA_SYNTHETIC_ITALIC_SKEW)
+                .abs()
+                < f32::EPSILON
+        );
+        assert!(
+            (horizontal_synthetic_italic_skew(&fitted, &logical)
+                - SKIA_FITTED_SYNTHETIC_ITALIC_SKEW)
+                .abs()
+                < f32::EPSILON
+        );
     }
 
     #[test]

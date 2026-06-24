@@ -4858,3 +4858,16 @@ Fitted decoration span follow-up:
   the stroke width. This moves `Text_12` `5.267588 -> 5.188837`; `Text_1`
   through `Text_11` and `Text_13` through `Text_15` stayed stable in the full
   text guard matrix.
+
+Fitted synthetic italic glyph-body follow-up:
+
+- After fitted decoration endpoints were corrected, `Text_12` still had a
+  glyph-body residual: native ink stayed slightly wider/heavier around the
+  synthetic italic body, while non-fitted synthetic italic guards were already
+  stable at the default `-0.17` skew.
+- Accepted narrow rule: synthetic italic glyphs whose font size was changed by
+  single-line quad-width fitting use a slightly stronger `-0.18` Skia skew,
+  while ordinary synthetic italic glyphs keep `-0.17`. This moves `Text_12`
+  `5.188837 -> 5.100506`; `Text_6`, `Text_9`, and `Text_11` stayed stable.
+  A lighter fitted skew (`-0.16`) regressed `Text_12`, and `-0.19` was worse
+  than `-0.18` in the same focused guard.
