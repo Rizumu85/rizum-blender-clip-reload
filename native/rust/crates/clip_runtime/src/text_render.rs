@@ -943,7 +943,7 @@ fn draw_text_decorations(
             let metric_position = strikethrough_position.filter(|position| *position > 0.45);
             let y = decoration_y(
                 origin.1,
-                decoration_styles[start].font_size_px,
+                styles[start].font_size_px,
                 0.66,
                 metric_position,
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
@@ -1679,7 +1679,7 @@ mod tests {
     }
 
     #[test]
-    fn decorations_use_logical_size_after_layout_fit() {
+    fn underline_uses_logical_size_after_layout_fit() {
         let mut surface = surfaces::raster_n32_premul((40, 40)).unwrap();
         surface.canvas().clear(Color::TRANSPARENT);
         let fitted = TextCharStyle {
@@ -1733,6 +1733,64 @@ mod tests {
         assert!(
             dark_rows.iter().all(|row| *row <= 12),
             "decoration should use the logical size, not the fitted size"
+        );
+    }
+
+    #[test]
+    fn strikethrough_position_uses_fitted_size_after_layout_fit() {
+        let mut surface = surfaces::raster_n32_premul((40, 40)).unwrap();
+        surface.canvas().clear(Color::TRANSPARENT);
+        let fitted = TextCharStyle {
+            font_name: None,
+            fallback_font: None,
+            font_size_px: 20.0,
+            color: Rgba8 {
+                r: 39,
+                g: 39,
+                b: 39,
+                a: 255,
+            },
+            bold: false,
+            italic: true,
+            underline: false,
+            strikethrough: true,
+        };
+        let logical = TextCharStyle {
+            font_size_px: 10.0,
+            ..fitted.clone()
+        };
+
+        draw_text_decorations(
+            surface.canvas(),
+            (0.0, 0.0),
+            &[fitted],
+            &[logical],
+            &[(2.0, 20.0)],
+            &[Some(TextFontMetrics {
+                underline_thickness: None,
+                underline_position: None,
+                strikethrough_thickness: None,
+                strikethrough_position: None,
+            })],
+        );
+
+        let image = surface.image_snapshot();
+        let pixmap = image.peek_pixels().unwrap();
+        let pixels = pixmap.bytes().unwrap();
+        let dark_rows = (0..40)
+            .filter_map(|y| {
+                (0..40)
+                    .any(|x| {
+                        let index = (y * 40 + x) * 4;
+                        pixels[index + 3] != 0
+                    })
+                    .then_some(y)
+            })
+            .collect::<Vec<_>>();
+        assert!(!dark_rows.is_empty());
+        assert!(
+            dark_rows.iter().all(|row| *row >= 12),
+            "strikethrough position should follow the fitted glyph body"
         );
     }
 

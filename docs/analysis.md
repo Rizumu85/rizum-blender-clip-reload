@@ -4717,7 +4717,15 @@ Text decoration size follow-up:
   `101..103`. `Text_7` underline rows were already aligned and `Text_11`
   mostly retained thickness/edge residuals, so a global underline y shift was
   rejected.
-- Accepted rule: after the glyph body is fitted to the text quad width,
-  decoration y uses the logical pre-fit text size, matching the existing
+- Accepted partial rule: after the glyph body is fitted to the text quad width,
+  underline y uses the logical pre-fit text size, matching the existing
   logical-size thickness rule. This moves `Text_12` `9.760294 -> 9.235912`
   while leaving `Text_7`, `Text_8`, `Text_9`, and `Text_11` unchanged.
+
+Text strikethrough fit-size follow-up:
+
+- The all-decoration logical-size rule fixed `Text_12` underline rows but moved
+  the strikethrough rows too high (`native 64..68` versus CSP `68..71`).
+- Accepted rule: strikethrough y follows the fitted glyph body, while underline
+  y keeps the logical pre-fit size. This moves `Text_12` `9.235912 -> 6.596794`
+  with `Text_7`, `Text_8`, `Text_9`, and `Text_11` unchanged.
