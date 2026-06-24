@@ -4832,10 +4832,12 @@ Pure CJK vertical advance/midpoint follow-up:
   `0.90em` row advance was too compact for pure CJK vertical text but still
   useful for mixed CJK/Latin vertical text. A global advance or midpoint change
   continued to trade `Text_14` against `Text_15`.
-- Accepted split: pure CJK upright vertical text uses a `0.99em` item advance
-  and `1.02em` midpoint, while mixed CJK/Latin vertical text keeps the compact
-  `0.90em` advance and the existing `0.03em` midpoint offset. This moves
-  `Text_14` `3.375338 -> 3.012563` and keeps `Text_15` stable at `4.889456`;
-  `Text_1..Text_13` also stayed stable in the focused text guard matrix. Visual
-  overlay improved the pure vertical CJK overlap and reduced both
-  reference-only and native-only ink clusters.
+- Accepted split: pure CJK upright vertical text uses a `0.99em` item advance,
+  `0.10em` right-column x offset, and `1.00em` midpoint, while mixed CJK/Latin
+  vertical text keeps the compact `0.90em` advance with a separate `0.04em`
+  right-column x offset and `0.01em` midpoint offset. This moves `Text_14`
+  `3.375338 -> 1.592175` and `Text_15` `4.889456 -> 3.565331`;
+  `Text_1..Text_13` stayed stable in the focused text guard matrix. Visual
+  overlay improved pure vertical CJK overlap from `596` to `894` ink pixels and
+  mixed CJK/Latin overlap from `340` to `665` ink pixels, reducing both
+  reference-only and native-only clusters.
