@@ -1028,6 +1028,9 @@ fn draw_text_decorations(
             .map(|pos| pos.1)
             .unwrap_or(x0);
         let metrics = char_metrics.get(start).and_then(|metrics| *metrics);
+        let fitted_decoration_span =
+            (styles[start].font_size_px - decoration_styles[start].font_size_px).abs()
+                > f32::EPSILON;
         if styles[start].underline {
             let y = decoration_y(
                 origin.1,
@@ -1042,7 +1045,15 @@ fn draw_text_decorations(
                 24.0,
                 DecorationThicknessQuantize::Floor,
             );
-            draw_decoration_line(canvas, x0, x1, y, thickness, styles[start].color);
+            draw_decoration_line(
+                canvas,
+                x0,
+                x1,
+                y,
+                thickness,
+                styles[start].color,
+                fitted_decoration_span,
+            );
         }
         if styles[start].strikethrough {
             let strikethrough_position = metrics.and_then(|metrics| metrics.strikethrough_position);
@@ -1062,7 +1073,15 @@ fn draw_text_decorations(
                 24.0,
                 DecorationThicknessQuantize::Round,
             );
-            draw_decoration_line(canvas, x0, x1, y, thickness, styles[start].color);
+            draw_decoration_line(
+                canvas,
+                x0,
+                x1,
+                y,
+                thickness,
+                styles[start].color,
+                fitted_decoration_span,
+            );
         }
         start = end;
     }
@@ -1105,13 +1124,34 @@ fn decoration_thickness(
     .clamp(1.0, 16.0)
 }
 
-fn draw_decoration_line(canvas: &Canvas, x0: f32, x1: f32, y: f32, thickness: f32, color: Rgba8) {
+fn draw_decoration_line(
+    canvas: &Canvas,
+    x0: f32,
+    x1: f32,
+    y: f32,
+    thickness: f32,
+    color: Rgba8,
+    inset_ends: bool,
+) {
     let mut paint = text_paint(color);
     paint.set_stroke(true);
     let thickness = thickness.max(1.0);
     paint.set_stroke_width(thickness);
     let center_y = y + thickness * 0.5;
-    canvas.draw_line(Point::new(x0, center_y), Point::new(x1, center_y), &paint);
+    let inset = decoration_line_end_inset(thickness, inset_ends);
+    canvas.draw_line(
+        Point::new(x0 + inset, center_y),
+        Point::new((x1 - inset).max(x0 + inset), center_y),
+        &paint,
+    );
+}
+
+fn decoration_line_end_inset(thickness: f32, inset_ends: bool) -> f32 {
+    if inset_ends {
+        thickness.max(1.0) * 0.5
+    } else {
+        0.0
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2055,6 +2095,13 @@ mod tests {
 
         assert_eq!(underline as i32, 4);
         assert_eq!(strikethrough as i32, 5);
+    }
+
+    #[test]
+    fn fitted_decoration_lines_inset_ends_by_half_stroke() {
+        assert_eq!(decoration_line_end_inset(4.0, false), 0.0);
+        assert_eq!(decoration_line_end_inset(4.0, true), 2.0);
+        assert_eq!(decoration_line_end_inset(0.25, true), 0.5);
     }
 
     #[test]

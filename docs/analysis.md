@@ -4841,3 +4841,20 @@ Pure CJK vertical advance/midpoint follow-up:
   overlay improved pure vertical CJK overlap from `596` to `894` ink pixels and
   mixed CJK/Latin overlap from `340` to `665` ink pixels, reducing both
   reference-only and native-only clusters.
+
+Fitted decoration span follow-up:
+
+- `Text_12` still had excess native-only ink at the horizontal decoration line
+  ends after the glyph baseline and vertical alignment fixes. Visual/component
+  analysis showed CSP's underline and strikethrough rows span about `149px`,
+  while native used about `154px`; the glyph body itself remained the dominant
+  residual, but the decoration endpoints were a small separable error.
+- Rejected probes: raising the single-line quad-fit threshold to skip the
+  roughly `6.7%` width fit did not improve `Text_12`, and globally insetting
+  decoration line ends by half a stroke width improved `Text_12` but regressed
+  ordinary decoration guards (`Text_7`, `Text_8`, `Text_9`, and `Text_11`).
+- Accepted narrow rule: only decoration spans whose glyph style was quad-width
+  fitted while decoration sizing stayed logical inset their line ends by half
+  the stroke width. This moves `Text_12` `5.267588 -> 5.188837`; `Text_1`
+  through `Text_11` and `Text_13` through `Text_15` stayed stable in the full
+  text guard matrix.
