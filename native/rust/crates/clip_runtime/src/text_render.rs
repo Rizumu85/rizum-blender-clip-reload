@@ -19,6 +19,8 @@ const CJK_VERTICAL_PURE_MIDPOINT_Y_EM: f32 = 1.00;
 const CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM: f32 = 0.01;
 const CJK_VERTICAL_HORIZONTAL_RUN_X_OFFSET_EM: f32 = -0.02;
 const CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM: f32 = 0.02;
+const CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM: f32 = -0.12;
+const CJK_VERTICAL_PURE_LAST_ROW_Y_OFFSET_EM: f32 = 0.06;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TextRasterLayout {
@@ -395,10 +397,18 @@ fn render_upright_vertical_entry_surface(
                 )
             })
             .collect::<Vec<_>>();
-        let row_positions = vertical_column_row_positions(&advances, midpoint_y);
+        let column_midpoint_y =
+            midpoint_y + vertical_upright_column_y_offset(&items, max_font_size);
+        let row_positions = vertical_column_row_positions(&advances, column_midpoint_y);
         let center_x = right_column_x - column as f32 * column_step;
         for (row, item) in items.iter().enumerate() {
-            let center_y = row_positions.get(row).copied().unwrap_or(midpoint_y);
+            let center_y = row_positions.get(row).copied().unwrap_or(midpoint_y)
+                + vertical_upright_row_y_offset(
+                    row,
+                    items.len(),
+                    has_horizontal_run,
+                    max_font_size,
+                );
             match item.kind {
                 VerticalTextItemKind::UprightChar => {
                     let ch = chars[item.start];
@@ -1013,6 +1023,30 @@ fn vertical_horizontal_run_font(resolved: &ResolvedFont, style: &TextCharStyle) 
     let mut font = skia_font(resolved, style);
     font.set_baseline_snap(false);
     font
+}
+
+fn vertical_upright_column_y_offset(column: &[VerticalTextItem], max_font_size: f32) -> f32 {
+    if column
+        .iter()
+        .any(|item| item.kind == VerticalTextItemKind::HorizontalRun)
+    {
+        max_font_size * CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM
+    } else {
+        0.0
+    }
+}
+
+fn vertical_upright_row_y_offset(
+    row: usize,
+    row_count: usize,
+    has_horizontal_run: bool,
+    max_font_size: f32,
+) -> f32 {
+    if !has_horizontal_run && row + 1 == row_count && row_count > 1 {
+        max_font_size * CJK_VERTICAL_PURE_LAST_ROW_Y_OFFSET_EM
+    } else {
+        0.0
+    }
 }
 
 fn text_paint(color: Rgba8) -> Paint {
@@ -2042,6 +2076,43 @@ mod tests {
 
         assert_eq!(x.round() as i32, -1);
         assert_eq!(y.round() as i32, 1);
+    }
+
+    #[test]
+    fn cjk_vertical_horizontal_run_columns_shift_up() {
+        let upright_column = [VerticalTextItem {
+            start: 0,
+            end: 1,
+            kind: VerticalTextItemKind::UprightChar,
+        }];
+        let mixed_column = [
+            VerticalTextItem {
+                start: 0,
+                end: 1,
+                kind: VerticalTextItemKind::UprightChar,
+            },
+            VerticalTextItem {
+                start: 1,
+                end: 3,
+                kind: VerticalTextItemKind::HorizontalRun,
+            },
+        ];
+
+        assert_eq!(vertical_upright_column_y_offset(&upright_column, 50.0), 0.0);
+        assert_eq!(
+            vertical_upright_column_y_offset(&mixed_column, 50.0).round() as i32,
+            -6
+        );
+    }
+
+    #[test]
+    fn pure_cjk_vertical_last_row_uses_bottom_alignment_offset() {
+        assert_eq!(vertical_upright_row_y_offset(0, 4, false, 50.0), 0.0);
+        assert_eq!(vertical_upright_row_y_offset(3, 4, true, 50.0), 0.0);
+        assert_eq!(
+            vertical_upright_row_y_offset(3, 4, false, 50.0).round() as i32,
+            3
+        );
     }
 
     #[test]

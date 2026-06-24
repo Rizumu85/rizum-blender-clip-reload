@@ -4904,3 +4904,21 @@ Fitted decoration hard-edge and pure-CJK baseline-snap follow-up:
   `3.276225 -> 3.322256`; the retained rule disables baseline snap only when
   the upright vertical entry has no embedded horizontal run. Final focused
   metrics are `Text_14=1.432050` and `Text_15=3.276225`.
+
+CJK vertical column/last-row alignment follow-up:
+
+- Visual inspection of `Text_14` and `Text_15` showed that their remaining
+  spacing residuals were not a whole-layer or whole-column x shift. `Text_14`
+  kept the first three glyph positions close to the CSP export, but the final
+  pure-CJK `下` sat about 3px too high. `Text_15` had the column containing the
+  embedded horizontal `hu` run about 8px too low while the other column was
+  already close.
+- Rejected probe: positioning upright glyphs from font metrics/em center instead
+  of per-glyph ink bounds regressed both focused samples (`Text_14`
+  `1.432050 -> 1.984987`, `Text_15` `3.276225 -> 3.585675`), so the current
+  ink-bounds centering remains closer to CSP for these samples.
+- Accepted narrow rules: vertical columns containing a horizontal run shift up by
+  about `0.12em`, and the final row of pure-CJK upright columns gets a small
+  `0.06em` bottom-alignment offset. This moves `Text_15`
+  `3.276225 -> 3.001425` and `Text_14` `1.432050 -> 1.260769`; `Text_1`
+  through `Text_13` stay stable in the full text guard matrix.

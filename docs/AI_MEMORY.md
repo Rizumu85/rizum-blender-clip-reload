@@ -62,9 +62,11 @@ In scope:
   snapping only for pure-CJK upright glyphs, uses a slightly wider pure-CJK row
   advance plus a pure-CJK right-column/midpoint alignment, groups
   short ASCII runs horizontally with baseline snapping disabled and a focused
-  horizontal-run center offset, keeps a compact mixed-run advance plus separate
-  mixed right-column/midpoint alignment for embedded Latin runs, and advances
-  multi-column upright text by about `1.22em`;
+  horizontal-run center offset, shifts vertical columns containing those
+  horizontal runs slightly upward, keeps a compact mixed-run advance plus
+  separate mixed right-column/midpoint alignment for embedded Latin runs,
+  applies a small bottom-alignment offset to the final row of pure-CJK columns,
+  and advances multi-column upright text by about `1.22em`;
   text path mode `66 = 1` uses a basic circular arc layout. This is not
   editable text import and remains a first-pass renderer.
   Current reverse evidence shows CSP's simple text path uses SkShaper run
