@@ -4780,3 +4780,22 @@ Text raster hinting and vertical residual follow-up:
   synthetic italic guard matrix; `set_subpixel(false)` improved `Text_12` and
   `Text_15` but regressed `Text_1`, `Text_10`, `Text_11`, `Text_13`, and
   `Text_14`; rounding underline thickness regressed underline guards.
+
+Mixed vertical ASCII-run follow-up:
+
+- A tempting horizontal quad-origin rule was rejected. Using text quad `min_x`
+  as the horizontal line origin slightly improved `Text_11`
+  `1.169850 -> 1.169606`, but regressed `Text_7` `0.846769 -> 1.638525`,
+  `Text_8` `0.631781 -> 1.346044`, `Text_9` `1.062469 -> 2.053819`,
+  `Text_12` `5.514319 -> 6.189712`, and `Text_13`
+  `1.047919 -> 1.102744`. Keep the current bbox-centered horizontal origin.
+- `Font::set_linear_metrics(true)` and disabling embedded bitmaps were
+  byte-equivalent on the focused text guards. Global `baseline_snap=false`
+  improved mixed vertical `Text_15` `4.942294 -> 4.909294` but regressed pure
+  CJK vertical `Text_14` `3.375338 -> 3.509569`, so it was rejected.
+- Accepted narrow rule: the horizontal ASCII run embedded inside CJK vertical
+  text is measured and drawn as a same-style run with baseline snapping disabled.
+  This keeps `Text_14` stable and moves `Text_15`
+  `4.942294 -> 4.931569`. The visual change is small and localized to the
+  embedded `hu` edge, but it matches the broader text-blob/run-coordinate
+  direction without relaxing CJK vertical layout constants.

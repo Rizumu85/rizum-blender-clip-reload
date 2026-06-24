@@ -661,16 +661,21 @@ fn draw_horizontal_vertical_run(
     };
     let baseline_y = center_y - (top + bottom) * 0.5;
     let mut x = center_x - width * 0.5;
-    for (ch, style) in chars.iter().zip(styles.iter()) {
+    let mut start = 0usize;
+    while start < chars.len() {
+        let style = &styles[start];
+        let end = glyph_run_end(start, chars.len(), styles);
         let Some(resolved) = fonts.resolve(style) else {
-            x += style.font_size_px * 0.55;
+            x += style.font_size_px * 0.55 * (end - start) as f32;
+            start = end;
             continue;
         };
-        let font = skia_font(&resolved, style);
+        let font = vertical_horizontal_run_font(&resolved, style);
         let paint = text_paint(style.color);
-        let text = ch.to_string();
+        let text = chars[start..end].iter().collect::<String>();
         canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
         x += font.measure_str(&text, Some(&paint)).0;
+        start = end;
     }
     Ok(())
 }
@@ -683,20 +688,25 @@ fn text_run_bounds(
     let mut width = 0.0f32;
     let mut top = f32::INFINITY;
     let mut bottom = f32::NEG_INFINITY;
-    for (ch, style) in chars.iter().zip(styles.iter()) {
+    let mut start = 0usize;
+    while start < chars.len() {
+        let style = &styles[start];
+        let end = glyph_run_end(start, chars.len(), styles);
         let Some(resolved) = fonts.resolve(style) else {
-            width += style.font_size_px * 0.55;
+            width += style.font_size_px * 0.55 * (end - start) as f32;
             top = top.min(0.0);
             bottom = bottom.max(style.font_size_px);
+            start = end;
             continue;
         };
-        let font = skia_font(&resolved, style);
+        let font = vertical_horizontal_run_font(&resolved, style);
         let paint = text_paint(style.color);
-        let text = ch.to_string();
+        let text = chars[start..end].iter().collect::<String>();
         let (advance, bounds) = font.measure_str(&text, Some(&paint));
         width += advance;
         top = top.min(bounds.top);
         bottom = bottom.max(bounds.bottom);
+        start = end;
     }
     (width > 0.0 && top.is_finite() && bottom.is_finite()).then_some((width, top, bottom))
 }
@@ -885,6 +895,12 @@ fn skia_font(resolved: &ResolvedFont, style: &TextCharStyle) -> Font {
     if resolved.synthetic_italic {
         font.set_skew_x(SKIA_SYNTHETIC_ITALIC_SKEW);
     }
+    font
+}
+
+fn vertical_horizontal_run_font(resolved: &ResolvedFont, style: &TextCharStyle) -> Font {
+    let mut font = skia_font(resolved, style);
+    font.set_baseline_snap(false);
     font
 }
 
@@ -1593,6 +1609,38 @@ mod tests {
 
         assert!(font.is_subpixel());
         assert_eq!(font.edging(), font::Edging::AntiAlias);
+        assert_eq!(font.hinting(), FontHinting::None);
+    }
+
+    #[test]
+    fn vertical_horizontal_run_font_disables_baseline_snap() {
+        let typeface = FontMgr::new()
+            .legacy_make_typeface(None, FontStyle::normal())
+            .expect("default typeface");
+        let resolved = ResolvedFont {
+            typeface,
+            metrics: TextFontMetrics::default(),
+            synthetic_italic: false,
+        };
+        let style = TextCharStyle {
+            font_name: Some("Default".to_owned()),
+            fallback_font: None,
+            font_size_px: 24.0,
+            color: Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+        };
+
+        let font = vertical_horizontal_run_font(&resolved, &style);
+
+        assert!(!font.is_baseline_snap());
         assert_eq!(font.hinting(), FontHinting::None);
     }
 
