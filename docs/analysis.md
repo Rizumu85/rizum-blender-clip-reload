@@ -4600,3 +4600,62 @@ next attempt must first recover the run-handler origin, font-run grouping, and
 decoration draw-line state. Avoid more per-sample constants unless this native
 run model is already in place and a specific parameter is independently
 verified.
+
+Follow-up probes refine that conclusion:
+
+- Replacing horizontal `draw_str` calls with `TextBlob::from_pos_text` and
+  `draw_text_blob` while keeping the current per-character positions produced
+  byte-identical compare metrics for `Text_1..Text_15`. Therefore the remaining
+  mismatch is not in Skia's final text-blob raster operation; it is upstream of
+  the glyph positions.
+- Re-enabling `skia-safe/textlayout` and routing single-style horizontal lines
+  through `Shaper::new_shape_then_wrap`, font/BiDi/script/language iterators,
+  and `TextBlobBuilderRunHandler` still regressed the guard matrix when used
+  naively. Default-offset raw means became `Text_1=14.291756`,
+  `Text_6=24.399956`, `Text_11=20.518744`, and `Text_12=14.962537` versus the
+  current `0.203794`, `2.780737`, `4.595794`, and `12.209344`. A small y-offset
+  sweep only made `Text_12` slightly better at one offset (`11.402606`) while
+  `Text_1` and `Text_6` remained far worse, so the failure is not a single
+  baseline offset.
+- `0x14363f5b0`, the helper called before both `drawLine` and `drawTextBlob`,
+  configures SkPaint style, color, blend mode, antialias/subpixel state, stroke
+  width, color/mask/image filters, stroke cap, stroke join, and alpha. That
+  confirms decoration lines are normal draw-list stroke commands with runtime
+  paint state, but the compact text metadata does not expose a simple final
+  stroke-width/cap value that can be copied directly.
+
+The safe next reverse target is the CSP text-run builder around
+`0x14363c820..0x14363d9c0`: recover which script value, font-manager iterator
+request, run-handler offset, width, and later `drawTextBlob` origin are paired
+with the saved text entry. Do not turn `textlayout` back on in product code
+until that coordinate model is recovered and the focused text guard matrix
+improves broadly.
+
+Additional read-only disassembly around that builder narrows the shape:
+
+- CSP creates `SkShaper::MakeShapeThenWrap` at `0x14363c883`, but the
+  surrounding code does not simply hand the resulting handler blob to the
+  renderer.
+- Its `MakeBiDiRunIterator` call passes `0xfe` as the BiDi level byte. Using the
+  same value in a direct `TextBlobBuilderRunHandler` probe still regressed the
+  samples, so the BiDi level alone is not the missing rule.
+- The script iterator tag comes from helper `0x143639610`, not from ICU's
+  default iterator alone. That helper maps classified text to `Jpan`, `Hans`,
+  `Hant`, `Hang`, `Latn`, or fallback `Zyyy`.
+- Width is effectively unlimited (`0x7f7fffff`) unless a finite positive layout
+  width is stored on the text entry.
+- After shaping, CSP calls a follow-up routine around `0x14363d320` that walks
+  UTF-8 codepoints and copies glyph IDs, cluster maps, and position arrays into
+  its own text entry.
+- Later, CSP calls `SkTextBlobBuilder::allocRunTextPos` at `0x14363d968`,
+  copies the saved UTF-8/run payload into that buffer, and only then stores the
+  blob/run structure.
+- The draw path resolves this saved blob through `0x14363c140` and calls
+  `SkCanvas::drawTextBlob` at `0x14363eb1e` with the blob's internal positions
+  plus a separate external `(x, y)` origin loaded from the draw command.
+
+This explains the failed shaper probes: the recoverable rule is not "enable
+`skia-safe/textlayout` and draw the handler output". It is "match CSP's saved
+glyph-run buffer". Future text fidelity work should therefore target the
+`0x14363d320` codepoint/cluster/position transfer and the later
+`allocRunTextPos` payload layout before changing product rendering again.

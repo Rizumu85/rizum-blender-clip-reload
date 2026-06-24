@@ -54,7 +54,13 @@ In scope:
   iterators, `SkTextBlobBuilder::allocRunTextPos`, `SkCanvas::drawTextBlob`, and
   separate `SkCanvas::drawLine` decoration strokes. The remaining text residuals
   should therefore be fixed by a shaped text-blob/run-coordinate model, not by
-  per-sample offsets or more hand-tuned underline/vertical constants.
+  per-sample offsets or more hand-tuned underline/vertical constants. Probes
+  using the same glyph positions make `drawTextBlob` byte-identical to
+  `draw_str`, and naive
+  `skia-safe/textlayout` ShapeThenWrap probes still regress the guard matrix;
+  CSP also rebuilds/caches glyph IDs, cluster maps, and positions through
+  `allocRunTextPos` before drawing with an external origin. Recover that saved
+  run-buffer model before enabling shaping in product code.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
