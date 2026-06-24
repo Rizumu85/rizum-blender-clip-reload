@@ -48,9 +48,10 @@ In scope:
   `0.66em`, unusually high OpenType strikeout positions are honored for
   display-font strikethroughs, missing italic faces use Skia synthetic oblique,
   vertical text flag `0x10` uses a basic right-to-left column layout,
-  CJK-majority vertical text keeps CJK glyphs upright and groups short ASCII
-  runs horizontally, and text path mode `66 = 1` uses a basic circular arc
-  layout. This is not editable text import and remains a first-pass renderer.
+  CJK-majority vertical text keeps CJK glyphs upright, groups short ASCII
+  runs horizontally, and advances multi-column upright text by about `1.22em`;
+  text path mode `66 = 1` uses a basic circular arc layout. This is not
+  editable text import and remains a first-pass renderer.
   Current reverse evidence shows CSP's simple text path uses SkShaper run
   iterators, `SkTextBlobBuilder::allocRunTextPos`, `SkCanvas::drawTextBlob`, and
   separate `SkCanvas::drawLine` decoration strokes. The remaining text residuals

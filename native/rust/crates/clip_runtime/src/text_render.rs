@@ -10,7 +10,7 @@ use crate::RuntimeError;
 const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.25;
 const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.90;
 const CJK_VERTICAL_RIGHT_COLUMN_X_EM: f32 = 0.08;
-const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.06;
+const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.22;
 const CJK_VERTICAL_MIDPOINT_Y_EM: f32 = 0.93;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -371,7 +371,7 @@ fn render_upright_vertical_entry_surface(
     let columns = vertical_upright_item_columns(chars, rows_per_column);
     let right_column_x =
         layout.size.width as f32 * 0.5 + max_font_size * CJK_VERTICAL_RIGHT_COLUMN_X_EM;
-    let column_step = (max_font_size * CJK_VERTICAL_COLUMN_ADVANCE_EM).max(1.0);
+    let column_step = vertical_upright_column_step(max_font_size);
     let midpoint_y = box_y + max_font_size * CJK_VERTICAL_MIDPOINT_Y_EM;
     for (column, items) in columns.into_iter().enumerate() {
         let advances = items
@@ -427,6 +427,10 @@ enum VerticalTextItemKind {
     UprightChar,
     HorizontalRun,
     RotatedChar,
+}
+
+fn vertical_upright_column_step(max_font_size: f32) -> f32 {
+    (max_font_size * CJK_VERTICAL_COLUMN_ADVANCE_EM).max(1.0)
 }
 
 fn vertical_text_uses_upright_layout(chars: &[char]) -> bool {
@@ -1645,6 +1649,16 @@ mod tests {
                 .iter()
                 .all(|item| item.kind == VerticalTextItemKind::UprightChar)
         );
+    }
+
+    #[test]
+    fn cjk_vertical_columns_use_wide_line_advance() {
+        let font_size = 50.0;
+        let column_step = vertical_upright_column_step(font_size);
+        let item_step = font_size * CJK_VERTICAL_ITEM_ADVANCE_EM;
+
+        assert!(column_step > item_step);
+        assert_eq!(column_step.round() as i32, 61);
     }
 
     #[test]

@@ -4536,6 +4536,14 @@ focused CJK vertical path now compares at `Text_14` raw mean `3.375075` and
 `Text_15` raw mean `5.222719`; the full `Text_1..Text_15` guard matrix stayed
 stable.
 
+CJK vertical multi-column follow-up: component analysis on `Text_15` showed the
+second upright column was too close to the first column, while single-column
+`Text_14` was unaffected. A standard `1.20em` upright-column step improved
+`Text_15` only to raw mean `5.150344`; reusing the Latin vertical `1.208em`
+step improved it to `5.087512`; a measured `1.22em` CJK upright-column step
+improved it to `4.941750` with `Text_4` and `Text_14` unchanged. This is kept
+as a CJK upright multi-column advance rule, not a sample-specific layer offset.
+
 ## Text residual reverse-analysis consolidation
 
 A read-only r2/PE import pass over the local CSP executable confirms that the
