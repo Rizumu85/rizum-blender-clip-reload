@@ -923,7 +923,7 @@ fn draw_text_decorations(
         if styles[start].underline {
             let y = decoration_y(
                 origin.1,
-                styles[start].font_size_px,
+                decoration_styles[start].font_size_px,
                 0.90,
                 metrics.and_then(|metrics| metrics.underline_position),
                 metrics.and_then(|metrics| metrics.underline_thickness),
@@ -943,7 +943,7 @@ fn draw_text_decorations(
             let metric_position = strikethrough_position.filter(|position| *position > 0.45);
             let y = decoration_y(
                 origin.1,
-                styles[start].font_size_px,
+                decoration_styles[start].font_size_px,
                 0.66,
                 metric_position,
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
@@ -1679,7 +1679,7 @@ mod tests {
     }
 
     #[test]
-    fn decorations_use_logical_thickness_after_layout_fit() {
+    fn decorations_use_logical_size_after_layout_fit() {
         let mut surface = surfaces::raster_n32_premul((40, 40)).unwrap();
         surface.canvas().clear(Color::TRANSPARENT);
         let fitted = TextCharStyle {
@@ -1720,14 +1720,20 @@ mod tests {
         let pixmap = image.peek_pixels().unwrap();
         let pixels = pixmap.bytes().unwrap();
         let dark_rows = (0..40)
-            .filter(|&y| {
-                (0..40).any(|x| {
-                    let index = (y * 40 + x) * 4;
-                    pixels[index + 3] != 0
-                })
+            .filter_map(|y| {
+                (0..40)
+                    .any(|x| {
+                        let index = (y * 40 + x) * 4;
+                        pixels[index + 3] != 0
+                    })
+                    .then_some(y)
             })
-            .count();
-        assert!((2..=3).contains(&dark_rows));
+            .collect::<Vec<_>>();
+        assert!((2..=3).contains(&dark_rows.len()));
+        assert!(
+            dark_rows.iter().all(|row| *row <= 12),
+            "decoration should use the logical size, not the fitted size"
+        );
     }
 
     #[test]

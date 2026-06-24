@@ -4709,3 +4709,15 @@ Text decoration thickness follow-up:
   `1.161919 -> 0.846769`, `Text_9` `3.664388 -> 3.349238`, `Text_11`
   `4.216312 -> 3.644794`, and `Text_12` `10.297144 -> 9.760294`, with
   `Text_8` unchanged at `0.631781`.
+
+Text decoration size follow-up:
+
+- The remaining `Text_12` residual was still dominated by the MiSans ExtraLight
+  underline rows: CSP places them at `y=95..98`, while native placed them at
+  `101..103`. `Text_7` underline rows were already aligned and `Text_11`
+  mostly retained thickness/edge residuals, so a global underline y shift was
+  rejected.
+- Accepted rule: after the glyph body is fitted to the text quad width,
+  decoration y uses the logical pre-fit text size, matching the existing
+  logical-size thickness rule. This moves `Text_12` `9.760294 -> 9.235912`
+  while leaving `Text_7`, `Text_8`, `Text_9`, and `Text_11` unchanged.
