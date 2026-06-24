@@ -4750,3 +4750,33 @@ Text synthetic italic skew follow-up:
   `3.644794 -> 1.495425`, and `Text_12` `6.596794 -> 5.514844`; non-italic
   `Text_1..Text_5`, `Text_7`, `Text_8`, `Text_10`, and `Text_13..Text_15`
   stayed stable.
+
+Text raster hinting and vertical residual follow-up:
+
+- Visual inspection of a full `Text_1..Text_15` montage showed the largest
+  remaining user-visible clusters in `Text_12` thin synthetic italic decoration
+  and `Text_14`/`Text_15` CJK upright vertical layout. CJK vertical probes were
+  rejected: widening `CJK_VERTICAL_ITEM_ADVANCE_EM` from `0.90` to `1.00`
+  regressed `Text_14` `3.375075 -> 3.817837` and `Text_15`
+  `4.941750 -> 5.152312`; moving `CJK_VERTICAL_MIDPOINT_Y_EM` to either `1.02`
+  or `0.84` also regressed both focused vertical samples.
+- A horizontal negative-quad-top clamp probe was rejected. Mapping
+  `quad_top=-3px` to `origin.y=0` instead of `3px` severely regressed
+  `Text_10` `0.789900 -> 5.396625`, `Text_11` `1.495425 -> 7.319250`,
+  `Text_12` `5.514844 -> 9.083194`, and `Text_13` `1.048331 -> 2.777269`.
+- Switching Skia font hinting from `Normal` to `None` is accepted for the
+  current source-raster text path. It reduces `Text_10`
+  `0.789900 -> 0.372188`, `Text_11` `1.495425 -> 1.169850`, and slightly
+  improves `Text_5`, `Text_6`, `Text_9`, `Text_12`, and `Text_13`. The CJK
+  vertical samples change only by tiny residual amounts (`Text_14`
+  `3.375075 -> 3.375338`, `Text_15` `4.941750 -> 4.942294`).
+- A same-style horizontal glyph-run draw path is retained as structural cleanup
+  toward the CSP text-blob/run-coordinate model. On the focused samples it is
+  byte-equivalent to the previous per-character draw path, so the accepted pixel
+  improvement in this pass comes from unhinted Skia rasterization, not run
+  batching.
+- Rejected follow-up probes: `FontHinting::Slight` was byte-equivalent to
+  `Normal`; changing synthetic italic skew to `-0.20` or `-0.14` regressed the
+  synthetic italic guard matrix; `set_subpixel(false)` improved `Text_12` and
+  `Text_15` but regressed `Text_1`, `Text_10`, `Text_11`, `Text_13`, and
+  `Text_14`; rounding underline thickness regressed underline guards.

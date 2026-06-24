@@ -780,18 +780,24 @@ fn fit_single_line_to_quad_width(
 }
 
 fn measure_line_width(chars: &[char], styles: &[TextCharStyle], fonts: &mut FontResolver) -> f32 {
-    chars
-        .iter()
-        .zip(styles.iter())
-        .map(|(ch, style)| {
-            let Some(resolved) = fonts.resolve(style) else {
-                return style.font_size_px * 0.55;
-            };
-            let font = skia_font(&resolved, style);
-            let paint = text_paint(style.color);
-            font.measure_str(ch.to_string(), Some(&paint)).0
-        })
-        .sum()
+    let mut width = 0.0f32;
+    let mut start = 0usize;
+    while start < chars.len() {
+        let style = &styles[start];
+        let end = glyph_run_end(start, chars.len(), styles);
+        let text = chars[start..end].iter().collect::<String>();
+        let run_width = fonts.resolve(style).map_or_else(
+            || style.font_size_px * 0.55 * (end - start) as f32,
+            |resolved| {
+                let font = skia_font(&resolved, style);
+                let paint = text_paint(style.color);
+                font.measure_str(&text, Some(&paint)).0
+            },
+        );
+        width += run_width;
+        start = end;
+    }
+    width
 }
 
 fn draw_line(
@@ -805,23 +811,43 @@ fn draw_line(
     let mut x = origin.0;
     let mut char_positions = Vec::with_capacity(chars.len());
     let mut char_metrics = Vec::with_capacity(chars.len());
-    for (ch, style) in chars.iter().zip(styles.iter()) {
+    let mut start = 0usize;
+    while start < chars.len() {
+        let style = &styles[start];
+        let end = glyph_run_end(start, chars.len(), styles);
         let Some(resolved) = fonts.resolve(style) else {
-            let next_x = x + style.font_size_px * 0.55;
-            char_positions.push((x, next_x));
-            char_metrics.push(None);
-            x = next_x;
+            for _ in start..end {
+                let next_x = x + style.font_size_px * 0.55;
+                char_positions.push((x, next_x));
+                char_metrics.push(None);
+                x = next_x;
+            }
+            start = end;
             continue;
         };
         let font = skia_font(&resolved, style);
         let paint = text_paint(style.color);
         let baseline_y = origin.1 + style.font_size_px;
-        let text = ch.to_string();
+        let text = chars[start..end].iter().collect::<String>();
         canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
-        let next_x = x + font.measure_str(&text, Some(&paint)).0;
-        char_positions.push((x, next_x));
-        char_metrics.push(Some(resolved.metrics));
-        x = next_x;
+        let run_width = font.measure_str(&text, Some(&paint)).0;
+        let char_advances = chars[start..end]
+            .iter()
+            .map(|ch| font.measure_str(ch.to_string(), Some(&paint)).0)
+            .collect::<Vec<_>>();
+        let char_sum = char_advances.iter().sum::<f32>();
+        let scale = if char_sum > 0.0 {
+            run_width / char_sum
+        } else {
+            1.0
+        };
+        for advance in char_advances {
+            let next_x = x + advance * scale;
+            char_positions.push((x, next_x));
+            char_metrics.push(Some(resolved.metrics));
+            x = next_x;
+        }
+        start = end;
     }
     draw_text_decorations(
         canvas,
@@ -834,11 +860,28 @@ fn draw_line(
     Ok(())
 }
 
+fn glyph_run_end(start: usize, len: usize, styles: &[TextCharStyle]) -> usize {
+    let mut end = start + 1;
+    while end < len && glyph_style_matches(&styles[start], &styles[end]) {
+        end += 1;
+    }
+    end
+}
+
+fn glyph_style_matches(a: &TextCharStyle, b: &TextCharStyle) -> bool {
+    a.font_name == b.font_name
+        && a.fallback_font == b.fallback_font
+        && (a.font_size_px - b.font_size_px).abs() < f32::EPSILON
+        && a.color == b.color
+        && a.bold == b.bold
+        && a.italic == b.italic
+}
+
 fn skia_font(resolved: &ResolvedFont, style: &TextCharStyle) -> Font {
     let mut font = Font::from_typeface(resolved.typeface.clone(), style.font_size_px);
     font.set_subpixel(true);
     font.set_edging(font::Edging::AntiAlias);
-    font.set_hinting(FontHinting::Normal);
+    font.set_hinting(FontHinting::None);
     if resolved.synthetic_italic {
         font.set_skew_x(SKIA_SYNTHETIC_ITALIC_SKEW);
     }
@@ -1443,6 +1486,7 @@ fn div_ceil_100(value: i32) -> i32 {
 mod tests {
     use super::*;
     use clip_model::{LayerKind, LayerVisibility};
+    use skia_safe::FontStyle;
 
     #[test]
     fn renders_basic_text_with_nonzero_alpha() {
@@ -1517,6 +1561,71 @@ mod tests {
         assert!(
             font_name_candidates("MiSansVF-ExtraLight").contains(&"MiSans ExtraLight".to_owned())
         );
+    }
+
+    #[test]
+    fn skia_font_uses_unhinted_grayscale_text_rasterization() {
+        let typeface = FontMgr::new()
+            .legacy_make_typeface(None, FontStyle::normal())
+            .expect("default typeface");
+        let resolved = ResolvedFont {
+            typeface,
+            metrics: TextFontMetrics::default(),
+            synthetic_italic: false,
+        };
+        let style = TextCharStyle {
+            font_name: Some("Default".to_owned()),
+            fallback_font: None,
+            font_size_px: 24.0,
+            color: Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+        };
+
+        let font = skia_font(&resolved, &style);
+
+        assert!(font.is_subpixel());
+        assert_eq!(font.edging(), font::Edging::AntiAlias);
+        assert_eq!(font.hinting(), FontHinting::None);
+    }
+
+    #[test]
+    fn glyph_runs_ignore_decoration_but_split_glyph_style() {
+        let base = TextCharStyle {
+            font_name: Some("Arial".to_owned()),
+            fallback_font: None,
+            font_size_px: 24.0,
+            color: Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+        };
+        let mut underlined = base.clone();
+        underlined.underline = true;
+        let mut red = base.clone();
+        red.color = Rgba8 {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255,
+        };
+        let styles = vec![base.clone(), underlined, red];
+
+        assert_eq!(glyph_run_end(0, styles.len(), &styles), 2);
+        assert_eq!(glyph_run_end(2, styles.len(), &styles), 3);
     }
 
     #[test]

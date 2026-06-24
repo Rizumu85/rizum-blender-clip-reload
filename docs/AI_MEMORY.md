@@ -1,6 +1,6 @@
 # AI Memory
 
-Last reconciled: 2026-06-23
+Last reconciled: 2026-06-24
 
 ## Read First
 
@@ -41,7 +41,8 @@ In scope:
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
 - Simple text layers are rasterized as native source pixels through Skia CPU
-  surfaces, then composited by the existing Rust/wgpu renderer with the same
+  surfaces using unhinted grayscale Skia fonts and same-style horizontal glyph
+  runs, then composited by the existing Rust/wgpu renderer with the same
   tile-event/barrier path as raster sources. Underline and strikethrough spans
   are parsed, decoration position uses OpenType font line metrics where useful:
   underline keeps the logical pre-fit text size after quad-width fitting, while
