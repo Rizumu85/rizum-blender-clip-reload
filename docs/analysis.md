@@ -4692,3 +4692,20 @@ Text decoration follow-up:
   still has a visible underline residual because MiSans's OpenType underline
   position lands lower than CSP's export, but the combined decoration rule is
   better across the focused matrix and avoids a font-specific exception.
+
+Text decoration thickness follow-up:
+
+- Disabling underline metrics globally improved the MiSans ExtraLight
+  `Text_12` underline residual (`10.297144 -> 9.199256`), but it regressed
+  HarmonyOS/OldNewspaper underline guards (`Text_7 1.161919 -> 3.399619`,
+  `Text_9 3.664388 -> 5.854463`, `Text_11 4.216312 -> 4.595794`), so it was
+  rejected.
+- A global float stroke-width probe matched Skia's API shape better and
+  improved `Text_7`, `Text_9`, and `Text_11`, but regressed strike-only
+  `Text_8` (`0.631781 -> 0.701569`). A global floor probe improved
+  underline-heavy cases further but regressed `Text_8` more (`0.896175`).
+- Accepted rule: underline thickness uses floored metric pixels, while
+  strikethrough thickness keeps rounded metric pixels. This moves `Text_7`
+  `1.161919 -> 0.846769`, `Text_9` `3.664388 -> 3.349238`, `Text_11`
+  `4.216312 -> 3.644794`, and `Text_12` `10.297144 -> 9.760294`, with
+  `Text_8` unchanged at `0.631781`.

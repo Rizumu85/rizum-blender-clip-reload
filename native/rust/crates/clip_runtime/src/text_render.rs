@@ -932,6 +932,7 @@ fn draw_text_decorations(
                 decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.underline_thickness),
                 24.0,
+                DecorationThicknessQuantize::Floor,
             );
             draw_decoration_line(canvas, x0, x1, y, thickness, styles[start].color);
         }
@@ -951,6 +952,7 @@ fn draw_text_decorations(
                 decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
                 24.0,
+                DecorationThicknessQuantize::Round,
             );
             draw_decoration_line(canvas, x0, x1, y, thickness, styles[start].color);
         }
@@ -973,19 +975,34 @@ fn decoration_y(
     baseline_y - position * font_size_px - thickness * 0.5
 }
 
-fn decoration_thickness(font_size_px: f32, metric: Option<f32>, fallback_divisor: f32) -> i32 {
-    metric
-        .map(|ratio| ratio * font_size_px)
-        .unwrap_or(font_size_px / fallback_divisor)
-        .round()
-        .clamp(1.0, 16.0) as i32
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DecorationThicknessQuantize {
+    Floor,
+    Round,
 }
 
-fn draw_decoration_line(canvas: &Canvas, x0: f32, x1: f32, y: f32, thickness: i32, color: Rgba8) {
+fn decoration_thickness(
+    font_size_px: f32,
+    metric: Option<f32>,
+    fallback_divisor: f32,
+    quantize: DecorationThicknessQuantize,
+) -> f32 {
+    let thickness = metric
+        .map(|ratio| ratio * font_size_px)
+        .unwrap_or(font_size_px / fallback_divisor);
+    match quantize {
+        DecorationThicknessQuantize::Floor => thickness.floor(),
+        DecorationThicknessQuantize::Round => thickness.round(),
+    }
+    .clamp(1.0, 16.0)
+}
+
+fn draw_decoration_line(canvas: &Canvas, x0: f32, x1: f32, y: f32, thickness: f32, color: Rgba8) {
     let mut paint = text_paint(color);
     paint.set_stroke(true);
-    paint.set_stroke_width(thickness.max(1) as f32);
-    let center_y = y + thickness.max(1) as f32 * 0.5;
+    let thickness = thickness.max(1.0);
+    paint.set_stroke_width(thickness);
+    let center_y = y + thickness * 0.5;
     canvas.draw_line(Point::new(x0, center_y), Point::new(x1, center_y), &paint);
 }
 
@@ -1711,6 +1728,17 @@ mod tests {
             })
             .count();
         assert!((2..=3).contains(&dark_rows));
+    }
+
+    #[test]
+    fn decoration_thickness_quantization_differs_by_decoration_kind() {
+        let underline =
+            decoration_thickness(90.0, Some(0.05), 24.0, DecorationThicknessQuantize::Floor);
+        let strikethrough =
+            decoration_thickness(90.0, Some(0.05), 24.0, DecorationThicknessQuantize::Round);
+
+        assert_eq!(underline as i32, 4);
+        assert_eq!(strikethrough as i32, 5);
     }
 
     #[test]

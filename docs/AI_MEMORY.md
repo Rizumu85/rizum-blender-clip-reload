@@ -43,8 +43,9 @@ In scope:
 - Simple text layers are rasterized as native source pixels through Skia CPU
   surfaces, then composited by the existing Rust/wgpu renderer with the same
   tile-event/barrier path as raster sources. Underline and strikethrough spans
-  are parsed, decoration thickness and underline position use OpenType font
-  line metrics where useful, ordinary strikethrough fallback sits at about
+  are parsed, decoration position uses OpenType font line metrics where useful,
+  underline thickness floors fractional metric pixels while strikethrough
+  thickness rounds them, ordinary strikethrough fallback sits at about
   `0.66em`, unusually high OpenType strikeout positions are honored for
   display-font strikethroughs, missing italic faces use Skia synthetic oblique,
   vertical text flag `0x10` uses a basic right-to-left column layout,
