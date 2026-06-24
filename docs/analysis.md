@@ -4812,3 +4812,16 @@ Text glyph baseline fit-size follow-up:
   while glyph shape/advance still use the fitted font size. This moves `Text_12`
   `5.514319 -> 5.267588` and leaves `Text_1..Text_11`, `Text_13`, `Text_14`,
   and `Text_15` stable in the focused guard matrix.
+
+Mixed CJK vertical midpoint follow-up:
+
+- A two-parameter sweep over CJK upright item advance and midpoint showed no
+  safe global replacement for the pure CJK vertical constants. Several settings
+  improved `Text_14` only by regressing `Text_15`, while settings that helped
+  the mixed CJK/Latin sample regressed pure CJK vertical.
+- Accepted narrow rule: when CJK-majority upright vertical text contains an
+  embedded horizontal Latin run, add a `0.03em` midpoint offset for that vertical
+  column layout. This keeps pure CJK `Text_14` stable at `3.375338` and moves
+  mixed `Text_15` `4.931569 -> 4.889456`. Visual inspection showed the change is
+  small and localized to the mixed `下`/`hu` region; pure CJK layout remains on
+  the previous midpoint.
