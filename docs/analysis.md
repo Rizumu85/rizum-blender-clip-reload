@@ -4659,3 +4659,28 @@ This explains the failed shaper probes: the recoverable rule is not "enable
 glyph-run buffer". Future text fidelity work should therefore target the
 `0x14363d320` codepoint/cluster/position transfer and the later
 `allocRunTextPos` payload layout before changing product rendering again.
+
+Text decoration follow-up:
+
+- A same-style horizontal run-level `draw_str` experiment produced byte-identical
+  metrics to the existing per-character draw path on `Text_1..Text_15`, so the
+  residual is not fixed by batching Latin glyphs into a single Skia string draw.
+- A second shaper probe using CSP's external-origin shape (`TextBlobBuilderRunHandler`
+  internal origin `(0, font_size)`, `drawTextBlob` at the line origin), BiDi level
+  `0xfe`, and simplified CSP-style `Latn/Hans/Zyyy` script tags still regressed:
+  `Text_1` mean `14.291756`, `Text_6` `24.399956`, `Text_9` `26.939119`,
+  `Text_11` `20.518744`, and `Text_12` `14.962537`. That rejects another direct
+  `skia-safe/textlayout` product path.
+- Automatic long-horizontal-line analysis showed the old decoration positions
+  were systematically too high for ordinary underline/strikethrough samples.
+  `Text_7` reference underline rows were `85..88` while native was `74..78`;
+  `Text_8` reference strikethrough rows were `57..60` while native was `46..49`.
+- Accepted rule: underline y uses OpenType `underline_position` when available,
+  while ordinary strikethrough fallback moves from `0.52em` to `0.66em`; high
+  OpenType strikeout positions still override the fallback for display fonts.
+  This moves `Text_7` mean `3.399619 -> 1.161919`, `Text_8`
+  `2.294287 -> 0.631781`, `Text_9` `7.361119 -> 3.664388`, `Text_11`
+  `4.595794 -> 4.216312`, and `Text_12` `12.209344 -> 10.297144`. `Text_12`
+  still has a visible underline residual because MiSans's OpenType underline
+  position lands lower than CSP's export, but the combined decoration rule is
+  better across the focused matrix and avoids a font-specific exception.

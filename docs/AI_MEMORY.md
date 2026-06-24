@@ -43,12 +43,13 @@ In scope:
 - Simple text layers are rasterized as native source pixels through Skia CPU
   surfaces, then composited by the existing Rust/wgpu renderer with the same
   tile-event/barrier path as raster sources. Underline and strikethrough spans
-  are parsed, decoration thickness uses OpenType font line metrics at the
-  logical pre-fit font size, unusually high OpenType strikeout positions are
-  honored for display-font strikethroughs, missing italic faces use Skia
-  synthetic oblique, vertical text flag `0x10` uses a basic right-to-left column
-  layout, CJK-majority vertical text keeps CJK glyphs upright and groups short
-  ASCII runs horizontally, and text path mode `66 = 1` uses a basic circular arc
+  are parsed, decoration thickness and underline position use OpenType font
+  line metrics where useful, ordinary strikethrough fallback sits at about
+  `0.66em`, unusually high OpenType strikeout positions are honored for
+  display-font strikethroughs, missing italic faces use Skia synthetic oblique,
+  vertical text flag `0x10` uses a basic right-to-left column layout,
+  CJK-majority vertical text keeps CJK glyphs upright and groups short ASCII
+  runs horizontally, and text path mode `66 = 1` uses a basic circular arc
   layout. This is not editable text import and remains a first-pass renderer.
   Current reverse evidence shows CSP's simple text path uses SkShaper run
   iterators, `SkTextBlobBuilder::allocRunTextPos`, `SkCanvas::drawTextBlob`, and

@@ -917,7 +917,13 @@ fn draw_text_decorations(
             .unwrap_or(x0);
         let metrics = char_metrics.get(start).and_then(|metrics| *metrics);
         if styles[start].underline {
-            let y = decoration_y(origin.1, styles[start].font_size_px, 0.90, None, None);
+            let y = decoration_y(
+                origin.1,
+                styles[start].font_size_px,
+                0.90,
+                metrics.and_then(|metrics| metrics.underline_position),
+                metrics.and_then(|metrics| metrics.underline_thickness),
+            );
             let thickness = decoration_thickness(
                 decoration_styles[start].font_size_px,
                 metrics.and_then(|metrics| metrics.underline_thickness),
@@ -933,7 +939,7 @@ fn draw_text_decorations(
             let y = decoration_y(
                 origin.1,
                 styles[start].font_size_px,
-                0.52,
+                0.66,
                 metric_position,
                 metrics.and_then(|metrics| metrics.strikethrough_thickness),
             );
@@ -1695,10 +1701,19 @@ mod tests {
 
     #[test]
     fn high_strikethrough_metric_position_overrides_fallback_y() {
-        let fallback_y = decoration_y(0.0, 100.0, 0.52, None, Some(0.1));
-        let metric_y = decoration_y(0.0, 100.0, 0.52, Some(0.512), Some(0.102));
+        let fallback_y = decoration_y(0.0, 100.0, 0.66, None, Some(0.1));
+        let metric_y = decoration_y(0.0, 100.0, 0.66, Some(0.512), Some(0.102));
 
-        assert_eq!(fallback_y.round() as i32, 52);
+        assert_eq!(fallback_y.round() as i32, 66);
         assert_eq!(metric_y.round() as i32, 44);
+    }
+
+    #[test]
+    fn underline_metric_position_overrides_fallback_y() {
+        let fallback_y = decoration_y(0.0, 100.0, 0.90, None, Some(0.05));
+        let metric_y = decoration_y(0.0, 100.0, 0.90, Some(-0.075), Some(0.05));
+
+        assert_eq!(fallback_y.round() as i32, 90);
+        assert_eq!(metric_y.round() as i32, 105);
     }
 }
