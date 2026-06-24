@@ -9,9 +9,11 @@ use crate::RuntimeError;
 
 const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.17;
 const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.90;
+const CJK_VERTICAL_PURE_ITEM_ADVANCE_EM: f32 = 0.99;
 const CJK_VERTICAL_RIGHT_COLUMN_X_EM: f32 = 0.08;
 const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.22;
 const CJK_VERTICAL_MIDPOINT_Y_EM: f32 = 0.93;
+const CJK_VERTICAL_PURE_MIDPOINT_Y_EM: f32 = 1.02;
 const CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM: f32 = 0.03;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -367,13 +369,10 @@ fn render_upright_vertical_entry_surface(
         .iter()
         .map(|style| style.font_size_px)
         .fold(1.0f32, f32::max);
-    let item_step = (max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM).max(1.0);
+    let has_horizontal_run = vertical_upright_items_have_horizontal_run(chars);
+    let item_step = (max_font_size * cjk_vertical_item_advance_em(has_horizontal_run)).max(1.0);
     let rows_per_column = ((box_height / item_step).floor() as usize).max(1);
     let columns = vertical_upright_item_columns(chars, rows_per_column);
-    let has_horizontal_run = columns
-        .iter()
-        .flatten()
-        .any(|item| item.kind == VerticalTextItemKind::HorizontalRun);
     let right_column_x =
         layout.size.width as f32 * 0.5 + max_font_size * CJK_VERTICAL_RIGHT_COLUMN_X_EM;
     let column_step = vertical_upright_column_step(max_font_size);
@@ -381,7 +380,16 @@ fn render_upright_vertical_entry_surface(
     for (column, items) in columns.into_iter().enumerate() {
         let advances = items
             .iter()
-            .map(|item| vertical_upright_item_advance(item, chars, styles, max_font_size, fonts))
+            .map(|item| {
+                vertical_upright_item_advance(
+                    item,
+                    chars,
+                    styles,
+                    max_font_size,
+                    fonts,
+                    has_horizontal_run,
+                )
+            })
             .collect::<Vec<_>>();
         let row_positions = vertical_column_row_positions(&advances, midpoint_y);
         let center_x = right_column_x - column as f32 * column_step;
@@ -521,6 +529,7 @@ fn vertical_upright_item_advance(
     styles: &[TextCharStyle],
     max_font_size: f32,
     fonts: &mut FontResolver,
+    has_horizontal_run: bool,
 ) -> f32 {
     match item.kind {
         VerticalTextItemKind::HorizontalRun => {
@@ -534,18 +543,31 @@ fn vertical_upright_item_advance(
             height.max(max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM)
         }
         VerticalTextItemKind::UprightChar | VerticalTextItemKind::RotatedChar => {
-            max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM
+            max_font_size * cjk_vertical_item_advance_em(has_horizontal_run)
         }
     }
 }
 
+fn vertical_upright_items_have_horizontal_run(chars: &[char]) -> bool {
+    chars
+        .iter()
+        .any(|ch| vertical_char_starts_horizontal_run(*ch))
+}
+
+fn cjk_vertical_item_advance_em(has_horizontal_run: bool) -> f32 {
+    if has_horizontal_run {
+        CJK_VERTICAL_ITEM_ADVANCE_EM
+    } else {
+        CJK_VERTICAL_PURE_ITEM_ADVANCE_EM
+    }
+}
+
 fn cjk_vertical_midpoint_y_em(has_horizontal_run: bool) -> f32 {
-    CJK_VERTICAL_MIDPOINT_Y_EM
-        + if has_horizontal_run {
-            CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM
-        } else {
-            0.0
-        }
+    if has_horizontal_run {
+        CJK_VERTICAL_MIDPOINT_Y_EM + CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM
+    } else {
+        CJK_VERTICAL_PURE_MIDPOINT_Y_EM
+    }
 }
 
 fn vertical_text_columns(chars: &[char], rows_per_column: usize) -> Vec<(usize, usize)> {
@@ -1876,7 +1898,13 @@ mod tests {
 
     #[test]
     fn mixed_cjk_vertical_uses_latin_run_midpoint_offset() {
-        assert!((cjk_vertical_midpoint_y_em(false) - CJK_VERTICAL_MIDPOINT_Y_EM).abs() < 0.001);
+        assert!(
+            (cjk_vertical_item_advance_em(false) - CJK_VERTICAL_PURE_ITEM_ADVANCE_EM).abs() < 0.001
+        );
+        assert!((cjk_vertical_item_advance_em(true) - CJK_VERTICAL_ITEM_ADVANCE_EM).abs() < 0.001);
+        assert!(
+            (cjk_vertical_midpoint_y_em(false) - CJK_VERTICAL_PURE_MIDPOINT_Y_EM).abs() < 0.001
+        );
         assert!(
             (cjk_vertical_midpoint_y_em(true)
                 - (CJK_VERTICAL_MIDPOINT_Y_EM + CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM))

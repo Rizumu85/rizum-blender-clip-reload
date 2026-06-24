@@ -4825,3 +4825,17 @@ Mixed CJK vertical midpoint follow-up:
   mixed `Text_15` `4.931569 -> 4.889456`. Visual inspection showed the change is
   small and localized to the mixed `下`/`hu` region; pure CJK layout remains on
   the previous midpoint.
+
+Pure CJK vertical advance/midpoint follow-up:
+
+- A follow-up visual and numeric comparison showed the earlier global
+  `0.90em` row advance was too compact for pure CJK vertical text but still
+  useful for mixed CJK/Latin vertical text. A global advance or midpoint change
+  continued to trade `Text_14` against `Text_15`.
+- Accepted split: pure CJK upright vertical text uses a `0.99em` item advance
+  and `1.02em` midpoint, while mixed CJK/Latin vertical text keeps the compact
+  `0.90em` advance and the existing `0.03em` midpoint offset. This moves
+  `Text_14` `3.375338 -> 3.012563` and keeps `Text_15` stable at `4.889456`;
+  `Text_1..Text_13` also stayed stable in the focused text guard matrix. Visual
+  overlay improved the pure vertical CJK overlap and reduced both
+  reference-only and native-only ink clusters.
