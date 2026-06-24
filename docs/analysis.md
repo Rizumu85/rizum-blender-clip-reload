@@ -4799,3 +4799,16 @@ Mixed vertical ASCII-run follow-up:
   `4.942294 -> 4.931569`. The visual change is small and localized to the
   embedded `hu` edge, but it matches the broader text-blob/run-coordinate
   direction without relaxing CJK vertical layout constants.
+
+Text glyph baseline fit-size follow-up:
+
+- `Text_12` visual overlay showed the fitted MiSans ExtraLight synthetic italic
+  glyph body sat lower than CSP after quad-width fitting, while the decoration
+  lines were already using logical pre-fit size rules. The sample has
+  `font_size=75px`, target quad width `153px`, measured advance `143.4px`, and
+  fit scale about `1.0669`, so using the fitted font size for the draw baseline
+  moves the glyph body downward relative to CSP.
+- Accepted rule: horizontal glyph baseline y uses the logical pre-fit text size,
+  while glyph shape/advance still use the fitted font size. This moves `Text_12`
+  `5.514319 -> 5.267588` and leaves `Text_1..Text_11`, `Text_13`, `Text_14`,
+  and `Text_15` stable in the focused guard matrix.

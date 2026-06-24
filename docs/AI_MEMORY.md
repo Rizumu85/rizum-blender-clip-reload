@@ -45,10 +45,10 @@ In scope:
   runs, then composited by the existing Rust/wgpu renderer with the same
   tile-event/barrier path as raster sources. Underline and strikethrough spans
   are parsed, decoration position uses OpenType font line metrics where useful:
-  underline keeps the logical pre-fit text size after quad-width fitting, while
-  strikethrough position follows the fitted glyph body. Underline thickness
-  floors fractional metric pixels while strikethrough thickness rounds them,
-  ordinary strikethrough fallback sits at about
+  horizontal glyph baselines and underline keep the logical pre-fit text size
+  after quad-width fitting, while strikethrough position follows the fitted
+  glyph body. Underline thickness floors fractional metric pixels while
+  strikethrough thickness rounds them, ordinary strikethrough fallback sits at about
   `0.66em`, unusually high OpenType strikeout positions are honored for
   display-font strikethroughs, missing italic faces use Skia synthetic oblique
   with a focused-matrix shear of about `-0.17`,

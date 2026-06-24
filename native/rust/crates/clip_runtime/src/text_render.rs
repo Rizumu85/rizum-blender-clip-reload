@@ -837,7 +837,7 @@ fn draw_line(
         };
         let font = skia_font(&resolved, style);
         let paint = text_paint(style.color);
-        let baseline_y = origin.1 + style.font_size_px;
+        let baseline_y = horizontal_glyph_baseline_y(origin.1, &decoration_styles[start]);
         let text = chars[start..end].iter().collect::<String>();
         canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
         let run_width = font.measure_str(&text, Some(&paint)).0;
@@ -868,6 +868,10 @@ fn draw_line(
         &char_metrics,
     );
     Ok(())
+}
+
+fn horizontal_glyph_baseline_y(origin_y: f32, logical_style: &TextCharStyle) -> f32 {
+    origin_y + logical_style.font_size_px
 }
 
 fn glyph_run_end(start: usize, len: usize, styles: &[TextCharStyle]) -> usize {
@@ -1674,6 +1678,27 @@ mod tests {
 
         assert_eq!(glyph_run_end(0, styles.len(), &styles), 2);
         assert_eq!(glyph_run_end(2, styles.len(), &styles), 3);
+    }
+
+    #[test]
+    fn horizontal_glyph_baseline_uses_logical_prefit_size() {
+        let logical = TextCharStyle {
+            font_name: Some("MiSans".to_owned()),
+            fallback_font: None,
+            font_size_px: 75.0,
+            color: Rgba8 {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            bold: false,
+            italic: true,
+            underline: true,
+            strikethrough: true,
+        };
+
+        assert_eq!(horizontal_glyph_baseline_y(3.0, &logical), 78.0);
     }
 
     #[test]
