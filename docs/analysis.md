@@ -4729,3 +4729,24 @@ Text strikethrough fit-size follow-up:
 - Accepted rule: strikethrough y follows the fitted glyph body, while underline
   y keeps the logical pre-fit size. This moves `Text_12` `9.235912 -> 6.596794`
   with `Text_7`, `Text_8`, `Text_9`, and `Text_11` unchanged.
+
+Text synthetic italic skew follow-up:
+
+- `Text_12` remaining residual was mostly glyph-body width rather than
+  decoration rows. A 7% fit-threshold probe rejected "do not fit small width
+  changes": `Text_12` regressed from `6.596794` to `6.950344`.
+- A same-style full-run `draw_str` probe remained byte-identical to the
+  per-character draw path on `Text_6`, `Text_9`, `Text_11`, and `Text_12`, so
+  the residual is not fixed by batching the existing Unicode string into one
+  draw call.
+- Directly carrying the IDA-observed `SkFont::setSkewX(-0.25)` constant into
+  the current `skia-safe` source-raster path over-shears the focused synthetic
+  italic samples. Sweep results: `-0.20` improved all four synthetic-italic
+  guards; `-0.18` improved further; `-0.16` helped `Text_12` but regressed
+  `Text_11`; `-1/6` was close but slightly worse in aggregate than `-0.17`.
+- Accepted rule for the current first-pass Skia source rasterizer:
+  `SKIA_SYNTHETIC_ITALIC_SKEW = -0.17`. This moves `Text_6`
+  `2.780737 -> 0.249262`, `Text_9` `3.349238 -> 1.064869`, `Text_11`
+  `3.644794 -> 1.495425`, and `Text_12` `6.596794 -> 5.514844`; non-italic
+  `Text_1..Text_5`, `Text_7`, `Text_8`, `Text_10`, and `Text_13..Text_15`
+  stayed stable.

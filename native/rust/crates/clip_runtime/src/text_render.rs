@@ -7,7 +7,7 @@ use skia_safe::{
 
 use crate::RuntimeError;
 
-const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.25;
+const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.17;
 const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.90;
 const CJK_VERTICAL_RIGHT_COLUMN_X_EM: f32 = 0.08;
 const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.22;
@@ -1803,6 +1803,11 @@ mod tests {
 
         assert_eq!(underline as i32, 4);
         assert_eq!(strikethrough as i32, 5);
+    }
+
+    #[test]
+    fn synthetic_italic_skew_matches_focused_text_matrix() {
+        assert!((SKIA_SYNTHETIC_ITALIC_SKEW + 0.17).abs() < f32::EPSILON);
     }
 
     #[test]
