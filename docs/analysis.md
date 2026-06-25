@@ -4989,3 +4989,22 @@ Text RunHandler vtable follow-up:
   RunHandler/TextBlob model in native code, using `skia-safe`'s existing
   `textlayout`/`RunHandler` and `TextBlobBuilder::alloc_run_text_pos` APIs,
   rather than adding more per-sample vertical or decoration constants.
+
+Text RunHandler prototype follow-up:
+
+- A first Rust `skia-safe/textlayout` RunHandler prototype was added as an
+  opt-in probe behind `RIZUM_CLIP_SHAPED_TEXT=1`. It mirrors the recovered CSP
+  shape at a high level: `ShapeThenWrap`, BiDi level `0xfe`, script/language
+  iterators, buffered glyph/position/cluster slices, and
+  `TextBlobBuilder::alloc_run_text_pos`.
+- It is deliberately not enabled in product code. With the probe on, ordinary
+  horizontal text still regresses badly (`Text_1 raw_mean 0.203794 ->
+  7.989150`), while the default path keeps the previous `Text_1..Text_15`
+  guard matrix. A best-shift check on the shaped `Text_1` output was `(0, 0)`,
+  so the regression is not a simple baseline or origin mismatch.
+- A raw `.clip` text-attribute sweep over `Text_14` and `Text_15` did not reveal
+  a large stored glyph-position cache. The attributes are mostly small style,
+  paragraph, box, and path params; `Text_15` is confirmed as one vertical
+  CJK-majority entry containing an embedded `hu` tate-chu-yoko run plus an
+  explicit `\r\n` newline. This keeps the likely missing piece on CSP's runtime
+  run-font/position/raster state, not a directly persisted glyph-run table.

@@ -81,8 +81,11 @@ In scope:
   CSP also rebuilds/caches glyph IDs, cluster maps, and positions through
   `allocRunTextPos` before drawing with an external origin. The relevant CSP
   RunHandler vtable has been mapped to begin/run-info/run-buffer/commit/line
-  callbacks. Recover that saved run-buffer model before enabling shaping in
-  product code.
+  callbacks. A native `textlayout` RunHandler/TextBlob prototype exists behind
+  `RIZUM_CLIP_SHAPED_TEXT=1`, but it is intentionally disabled by default
+  because it currently regresses ordinary horizontal text guards. Recover the
+  missing CSP run-font/position/raster state before enabling shaping in product
+  code.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

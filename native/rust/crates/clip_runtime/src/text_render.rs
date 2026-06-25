@@ -7,6 +7,8 @@ use skia_safe::{
 
 use crate::RuntimeError;
 
+mod shaped;
+
 const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.17;
 const SKIA_FITTED_SYNTHETIC_ITALIC_SKEW: f32 = -0.18;
 const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.99;
@@ -21,6 +23,10 @@ const CJK_VERTICAL_HORIZONTAL_RUN_X_OFFSET_EM: f32 = -0.02;
 const CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM: f32 = 0.04;
 const CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM: f32 = -0.10;
 const CJK_VERTICAL_PURE_LAST_ROW_Y_OFFSET_EM: f32 = 0.06;
+
+fn shaped_text_probe_enabled() -> bool {
+    std::env::var_os("RIZUM_CLIP_SHAPED_TEXT").is_some()
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TextRasterLayout {
@@ -785,8 +791,16 @@ fn draw_horizontal_vertical_run(
         let font = vertical_horizontal_run_font(&resolved, style);
         let paint = text_paint(style.color);
         let text = chars[start..end].iter().collect::<String>();
-        canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
-        x += font.measure_str(&text, Some(&paint)).0;
+        let shaped = shaped_text_probe_enabled()
+            .then(|| shaped::shape_text_run(&text, &font))
+            .flatten();
+        if let Some(shaped) = shaped {
+            canvas.draw_text_blob(&shaped.blob, Point::new(x, baseline_y), &paint);
+            x += shaped.advance_x;
+        } else {
+            canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
+            x += font.measure_str(&text, Some(&paint)).0;
+        }
         start = end;
     }
     Ok(())
@@ -958,8 +972,25 @@ fn draw_line(
         let paint = text_paint(style.color);
         let baseline_y = horizontal_glyph_baseline_y(origin.1, &decoration_styles[start]);
         let text = chars[start..end].iter().collect::<String>();
-        canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
-        let run_width = font.measure_str(&text, Some(&paint)).0;
+        let shaped = shaped_text_probe_enabled()
+            .then(|| shaped::shape_text_run(&text, &font))
+            .flatten();
+        let (run_width, shaped_positions) = if let Some(shaped) = shaped {
+            canvas.draw_text_blob(&shaped.blob, Point::new(x, baseline_y), &paint);
+            (shaped.advance_x, Some(shaped.char_positions))
+        } else {
+            canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
+            (font.measure_str(&text, Some(&paint)).0, None)
+        };
+        if let Some(shaped_positions) = shaped_positions {
+            for (start_x, end_x) in shaped_positions {
+                char_positions.push((x + start_x, x + end_x));
+                char_metrics.push(Some(resolved.metrics));
+            }
+            x += run_width;
+            start = end;
+            continue;
+        }
         let char_advances = chars[start..end]
             .iter()
             .map(|ch| font.measure_str(ch.to_string(), Some(&paint)).0)
