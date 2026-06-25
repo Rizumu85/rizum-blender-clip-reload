@@ -4943,3 +4943,20 @@ CJK mixed vertical paragraph-origin follow-up:
   moving the whole text block. This moves `Text_15`
   `3.001425 -> 2.407781`; `Text_1` through `Text_14` stay stable in the focused
   text guard matrix.
+
+CJK mixed vertical tate-chu-yoko anchor follow-up:
+
+- After the paragraph-origin fix, residual drilldown showed the embedded `hu`
+  tate-chu-yoko run still had a one-pixel vertical anchor error: the region's
+  best local shift was vertical-only, while the whole text block and the CJK
+  glyph windows were already at best shift `(0, 0)` or had contradictory
+  per-glyph shifts. Increasing only the horizontal-run y center offset from
+  `+0.02em` to `+0.04em` moves `Text_15` `2.407781 -> 2.274281` while
+  `Text_14` and `Text_4` stay unchanged. A larger `+0.06em` offset regressed
+  `Text_15` to `2.397562`, and increasing the x offset from `-0.02em` to
+  `-0.04em` regressed it to `2.687306`.
+- Current remaining `Text_15` residual is no longer a single paragraph, column,
+  or tate-chu-yoko offset: the left-column `一` and `下` windows prefer opposite
+  local shifts, while the `hu` window now prefers `(0, 0)`. That points back to
+  the known missing CSP saved glyph-run/position model rather than another safe
+  layout constant.

@@ -18,7 +18,7 @@ const CJK_VERTICAL_MIDPOINT_Y_EM: f32 = 0.93;
 const CJK_VERTICAL_PURE_MIDPOINT_Y_EM: f32 = 1.00;
 const CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM: f32 = 0.01;
 const CJK_VERTICAL_HORIZONTAL_RUN_X_OFFSET_EM: f32 = -0.02;
-const CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM: f32 = 0.02;
+const CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM: f32 = 0.04;
 const CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM: f32 = -0.10;
 const CJK_VERTICAL_PURE_LAST_ROW_Y_OFFSET_EM: f32 = 0.06;
 
@@ -2098,7 +2098,7 @@ mod tests {
         let (x, y) = cjk_vertical_horizontal_run_offset(50.0);
 
         assert_eq!(x.round() as i32, -1);
-        assert_eq!(y.round() as i32, 1);
+        assert_eq!(y.round() as i32, 2);
     }
 
     #[test]

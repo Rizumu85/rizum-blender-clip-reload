@@ -62,10 +62,10 @@ In scope:
   snapping only for pure-CJK upright glyphs, uses a slightly wider pure-CJK row
   advance plus a pure-CJK right-column/midpoint alignment, uses the same CJK
   row advance when embedded Latin tate-chu-yoko runs are present, groups
-  short ASCII runs horizontally with baseline snapping disabled and a focused
-  horizontal-run center offset, shifts the whole mixed vertical paragraph
-  origin slightly upward, keeps separate mixed right-column/midpoint alignment
-  for embedded Latin runs,
+  short ASCII runs horizontally with baseline snapping disabled and a focused,
+  slightly lower horizontal-run center offset, shifts the whole mixed vertical
+  paragraph origin slightly upward, keeps separate mixed right-column/midpoint
+  alignment for embedded Latin runs,
   applies a small bottom-alignment offset to the final row of pure-CJK columns,
   and advances multi-column upright text by about `1.22em`;
   text path mode `66 = 1` uses a basic circular arc layout. This is not
