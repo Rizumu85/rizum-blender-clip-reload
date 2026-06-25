@@ -5035,3 +5035,17 @@ Text shaping partial-replacement check:
   shaped plan, then draw the blob and decoration strokes with the paired origin
   and paint state. Until that exists, `RIZUM_CLIP_SHAPED_TEXT=1` should remain a
   diagnostic probe only.
+
+Text-entry plan first step:
+
+- The ordinary horizontal text path now compiles a `HorizontalTextPlan` before
+  drawing. The plan owns the character buffer, fitted styles, logical styles,
+  line origins, and same-style run ranges. Drawing executes those planned lines
+  and runs instead of deciding line/run structure in the middle of glyph output.
+- This is intentionally a no-pixel-change refactor. Guard compares stayed at
+  the previous metrics for representative horizontal, decorated, arc, and CJK
+  vertical samples: `Text_1 0.203794`, `Text_5 1.291462`, `Text_9 1.062469`,
+  `Text_12 4.967231`, `Text_14 1.260769`, and `Text_15 2.274281`.
+- The next safe shaping milestone should extend the plan, not the draw loop:
+  add planned shaped-run payloads and planned decoration geometry, then compare
+  the complete planned output against the current path before enabling it.

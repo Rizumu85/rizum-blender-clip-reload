@@ -163,7 +163,7 @@ fn render_entry_surface(
     entry: &clip_file::metadata::TextLayerEntry,
     fonts: &mut FontResolver,
 ) -> Result<(), RuntimeError> {
-    let mut styles = text_char_styles(entry, resolution_dpi);
+    let styles = text_char_styles(entry, resolution_dpi);
     if styles.is_empty() {
         return Ok(());
     }
@@ -175,32 +175,8 @@ fn render_entry_surface(
     if text_layout_is_vertical(entry) {
         return render_vertical_entry_surface(canvas, layout, entry, &chars, &styles, fonts);
     }
-    let lines = text_lines(&chars);
-    fit_single_line_to_quad_width(entry, &chars, &lines, &mut styles, fonts);
-    let default_font_size = styles
-        .iter()
-        .map(|style| style.font_size_px)
-        .fold(1.0f32, f32::max);
-    let line_height = (default_font_size * 1.2).max(1.0);
-    let mut y = -entry_quad_top_px(entry).unwrap_or(0.0);
-    for (start, end) in lines {
-        let line_width = measure_line_width(&chars[start..end], &styles[start..end], fonts);
-        let x = match entry.attributes.align {
-            Some(1) => layout.size.width as f32 - line_width,
-            Some(2) => (layout.size.width as f32 - line_width) * 0.5,
-            _ => 0.0,
-        }
-        .max(0.0);
-        draw_line(
-            canvas,
-            (x, y),
-            &chars[start..end],
-            &styles[start..end],
-            &logical_styles[start..end],
-            fonts,
-        )?;
-        y += line_height;
-    }
+    let plan = build_horizontal_text_plan(entry, layout, chars, styles, logical_styles, fonts);
+    draw_horizontal_text_plan(canvas, &plan, fonts)?;
     Ok(())
 }
 
@@ -943,21 +919,113 @@ fn measure_line_width(chars: &[char], styles: &[TextCharStyle], fonts: &mut Font
     width
 }
 
-fn draw_line(
-    canvas: &Canvas,
+#[derive(Clone, Debug)]
+struct HorizontalTextPlan {
+    chars: Vec<char>,
+    styles: Vec<TextCharStyle>,
+    logical_styles: Vec<TextCharStyle>,
+    lines: Vec<HorizontalTextLinePlan>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct HorizontalTextLinePlan {
+    start: usize,
+    end: usize,
     origin: (f32, f32),
-    chars: &[char],
+    runs: Vec<HorizontalTextRunPlan>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct HorizontalTextRunPlan {
+    start: usize,
+    end: usize,
+}
+
+fn build_horizontal_text_plan(
+    entry: &clip_file::metadata::TextLayerEntry,
+    layout: &TextRasterLayout,
+    chars: Vec<char>,
+    mut styles: Vec<TextCharStyle>,
+    logical_styles: Vec<TextCharStyle>,
+    fonts: &mut FontResolver,
+) -> HorizontalTextPlan {
+    let text_lines = text_lines(&chars);
+    fit_single_line_to_quad_width(entry, &chars, &text_lines, &mut styles, fonts);
+    let default_font_size = styles
+        .iter()
+        .map(|style| style.font_size_px)
+        .fold(1.0f32, f32::max);
+    let line_height = (default_font_size * 1.2).max(1.0);
+    let mut y = -entry_quad_top_px(entry).unwrap_or(0.0);
+    let mut lines = Vec::with_capacity(text_lines.len());
+    for (start, end) in text_lines {
+        let line_width = measure_line_width(&chars[start..end], &styles[start..end], fonts);
+        let x = match entry.attributes.align {
+            Some(1) => layout.size.width as f32 - line_width,
+            Some(2) => (layout.size.width as f32 - line_width) * 0.5,
+            _ => 0.0,
+        }
+        .max(0.0);
+        lines.push(HorizontalTextLinePlan {
+            start,
+            end,
+            origin: (x, y),
+            runs: horizontal_text_run_plans(start, end, &styles),
+        });
+        y += line_height;
+    }
+    HorizontalTextPlan {
+        chars,
+        styles,
+        logical_styles,
+        lines,
+    }
+}
+
+fn horizontal_text_run_plans(
+    start: usize,
+    end: usize,
     styles: &[TextCharStyle],
-    decoration_styles: &[TextCharStyle],
+) -> Vec<HorizontalTextRunPlan> {
+    let mut runs = Vec::new();
+    let mut run_start = start;
+    while run_start < end {
+        let run_end = glyph_run_end(run_start, end, styles);
+        runs.push(HorizontalTextRunPlan {
+            start: run_start,
+            end: run_end,
+        });
+        run_start = run_end;
+    }
+    runs
+}
+
+fn draw_horizontal_text_plan(
+    canvas: &Canvas,
+    plan: &HorizontalTextPlan,
     fonts: &mut FontResolver,
 ) -> Result<(), RuntimeError> {
-    let mut x = origin.0;
-    let mut char_positions = Vec::with_capacity(chars.len());
-    let mut char_metrics = Vec::with_capacity(chars.len());
-    let mut start = 0usize;
-    while start < chars.len() {
-        let style = &styles[start];
-        let end = glyph_run_end(start, chars.len(), styles);
+    for line in &plan.lines {
+        draw_horizontal_text_line(canvas, plan, line, fonts)?;
+    }
+    Ok(())
+}
+
+fn draw_horizontal_text_line(
+    canvas: &Canvas,
+    plan: &HorizontalTextPlan,
+    line: &HorizontalTextLinePlan,
+    fonts: &mut FontResolver,
+) -> Result<(), RuntimeError> {
+    let styles = &plan.styles[line.start..line.end];
+    let decoration_styles = &plan.logical_styles[line.start..line.end];
+    let mut x = line.origin.0;
+    let mut char_positions = Vec::with_capacity(line.end.saturating_sub(line.start));
+    let mut char_metrics = Vec::with_capacity(line.end.saturating_sub(line.start));
+    for run in &line.runs {
+        let start = run.start;
+        let end = run.end;
+        let style = &plan.styles[start];
         let Some(resolved) = fonts.resolve(style) else {
             for _ in start..end {
                 let next_x = x + style.font_size_px * 0.55;
@@ -965,13 +1033,12 @@ fn draw_line(
                 char_metrics.push(None);
                 x = next_x;
             }
-            start = end;
             continue;
         };
-        let font = horizontal_glyph_font(&resolved, style, &decoration_styles[start]);
+        let font = horizontal_glyph_font(&resolved, style, &plan.logical_styles[start]);
         let paint = text_paint(style.color);
-        let baseline_y = horizontal_glyph_baseline_y(origin.1, &decoration_styles[start]);
-        let text = chars[start..end].iter().collect::<String>();
+        let baseline_y = horizontal_glyph_baseline_y(line.origin.1, &plan.logical_styles[start]);
+        let text = plan.chars[start..end].iter().collect::<String>();
         let shaped = shaped_text_probe_enabled()
             .then(|| shaped::shape_text_run(&text, &font))
             .flatten();
@@ -988,10 +1055,9 @@ fn draw_line(
                 char_metrics.push(Some(resolved.metrics));
             }
             x += run_width;
-            start = end;
             continue;
         }
-        let char_advances = chars[start..end]
+        let char_advances = plan.chars[start..end]
             .iter()
             .map(|ch| font.measure_str(ch.to_string(), Some(&paint)).0)
             .collect::<Vec<_>>();
@@ -1007,11 +1073,10 @@ fn draw_line(
             char_metrics.push(Some(resolved.metrics));
             x = next_x;
         }
-        start = end;
     }
     draw_text_decorations(
         canvas,
-        origin,
+        line.origin,
         styles,
         decoration_styles,
         &char_positions,
@@ -1973,6 +2038,73 @@ mod tests {
         };
 
         assert_eq!(horizontal_glyph_baseline_y(3.0, &logical), 78.0);
+    }
+
+    #[test]
+    fn horizontal_text_plan_owns_line_origins_and_run_ranges() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "A\nBC".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                layout_flags: None,
+                path_mode: None,
+                path_angle_a_degrees: None,
+                path_angle_b_degrees: None,
+                path_center: None,
+                font_size_100: Some(1000),
+                color: None,
+                bbox: None,
+                quad_verts_100: None,
+                box_size: None,
+                align: None,
+                underline_spans: Vec::new(),
+                strikethrough_spans: Vec::new(),
+                runs: vec![clip_file::metadata::TextLayerRun {
+                    start: 3,
+                    length: 1,
+                    style_flags: 2,
+                    field_defaults_flags: 0,
+                    color: Rgba8 {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                    font_scale: 0,
+                    font: None,
+                }],
+            },
+        };
+        let chars = entry.text.chars().collect::<Vec<_>>();
+        let styles = text_char_styles(&entry, 72);
+        let logical_styles = styles.clone();
+        let mut fonts = FontResolver::new();
+
+        let plan = build_horizontal_text_plan(
+            &entry,
+            &TextRasterLayout {
+                size: CanvasSize::new(200, 200),
+                offset_x: 0,
+                offset_y: 0,
+            },
+            chars,
+            styles,
+            logical_styles,
+            &mut fonts,
+        );
+
+        assert_eq!(plan.lines.len(), 2);
+        assert_eq!(plan.lines[0].origin, (0.0, 0.0));
+        assert_eq!(plan.lines[1].origin, (0.0, 12.0));
+        assert_eq!(
+            plan.lines[1].runs,
+            vec![
+                HorizontalTextRunPlan { start: 2, end: 3 },
+                HorizontalTextRunPlan { start: 3, end: 4 },
+            ]
+        );
     }
 
     #[test]

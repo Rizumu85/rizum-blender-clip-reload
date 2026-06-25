@@ -86,7 +86,10 @@ In scope:
   because it currently regresses ordinary horizontal text guards. Recover the
   missing CSP text-entry level run-font/position/layout/decorations/raster
   state before enabling shaping in product code; replacing only the current
-  `draw_str` calls is known to be the wrong granularity.
+  `draw_str` calls is known to be the wrong granularity. Ordinary horizontal
+  text now builds a `HorizontalTextPlan` first, so line origins and run ranges
+  are decided before drawing; this is the intended insertion point for future
+  shaped run/decoration work.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
