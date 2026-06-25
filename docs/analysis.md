@@ -4960,3 +4960,32 @@ CJK mixed vertical tate-chu-yoko anchor follow-up:
   local shifts, while the `hu` window now prefers `(0, 0)`. That points back to
   the known missing CSP saved glyph-run/position model rather than another safe
   layout constant.
+
+Text RunHandler vtable follow-up:
+
+- Read-only IDA inspection of `CLIPStudioPaint.exe.working.i64` confirms the
+  simple text path constructs a local `SkTextBlobBuilder`, calls
+  `SkShaper::MakeShapeThenWrap`, passes the full UTF-8 text through
+  `MakeFontMgrRunIterator`, `MakeBiDiRunIterator`, `MakeScriptRunIterator`, and
+  a trivial language iterator, then calls `SkTextBlobBuilder::make`.
+- The RunHandler vtable at `0x144551d78` maps to the standard Skia callback
+  order: deleting destructor `sub_14363C020`, `beginLine` `sub_14363CF30`,
+  `runInfo` `sub_14363DA10`, `commitRunInfo` `sub_14363D280`, `runBuffer`
+  `sub_14363D830`, `commitRunBuffer` `sub_14363D150`, and `commitLine`
+  `sub_14363CF60`.
+- `sub_14363D830` is the allocation callback. It reads the run glyph count and
+  UTF-8 byte count from Skia's `RunInfo`, copies the run font into an `SkFont`,
+  applies CSP's embolden/synthetic italic policy, calls
+  `SkTextBlobBuilder::allocRunTextPos`, copies the corresponding UTF-8 text
+  slice into the blob buffer, and returns glyph, position, cluster, and point
+  buffers to Skia.
+- `sub_14363D150` is the commit callback. It accumulates the run advance and
+  copies the positions and byte clusters that Skia wrote into the run buffer
+  into CSP side vectors. `sub_14363D320` then converts the full UTF-8 byte
+  cluster map into CSP's follow-up offset map by decoding UTF-8 and accounting
+  for surrogate-pair width.
+- The actionable conclusion is unchanged but now better grounded: remaining
+  text spacing residuals should be attacked by implementing a shaped
+  RunHandler/TextBlob model in native code, using `skia-safe`'s existing
+  `textlayout`/`RunHandler` and `TextBlobBuilder::alloc_run_text_pos` APIs,
+  rather than adding more per-sample vertical or decoration constants.

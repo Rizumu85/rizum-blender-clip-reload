@@ -79,8 +79,10 @@ In scope:
   `draw_str`, and naive
   `skia-safe/textlayout` ShapeThenWrap probes still regress the guard matrix;
   CSP also rebuilds/caches glyph IDs, cluster maps, and positions through
-  `allocRunTextPos` before drawing with an external origin. Recover that saved
-  run-buffer model before enabling shaping in product code.
+  `allocRunTextPos` before drawing with an external origin. The relevant CSP
+  RunHandler vtable has been mapped to begin/run-info/run-buffer/commit/line
+  callbacks. Recover that saved run-buffer model before enabling shaping in
+  product code.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
