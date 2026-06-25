@@ -84,8 +84,9 @@ In scope:
   callbacks. A native `textlayout` RunHandler/TextBlob prototype exists behind
   `RIZUM_CLIP_SHAPED_TEXT=1`, but it is intentionally disabled by default
   because it currently regresses ordinary horizontal text guards. Recover the
-  missing CSP run-font/position/raster state before enabling shaping in product
-  code.
+  missing CSP text-entry level run-font/position/layout/decorations/raster
+  state before enabling shaping in product code; replacing only the current
+  `draw_str` calls is known to be the wrong granularity.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

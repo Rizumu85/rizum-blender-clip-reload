@@ -5008,3 +5008,30 @@ Text RunHandler prototype follow-up:
   CJK-majority entry containing an embedded `hu` tate-chu-yoko run plus an
   explicit `\r\n` newline. This keeps the likely missing piece on CSP's runtime
   run-font/position/raster state, not a directly persisted glyph-run table.
+
+Text shaping partial-replacement check:
+
+- A focused resweep supports the "combination path" hypothesis. Enabling the
+  opt-in shaped probe only replaces the glyph draw portion after the current
+  importer has already chosen line origins, quad fitting, run splitting, and
+  decoration geometry. That partial replacement regresses horizontal/simple
+  runs but leaves the vertical CJK samples unchanged:
+  `Text_1 0.203794 -> 7.989150`, `Text_6 0.246863 -> 8.003550`,
+  `Text_9 1.062469 -> 8.200875`, `Text_12 4.967231 -> 6.139331`, while
+  `Text_14` and `Text_15` stay at `1.260769` and `2.274281`.
+- The text-attribute sweep across `Text_1..Text_15` also shows that CSP stores
+  several small interacting layout/style params rather than a single final
+  glyph table. Param `11` carries run style flags (`2` for italic in the focused
+  italic samples), params `16`/`20` carry underline/strikethrough spans, param
+  `33` combines style/layout bits (`2/4/8/14` for italic/decorated horizontal
+  cases and `16` for vertical writing), param `39` changes with horizontal CJK
+  versus vertical/mixed CJK (`(4,0)`, `(0,4)`, `(6,0)`), and params `63`/`64`
+  provide the box/quad used by layout. This matches the native evidence that
+  CSP shapes text as a coordinated run-buffer/layout/draw-list operation.
+- Conclusion: do not try to enable shaping by replacing only `draw_str` in the
+  current layout loop. The next viable implementation must build a text-entry
+  level plan first: resolve all CSP text params into the same coordinate model,
+  shape or replay runs into that model, derive decoration geometry from the
+  shaped plan, then draw the blob and decoration strokes with the paired origin
+  and paint state. Until that exists, `RIZUM_CLIP_SHAPED_TEXT=1` should remain a
+  diagnostic probe only.
