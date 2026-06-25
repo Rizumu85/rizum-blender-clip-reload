@@ -9,7 +9,7 @@ use crate::RuntimeError;
 
 const SKIA_SYNTHETIC_ITALIC_SKEW: f32 = -0.17;
 const SKIA_FITTED_SYNTHETIC_ITALIC_SKEW: f32 = -0.18;
-const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.90;
+const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.99;
 const CJK_VERTICAL_PURE_ITEM_ADVANCE_EM: f32 = 0.99;
 const CJK_VERTICAL_MIXED_RIGHT_COLUMN_X_EM: f32 = 0.04;
 const CJK_VERTICAL_PURE_RIGHT_COLUMN_X_EM: f32 = 0.10;
@@ -19,7 +19,7 @@ const CJK_VERTICAL_PURE_MIDPOINT_Y_EM: f32 = 1.00;
 const CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM: f32 = 0.01;
 const CJK_VERTICAL_HORIZONTAL_RUN_X_OFFSET_EM: f32 = -0.02;
 const CJK_VERTICAL_HORIZONTAL_RUN_Y_OFFSET_EM: f32 = 0.02;
-const CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM: f32 = -0.12;
+const CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM: f32 = -0.10;
 const CJK_VERTICAL_PURE_LAST_ROW_Y_OFFSET_EM: f32 = 0.06;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -383,6 +383,7 @@ fn render_upright_vertical_entry_surface(
         + max_font_size * cjk_vertical_right_column_x_em(has_horizontal_run);
     let column_step = vertical_upright_column_step(max_font_size);
     let midpoint_y = box_y + max_font_size * cjk_vertical_midpoint_y_em(has_horizontal_run);
+    let profile_text_layout = std::env::var_os("RIZUM_CLIP_TEXT_PROFILE").is_some();
     for (column, items) in columns.into_iter().enumerate() {
         let advances = items
             .iter()
@@ -398,9 +399,19 @@ fn render_upright_vertical_entry_surface(
             })
             .collect::<Vec<_>>();
         let column_midpoint_y =
-            midpoint_y + vertical_upright_column_y_offset(&items, max_font_size);
+            midpoint_y + vertical_upright_column_y_offset(has_horizontal_run, max_font_size);
         let row_positions = vertical_column_row_positions(&advances, column_midpoint_y);
         let center_x = right_column_x - column as f32 * column_step;
+        if profile_text_layout {
+            eprintln!(
+                "text vertical column -> column={} center_x={:.3} midpoint_y={:.3} rows={} has_horizontal_run={}",
+                column,
+                center_x,
+                column_midpoint_y,
+                items.len(),
+                has_horizontal_run
+            );
+        }
         for (row, item) in items.iter().enumerate() {
             let center_y = row_positions.get(row).copied().unwrap_or(midpoint_y)
                 + vertical_upright_row_y_offset(
@@ -409,6 +420,21 @@ fn render_upright_vertical_entry_surface(
                     has_horizontal_run,
                     max_font_size,
                 );
+            if profile_text_layout {
+                let item_text = chars[item.start..item.end].iter().collect::<String>();
+                eprintln!(
+                    "text vertical item -> column={} row={} kind={:?} range={}..{} text={:?} advance={:.3} center=({:.3},{:.3})",
+                    column,
+                    row,
+                    item.kind,
+                    item.start,
+                    item.end,
+                    item_text,
+                    advances.get(row).copied().unwrap_or(0.0),
+                    center_x,
+                    center_y
+                );
+            }
             match item.kind {
                 VerticalTextItemKind::UprightChar => {
                     let ch = chars[item.start];
@@ -1025,11 +1051,8 @@ fn vertical_horizontal_run_font(resolved: &ResolvedFont, style: &TextCharStyle) 
     font
 }
 
-fn vertical_upright_column_y_offset(column: &[VerticalTextItem], max_font_size: f32) -> f32 {
-    if column
-        .iter()
-        .any(|item| item.kind == VerticalTextItemKind::HorizontalRun)
-    {
+fn vertical_upright_column_y_offset(has_horizontal_run: bool, max_font_size: f32) -> f32 {
+    if has_horizontal_run {
         max_font_size * CJK_VERTICAL_HORIZONTAL_RUN_COLUMN_Y_OFFSET_EM
     } else {
         0.0
@@ -2079,29 +2102,11 @@ mod tests {
     }
 
     #[test]
-    fn cjk_vertical_horizontal_run_columns_shift_up() {
-        let upright_column = [VerticalTextItem {
-            start: 0,
-            end: 1,
-            kind: VerticalTextItemKind::UprightChar,
-        }];
-        let mixed_column = [
-            VerticalTextItem {
-                start: 0,
-                end: 1,
-                kind: VerticalTextItemKind::UprightChar,
-            },
-            VerticalTextItem {
-                start: 1,
-                end: 3,
-                kind: VerticalTextItemKind::HorizontalRun,
-            },
-        ];
-
-        assert_eq!(vertical_upright_column_y_offset(&upright_column, 50.0), 0.0);
+    fn mixed_cjk_vertical_paragraph_origin_shifts_up() {
+        assert_eq!(vertical_upright_column_y_offset(false, 50.0), 0.0);
         assert_eq!(
-            vertical_upright_column_y_offset(&mixed_column, 50.0).round() as i32,
-            -6
+            vertical_upright_column_y_offset(true, 50.0).round() as i32,
+            -5
         );
     }
 
@@ -2130,7 +2135,9 @@ mod tests {
         assert!(
             (cjk_vertical_item_advance_em(false) - CJK_VERTICAL_PURE_ITEM_ADVANCE_EM).abs() < 0.001
         );
-        assert!((cjk_vertical_item_advance_em(true) - CJK_VERTICAL_ITEM_ADVANCE_EM).abs() < 0.001);
+        assert!(
+            (cjk_vertical_item_advance_em(true) - CJK_VERTICAL_PURE_ITEM_ADVANCE_EM).abs() < 0.001
+        );
         assert!(
             (cjk_vertical_right_column_x_em(false) - CJK_VERTICAL_PURE_RIGHT_COLUMN_X_EM).abs()
                 < 0.001

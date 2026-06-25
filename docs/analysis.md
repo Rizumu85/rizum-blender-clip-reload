@@ -4922,3 +4922,24 @@ CJK vertical column/last-row alignment follow-up:
   `0.06em` bottom-alignment offset. This moves `Text_15`
   `3.276225 -> 3.001425` and `Text_14` `1.432050 -> 1.260769`; `Text_1`
   through `Text_13` stay stable in the full text guard matrix.
+
+CJK mixed vertical paragraph-origin follow-up:
+
+- `Text_15` was rechecked from raw `.clip` text parameters and the existing
+  Skia text-run reverse evidence instead of tuning a layer offset. The stored
+  text attrs still do not expose final glyph positions, but they confirm this is
+  one vertical CJK-majority text entry with an embedded short Latin run and an
+  explicit newline. The previous model treated the embedded Latin run as a
+  reason to shrink the whole CJK row advance to `0.90em` and shifted only the
+  column containing the horizontal run. Local overlays rejected two alternatives:
+  per-column baseline-snap disablement regressed `Text_15`
+  `3.001425 -> 3.038737`, and changing only the horizontal-run advance
+  regressed to `3.349350` or `3.374250` depending on direction.
+- Accepted rule: CJK vertical row advance remains the pure-CJK `0.99em` even
+  when the paragraph contains embedded Latin tate-chu-yoko, while the
+  tate-chu-yoko case changes the shared mixed paragraph origin rather than only
+  the single column that contains the Latin run. A slightly milder paragraph
+  origin offset of `-0.10em` best matched the post-advance overlay without
+  moving the whole text block. This moves `Text_15`
+  `3.001425 -> 2.407781`; `Text_1` through `Text_14` stay stable in the focused
+  text guard matrix.
