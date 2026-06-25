@@ -5049,3 +5049,18 @@ Text-entry plan first step:
 - The next safe shaping milestone should extend the plan, not the draw loop:
   add planned shaped-run payloads and planned decoration geometry, then compare
   the complete planned output against the current path before enabling it.
+
+Text decoration command planning:
+
+- Decoration strokes for ordinary horizontal text are now planned from line
+  origin, fitted/logical styles, per-character x ranges, and font metrics before
+  drawing. The draw loop consumes `TextDecorationCommand` values instead of
+  mixing underline/strikethrough span detection with immediate Skia line draws.
+- This keeps the same CSP-inspired underline/strikethrough geometry while
+  creating the hook needed for a future shaped glyph-position model: shaped
+  runs can feed their final character or cluster positions into the same
+  decoration command planner.
+- This is also a no-pixel-change refactor. The representative guard matrix
+  stayed at the previous metrics: `Text_1 0.203794`, `Text_5 1.291462`,
+  `Text_9 1.062469`, `Text_12 4.967231`, `Text_14 1.260769`, and
+  `Text_15 2.274281`.

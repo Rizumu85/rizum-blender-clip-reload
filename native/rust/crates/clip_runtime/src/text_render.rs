@@ -1074,14 +1074,15 @@ fn draw_horizontal_text_line(
             x = next_x;
         }
     }
-    draw_text_decorations(
-        canvas,
+    for command in plan_text_decoration_commands(
         line.origin,
         styles,
         decoration_styles,
         &char_positions,
         &char_metrics,
-    );
+    ) {
+        draw_decoration_command(canvas, &command);
+    }
     Ok(())
 }
 
@@ -1209,14 +1210,24 @@ fn copy_skia_region_to_rgba(bytes: &[u8], source_width: u32, region: Rect, outpu
     }
 }
 
-fn draw_text_decorations(
-    canvas: &Canvas,
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct TextDecorationCommand {
+    x0: f32,
+    x1: f32,
+    y: f32,
+    thickness: f32,
+    color: Rgba8,
+    inset_ends: bool,
+}
+
+fn plan_text_decoration_commands(
     origin: (f32, f32),
     styles: &[TextCharStyle],
     decoration_styles: &[TextCharStyle],
     char_positions: &[(f32, f32)],
     char_metrics: &[Option<TextFontMetrics>],
-) {
+) -> Vec<TextDecorationCommand> {
+    let mut commands = Vec::new();
     let mut start = 0usize;
     while start < styles.len() {
         if !styles[start].underline && !styles[start].strikethrough {
@@ -1260,15 +1271,14 @@ fn draw_text_decorations(
                 24.0,
                 DecorationThicknessQuantize::Floor,
             );
-            draw_decoration_line(
-                canvas,
+            commands.push(TextDecorationCommand {
                 x0,
                 x1,
                 y,
                 thickness,
-                styles[start].color,
-                fitted_decoration_span,
-            );
+                color: styles[start].color,
+                inset_ends: fitted_decoration_span,
+            });
         }
         if styles[start].strikethrough {
             let strikethrough_position = metrics.and_then(|metrics| metrics.strikethrough_position);
@@ -1288,18 +1298,18 @@ fn draw_text_decorations(
                 24.0,
                 DecorationThicknessQuantize::Round,
             );
-            draw_decoration_line(
-                canvas,
+            commands.push(TextDecorationCommand {
                 x0,
                 x1,
                 y,
                 thickness,
-                styles[start].color,
-                fitted_decoration_span,
-            );
+                color: styles[start].color,
+                inset_ends: fitted_decoration_span,
+            });
         }
         start = end;
     }
+    commands
 }
 
 fn decoration_y(
@@ -1339,23 +1349,15 @@ fn decoration_thickness(
     .clamp(1.0, 16.0)
 }
 
-fn draw_decoration_line(
-    canvas: &Canvas,
-    x0: f32,
-    x1: f32,
-    y: f32,
-    thickness: f32,
-    color: Rgba8,
-    inset_ends: bool,
-) {
-    let mut paint = decoration_line_paint(color, inset_ends);
-    let thickness = thickness.max(1.0);
+fn draw_decoration_command(canvas: &Canvas, command: &TextDecorationCommand) {
+    let mut paint = decoration_line_paint(command.color, command.inset_ends);
+    let thickness = command.thickness.max(1.0);
     paint.set_stroke_width(thickness);
-    let center_y = y + thickness * 0.5;
-    let inset = decoration_line_end_inset(thickness, inset_ends);
+    let center_y = command.y + thickness * 0.5;
+    let inset = decoration_line_end_inset(thickness, command.inset_ends);
     canvas.draw_line(
-        Point::new(x0 + inset, center_y),
-        Point::new((x1 - inset).max(x0 + inset), center_y),
+        Point::new(command.x0 + inset, center_y),
+        Point::new((command.x1 - inset).max(command.x0 + inset), center_y),
         &paint,
     );
 }
@@ -2322,8 +2324,6 @@ mod tests {
 
     #[test]
     fn underline_uses_logical_size_after_layout_fit() {
-        let mut surface = surfaces::raster_n32_premul((40, 40)).unwrap();
-        surface.canvas().clear(Color::TRANSPARENT);
         let fitted = TextCharStyle {
             font_name: None,
             fallback_font: None,
@@ -2344,8 +2344,7 @@ mod tests {
             ..fitted.clone()
         };
 
-        draw_text_decorations(
-            surface.canvas(),
+        let commands = plan_text_decoration_commands(
             (0.0, 0.0),
             &[fitted],
             &[logical],
@@ -2358,30 +2357,16 @@ mod tests {
             })],
         );
 
-        let image = surface.image_snapshot();
-        let pixmap = image.peek_pixels().unwrap();
-        let pixels = pixmap.bytes().unwrap();
-        let dark_rows = (0..40)
-            .filter_map(|y| {
-                (0..40)
-                    .any(|x| {
-                        let index = (y * 40 + x) * 4;
-                        pixels[index + 3] != 0
-                    })
-                    .then_some(y)
-            })
-            .collect::<Vec<_>>();
-        assert!((2..=3).contains(&dark_rows.len()));
-        assert!(
-            dark_rows.iter().all(|row| *row <= 12),
-            "decoration should use the logical size, not the fitted size"
-        );
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].x0, 2.0);
+        assert_eq!(commands[0].x1, 20.0);
+        assert_eq!(commands[0].y, 9.0);
+        assert_eq!(commands[0].thickness, 2.0);
+        assert!(commands[0].inset_ends);
     }
 
     #[test]
     fn strikethrough_position_uses_fitted_size_after_layout_fit() {
-        let mut surface = surfaces::raster_n32_premul((40, 40)).unwrap();
-        surface.canvas().clear(Color::TRANSPARENT);
         let fitted = TextCharStyle {
             font_name: None,
             fallback_font: None,
@@ -2402,8 +2387,7 @@ mod tests {
             ..fitted.clone()
         };
 
-        draw_text_decorations(
-            surface.canvas(),
+        let commands = plan_text_decoration_commands(
             (0.0, 0.0),
             &[fitted],
             &[logical],
@@ -2416,24 +2400,12 @@ mod tests {
             })],
         );
 
-        let image = surface.image_snapshot();
-        let pixmap = image.peek_pixels().unwrap();
-        let pixels = pixmap.bytes().unwrap();
-        let dark_rows = (0..40)
-            .filter_map(|y| {
-                (0..40)
-                    .any(|x| {
-                        let index = (y * 40 + x) * 4;
-                        pixels[index + 3] != 0
-                    })
-                    .then_some(y)
-            })
-            .collect::<Vec<_>>();
-        assert!(!dark_rows.is_empty());
-        assert!(
-            dark_rows.iter().all(|row| *row >= 12),
-            "strikethrough position should follow the fitted glyph body"
-        );
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].x0, 2.0);
+        assert_eq!(commands[0].x1, 20.0);
+        assert!((commands[0].y - 13.2).abs() < 0.001);
+        assert_eq!(commands[0].thickness, 1.0);
+        assert!(commands[0].inset_ends);
     }
 
     #[test]

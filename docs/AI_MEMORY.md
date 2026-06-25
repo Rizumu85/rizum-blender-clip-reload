@@ -87,9 +87,9 @@ In scope:
   missing CSP text-entry level run-font/position/layout/decorations/raster
   state before enabling shaping in product code; replacing only the current
   `draw_str` calls is known to be the wrong granularity. Ordinary horizontal
-  text now builds a `HorizontalTextPlan` first, so line origins and run ranges
-  are decided before drawing; this is the intended insertion point for future
-  shaped run/decoration work.
+  text now builds a `HorizontalTextPlan` first, so line origins, run ranges, and
+  decoration draw commands are decided before drawing; this is the intended
+  insertion point for future shaped run/decoration work.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
