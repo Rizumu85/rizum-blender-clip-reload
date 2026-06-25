@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use clip_model::{CanvasSize, Rect, Rgba8};
 use skia_safe::{
-    Canvas, Color, Font, FontHinting, FontMgr, Paint, Point, Typeface, font, surfaces,
+    Canvas, Color, Font, FontHinting, FontMgr, Paint, Point, TextBlob, Typeface, font, surfaces,
 };
 
 use crate::RuntimeError;
@@ -1017,9 +1017,42 @@ fn draw_horizontal_text_line(
     line: &HorizontalTextLinePlan,
     fonts: &mut FontResolver,
 ) -> Result<(), RuntimeError> {
+    let commands = plan_horizontal_text_line_commands(plan, line, fonts)?;
+    for command in &commands.glyphs {
+        draw_glyph_command(canvas, command);
+    }
+    for command in &commands.decorations {
+        draw_decoration_command(canvas, command);
+    }
+    Ok(())
+}
+
+struct HorizontalTextLineCommands {
+    glyphs: Vec<TextGlyphCommand>,
+    decorations: Vec<TextDecorationCommand>,
+}
+
+struct TextGlyphCommand {
+    x: f32,
+    baseline_y: f32,
+    paint: Paint,
+    payload: TextGlyphPayload,
+}
+
+enum TextGlyphPayload {
+    Plain { text: String, font: Font },
+    Shaped { blob: TextBlob },
+}
+
+fn plan_horizontal_text_line_commands(
+    plan: &HorizontalTextPlan,
+    line: &HorizontalTextLinePlan,
+    fonts: &mut FontResolver,
+) -> Result<HorizontalTextLineCommands, RuntimeError> {
+    let mut x = line.origin.0;
     let styles = &plan.styles[line.start..line.end];
     let decoration_styles = &plan.logical_styles[line.start..line.end];
-    let mut x = line.origin.0;
+    let mut glyphs = Vec::with_capacity(line.runs.len());
     let mut char_positions = Vec::with_capacity(line.end.saturating_sub(line.start));
     let mut char_metrics = Vec::with_capacity(line.end.saturating_sub(line.start));
     for run in &line.runs {
@@ -1042,25 +1075,36 @@ fn draw_horizontal_text_line(
         let shaped = shaped_text_probe_enabled()
             .then(|| shaped::shape_text_run(&text, &font))
             .flatten();
-        let (run_width, shaped_positions) = if let Some(shaped) = shaped {
-            canvas.draw_text_blob(&shaped.blob, Point::new(x, baseline_y), &paint);
-            (shaped.advance_x, Some(shaped.char_positions))
-        } else {
-            canvas.draw_str(&text, Point::new(x, baseline_y), &font, &paint);
-            (font.measure_str(&text, Some(&paint)).0, None)
-        };
-        if let Some(shaped_positions) = shaped_positions {
+        if let Some(shaped) = shaped {
+            let shaped::ShapedTextRun {
+                blob,
+                advance_x,
+                char_positions: shaped_positions,
+            } = shaped;
+            glyphs.push(TextGlyphCommand {
+                x,
+                baseline_y,
+                paint,
+                payload: TextGlyphPayload::Shaped { blob },
+            });
             for (start_x, end_x) in shaped_positions {
                 char_positions.push((x + start_x, x + end_x));
                 char_metrics.push(Some(resolved.metrics));
             }
-            x += run_width;
+            x += advance_x;
             continue;
         }
+        let run_width = font.measure_str(&text, Some(&paint)).0;
         let char_advances = plan.chars[start..end]
             .iter()
             .map(|ch| font.measure_str(ch.to_string(), Some(&paint)).0)
             .collect::<Vec<_>>();
+        glyphs.push(TextGlyphCommand {
+            x,
+            baseline_y,
+            paint,
+            payload: TextGlyphPayload::Plain { text, font },
+        });
         let char_sum = char_advances.iter().sum::<f32>();
         let scale = if char_sum > 0.0 {
             run_width / char_sum
@@ -1074,16 +1118,29 @@ fn draw_horizontal_text_line(
             x = next_x;
         }
     }
-    for command in plan_text_decoration_commands(
+    let decorations = plan_text_decoration_commands(
         line.origin,
         styles,
         decoration_styles,
         &char_positions,
         &char_metrics,
-    ) {
-        draw_decoration_command(canvas, &command);
+    );
+    Ok(HorizontalTextLineCommands {
+        glyphs,
+        decorations,
+    })
+}
+
+fn draw_glyph_command(canvas: &Canvas, command: &TextGlyphCommand) {
+    let point = Point::new(command.x, command.baseline_y);
+    match &command.payload {
+        TextGlyphPayload::Plain { text, font } => {
+            canvas.draw_str(text, point, font, &command.paint);
+        }
+        TextGlyphPayload::Shaped { blob } => {
+            canvas.draw_text_blob(blob, point, &command.paint);
+        }
     }
-    Ok(())
 }
 
 fn horizontal_glyph_baseline_y(origin_y: f32, logical_style: &TextCharStyle) -> f32 {
@@ -2107,6 +2164,59 @@ mod tests {
                 HorizontalTextRunPlan { start: 3, end: 4 },
             ]
         );
+    }
+
+    #[test]
+    fn horizontal_text_line_plans_glyphs_and_decorations_before_drawing() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "AB".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                layout_flags: None,
+                path_mode: None,
+                path_angle_a_degrees: None,
+                path_angle_b_degrees: None,
+                path_center: None,
+                font_size_100: Some(1000),
+                color: None,
+                bbox: None,
+                quad_verts_100: None,
+                box_size: None,
+                align: None,
+                underline_spans: vec![clip_file::metadata::TextLayerSpan {
+                    start: 0,
+                    length: 2,
+                }],
+                strikethrough_spans: Vec::new(),
+                runs: Vec::new(),
+            },
+        };
+        let chars = entry.text.chars().collect::<Vec<_>>();
+        let styles = text_char_styles(&entry, 72);
+        let logical_styles = styles.clone();
+        let mut fonts = FontResolver::new();
+        let plan = build_horizontal_text_plan(
+            &entry,
+            &TextRasterLayout {
+                size: CanvasSize::new(200, 200),
+                offset_x: 0,
+                offset_y: 0,
+            },
+            chars,
+            styles,
+            logical_styles,
+            &mut fonts,
+        );
+
+        let commands =
+            plan_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts).unwrap();
+
+        assert_eq!(commands.glyphs.len(), 1);
+        assert_eq!(commands.decorations.len(), 1);
+        assert_eq!(commands.glyphs[0].x, plan.lines[0].origin.0);
+        assert!(commands.decorations[0].x1 > commands.decorations[0].x0);
     }
 
     #[test]

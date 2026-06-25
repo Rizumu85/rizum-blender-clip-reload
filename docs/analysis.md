@@ -5064,3 +5064,17 @@ Text decoration command planning:
   stayed at the previous metrics: `Text_1 0.203794`, `Text_5 1.291462`,
   `Text_9 1.062469`, `Text_12 4.967231`, `Text_14 1.260769`, and
   `Text_15 2.274281`.
+
+Text glyph command planning:
+
+- Ordinary horizontal text line drawing now builds `HorizontalTextLineCommands`
+  before touching the Skia canvas. The command plan owns the glyph draw commands
+  and the decoration commands; execution is a thin pass over those commands.
+- This preserves the current product behavior, including the disabled-by-default
+  shaped probe path, but moves the architectural boundary up to the line-command
+  level. The next shaped-text attempt can replace the command planner instead of
+  partially replacing a `draw_str` call inside the old immediate draw loop.
+- This is another no-pixel-change step. The representative guards again stayed
+  at the previous metrics: `Text_1 0.203794`, `Text_5 1.291462`,
+  `Text_9 1.062469`, `Text_12 4.967231`, `Text_14 1.260769`, and
+  `Text_15 2.274281`.
