@@ -88,11 +88,13 @@ In scope:
   state before enabling shaping in product code; replacing only the current
   `draw_str` calls is known to be the wrong granularity. Ordinary horizontal
   text now builds a `HorizontalTextPlan` first, so line origins, run ranges, and
-  glyph/decoration draw commands are decided before drawing. The disabled
-  shaped probe now also has a line-level command planner that builds Skia
-  RunHandler/TextBlobBuilder output, char positions, metrics, and decorations
-  in one coordinate model; it remains behind `RIZUM_CLIP_SHAPED_TEXT=1` because
-  the shaped glyph-position model still regresses horizontal guards.
+  glyph/decoration draw commands are decided before drawing. Simple horizontal
+  runs now draw through positioned `TextBlobBuilder::alloc_run_text_pos` blobs
+  using the current measured per-character position model, so glyph drawing and
+  decoration positions share one planned coordinate model without changing the
+  established text guard metrics. The disabled ShapeThenWrap probe also has a
+  line-level command planner, but it remains behind `RIZUM_CLIP_SHAPED_TEXT=1`
+  because Skia's shaped glyph positions still regress horizontal guards.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

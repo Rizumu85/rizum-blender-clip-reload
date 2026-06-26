@@ -793,6 +793,54 @@ mod tests {
     }
 
     #[test]
+    fn horizontal_text_line_uses_positioned_text_blob_for_simple_runs() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "AB".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                layout_flags: None,
+                path_mode: None,
+                path_angle_a_degrees: None,
+                path_angle_b_degrees: None,
+                path_center: None,
+                font_size_100: Some(1000),
+                color: None,
+                bbox: None,
+                quad_verts_100: None,
+                box_size: None,
+                align: None,
+                underline_spans: Vec::new(),
+                strikethrough_spans: Vec::new(),
+                runs: Vec::new(),
+            },
+        };
+        let chars = entry.text.chars().collect::<Vec<_>>();
+        let styles = text_char_styles(&entry, 72);
+        let logical_styles = styles.clone();
+        let mut fonts = FontResolver::new();
+        let plan = build_horizontal_text_plan(
+            &entry,
+            &TextRasterLayout {
+                size: CanvasSize::new(200, 200),
+                offset_x: 0,
+                offset_y: 0,
+            },
+            chars,
+            styles,
+            logical_styles,
+            &mut fonts,
+        );
+
+        let commands =
+            plan_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts).unwrap();
+
+        assert_eq!(commands.glyphs.len(), 1);
+        assert!(commands.glyphs[0].uses_positioned_blob());
+    }
+
+    #[test]
     fn shaped_horizontal_text_line_plans_blob_positions_and_decorations_together() {
         let entry = clip_file::metadata::TextLayerEntry {
             text: "AB".to_owned(),

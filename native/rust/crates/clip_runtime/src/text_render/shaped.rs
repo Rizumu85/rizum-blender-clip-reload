@@ -66,12 +66,55 @@ pub(crate) fn shape_text_line(runs: &[ShapedTextLineRunInput<'_>]) -> Option<Sha
     })
 }
 
+pub(crate) fn text_blob_from_positioned_chars(
+    text: &str,
+    font: &Font,
+    char_positions: &[(f32, f32)],
+) -> Option<TextBlob> {
+    if text.is_empty() {
+        return None;
+    }
+    let char_starts = text
+        .char_indices()
+        .map(|(byte, _)| byte)
+        .chain(std::iter::once(text.len()))
+        .collect::<Vec<_>>();
+    let char_count = char_starts.len().saturating_sub(1);
+    if char_count != char_positions.len() {
+        return None;
+    }
+
+    let mut glyphs = Vec::with_capacity(char_count);
+    for index in 0..char_count {
+        let ch_text = &text[char_starts[index]..char_starts[index + 1]];
+        let mut char_glyphs = font.str_to_glyphs_vec(ch_text);
+        if char_glyphs.len() != 1 {
+            return None;
+        }
+        glyphs.push(char_glyphs.remove(0));
+    }
+
+    let mut builder = TextBlobBuilder::new();
+    let (blob_glyphs, positions, utf8, clusters) =
+        builder.alloc_run_text_pos(font, glyphs.len(), text.len(), None);
+    blob_glyphs.copy_from_slice(&glyphs);
+    utf8.copy_from_slice(text.as_bytes());
+    for (index, position) in positions.iter_mut().enumerate() {
+        *position = Point::new(char_positions[index].0, 0.0);
+    }
+    for (index, cluster) in clusters.iter_mut().enumerate() {
+        *cluster = u32::try_from(char_starts[index]).ok()?;
+    }
+    builder.make()
+}
+
 pub(crate) fn shape_text_run(text: &str, font: &Font) -> Option<ShapedTextRun> {
     if text.is_empty() {
         return None;
     }
     let shaper = Shaper::new_shape_then_wrap(FontMgr::default())?;
-    let mut font_runs = Shaper::new_trivial_font_run_iterator(font, text.len());
+    let fallback_mgr = FontMgr::default();
+    let mut font_runs = Shaper::new_font_mgr_run_iterator(text, font, fallback_mgr);
     let mut bidi_runs = Shaper::new_bidi_run_iterator(text, 0xfe)?;
     let mut script_runs = Shaper::new_script_run_iterator(text, dominant_script_tag(text));
     let mut language_runs =

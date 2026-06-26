@@ -5111,3 +5111,28 @@ Text shaped-line planner integration:
   Therefore the product default remains the existing plain command planner, and
   shaped output stays diagnostic until the missing CSP glyph-position model is
   recovered.
+
+Text positioned-blob default:
+
+- A focused read of CSP's `sub_14363C820` showed that the native path calls
+  `SkShaper::MakeFontMgrRunIterator`, not a trivial font-run iterator, before
+  invoking ShapeThenWrap. Mirroring that in the disabled
+  `RIZUM_CLIP_SHAPED_TEXT=1` probe did not change the diagnostic metrics:
+  `Text_1` stayed at `7.989150`, `Text_6` at `8.003550`, `Text_9` at
+  `8.200875`, `Text_12` at `6.139331`, and `Text_15` at `2.274281`.
+  Therefore the remaining ShapeThenWrap regression is not caused by the
+  fallback font-run iterator alone.
+- The product path now uses the recovered safe granularity without letting Skia
+  ShapeThenWrap choose new positions: ordinary horizontal runs build
+  `TextBlobBuilder::alloc_run_text_pos` blobs from the existing measured
+  per-character x positions, UTF-8 bytes, and byte clusters, and fall closed to
+  the previous `draw_str` path when a run is not one Unicode scalar to one glyph.
+  Decoration commands are still derived from the same planned char positions.
+  This makes TextBlobBuilder/drawTextBlob the default simple-run draw backend
+  while preserving the established text guard matrix.
+- Default compares after the positioned-blob switch remain unchanged:
+  `Text_1 0.203794`, `Text_5 1.291462`, `Text_6 0.246863`,
+  `Text_9 1.062469`, `Text_12 4.967231`, `Text_14 1.260769`, and
+  `Text_15 2.274281`. The unresolved blocker is now specifically CSP's
+  ShapeThenWrap glyph-position/feature model versus the current Skia shaper
+  output, not the lack of TextBlobBuilder integration in the product path.

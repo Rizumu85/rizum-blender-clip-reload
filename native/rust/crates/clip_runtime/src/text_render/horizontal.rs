@@ -203,7 +203,15 @@ pub(super) struct TextGlyphCommand {
 
 enum TextGlyphPayload {
     Plain { text: String, font: Font },
+    Positioned { blob: TextBlob },
     Shaped { blob: TextBlob },
+}
+
+#[cfg(test)]
+impl TextGlyphCommand {
+    pub(super) fn uses_positioned_blob(&self) -> bool {
+        matches!(self.payload, TextGlyphPayload::Positioned { .. })
+    }
 }
 
 pub(super) fn plan_horizontal_text_line_commands(
@@ -252,24 +260,32 @@ fn plan_plain_horizontal_text_line_commands(
             .iter()
             .map(|ch| font.measure_str(ch.to_string(), Some(&paint)).0)
             .collect::<Vec<_>>();
-        glyphs.push(TextGlyphCommand {
-            x,
-            baseline_y,
-            paint,
-            payload: TextGlyphPayload::Plain { text, font },
-        });
         let char_sum = char_advances.iter().sum::<f32>();
         let scale = if char_sum > 0.0 {
             run_width / char_sum
         } else {
             1.0
         };
+        let run_x = x;
+        let mut run_char_positions = Vec::with_capacity(char_advances.len());
         for advance in char_advances {
             let next_x = x + advance * scale;
             char_positions.push((x, next_x));
+            run_char_positions.push((x - run_x, next_x - run_x));
             char_metrics.push(Some(resolved.metrics));
             x = next_x;
         }
+        let payload = shaped::text_blob_from_positioned_chars(&text, &font, &run_char_positions)
+            .map_or_else(
+                || TextGlyphPayload::Plain { text, font },
+                |blob| TextGlyphPayload::Positioned { blob },
+            );
+        glyphs.push(TextGlyphCommand {
+            x: run_x,
+            baseline_y,
+            paint,
+            payload,
+        });
     }
     let decorations = plan_text_decoration_commands(
         line.origin,
@@ -378,6 +394,9 @@ fn draw_glyph_command(canvas: &Canvas, command: &TextGlyphCommand) {
     match &command.payload {
         TextGlyphPayload::Plain { text, font } => {
             canvas.draw_str(text, point, font, &command.paint);
+        }
+        TextGlyphPayload::Positioned { blob } => {
+            canvas.draw_text_blob(blob, point, &command.paint);
         }
         TextGlyphPayload::Shaped { blob } => {
             canvas.draw_text_blob(blob, point, &command.paint);
