@@ -28,7 +28,7 @@ use font::{
 #[cfg(test)]
 use horizontal::{
     HorizontalTextRunPlan, glyph_run_end, horizontal_glyph_baseline_y,
-    plan_horizontal_text_line_commands,
+    plan_horizontal_text_line_commands, plan_shaped_horizontal_text_line_commands,
 };
 use horizontal::{build_horizontal_text_plan, draw_horizontal_text_plan};
 #[cfg(test)]
@@ -789,6 +789,60 @@ mod tests {
         assert_eq!(commands.glyphs.len(), 1);
         assert_eq!(commands.decorations.len(), 1);
         assert_eq!(commands.glyphs[0].x, plan.lines[0].origin.0);
+        assert!(commands.decorations[0].x1 > commands.decorations[0].x0);
+    }
+
+    #[test]
+    fn shaped_horizontal_text_line_plans_blob_positions_and_decorations_together() {
+        let entry = clip_file::metadata::TextLayerEntry {
+            text: "AB".to_owned(),
+            attributes: clip_file::metadata::TextLayerAttributes {
+                default_font: Some("Arial".to_owned()),
+                fallback_font: None,
+                fonts: Vec::new(),
+                layout_flags: None,
+                path_mode: None,
+                path_angle_a_degrees: None,
+                path_angle_b_degrees: None,
+                path_center: None,
+                font_size_100: Some(1000),
+                color: None,
+                bbox: None,
+                quad_verts_100: None,
+                box_size: None,
+                align: Some(2),
+                underline_spans: vec![clip_file::metadata::TextLayerSpan {
+                    start: 0,
+                    length: 2,
+                }],
+                strikethrough_spans: Vec::new(),
+                runs: Vec::new(),
+            },
+        };
+        let chars = entry.text.chars().collect::<Vec<_>>();
+        let styles = text_char_styles(&entry, 72);
+        let logical_styles = styles.clone();
+        let mut fonts = FontResolver::new();
+        let plan = build_horizontal_text_plan(
+            &entry,
+            &TextRasterLayout {
+                size: CanvasSize::new(200, 200),
+                offset_x: 0,
+                offset_y: 0,
+            },
+            chars,
+            styles,
+            logical_styles,
+            &mut fonts,
+        );
+
+        let commands = plan_shaped_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts)
+            .expect("shaped line commands");
+
+        assert_eq!(commands.glyphs.len(), 1);
+        assert_eq!(commands.glyphs[0].x, plan.lines[0].origin.0);
+        assert_eq!(commands.decorations.len(), 1);
+        assert!(commands.decorations[0].x0 >= plan.lines[0].origin.0);
         assert!(commands.decorations[0].x1 > commands.decorations[0].x0);
     }
 

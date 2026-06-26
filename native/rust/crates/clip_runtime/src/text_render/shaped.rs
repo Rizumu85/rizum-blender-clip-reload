@@ -13,6 +13,59 @@ pub(crate) struct ShapedTextRun {
     pub(crate) char_positions: Vec<(f32, f32)>,
 }
 
+pub(crate) struct ShapedTextLineRunInput<'a> {
+    pub(crate) text: &'a str,
+    pub(crate) font: &'a Font,
+}
+
+#[derive(Debug)]
+pub(crate) struct ShapedTextLinePlan {
+    pub(crate) runs: Vec<ShapedTextLineGlyphRun>,
+    pub(crate) char_positions: Vec<(f32, f32)>,
+    pub(crate) advance_x: f32,
+}
+
+#[derive(Debug)]
+pub(crate) struct ShapedTextLineGlyphRun {
+    pub(crate) input_index: usize,
+    pub(crate) x: f32,
+    pub(crate) blob: TextBlob,
+}
+
+pub(crate) fn shape_text_line(runs: &[ShapedTextLineRunInput<'_>]) -> Option<ShapedTextLinePlan> {
+    if runs.is_empty() {
+        return None;
+    }
+    let mut x = 0.0f32;
+    let mut glyph_runs = Vec::with_capacity(runs.len());
+    let mut char_positions = Vec::new();
+    for (input_index, input) in runs.iter().enumerate() {
+        let shaped = shape_text_run(input.text, input.font)?;
+        let run_x = x;
+        let ShapedTextRun {
+            blob,
+            advance_x,
+            char_positions: run_positions,
+        } = shaped;
+        glyph_runs.push(ShapedTextLineGlyphRun {
+            input_index,
+            x: run_x,
+            blob,
+        });
+        char_positions.extend(
+            run_positions
+                .into_iter()
+                .map(|(start_x, end_x)| (run_x + start_x, run_x + end_x)),
+        );
+        x += advance_x;
+    }
+    Some(ShapedTextLinePlan {
+        runs: glyph_runs,
+        char_positions,
+        advance_x: x,
+    })
+}
+
 pub(crate) fn shape_text_run(text: &str, font: &Font) -> Option<ShapedTextRun> {
     if text.is_empty() {
         return None;
@@ -261,7 +314,12 @@ fn is_hangul(ch: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{dominant_language_tag, dominant_script_tag, normalize_cluster_byte};
+    use skia_safe::{Font, FontMgr, FontStyle};
+
+    use super::{
+        ShapedTextLineRunInput, dominant_language_tag, dominant_script_tag, normalize_cluster_byte,
+        shape_text_line,
+    };
 
     #[test]
     fn cluster_bytes_normalize_relative_or_absolute_runs() {
@@ -274,5 +332,34 @@ mod tests {
         assert_eq!(*dominant_script_tag("test"), 0x4c61746e);
         assert_eq!(*dominant_script_tag("\u{6d4b}\u{8bd5}"), 0x48616e73);
         assert_eq!(dominant_language_tag("\u{30c6}\u{30b9}\u{30c8}"), "ja-JP");
+    }
+
+    #[test]
+    fn shaped_line_plan_accumulates_run_origins_and_char_positions() {
+        let typeface = FontMgr::new()
+            .legacy_make_typeface(None, FontStyle::normal())
+            .expect("default typeface");
+        let font = Font::from_typeface(typeface, 24.0);
+
+        let plan = shape_text_line(&[
+            ShapedTextLineRunInput {
+                text: "A",
+                font: &font,
+            },
+            ShapedTextLineRunInput {
+                text: "B",
+                font: &font,
+            },
+        ])
+        .expect("shaped line plan");
+
+        assert_eq!(plan.runs.len(), 2);
+        assert_eq!(plan.runs[0].input_index, 0);
+        assert_eq!(plan.runs[0].x, 0.0);
+        assert_eq!(plan.runs[1].input_index, 1);
+        assert!(plan.runs[1].x > 0.0);
+        assert_eq!(plan.char_positions.len(), 2);
+        assert!(plan.char_positions[1].0 >= plan.char_positions[0].1);
+        assert!(plan.advance_x >= plan.char_positions[1].1);
     }
 }

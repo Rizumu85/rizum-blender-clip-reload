@@ -5094,3 +5094,20 @@ Native text renderer module split:
   metrics remain the established baselines: `Text_1 0.203794`,
   `Text_5 1.291462`, `Text_9 1.062469`, `Text_12 4.967231`,
   `Text_14 1.260769`, and `Text_15 2.274281`.
+
+Text shaped-line planner integration:
+
+- The disabled shaped-text probe has been moved from a per-run `draw_str`
+  replacement into a horizontal line-command planning path. `shaped.rs` now
+  exposes a line-level Skia RunHandler/TextBlobBuilder plan that accumulates
+  glyph-run origins, text blobs, char positions, and total advance in one local
+  line coordinate system. `horizontal.rs` consumes that plan only when
+  `RIZUM_CLIP_SHAPED_TEXT=1`, then derives glyph commands and decoration
+  commands from the same planned char positions and font metrics.
+- This fixes the architecture insertion point but does not make shaped text
+  product-ready. Diagnostic compares with the env flag still show the known
+  horizontal regressions: `Text_1 0.203794 -> 7.989150` and
+  `Text_12 4.967231 -> 6.139331`; `Text_15` remains unchanged at `2.274281`.
+  Therefore the product default remains the existing plain command planner, and
+  shaped output stays diagnostic until the missing CSP glyph-position model is
+  recovered.

@@ -5,7 +5,7 @@ use crate::RuntimeError;
 use super::{
     TextCharStyle, TextRasterLayout,
     decoration::{TextDecorationCommand, draw_decoration_command, plan_text_decoration_commands},
-    font::{FontResolver, horizontal_glyph_font, skia_font, text_paint},
+    font::{FontResolver, TextFontMetrics, horizontal_glyph_font, skia_font, text_paint},
     shaped, shaped_text_probe_enabled, text_lines,
 };
 
@@ -211,6 +211,19 @@ pub(super) fn plan_horizontal_text_line_commands(
     line: &HorizontalTextLinePlan,
     fonts: &mut FontResolver,
 ) -> Result<HorizontalTextLineCommands, RuntimeError> {
+    if shaped_text_probe_enabled()
+        && let Some(commands) = plan_shaped_horizontal_text_line_commands(plan, line, fonts)
+    {
+        return Ok(commands);
+    }
+    plan_plain_horizontal_text_line_commands(plan, line, fonts)
+}
+
+fn plan_plain_horizontal_text_line_commands(
+    plan: &HorizontalTextPlan,
+    line: &HorizontalTextLinePlan,
+    fonts: &mut FontResolver,
+) -> Result<HorizontalTextLineCommands, RuntimeError> {
     let mut x = line.origin.0;
     let styles = &plan.styles[line.start..line.end];
     let decoration_styles = &plan.logical_styles[line.start..line.end];
@@ -234,28 +247,6 @@ pub(super) fn plan_horizontal_text_line_commands(
         let paint = text_paint(style.color);
         let baseline_y = horizontal_glyph_baseline_y(line.origin.1, &plan.logical_styles[start]);
         let text = plan.chars[start..end].iter().collect::<String>();
-        let shaped = shaped_text_probe_enabled()
-            .then(|| shaped::shape_text_run(&text, &font))
-            .flatten();
-        if let Some(shaped) = shaped {
-            let shaped::ShapedTextRun {
-                blob,
-                advance_x,
-                char_positions: shaped_positions,
-            } = shaped;
-            glyphs.push(TextGlyphCommand {
-                x,
-                baseline_y,
-                paint,
-                payload: TextGlyphPayload::Shaped { blob },
-            });
-            for (start_x, end_x) in shaped_positions {
-                char_positions.push((x + start_x, x + end_x));
-                char_metrics.push(Some(resolved.metrics));
-            }
-            x += advance_x;
-            continue;
-        }
         let run_width = font.measure_str(&text, Some(&paint)).0;
         let char_advances = plan.chars[start..end]
             .iter()
@@ -288,6 +279,95 @@ pub(super) fn plan_horizontal_text_line_commands(
         &char_metrics,
     );
     Ok(HorizontalTextLineCommands {
+        glyphs,
+        decorations,
+    })
+}
+
+struct PreparedShapedHorizontalRun {
+    start: usize,
+    end: usize,
+    text: String,
+    font: Font,
+    baseline_y: f32,
+    paint: Paint,
+    metrics: TextFontMetrics,
+}
+
+pub(super) fn plan_shaped_horizontal_text_line_commands(
+    plan: &HorizontalTextPlan,
+    line: &HorizontalTextLinePlan,
+    fonts: &mut FontResolver,
+) -> Option<HorizontalTextLineCommands> {
+    let mut prepared_runs = Vec::with_capacity(line.runs.len());
+    for run in &line.runs {
+        let start = run.start;
+        let end = run.end;
+        let style = &plan.styles[start];
+        let resolved = fonts.resolve(style)?;
+        prepared_runs.push(PreparedShapedHorizontalRun {
+            start,
+            end,
+            text: plan.chars[start..end].iter().collect::<String>(),
+            font: horizontal_glyph_font(&resolved, style, &plan.logical_styles[start]),
+            baseline_y: horizontal_glyph_baseline_y(line.origin.1, &plan.logical_styles[start]),
+            paint: text_paint(style.color),
+            metrics: resolved.metrics,
+        });
+    }
+    let shaped_inputs = prepared_runs
+        .iter()
+        .map(|run| shaped::ShapedTextLineRunInput {
+            text: &run.text,
+            font: &run.font,
+        })
+        .collect::<Vec<_>>();
+    let shaped_line = shaped::shape_text_line(&shaped_inputs)?;
+    let line_end_x = line.origin.0 + shaped_line.advance_x;
+    let mut glyphs = Vec::with_capacity(shaped_line.runs.len());
+    for shaped_run in shaped_line.runs {
+        let prepared = prepared_runs.get(shaped_run.input_index)?;
+        glyphs.push(TextGlyphCommand {
+            x: line.origin.0 + shaped_run.x,
+            baseline_y: prepared.baseline_y,
+            paint: prepared.paint.clone(),
+            payload: TextGlyphPayload::Shaped {
+                blob: shaped_run.blob,
+            },
+        });
+    }
+    let char_positions = shaped_line
+        .char_positions
+        .iter()
+        .map(|(start_x, end_x)| (line.origin.0 + start_x, line.origin.0 + end_x))
+        .collect::<Vec<_>>();
+    let mut char_metrics = Vec::with_capacity(line.end.saturating_sub(line.start));
+    for prepared in &prepared_runs {
+        char_metrics.extend(
+            std::iter::repeat(Some(prepared.metrics))
+                .take(prepared.end.saturating_sub(prepared.start)),
+        );
+    }
+    if char_positions.len() != line.end.saturating_sub(line.start)
+        || char_metrics.len() != char_positions.len()
+    {
+        return None;
+    }
+    if char_positions
+        .last()
+        .map(|(_, end_x)| *end_x > line_end_x + 1.0)
+        .unwrap_or(false)
+    {
+        return None;
+    }
+    let decorations = plan_text_decoration_commands(
+        line.origin,
+        &plan.styles[line.start..line.end],
+        &plan.logical_styles[line.start..line.end],
+        &char_positions,
+        &char_metrics,
+    );
+    Some(HorizontalTextLineCommands {
         glyphs,
         decorations,
     })
