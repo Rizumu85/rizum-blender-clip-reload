@@ -121,7 +121,10 @@ Out of scope:
 - Native text rendering resolves the font names stored in `.clip` against the
   user's installed system fonts, then creates Skia typefaces from those matched
   font bytes. The add-on does not bundle fonts and does not expose extra font
-  directory configuration.
+  directory configuration. The renderer is split into focused modules:
+  `text_render/font.rs`, `horizontal.rs`, `decoration.rs`, `vertical.rs`,
+  `vertical/layout.rs`, `arc.rs`, and `shaped.rs`; `text_render.rs` keeps the
+  shared style parser, orchestration, and regression tests.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
 - Manual import/reload render failures show a Blender error popup on the main

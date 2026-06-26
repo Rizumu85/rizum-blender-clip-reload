@@ -5078,3 +5078,19 @@ Text glyph command planning:
   at the previous metrics: `Text_1 0.203794`, `Text_5 1.291462`,
   `Text_9 1.062469`, `Text_12 4.967231`, `Text_14 1.260769`, and
   `Text_15 2.274281`.
+
+Native text renderer module split:
+
+- The text renderer implementation has been split into focused modules without
+  changing the flattened output path. `font.rs` owns installed-font resolution,
+  typeface construction, Skia font creation, and paint setup. `horizontal.rs`
+  owns ordinary horizontal text planning/execution. `decoration.rs` owns
+  underline/strikethrough command planning and drawing. `vertical.rs` owns
+  vertical text drawing, with pure layout helpers in `vertical/layout.rs`.
+  `arc.rs` owns arc text detection/drawing, while `shaped.rs` remains the
+  disabled diagnostic shaped-text probe. The root `text_render.rs` now keeps the
+  shared style parser, render orchestration, and regression tests.
+- This is a no-pixel-change architecture cleanup. The representative text guard
+  metrics remain the established baselines: `Text_1 0.203794`,
+  `Text_5 1.291462`, `Text_9 1.062469`, `Text_12 4.967231`,
+  `Text_14 1.260769`, and `Text_15 2.274281`.
