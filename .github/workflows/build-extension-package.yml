@@ -36,6 +36,12 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install Linux native dependencies
+        if: matrix.platform == 'linux-x64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev libfreetype6-dev
+
       - name: Build native renderer
         shell: pwsh
         run: |
