@@ -14,10 +14,31 @@ future change explicitly says otherwise.
 - Avarel/silicate, MIT License, copyright 2021-2026 An Tran. This project was
   used as an algorithm and architecture reference for tile-local GPU rendering;
   its source code is not bundled or copied into this extension.
+- dobrokot/clip_to_psd, MIT License. This project was reviewed as public prior
+  art for `.clip` structure research and text-layer metadata behavior,
+  including its editable PSD text export path; its source code is not bundled or
+  copied into this extension.
 
 If a future change copies a substantial portion of either project, keep the
 original MIT copyright and permission notice with that copied material and
 update the extension manifest copyright list if needed.
+
+## Text Rendering Dependencies
+
+Native flattened text rendering uses the following third-party libraries as
+Rust dependencies. Their source code is not copied into this repository, but the
+packaged native worker may link them through the Rust build:
+
+- rust-skia `skia-safe` and `skia-bindings`, MIT License. Used for Skia CPU
+  surfaces, text rasterization, `TextBlobBuilder`, and text shaping probes.
+- Google Skia, BSD-style license. Used through rust-skia as the underlying 2D
+  graphics and text rasterization engine.
+- `fontdb`, MIT License. Used to resolve `.clip` font names against installed
+  system fonts.
+- `ttf-parser`, MIT OR Apache-2.0. Used to read OpenType underline and
+  strikethrough metrics.
+- `unicode-width`, MIT OR Apache-2.0. Used by the native runtime for Unicode
+  text width helpers.
 
 ## MIT License Notice: Kazuhito00/clip_studio_paint_tool
 
