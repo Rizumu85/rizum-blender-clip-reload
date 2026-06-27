@@ -1,6 +1,6 @@
 # AI Memory
 
-Last reconciled: 2026-06-24
+Last reconciled: 2026-06-26
 
 ## Read First
 
@@ -95,6 +95,13 @@ In scope:
   established text guard metrics. The disabled ShapeThenWrap probe also has a
   line-level command planner, but it remains behind `RIZUM_CLIP_SHAPED_TEXT=1`
   because Skia's shaped glyph positions still regress horizontal guards.
+  The focused `Text_1` through `Text_15` matrix is now treated as a
+  99%-practical flattened text state: remaining residuals are mostly raster edge
+  strength and mixed-script glyph-run placement details, not missing or
+  misoriented text. A product-path probe of CSP's observed
+  `SkFont::setHinting(1)` / Skia `FontHinting::Slight` regressed multiple guard
+  samples while only barely improving `Text_15`, so the native path remains
+  unhinted unless future evidence proves a general rule.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 

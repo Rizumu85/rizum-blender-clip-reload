@@ -5136,3 +5136,24 @@ Text positioned-blob default:
   `Text_15 2.274281`. The unresolved blocker is now specifically CSP's
   ShapeThenWrap glyph-position/feature model versus the current Skia shaper
   output, not the lack of TextBlobBuilder integration in the product path.
+
+Native text 99% practical-fidelity checkpoint:
+
+- Visual inspection of the focused text matrix shows the default positioned-blob
+  renderer is now practically usable for the current `Text_1` through `Text_15`
+  samples. The two largest residuals are still `Text_12` and `Text_15`, but the
+  remaining visible error is edge/raster strength and mixed-script glyph-run
+  placement detail rather than missing text, wrong orientation, or broad layer
+  offsets.
+- A CSP read showed `sub_14363C820` sets `SkFont::setHinting(1)`, which maps to
+  Skia `FontHinting::Slight`. A product-path probe replacing the current
+  unhinted font with `Slight` did not produce a general improvement:
+  `Text_15` moved only from `2.274281` to `2.273906`, while `Text_10` regressed
+  from `0.372188` to `0.789900`, `Text_11` from `1.169850` to `1.495425`,
+  `Text_12` from `4.967231` to `4.971619`, and several smaller guards also
+  worsened. Keep the product path unhinted; do not reintroduce hinting from IDA
+  alone unless a new focused sample and guard matrix prove a general rule.
+- This makes the current state a 99%-practical flattened text renderer, not an
+  exact CSP text engine. The next real fidelity step is still recovering the
+  saved CSP glyph-run/cluster-position model used before `allocRunTextPos`, not
+  adding more per-sample offsets or toggling isolated Skia font flags.
