@@ -71,8 +71,9 @@ Keep the add-on simple for artists:
 Packaging:
 
 - Windows x64 is the tested platform.
-- Linux x64, macOS x64, and macOS arm64 package support exists but remains
+- Linux x64 and macOS arm64 package support exists but remains
   maintainer-untested until real devices verify it.
+- macOS x64 is not a release target without an Intel Mac test device.
 
 ## Direction 4: Native Architecture
 

@@ -115,7 +115,7 @@ Out of scope:
 
 ## Accepted Runtime
 
-- The installable Blender add-on is `Rizum Clip Reload`, version `0.8.68`.
+- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.0`.
 - The import menu remains `File > Import > Clip Studio (.clip)`.
 - The packaged native worker renders flattened RGBA8 output outside Blender's UI
   process, and Blender uploads it into generated images.
@@ -139,20 +139,22 @@ Out of scope:
   shared style parser, orchestration, and regression tests.
 - Normal UI shows source, status, pack state, `Manual Reload`, `Pack`, errors,
   and `Copy Diagnostic`. Developer Mode shows timing/diagnostic details.
+  Funding links stay in README/repository metadata, not inside Blender UI.
 - Manual import/reload render failures show a Blender error popup on the main
   thread; initial import failures must not fail silently just because no image
   datablock exists yet.
 - UI translations exist for Simplified Chinese, Japanese, and Spanish. Add-on
   name and copied/opened diagnostics stay English.
 - Windows x64 packaging is the current maintainer-tested release target.
-  Linux x64, macOS x64, and macOS arm64 packages are built as separate zip files
-  and should be treated as test candidates until real-device testing.
+  Linux x64 and macOS arm64 packages are built as separate zip files and should
+  be treated as test candidates until real-device testing. macOS x64 is not a
+  release target without an Intel Mac test device.
 - Do not upload one universal extension zip containing several native platform
   binaries. Blender Extensions expects separate platform-specific zips.
   `tools/build_blender_addon.py --platform all --output-dir dist` writes one
   zip per platform instead of combining native binaries. The `Build extension
-  package` GitHub Actions workflow builds Windows, Linux, and macOS native
-  artifacts and uploads split platform zips.
+  package` GitHub Actions workflow builds Windows x64, Linux x64, and macOS
+  arm64 native artifacts and uploads split platform zips.
 
 ## Native Renderer State
 

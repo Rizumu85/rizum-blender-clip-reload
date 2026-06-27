@@ -19,7 +19,7 @@ future change explicitly says otherwise.
   including its editable PSD text export path; its source code is not bundled or
   copied into this extension.
 
-If a future change copies a substantial portion of either project, keep the
+If a future change copies a substantial portion of any referenced project, keep the
 original MIT copyright and permission notice with that copied material and
 update the extension manifest copyright list if needed.
 
@@ -39,6 +39,9 @@ packaged native worker may link them through the Rust build:
   strikethrough metrics.
 - `unicode-width`, MIT OR Apache-2.0. Used by the native runtime for Unicode
   text width helpers.
+
+The extension does not bundle font files. Text rendering resolves font names
+against fonts installed on the user's operating system.
 
 ## MIT License Notice: Kazuhito00/clip_studio_paint_tool
 

@@ -179,7 +179,7 @@ dependencies = [
 
 [[package]]
 name = "clip_capi"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "clip_graph",
  "clip_model",
@@ -188,7 +188,7 @@ dependencies = [
 
 [[package]]
 name = "clip_cli"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "clip_file",
  "clip_graph",
@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "clip_file"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "clip_model",
  "flate2",
@@ -210,7 +210,7 @@ dependencies = [
 
 [[package]]
 name = "clip_gpu"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "clip_graph",
  "clip_model",
@@ -220,18 +220,18 @@ dependencies = [
 
 [[package]]
 name = "clip_graph"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "clip_model",
 ]
 
 [[package]]
 name = "clip_model"
-version = "0.1.0"
+version = "0.9.0"
 
 [[package]]
 name = "clip_runtime"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "clip_file",
  "clip_gpu",

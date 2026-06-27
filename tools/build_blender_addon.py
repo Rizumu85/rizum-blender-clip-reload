@@ -50,13 +50,6 @@ NATIVE_PLATFORMS: dict[str, NativePlatformSpec] = {
         worker_name="clip_cli",
         tested_status="packaging-supported but not maintainer-tested",
     ),
-    "macos-x64": NativePlatformSpec(
-        platform_id="macos-x64",
-        cargo_target="x86_64-apple-darwin",
-        library_name="libclip_capi.dylib",
-        worker_name="clip_cli",
-        tested_status="packaging-supported but not maintainer-tested",
-    ),
     "macos-arm64": NativePlatformSpec(
         platform_id="macos-arm64",
         cargo_target="aarch64-apple-darwin",

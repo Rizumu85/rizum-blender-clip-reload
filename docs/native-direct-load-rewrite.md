@@ -79,10 +79,11 @@ fingerprints. They may return:
 - `LICENSE` and `NOTICE.md`.
 - Native `clip_cli` worker and `clip_capi` library under `native/<platform>/`.
 
-Windows x64 is the current maintainer-tested release platform. Linux x64,
-macOS x64, and macOS arm64 package support exists in the builder, but those
-packages must be built and uploaded as separate platform-specific extension
-zips. Treat Linux/macOS zips as test candidates until real-device testing.
+Windows x64 is the current maintainer-tested release platform. Linux x64 and
+macOS arm64 package support exists in the builder, but those packages must be
+built and uploaded as separate platform-specific extension zips. Treat
+Linux/macOS zips as test candidates until real-device testing. macOS x64 is not
+a release target without an Intel Mac test device.
 
 ```powershell
 python tools\build_blender_addon.py --platform all --output-dir dist
