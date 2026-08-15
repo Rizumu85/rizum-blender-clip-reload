@@ -5157,3 +5157,24 @@ Native text 99% practical-fidelity checkpoint:
   exact CSP text engine. The next real fidelity step is still recovering the
   saved CSP glyph-run/cluster-position model used before `allocRunTextPos`, not
   adding more per-sample offsets or toggling isolated Skia font flags.
+
+Raster layer logical-offset placement:
+
+- A real 4096x4096 work sample exposed a deterministic raster-layer displacement
+  that earlier fixtures did not cover. Feature matching against the CSP PNG
+  found one source group displaced by exactly `(-64, -7)` while the unaffected
+  base layer stayed at `(0, 0)`.
+- The displaced raster row stored `LayerOffsetX/Y = (-64, -7)` and
+  `LayerRenderOffscrOffsetX/Y = (-192, -249)`. The native parser used only the
+  render-offscreen pair. The correct effective source origin is their component
+  sum, `(-256, -256)`.
+- `clip_file` now computes that effective origin in the central raster-source
+  metadata parser. A synthetic SQLite regression fixture covers the nonzero
+  logical-offset case, while absent offset columns still resolve to zero through
+  the existing optional-column query model.
+- On the stable work snapshot, the dominant displaced feature cluster vanished
+  after the change: exact `(0, 0)` matches increased from 558 to 1357, and the
+  reference compare raw mean fell from about `4.59` to `1.45`. Remaining
+  differences came from the live document having changed relative to its older
+  PNG export, not from the fixed layer-origin calculation. The exact
+  `Test_ClippingEdge` guard remained byte-identical.

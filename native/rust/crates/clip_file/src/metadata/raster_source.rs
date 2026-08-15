@@ -53,12 +53,81 @@ pub fn read_raster_layer_sources_from_sqlite(
     Ok(sources)
 }
 
+#[cfg(test)]
+mod tests {
+    use clip_model::{CanvasSize, LayerId};
+    use rusqlite::Connection;
+
+    use super::read_raster_layer_source_from_sqlite;
+
+    #[test]
+    fn combines_layer_and_render_offscreen_offsets() {
+        let conn = Connection::open_in_memory().expect("open metadata database");
+        conn.execute_batch(
+            "CREATE TABLE Layer (
+                MainId INTEGER PRIMARY KEY,
+                LayerType INTEGER NOT NULL,
+                LayerVisibility INTEGER NOT NULL,
+                LayerRenderMipmap INTEGER NOT NULL,
+                LayerColorTypeIndex INTEGER,
+                LayerOffsetX INTEGER,
+                LayerOffsetY INTEGER,
+                LayerRenderOffscrOffsetX INTEGER,
+                LayerRenderOffscrOffsetY INTEGER
+            );
+            CREATE TABLE Mipmap (
+                MainId INTEGER PRIMARY KEY,
+                BaseMipmapInfo INTEGER NOT NULL
+            );
+            CREATE TABLE MipmapInfo (
+                MainId INTEGER PRIMARY KEY,
+                Offscreen INTEGER NOT NULL
+            );
+            CREATE TABLE Offscreen (
+                MainId INTEGER PRIMARY KEY,
+                BlockData TEXT NOT NULL,
+                Attribute BLOB
+            );
+            CREATE TABLE LayerThumbnail (
+                LayerId INTEGER PRIMARY KEY,
+                ThumbnailCanvasWidth INTEGER,
+                ThumbnailCanvasHeight INTEGER
+            );
+            INSERT INTO Layer VALUES (
+                124, 1, 1, 139, 0, -64, -7, -192, -249
+            );
+            INSERT INTO Mipmap VALUES (139, 140);
+            INSERT INTO MipmapInfo VALUES (140, 141);
+            INSERT INTO Offscreen VALUES (141, 'external-raster', NULL);
+            INSERT INTO LayerThumbnail VALUES (124, 4608, 4352);",
+        )
+        .expect("create raster metadata fixture");
+        let sqlite_bytes = conn
+            .serialize("main")
+            .expect("serialize metadata database")
+            .to_vec();
+
+        let source = read_raster_layer_source_from_sqlite(
+            &sqlite_bytes,
+            LayerId(124),
+            CanvasSize::new(4096, 4096),
+        )
+        .expect("read raster metadata");
+
+        assert_eq!(source.offset_x, -256);
+        assert_eq!(source.offset_y, -256);
+        assert_eq!(source.pixel_size, CanvasSize::new(4608, 4352));
+    }
+}
+
 type RasterLayerSourceRow = (
     i64,
     i64,
     i64,
     i64,
     Option<i64>,
+    i64,
+    i64,
     i64,
     i64,
     i64,
@@ -72,7 +141,7 @@ fn raster_layer_source_query(layer_columns: &HashSet<String>) -> String {
     format!(
         "SELECT \
             l.MainId, l.LayerType, l.LayerVisibility, l.LayerRenderMipmap, \
-            {}, {}, {}, m.BaseMipmapInfo, mi.Offscreen, \
+            {}, {}, {}, {}, {}, m.BaseMipmapInfo, mi.Offscreen, \
             o.BlockData, o.Attribute, lt.ThumbnailCanvasWidth, lt.ThumbnailCanvasHeight \
          FROM Layer l \
          JOIN Mipmap m ON m.MainId = l.LayerRenderMipmap \
@@ -83,6 +152,8 @@ fn raster_layer_source_query(layer_columns: &HashSet<String>) -> String {
         optional_i64_expr(layer_columns, "LayerColorTypeIndex"),
         optional_i64_expr(layer_columns, "LayerRenderOffscrOffsetX"),
         optional_i64_expr(layer_columns, "LayerRenderOffscrOffsetY"),
+        optional_i64_expr(layer_columns, "LayerOffsetX"),
+        optional_i64_expr(layer_columns, "LayerOffsetY"),
     )
 }
 
@@ -98,25 +169,29 @@ fn read_layer_render_source_with_statement(
         let visibility: i64 = row.get(2)?;
         let render_mipmap_id: i64 = row.get(3)?;
         let color_type: Option<i64> = row.get(4)?;
-        let offset_x: Option<i64> = row.get(5)?;
-        let offset_y: Option<i64> = row.get(6)?;
-        let offscreen_id: i64 = row.get(8)?;
-        let external_id = string_from_value(row.get_ref(9)?)?;
-        let attribute = match row.get_ref(10)? {
+        let render_offset_x: Option<i64> = row.get(5)?;
+        let render_offset_y: Option<i64> = row.get(6)?;
+        let layer_offset_x: Option<i64> = row.get(7)?;
+        let layer_offset_y: Option<i64> = row.get(8)?;
+        let offscreen_id: i64 = row.get(10)?;
+        let external_id = string_from_value(row.get_ref(11)?)?;
+        let attribute = match row.get_ref(12)? {
             ValueRef::Blob(bytes) => Some(bytes.to_vec()),
             ValueRef::Null => None,
             _ => None,
         };
-        let thumbnail_width: Option<i64> = row.get(11)?;
-        let thumbnail_height: Option<i64> = row.get(12)?;
+        let thumbnail_width: Option<i64> = row.get(13)?;
+        let thumbnail_height: Option<i64> = row.get(14)?;
         Ok((
             id,
             layer_type,
             visibility,
             render_mipmap_id,
             color_type,
-            offset_x.unwrap_or(0),
-            offset_y.unwrap_or(0),
+            render_offset_x.unwrap_or(0),
+            render_offset_y.unwrap_or(0),
+            layer_offset_x.unwrap_or(0),
+            layer_offset_y.unwrap_or(0),
             offscreen_id,
             external_id,
             attribute,
@@ -137,8 +212,10 @@ fn read_layer_render_source_with_statement(
         visibility,
         render_mipmap_id,
         color_type,
-        offset_x,
-        offset_y,
+        render_offset_x,
+        render_offset_y,
+        layer_offset_x,
+        layer_offset_y,
         offscreen_id,
         external_id,
         attribute,
@@ -180,7 +257,26 @@ fn read_layer_render_source_with_statement(
         color_type: color_type
             .map(|value| checked_i64_to_u32(value, "Layer.LayerColorTypeIndex"))
             .transpose()?,
-        offset_x: checked_i64_to_i32(offset_x, "Layer.LayerRenderOffscrOffsetX")?,
-        offset_y: checked_i64_to_i32(offset_y, "Layer.LayerRenderOffscrOffsetY")?,
+        offset_x: effective_layer_offset(
+            render_offset_x,
+            layer_offset_x,
+            "Layer.effectiveOffsetX",
+        )?,
+        offset_y: effective_layer_offset(
+            render_offset_y,
+            layer_offset_y,
+            "Layer.effectiveOffsetY",
+        )?,
     })
+}
+
+fn effective_layer_offset(
+    render_offset: i64,
+    layer_offset: i64,
+    field: &'static str,
+) -> Result<i32, ClipFileError> {
+    let offset = render_offset
+        .checked_add(layer_offset)
+        .ok_or(ClipFileError::InvalidMetadata(field))?;
+    checked_i64_to_i32(offset, field)
 }

@@ -1,6 +1,6 @@
 # AI Memory
 
-Last reconciled: 2026-06-26
+Last reconciled: 2026-08-15
 
 ## Read First
 
@@ -115,7 +115,7 @@ Out of scope:
 
 ## Accepted Runtime
 
-- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.0`.
+- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.1`.
 - The import menu remains `File > Import > Clip Studio (.clip)`.
 - The packaged native worker renders flattened RGBA8 output outside Blender's UI
   process, and Blender uploads it into generated images.
@@ -164,6 +164,9 @@ Out of scope:
   not reopen the `.clip` for every layer.
 - The main source selector is `select_gpu_normal_render_stack`, a metadata-only
   selector. The old decoded selector remains only for trace/test/debug paths.
+- Raster source placement uses the sum of `LayerRenderOffscrOffsetX/Y` and
+  `LayerOffsetX/Y`. The metadata parser exposes that effective offset to every
+  decoded, sparse-GPU, and reload-manifest path; absent columns default to zero.
 - Main rendering uses recursive provider streaming and a tile-event renderer
   with explicit barrier segments for semantics that are not safely tile-local.
 - Tile-event lowering is now a convergence-gated area. Do not add new semantic
