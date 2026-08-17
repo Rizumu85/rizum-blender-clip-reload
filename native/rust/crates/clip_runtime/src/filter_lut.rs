@@ -219,13 +219,11 @@ fn linear_lut(start_x: i32, start_y: i32, end_x: i32, end_y: i32) -> [u8; 256] {
 
 fn brightness_lut(amount: i32) -> [u8; 256] {
     let amount = amount.clamp(-127, 127);
-    if amount > 0 {
-        return linear_lut(amount, 0, 255, 255 - amount);
+    let mut lut = [0u8; 256];
+    for (input, value) in lut.iter_mut().enumerate() {
+        *value = clamp_i32_to_byte(input as i32 + amount);
     }
-    if amount < 0 {
-        return linear_lut(0, -amount, 255, 255);
-    }
-    identity_lut()
+    lut
 }
 
 fn contrast_lut(amount: i32) -> [u8; 256] {

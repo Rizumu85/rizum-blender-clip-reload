@@ -280,7 +280,7 @@ fn gpu_selector_accepts_python_backed_lut_and_luminosity_filters() {
     for (source, (input, expected, expected_mode)) in selection.sources.iter().zip([
         (
             64usize,
-            [51, 51, 51],
+            [87, 87, 87],
             clip_gpu::GpuLutFilterMode::ToneCurveRgb,
         ),
         (

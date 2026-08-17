@@ -5178,3 +5178,36 @@ Raster layer logical-offset placement:
   differences came from the live document having changed relative to its older
   PNG export, not from the fixed layer-origin calculation. The exact
   `Test_ClippingEdge` guard remained byte-identical.
+
+## 2026-08-17 - Native Brightness/Contrast port regression
+
+A stable snapshot of the live 4096x4096 `Tex_LiuJunlang_Clothes.clip` work file
+added a masked Brightness/Contrast adjustment layer inside the `Belt` folder.
+`FilterLayerInfo` type `1` contains the big-endian signed values brightness
+`+25` and contrast `+20`. The native compare against the matching CSP PNG was
+`raw_max=60 / raw_mean=0.732963 / raw_visible_px=515239`. Pixel tracing ruled
+out adjustment scope and order: at `(2866,117)`, the folder input before the
+filter was `(86,86,108)`, the native filter produced `(49,49,75)`, and CSP
+produced `(107,107,135)`.
+
+The regression came from the Rust LUT port in `filter_lut.rs`: it had copied an
+old brightness implementation whose positive branch used
+`linear_lut(amount, 0, 255, 255 - amount)`. That branch shifts positive inputs
+toward black. Historical Python evidence had already replaced it with signed
+additive clamping and verified the isolated `+91 / 0` Brightness/Contrast export
+to `max=2 / mean=0.015039 / visible=28`, but the later native port restored the
+rejected formula. The Rust path now applies `clamp(input + brightness, 0, 255)`
+before the existing contrast LUT, with direct LUT anchors covering this real
+`+25 / +20` payload and the GPU selector expectation updated consistently.
+
+On the unchanged snapshot, the corrected renderer is
+`raw_max=7 / raw_mean=0.122501 / raw_visible_px=563988`. Representative fully
+affected colors now map `(86,86,108)` to `(108,108,134)` versus CSP
+`(107,107,135)`. The remaining maxima occur at sparse near-black pixels where
+the native pre-filter value is already one byte from the unknown CSP internal
+source; fitting a new curve to those composite pixels would contradict the
+isolated-filter evidence and was rejected. Adjustment mask/order and GPU
+barrier hypotheses were also rejected by the layer-local trace. Guards after
+the fix: all 155 `clip_runtime` tests pass, `Test_ToneCurve` remains exact,
+`Test_Gradiation` stays at its known `max=10` baseline, and the unrelated
+Brightness blend-mode sample remains `max=1 / visible=0`.

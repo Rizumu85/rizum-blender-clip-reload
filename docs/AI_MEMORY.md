@@ -1,6 +1,6 @@
 # AI Memory
 
-Last reconciled: 2026-08-15
+Last reconciled: 2026-08-17
 
 ## Read First
 
@@ -115,7 +115,7 @@ Out of scope:
 
 ## Accepted Runtime
 
-- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.1`.
+- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.2`.
 - The import menu remains `File > Import > Clip Studio (.clip)`.
 - The packaged native worker renders flattened RGBA8 output outside Blender's UI
   process, and Blender uploads it into generated images.
@@ -167,6 +167,11 @@ Out of scope:
 - Raster source placement uses the sum of `LayerRenderOffscrOffsetX/Y` and
   `LayerOffsetX/Y`. The metadata parser exposes that effective offset to every
   decoded, sparse-GPU, and reload-manifest path; absent columns default to zero.
+- Brightness/Contrast filter payloads store signed brightness followed by signed
+  contrast. Brightness is an additive byte-domain clamp before the contrast
+  LUT. Do not restore the older white-point/black-point `linear_lut` brightness
+  branches: positive brightness in those branches darkened real CSP layers and
+  was already rejected by the historical isolated filter sample.
 - Main rendering uses recursive provider streaming and a tile-event renderer
   with explicit barrier segments for semantics that are not safely tile-local.
 - Tile-event lowering is now a convergence-gated area. Do not add new semantic
@@ -192,6 +197,12 @@ Representative current native results:
   residuals. Original `Test_HSL` still has low residuals.
 - `Test_Gradiation` remains a known Gradient Map residual (`max=10`); prior
   fixed-point interpolation probes traded the max for worse aggregate error.
+- The 4096x4096 `Tex_LiuJunlang_Clothes` work snapshot contains a masked
+  Brightness/Contrast layer with payload `(+25, +20)`. Restoring additive
+  brightness reduced its compare from `max=60 / mean=0.732963` to
+  `max=7 / mean=0.122501`; the remaining extrema are sparse near-black/source
+  quantization residuals, while representative adjusted colors are within one
+  LSB of the CSP export.
 - `Test_RealArt`, `Ref_Terra404_Live2D`, `Ref_MXL_Idol1`, and `Ref_Kabi_Live2D`
   are visually usable with remaining low-level or known reference residuals.
   Do not retune broad blend formulas from one hotspot without native evidence

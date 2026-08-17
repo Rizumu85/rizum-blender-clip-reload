@@ -9,10 +9,10 @@ use super::{
 };
 
 #[test]
-fn brightness_contrast_lut_matches_python_formula_anchors() {
+fn brightness_contrast_lut_uses_additive_brightness_before_contrast() {
     let mut payload = Vec::new();
+    payload.extend_from_slice(&25i32.to_be_bytes());
     payload.extend_from_slice(&20i32.to_be_bytes());
-    payload.extend_from_slice(&(-10i32).to_be_bytes());
 
     let (name, mode, lut) =
         lut_filter_rgba(FILTER_TYPE_BRIGHTNESS_CONTRAST, &payload).expect("build LUT");
@@ -20,12 +20,15 @@ fn brightness_contrast_lut_matches_python_formula_anchors() {
     assert_eq!(name, "BrightnessContrast");
     assert!(matches!(mode, PlannedLutFilterMode::ToneCurveRgb));
     for (input, expected) in [
-        (0usize, 10u8),
-        (20, 10),
-        (64, 51),
-        (128, 110),
-        (200, 176),
-        (255, 227),
+        (0usize, 6u8),
+        (20, 30),
+        (64, 82),
+        (86, 108),
+        (108, 134),
+        (128, 158),
+        (200, 243),
+        (210, 255),
+        (255, 255),
     ] {
         assert_eq!(&lut[input * 4..input * 4 + 3], [expected; 3].as_slice());
     }
