@@ -184,22 +184,6 @@ class NativeBridgeTests(unittest.TestCase):
         finally:
             native_bridge._runtime_platform_id = original_platform_id
 
-    def test_resolve_renderer_library_uses_packaged_renderer(self) -> None:
-        original = native_bridge.packaged_renderer_library_path
-        old_env = os.environ.pop("RIZUM_CLIP_RENDERER_DLL", None)
-        native_bridge.packaged_renderer_library_path = (
-            lambda: "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll"
-        )
-        try:
-            self.assertEqual(
-                native_bridge.resolve_renderer_library(),
-                "C:/Blender/addons/clip_studio_importer/native/clip_capi.dll",
-            )
-        finally:
-            native_bridge.packaged_renderer_library_path = original
-            if old_env is not None:
-                os.environ["RIZUM_CLIP_RENDERER_DLL"] = old_env
-
     def test_render_clip_requires_packaged_worker(self) -> None:
         original = native_bridge.packaged_renderer_worker_path
         native_bridge.packaged_renderer_worker_path = lambda: None

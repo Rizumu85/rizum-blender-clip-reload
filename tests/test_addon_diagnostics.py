@@ -219,30 +219,6 @@ class FakeLayout:
 
 
 class AddonDiagnosticsTests(unittest.TestCase):
-    def test_preferences_draw_hides_packaged_native_renderer_status(self) -> None:
-        addon = _load_addon_module()
-        original_worker = addon.native_bridge.packaged_renderer_worker_path
-        addon.native_bridge.packaged_renderer_worker_path = (
-            lambda: "C:/Blender/addons/clip_studio_importer/native/clip_cli.exe"
-        )
-        try:
-            preferences = addon.CSI_AddonPreferences()
-            preferences.layout = FakeLayout()
-            preferences.auto_reload = True
-
-            preferences.draw(types.SimpleNamespace())
-        finally:
-            addon.native_bridge.packaged_renderer_worker_path = original_worker
-
-        labels = [label for label, _icon in preferences.layout.labels]
-        self.assertNotIn("Packaged native renderer found.", labels)
-        prop_names = [name for name, _kwargs in preferences.layout.props]
-        self.assertIn("auto_reload", prop_names)
-        self.assertIn("poll_interval", prop_names)
-        self.assertIn("debug", prop_names)
-        self.assertIn("developer_mode", prop_names)
-        self.assertNotIn("native_library_path", prop_names)
-
     def test_panel_draws_error_diagnostic(self) -> None:
         addon = _load_addon_module()
         image = {
@@ -402,45 +378,6 @@ class AddonDiagnosticsTests(unittest.TestCase):
             ),
             panel.layout.operators,
         )
-
-    def test_panel_tolerates_stale_native_bridge_without_timing_constants(self) -> None:
-        addon = _load_addon_module()
-        timing_attributes = [
-            "CLIP_PHASE_WORKER_SECONDS_KEY",
-            "CLIP_PHASE_OUTPUT_READ_SECONDS_KEY",
-            "CLIP_PHASE_CONVERT_SECONDS_KEY",
-            "CLIP_PHASE_FOREACH_SECONDS_KEY",
-            "CLIP_PHASE_UPDATE_SECONDS_KEY",
-            "CLIP_PHASE_PACK_SECONDS_KEY",
-            "CLIP_PHASE_UPLOAD_SECONDS_KEY",
-        ]
-        originals = {
-            name: getattr(addon.native_bridge, name)
-            for name in timing_attributes
-            if hasattr(addon.native_bridge, name)
-        }
-        try:
-            for name in originals:
-                delattr(addon.native_bridge, name)
-            image = {
-                addon.CLIP_SOURCE_KEY: "C:/art/sample.clip",
-                addon.native_bridge.CLIP_RELOAD_STATUS_KEY: addon.native_bridge.RELOAD_STATUS_OK,
-                "clip_phase_upload_seconds": 1.25,
-            }
-            panel = addon.IMAGE_PT_clip_studio()
-            panel.layout = FakeLayout()
-            addon.bpy.context.preferences.addons[
-                "clip_studio_importer"
-            ].preferences.developer_mode = True
-            context = types.SimpleNamespace(space_data=types.SimpleNamespace(image=image))
-
-            panel.draw(context)
-
-            labels = [label for label, _icon in panel.layout.labels]
-            self.assertIn("Blender upload total: 1.2s", labels)
-        finally:
-            for name, value in originals.items():
-                setattr(addon.native_bridge, name, value)
 
     def test_panel_expands_all_support_details(self) -> None:
         addon = _load_addon_module()

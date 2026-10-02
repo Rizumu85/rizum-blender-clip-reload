@@ -21,12 +21,6 @@ pub(super) use layout::{
     vertical_text_uses_upright_layout, vertical_upright_column_step,
     vertical_upright_column_y_offset, vertical_upright_item_columns, vertical_upright_row_y_offset,
 };
-#[cfg(test)]
-pub(super) use layout::{
-    CJK_VERTICAL_MIDPOINT_Y_EM, CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM,
-    CJK_VERTICAL_MIXED_RIGHT_COLUMN_X_EM, CJK_VERTICAL_PURE_ITEM_ADVANCE_EM,
-    CJK_VERTICAL_PURE_MIDPOINT_Y_EM, CJK_VERTICAL_PURE_RIGHT_COLUMN_X_EM,
-};
 use layout::{vertical_text_columns, vertical_upright_items_have_horizontal_run};
 
 pub(super) fn text_layout_is_vertical(entry: &clip_file::metadata::TextLayerEntry) -> bool {

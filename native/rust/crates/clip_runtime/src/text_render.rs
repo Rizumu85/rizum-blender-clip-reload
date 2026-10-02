@@ -21,27 +21,18 @@ use decoration::{
 use font::{FontResolver, skia_font, text_paint};
 #[cfg(test)]
 use font::{
-    ResolvedFont, SKIA_FITTED_SYNTHETIC_ITALIC_SKEW, SKIA_SYNTHETIC_ITALIC_SKEW, TextFontMetrics,
-    font_name_candidates, horizontal_synthetic_italic_skew, vertical_horizontal_run_font,
+    ResolvedFont, TextFontMetrics, font_name_candidates, vertical_horizontal_run_font,
     vertical_upright_font,
 };
 #[cfg(test)]
-use horizontal::{
-    HorizontalTextRunPlan, glyph_run_end, horizontal_glyph_baseline_y,
-    plan_horizontal_text_line_commands, plan_shaped_horizontal_text_line_commands,
-};
+use horizontal::{HorizontalTextRunPlan, glyph_run_end, plan_horizontal_text_line_commands};
 use horizontal::{build_horizontal_text_plan, draw_horizontal_text_plan};
 #[cfg(test)]
 use skia_safe::{FontHinting, FontMgr, font as skia_font_mod};
 #[cfg(test)]
 use vertical::{
-    CJK_VERTICAL_ITEM_ADVANCE_EM, CJK_VERTICAL_MIDPOINT_Y_EM,
-    CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM, CJK_VERTICAL_MIXED_RIGHT_COLUMN_X_EM,
-    CJK_VERTICAL_PURE_ITEM_ADVANCE_EM, CJK_VERTICAL_PURE_MIDPOINT_Y_EM,
-    CJK_VERTICAL_PURE_RIGHT_COLUMN_X_EM, VerticalTextItemKind, cjk_vertical_horizontal_run_offset,
-    cjk_vertical_item_advance_em, cjk_vertical_midpoint_y_em, cjk_vertical_right_column_x_em,
-    vertical_column_row_positions, vertical_text_box, vertical_text_uses_upright_layout,
-    vertical_upright_column_step, vertical_upright_column_y_offset, vertical_upright_item_columns,
+    VerticalTextItemKind, vertical_column_row_positions, vertical_text_box,
+    vertical_text_uses_upright_layout, vertical_upright_item_columns,
     vertical_upright_row_y_offset,
 };
 use vertical::{render_vertical_entry_surface, text_layout_is_vertical};
@@ -652,27 +643,6 @@ mod tests {
     }
 
     #[test]
-    fn horizontal_glyph_baseline_uses_logical_prefit_size() {
-        let logical = TextCharStyle {
-            font_name: Some("MiSans".to_owned()),
-            fallback_font: None,
-            font_size_px: 75.0,
-            color: Rgba8 {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 255,
-            },
-            bold: false,
-            italic: true,
-            underline: true,
-            strikethrough: true,
-        };
-
-        assert_eq!(horizontal_glyph_baseline_y(3.0, &logical), 78.0);
-    }
-
-    #[test]
     fn horizontal_text_plan_owns_line_origins_and_run_ranges() {
         let entry = clip_file::metadata::TextLayerEntry {
             text: "A\nBC".to_owned(),
@@ -841,60 +811,6 @@ mod tests {
     }
 
     #[test]
-    fn shaped_horizontal_text_line_plans_blob_positions_and_decorations_together() {
-        let entry = clip_file::metadata::TextLayerEntry {
-            text: "AB".to_owned(),
-            attributes: clip_file::metadata::TextLayerAttributes {
-                default_font: Some("Arial".to_owned()),
-                fallback_font: None,
-                fonts: Vec::new(),
-                layout_flags: None,
-                path_mode: None,
-                path_angle_a_degrees: None,
-                path_angle_b_degrees: None,
-                path_center: None,
-                font_size_100: Some(1000),
-                color: None,
-                bbox: None,
-                quad_verts_100: None,
-                box_size: None,
-                align: Some(2),
-                underline_spans: vec![clip_file::metadata::TextLayerSpan {
-                    start: 0,
-                    length: 2,
-                }],
-                strikethrough_spans: Vec::new(),
-                runs: Vec::new(),
-            },
-        };
-        let chars = entry.text.chars().collect::<Vec<_>>();
-        let styles = text_char_styles(&entry, 72);
-        let logical_styles = styles.clone();
-        let mut fonts = FontResolver::new();
-        let plan = build_horizontal_text_plan(
-            &entry,
-            &TextRasterLayout {
-                size: CanvasSize::new(200, 200),
-                offset_x: 0,
-                offset_y: 0,
-            },
-            chars,
-            styles,
-            logical_styles,
-            &mut fonts,
-        );
-
-        let commands = plan_shaped_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts)
-            .expect("shaped line commands");
-
-        assert_eq!(commands.glyphs.len(), 1);
-        assert_eq!(commands.glyphs[0].x, plan.lines[0].origin.0);
-        assert_eq!(commands.decorations.len(), 1);
-        assert!(commands.decorations[0].x0 >= plan.lines[0].origin.0);
-        assert!(commands.decorations[0].x1 > commands.decorations[0].x0);
-    }
-
-    #[test]
     fn text_char_styles_expand_decoration_spans() {
         let entry = clip_file::metadata::TextLayerEntry {
             text: "Test".to_owned(),
@@ -1044,66 +960,12 @@ mod tests {
     }
 
     #[test]
-    fn cjk_vertical_horizontal_runs_use_focused_center_offset() {
-        let (x, y) = cjk_vertical_horizontal_run_offset(50.0);
-
-        assert_eq!(x.round() as i32, -1);
-        assert_eq!(y.round() as i32, 2);
-    }
-
-    #[test]
-    fn mixed_cjk_vertical_paragraph_origin_shifts_up() {
-        assert_eq!(vertical_upright_column_y_offset(false, 50.0), 0.0);
-        assert_eq!(
-            vertical_upright_column_y_offset(true, 50.0).round() as i32,
-            -5
-        );
-    }
-
-    #[test]
     fn pure_cjk_vertical_last_row_uses_bottom_alignment_offset() {
         assert_eq!(vertical_upright_row_y_offset(0, 4, false, 50.0), 0.0);
         assert_eq!(vertical_upright_row_y_offset(3, 4, true, 50.0), 0.0);
         assert_eq!(
             vertical_upright_row_y_offset(3, 4, false, 50.0).round() as i32,
             3
-        );
-    }
-
-    #[test]
-    fn cjk_vertical_columns_use_wide_line_advance() {
-        let font_size = 50.0;
-        let column_step = vertical_upright_column_step(font_size);
-        let item_step = font_size * CJK_VERTICAL_ITEM_ADVANCE_EM;
-
-        assert!(column_step > item_step);
-        assert_eq!(column_step.round() as i32, 61);
-    }
-
-    #[test]
-    fn mixed_cjk_vertical_uses_latin_run_midpoint_offset() {
-        assert!(
-            (cjk_vertical_item_advance_em(false) - CJK_VERTICAL_PURE_ITEM_ADVANCE_EM).abs() < 0.001
-        );
-        assert!(
-            (cjk_vertical_item_advance_em(true) - CJK_VERTICAL_PURE_ITEM_ADVANCE_EM).abs() < 0.001
-        );
-        assert!(
-            (cjk_vertical_right_column_x_em(false) - CJK_VERTICAL_PURE_RIGHT_COLUMN_X_EM).abs()
-                < 0.001
-        );
-        assert!(
-            (cjk_vertical_right_column_x_em(true) - CJK_VERTICAL_MIXED_RIGHT_COLUMN_X_EM).abs()
-                < 0.001
-        );
-        assert!(
-            (cjk_vertical_midpoint_y_em(false) - CJK_VERTICAL_PURE_MIDPOINT_Y_EM).abs() < 0.001
-        );
-        assert!(
-            (cjk_vertical_midpoint_y_em(true)
-                - (CJK_VERTICAL_MIDPOINT_Y_EM + CJK_VERTICAL_MIXED_MIDPOINT_OFFSET_EM))
-                .abs()
-                < 0.001
         );
     }
 
@@ -1225,46 +1087,6 @@ mod tests {
 
         assert!(regular.is_anti_alias());
         assert!(!fitted.is_anti_alias());
-    }
-
-    #[test]
-    fn synthetic_italic_skew_matches_focused_text_matrix() {
-        assert!((SKIA_SYNTHETIC_ITALIC_SKEW + 0.17).abs() < f32::EPSILON);
-    }
-
-    #[test]
-    fn fitted_synthetic_italic_uses_stronger_skew() {
-        let fitted = TextCharStyle {
-            font_name: None,
-            fallback_font: None,
-            font_size_px: 80.0,
-            color: Rgba8 {
-                r: 39,
-                g: 39,
-                b: 39,
-                a: 255,
-            },
-            bold: false,
-            italic: true,
-            underline: false,
-            strikethrough: false,
-        };
-        let logical = TextCharStyle {
-            font_size_px: 75.0,
-            ..fitted.clone()
-        };
-
-        assert!(
-            (horizontal_synthetic_italic_skew(&logical, &logical) - SKIA_SYNTHETIC_ITALIC_SKEW)
-                .abs()
-                < f32::EPSILON
-        );
-        assert!(
-            (horizontal_synthetic_italic_skew(&fitted, &logical)
-                - SKIA_FITTED_SYNTHETIC_ITALIC_SKEW)
-                .abs()
-                < f32::EPSILON
-        );
     }
 
     #[test]

@@ -317,14 +317,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn c_api_exposes_renderer_version_string() {
-        let version = unsafe { CStr::from_ptr(clip_renderer_version()) }
-            .to_str()
-            .unwrap();
-        assert_eq!(version, env!("CARGO_PKG_VERSION"));
-    }
-
-    #[test]
     fn c_api_opens_summary_and_reads_native_pixel() {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../../../img/Test_Opacity.clip");

@@ -7,7 +7,6 @@ use crate::pass::create_rgba8_texture;
 use crate::render_profile;
 use crate::sparse_atlas_prepare::{
     PreparedSparseAtlasRasterEvents, prepare_sparse_atlas_raster_event_batch,
-    prepare_sparse_atlas_raster_events,
 };
 use crate::sparse_atlas_targets::{
     SparseAtlasRenderedTextures, initialize_sparse_atlas_executor_targets, rgba8_patch_pixels,
@@ -65,31 +64,6 @@ pub struct GpuSparseAtlasSolidColorEvent {
 }
 
 impl GpuRenderer {
-    pub fn draw_sparse_atlas_raster_events_to_rgba8(
-        &self,
-        output_size: CanvasSize,
-        pool: &GpuSparseAtlasTexturePool,
-        events: &[GpuSparseAtlasRasterEvent],
-    ) -> Result<GpuRasterStackOutput, GpuRenderError> {
-        if output_size.width == 0 || output_size.height == 0 {
-            return Err(GpuRenderError::InvalidImageSize);
-        }
-        if events.is_empty() {
-            return Err(GpuRenderError::EmptyRasterStack);
-        }
-
-        let prepared_batches = [prepare_sparse_atlas_raster_events(
-            output_size,
-            pool,
-            events,
-        )?];
-        self.draw_prepared_sparse_atlas_raster_batches_to_rgba8(
-            output_size,
-            &prepared_batches,
-            None,
-        )
-    }
-
     pub fn draw_sparse_atlas_raster_event_batches_to_rgba8(
         &self,
         output_size: CanvasSize,

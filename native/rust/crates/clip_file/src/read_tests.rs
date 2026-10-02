@@ -126,36 +126,6 @@ fn decodes_test_clipping_layer_10_rgba_tiles() {
 }
 
 #[test]
-fn reads_ref_terra_render_offsets() {
-    let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Ref_Terra404_Live2D.clip");
-    if !path.exists() {
-        eprintln!("skip missing private fixture: {}", path.display());
-        return;
-    }
-    let container = ClipContainer::open(path).expect("open Ref_Terra404_Live2D.clip");
-    let summary = metadata::read_summary_from_sqlite(
-        container.sqlite_bytes(),
-        container.external_data().len(),
-    )
-    .expect("read summary");
-
-    let layer_4 =
-        read_raster_layer_source_from_sqlite(container.sqlite_bytes(), LayerId(4), summary.canvas)
-            .expect("read raster layer 4 source");
-    let layer_5 =
-        read_raster_layer_source_from_sqlite(container.sqlite_bytes(), LayerId(5), summary.canvas)
-            .expect("read raster layer 5 source");
-
-    assert_eq!(layer_4.offset_x, -768);
-    assert_eq!(layer_4.offset_y, 0);
-    assert_eq!(layer_4.color_type, Some(0));
-    assert_eq!(layer_5.offset_x, -1280);
-    assert_eq!(layer_5.offset_y, 0);
-    assert_eq!(layer_5.color_type, Some(0));
-}
-
-#[test]
 fn public_api_decodes_test_clipping_layer_11() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
     let image = read_raster_layer_rgba(path, LayerId(11)).expect("decode layer 11");

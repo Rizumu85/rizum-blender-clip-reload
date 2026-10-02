@@ -28,22 +28,6 @@ pub(crate) struct PreparedSparseAtlasRasterEvents<'a> {
     pub(crate) pass_bounds: CanvasRect,
 }
 
-pub(crate) fn prepare_sparse_atlas_raster_events<'a>(
-    output_size: CanvasSize,
-    pool: &'a GpuSparseAtlasTexturePool,
-    events: &[GpuSparseAtlasRasterEvent],
-) -> Result<PreparedSparseAtlasRasterEvents<'a>, GpuRenderError> {
-    prepare_sparse_atlas_raster_events_with_kind(
-        output_size,
-        pool,
-        GpuSparseAtlasRasterEventBatchKind::RasterRun,
-        events,
-        &[],
-        None,
-        &[],
-    )
-}
-
 pub(crate) fn prepare_sparse_atlas_raster_event_batch<'a>(
     output_size: CanvasSize,
     pool: &'a GpuSparseAtlasTexturePool,

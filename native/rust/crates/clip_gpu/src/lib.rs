@@ -19,8 +19,6 @@ mod sparse_atlas_prepare;
 mod sparse_atlas_prepare_payloads;
 #[cfg(test)]
 mod sparse_atlas_scope_tests;
-#[cfg(test)]
-mod sparse_atlas_scope_through_tests;
 mod sparse_atlas_targets;
 #[cfg(test)]
 mod sparse_atlas_tests;

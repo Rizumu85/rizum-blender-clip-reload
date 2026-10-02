@@ -108,7 +108,7 @@ OpenImageIO.
 Implication: an external OIIO `ImageInput` plugin is enough for OIIO-level
 loading, but not enough by itself for Blender's stock image datablock loader to
 accept `.clip` as a true file-backed image format. The stock Blender path is the
-image-datablock bridge documented in `native/spikes/blender-image-bridge/` and
+image-datablock bridge documented in `docs/native-direct-load-rewrite.md` and
 `docs/native-code-architecture.md`. If true `bpy.data.images.load(".clip")`
 behavior is required later, it needs a Blender ImBuf/source bridge or upstream
 change rather than an external OIIO plugin alone.
