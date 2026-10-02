@@ -1,6 +1,6 @@
 # Native Code Architecture
 
-Last reconciled: 2026-06-20
+Last reconciled: 2026-10-02
 
 ## Goal
 
@@ -14,7 +14,7 @@ Non-goals:
 - Runtime CPU compositor fallback.
 - Sidecar PNG product workflow.
 - Global full-canvas per-layer caches.
-- Vector/text/bubble/frame renderer compatibility.
+- Vector/bubble/frame renderer compatibility and editable text.
 
 ## Crate Layout
 
@@ -26,7 +26,7 @@ Non-goals:
 | `clip_file` | `.clip` container access, SQLite metadata reads, external chunk reads, and tile decode helpers. |
 | `clip_graph` | Visible render graph construction and source selection. |
 | `clip_gpu` | `wgpu` device resources, shaders, render passes, tile-event execution, barrier execution, and stream encoding. |
-| `clip_runtime` | `ClipSession`, persistent renderer, reload manifests, support reports, Blender worker JSON, and runtime orchestration. |
+| `clip_runtime` | `ClipSession`, persistent renderer, reload manifests, support reports, Blender worker JSON, Skia CPU text rasterization (`text_render/*`), and runtime orchestration. |
 | `clip_capi` | Small C ABI surface for host integration. |
 | `clip_cli` | CLI, compare tooling, Blender worker one-shot mode, and persistent render server mode. |
 
@@ -118,6 +118,9 @@ Key responsibilities:
 - Reload manifests and dirty patch planning.
 - Worker JSON emitted for the Blender bridge.
 - Render/decode/profile diagnostics.
+- Simple text rasterization through `text_render/*` (`skia-safe`, `fontdb`,
+  `ttf-parser`); text becomes ordinary raster atlas pixels before `clip_gpu`
+  sees it, so no text concept exists below `clip_runtime`.
 
 The runtime may cache sparse resources and checkpoints when keyed by source/tile
 fingerprints. It must not cache full-canvas layer textures as a product shortcut.

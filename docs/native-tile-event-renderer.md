@@ -83,8 +83,11 @@ Before adding semantic coverage:
 1. Update `docs/native-tile-event-scoreboard.md`.
 2. Pick the largest measured barrier reason from fixed samples.
 3. Add focused planner/runtime/shader tests.
-4. Keep known regression guards stable, especially the Terra nested THROUGH
-   container shape.
+4. Keep known regression guards stable, especially the nested THROUGH
+   container guards `planner_lowers_through_inside_nested_container_scope` and
+   `planner_lowers_clipped_container_sibling_with_nested_container_through_child`
+   in `clip_gpu/src/stream_program_tests.rs` (derived from the private
+   `Ref_Terra404_Live2D` sample).
 5. Prove `planned_passes` or `barrier_segments` decreases on a fixed sample.
 6. Run `scripts/verify_native_convergence.ps1`.
 

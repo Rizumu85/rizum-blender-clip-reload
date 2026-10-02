@@ -1,6 +1,6 @@
 # Native Direct-Load Rewrite
 
-Last reconciled: 2026-06-20
+Last reconciled: 2026-10-02
 
 ## Decision
 
@@ -71,6 +71,9 @@ fingerprints. They may return:
 - `full`: replace the whole image.
 
 ## Packaging
+
+This section is the single home for packaging and platform policy; other docs
+point here instead of repeating it.
 
 `tools/build_blender_addon.py` builds `clip_studio_importer.zip` with:
 

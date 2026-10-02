@@ -46,13 +46,12 @@ layers into editable Blender layers.
 - Import `.clip` files from `File > Import > Clip Studio (.clip)`.
 - Render flattened artwork through the bundled Rust native renderer.
 - Use `wgpu` for GPU compositing and tile-event rendering.
-- Includes an experimental OpenImageIO `ImageInput` adapter for OIIO-level hosts
-  and future integration work.
 - Auto-reload when the source `.clip` changes.
 - Manual reload and pack controls in Blender's Image Editor sidebar.
 - Keep packed pixels visible even when the original `.clip` source is missing.
-- Supports raster layers, folders, masks, clipping, opacity, blend modes, and
-  supported adjustment/filter layers.
+- Supports raster layers, folders, masks, clipping, opacity, blend modes,
+  supported adjustment/filter layers, and simple text layers rendered as
+  flattened pixels with the user's installed fonts.
 - UI translations for Simplified Chinese, Japanese, and Spanish.
 
 ## Install
@@ -155,7 +154,9 @@ packages contain `clip_cli.exe` and `clip_capi.dll`; Linux packages contain
 
 The `Build extension package` GitHub Actions workflow builds native artifacts
 on Windows, Linux, and macOS runners, then uploads split platform zips from
-`dist/`.
+`dist/`. The `Native convergence` workflow runs
+`scripts/verify_native_convergence.ps1 -SkipClipCompare` on every push and pull
+request.
 
 ## Verification
 
@@ -165,6 +166,12 @@ Use the native CLI against CSP-exported PNG references:
 cd native\rust
 cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 cargo run -q -p clip_cli -- ..\..\img\Test_AddGlowMultiply.clip --compare-png ..\..\img\Test_AddGlowMultiply.png
+```
+
+Python add-on tests run from the repo root:
+
+```powershell
+python -m unittest discover -s tests
 ```
 
 For the convergence gate:
@@ -177,8 +184,13 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 
 - `clip_studio_importer/` - Blender extension source.
 - `native/rust/` - Rust native renderer workspace.
+- `native/oiio/` - experimental OpenImageIO `ImageInput` adapter (not shipped
+  in the extension zip).
+- `tools/` - extension package builder (`build_blender_addon.py`).
+- `img/` - public CSP sample `.clip`/PNG pairs used by verification.
 - `scripts/` - verification and maintenance scripts.
 - `tests/` - Python-side bridge/package tests.
+- `docs/native-code-architecture.md` - crate and module boundaries.
 - `docs/AI_MEMORY.md` - compact current project state.
 - `docs/plan.md` - durable direction and open work.
 - `docs/analysis.md` - append-only historical evidence and rejected hypotheses.
@@ -239,13 +251,11 @@ Rizum Clip Reload 适合这样的流程：你在 Clip Studio Paint 里画图，�
 - 从 `File > Import > Clip Studio (.clip)` 直接导入 `.clip` 文件。
 - 使用内置 Rust native renderer 渲染扁平化画面。
 - 使用 `wgpu` 做 GPU 合成和 tile-event 渲染。
-- 仓库包含实验性的 OpenImageIO `ImageInput` adapter，用于 OIIO 级宿主和后续集成
-  工作。
 - 源 `.clip` 文件变化后可以自动重载。
 - 在 Blender Image Editor 侧边栏提供手动重载和打包控制。
 - 即使原始 `.clip` 源文件丢失，也会继续显示上一次已打包的像素。
-- 支持栅格图层、文件夹、蒙版、裁剪图层、透明度、混合模式，以及当前支持的调整/
-  滤镜图层。
+- 支持栅格图层、文件夹、蒙版、裁剪图层、透明度、混合模式、当前支持的调整/滤镜
+  图层，以及用系统已安装字体渲染为扁平像素的简单文字图层。
 - UI 已支持简体中文、日语和西班牙语翻译。
 
 ## 安装
@@ -340,7 +350,8 @@ python tools\build_blender_addon.py --platform all --output-dir dist
 `libclip_capi.dylib`。
 
 `Build extension package` GitHub Actions workflow 会在 Windows、Linux、macOS runner 上
-构建 native artifacts，然后从 `dist/` 上传拆分后的平台包。
+构建 native artifacts，然后从 `dist/` 上传拆分后的平台包。`Native convergence` workflow
+会在每次 push 和 pull request 时运行 `scripts/verify_native_convergence.ps1 -SkipClipCompare`。
 
 ## 验证
 
@@ -350,6 +361,12 @@ python tools\build_blender_addon.py --platform all --output-dir dist
 cd native\rust
 cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 cargo run -q -p clip_cli -- ..\..\img\Test_AddGlowMultiply.clip --compare-png ..\..\img\Test_AddGlowMultiply.png
+```
+
+Python 插件测试在仓库根目录运行：
+
+```powershell
+python -m unittest discover -s tests
 ```
 
 收敛检查：
@@ -362,8 +379,12 @@ scripts\verify_native_convergence.ps1 -SkipClipCompare
 
 - `clip_studio_importer/` - Blender 扩展源码。
 - `native/rust/` - Rust native renderer workspace。
+- `native/oiio/` - 实验性的 OpenImageIO `ImageInput` adapter（不打进扩展包）。
+- `tools/` - 扩展包构建脚本（`build_blender_addon.py`）。
+- `img/` - 验证用的公开 CSP 样本 `.clip`/PNG 对。
 - `scripts/` - 验证和维护脚本。
 - `tests/` - Python 侧 bridge/package 测试。
+- `docs/native-code-architecture.md` - crate 与模块边界。
 - `docs/AI_MEMORY.md` - 给 agent 使用的当前项目状态摘要。
 - `docs/plan.md` - 稳定方向和后续计划。
 - `docs/analysis.md` - 历史证据和被拒绝假设的 append-only 记录。

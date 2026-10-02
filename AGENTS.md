@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Project-level instructions for Codex.
+Project-level instructions for coding agents (Codex, Claude Code, and others).
 
 ## Working Agreement
 
@@ -11,9 +11,9 @@ Project-level instructions for Codex.
 ## Current Scope
 
 - This repo owns the Blender-facing importer, native renderer bridge, and verification harness.
-- Keep `.clip` fidelity focused on flattened raster layers, folders, masks, clipping, blend modes, adjustment/filter layers, and Blender add-on behavior.
-- Do not pursue vector, bubble/frame, or text renderer compatibility in this repo.
-- Treat historical vector/native notes as archived evidence only unless Rizum explicitly reopens that scope.
+- Keep `.clip` fidelity focused on flattened raster layers, folders, masks, clipping, blend modes, adjustment/filter layers, simple text layers rendered as flattened pixels, and Blender add-on behavior.
+- Do not pursue vector, bubble/frame, or editable-text compatibility in this repo. Flattened text rasterization is in scope; see `docs/plan.md`.
+- Treat historical vector/native-material notes in `docs/analysis.md` as archived evidence only unless Rizum explicitly reopens that scope.
 
 ## Doc Roles
 
@@ -24,6 +24,9 @@ Project-level instructions for Codex.
 - `docs/native-code-architecture.md`: native crate/module boundaries.
 - `docs/native-tile-event-renderer.md`: tile-event renderer model and convergence gate.
 - `docs/native-performance-investigation.md`: compressed performance evidence and rejected detours.
+- `docs/native-direct-load-rewrite.md`: accepted Blender runtime path and the single home for packaging/platform policy.
+- `docs/native-tile-event-scoreboard.md`: measured convergence gate numbers per fixed sample.
+- `docs/glossary.md`: domain and architecture terms.
 
 ## Engineering Rules
 
@@ -51,7 +54,7 @@ Project-level instructions for Codex.
 - Do not create monolithic renderer files, even during spikes or refactors.
 - Crate/package root files such as `lib.rs`, `main.rs`, and C++ plugin entry files are wiring only: declarations, re-exports, and calls into named modules.
 - Keep parsing, metadata mapping, tile decode, render graph construction, GPU scheduling, shader/pipeline code, C ABI, and OIIO adapter code in separate modules.
-- If a Rust/C++ source file grows beyond roughly 500 lines, split it before adding new behavior unless the file is a generated artifact.
+- If a Rust/C++ source file grows beyond roughly 500 lines, split it before adding new behavior unless the file is a generated artifact. `*_tests.rs` modules and `tests/` are exempt; existing oversized non-test files are legacy debt to split when touched.
 - Throwaway experiments must live under `native/spikes/<name>/` and must be deleted or promoted into the module architecture before the route is accepted.
 - The accepted native path must remove the Python compositor/loader and sidecar PNG workflow; do not add compatibility shims or runtime fallbacks back to them.
 
@@ -66,3 +69,5 @@ cargo run -q -p clip_cli -- ..\..\img\Test_ClippingEdge.clip --compare-png ..\..
 cargo run -q -p clip_cli -- ..\..\img\Test_Mask.clip --compare-png ..\..\img\Test_Mask.png
 cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 ```
+
+Python add-on tests run from the repo root with `python -m unittest discover -s tests`. The full gate is `scripts\verify_native_convergence.ps1 -SkipClipCompare`, which the `Native convergence` GitHub Actions workflow also runs on every push and pull request.

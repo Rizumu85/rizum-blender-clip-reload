@@ -109,7 +109,9 @@ Important no-go:
 
 - A resident sparse atlas RasterRun prototype inside `patch_renderer=region`
   produced byte-identical patch payloads but had zero useful resident hits in
-  the fixed fixture. It should not become default from current evidence.
+  the fixed fixture. It should not become default from current evidence. It
+  stays opt-in behind `RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS=1`; reproduce
+  with `scripts/benchmark_persistent_reload_cache.py`.
 
 ## External Architecture Takeaways
 

@@ -1,12 +1,15 @@
 # Blender `.clip` Loader UX
 
+Last reconciled: 2026-10-02
+
 ## Project Goal
 
 Let an artist use raster-focused Clip Studio Paint `.clip` files in Blender as flattened full-resolution image textures that refresh without manual PNG or PSD export.
 
 ## Current User Workflow
 
-1. Install the Blender add-on from `clip_studio_importer.zip`.
+1. Install the platform-specific extension zip
+   (`clip_studio_importer-<platform>.zip`) from Releases.
 2. Use `File > Import > Clip Studio (.clip)` to choose a `.clip` file.
 3. By default, the add-on starts the packaged out-of-process `clip_cli` worker
    in the background without creating a temporary placeholder image. When the
@@ -105,7 +108,10 @@ explicit ImBuf/source bridge for `.clip`, that can provide PSD-like
   image-level status/error metadata for background work.
 - Avoid adding CSP-editing concepts to Blender. The add-on is read-only and only presents the flattened canvas.
 - Prefer ordinary Blender Image semantics when possible. If native OIIO loading works later, `.clip` should behave like PSD/PNG from the artist's point of view.
-- Keep vector, bubble/frame, and text content outside the user-facing promise unless the project scope is explicitly reopened.
+- Keep vector and bubble/frame content outside the user-facing promise unless
+  the project scope is explicitly reopened. Simple text layers are rendered as
+  flattened pixels with the user's installed fonts; there is no editable text
+  and no bundled fonts.
 - Do not add layer navigation or CSP layer-management UI. Blender owns the
   flattened texture reload workflow only.
 

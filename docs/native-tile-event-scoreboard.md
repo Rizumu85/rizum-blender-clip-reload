@@ -1,6 +1,7 @@
 # Native Tile-Event Scoreboard
 
-Last updated: 2026-06-20
+Last updated: 2026-10-02 (planner columns re-verified with
+`--performance-plan-json`; all public rows unchanged since 2026-06-20)
 
 This file is the convergence scoreboard for tile-event work. Update it before
 choosing another semantic coverage task. Do not use the old implementation log
@@ -36,9 +37,13 @@ cd native/rust
 
 Notes:
 
-- Times are local debug CLI wall times after compilation. They are not Blender
-  import timings and should not be compared to user-facing worker timings.
-- `patch_renderer` status comes only from a fixed worker reload fixture. Leave it
+- Times are manual warm-run debug CLI wall-clock readings after compilation; no
+  script emits them. A first run after a build can take far longer because of
+  GPU/driver initialization. They are not Blender import timings.
+- `Test_RealArt` and `Ref_Terra404_Live2D` are gitignored private samples, so
+  those rows are maintainer-only.
+- `patch_renderer` status comes only from the fixed worker reload fixture
+  driven by `scripts/benchmark_persistent_reload_cache.py`. Leave it
   as `not measured` for samples that do not have a reload fixture.
 - Next semantic coverage work must target the largest barrier reason that
   appears here or in an explicitly added fixed sample.

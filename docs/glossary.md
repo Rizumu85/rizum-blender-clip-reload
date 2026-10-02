@@ -1,6 +1,6 @@
-# Project Context
+# Glossary
 
-Last updated: 2026-06-20
+Last updated: 2026-10-02
 
 This repository owns the Blender-facing `.clip` importer, native renderer
 bridge, and verification harness for flattened raster Clip Studio Paint files.
@@ -11,9 +11,10 @@ bridge, and verification harness for flattened raster Clip Studio Paint files.
 
 The user-facing output of this project: a full-canvas RGBA image suitable for
 Blender image textures. It includes raster layers, folders, masks, clipping,
-THROUGH groups, blend modes, and supported adjustment/filter layers. It does not
-include editable CSP layer navigation, vector strokes/fills, text, bubble/frame
-rendering, animation, or write-back.
+THROUGH groups, blend modes, supported adjustment/filter layers, and simple text
+layers rendered as flattened pixels. It does not include editable CSP layer
+navigation, editable text, vector strokes/fills, bubble/frame rendering,
+animation, or write-back.
 
 **Native renderer**
 
@@ -21,6 +22,13 @@ The Rust/wgpu implementation that reads `.clip` data and composites the
 flattened raster texture. It is the accepted runtime path for the Blender add-on.
 The old project-root Python compositor has been removed; use CSP PNG exports and
 native `clip_cli --compare-png` checks as references.
+
+**Text source**
+
+A simple CSP text layer rasterized on the CPU by `clip_runtime` `text_render/*`
+(Skia, system fonts via `fontdb`) into ordinary raster atlas pixels before GPU
+compositing. Below `clip_runtime` there is no text concept, only raster
+sources.
 
 **Generated Blender image**
 

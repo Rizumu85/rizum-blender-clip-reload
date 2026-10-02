@@ -1,6 +1,6 @@
 # AI Memory
 
-Last reconciled: 2026-08-17
+Last reconciled: 2026-10-02
 
 ## Read First
 
@@ -30,6 +30,7 @@ Primary docs:
 - `docs/native-performance-investigation.md` - compressed performance evidence.
 - `docs/design.md` - Blender UX decisions.
 - `docs/analysis.md` - append-only historical evidence and rejected hypotheses.
+- `docs/glossary.md` - domain and architecture terms.
 
 Open `docs/analysis.md` only when a task needs long-form historical evidence.
 
@@ -40,68 +41,20 @@ In scope:
 - Flattened raster layers.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers covered by current native strict support.
-- Simple text layers are rasterized as native source pixels through Skia CPU
-  surfaces using unhinted grayscale Skia fonts and same-style horizontal glyph
-  runs, then composited by the existing Rust/wgpu renderer with the same
-  tile-event/barrier path as raster sources. Underline and strikethrough spans
-  are parsed, decoration position uses OpenType font line metrics where useful:
-  horizontal glyph baselines and underline keep the logical pre-fit text size
-  after quad-width fitting, while strikethrough position follows the fitted
-  glyph body, and decoration line ends are inset only when the glyph span was
-  quad-width fitted while decoration sizing stayed logical; those fitted
-  decoration strokes use hard edges while ordinary decoration strokes keep Skia
-  antialiasing. Underline thickness floors fractional metric pixels while
-  strikethrough thickness rounds them,
-  ordinary strikethrough fallback sits at about
-  `0.66em`, unusually high OpenType strikeout positions are honored for
-  display-font strikethroughs, missing italic faces use Skia synthetic oblique
-  with a focused-matrix shear of about `-0.17`, while quad-width fitted
-  synthetic italic glyph bodies use a slightly stronger `-0.18` shear,
-  vertical text flag `0x10` uses a basic right-to-left column layout,
-  CJK-majority vertical text keeps CJK glyphs upright, disables baseline
-  snapping only for pure-CJK upright glyphs, uses a slightly wider pure-CJK row
-  advance plus a pure-CJK right-column/midpoint alignment, uses the same CJK
-  row advance when embedded Latin tate-chu-yoko runs are present, groups
-  short ASCII runs horizontally with baseline snapping disabled and a focused,
-  slightly lower horizontal-run center offset, shifts the whole mixed vertical
-  paragraph origin slightly upward, keeps separate mixed right-column/midpoint
-  alignment for embedded Latin runs,
-  applies a small bottom-alignment offset to the final row of pure-CJK columns,
-  and advances multi-column upright text by about `1.22em`;
-  text path mode `66 = 1` uses a basic circular arc layout. This is not
-  editable text import and remains a first-pass renderer.
-  Current reverse evidence shows CSP's simple text path uses SkShaper run
-  iterators, `SkTextBlobBuilder::allocRunTextPos`, `SkCanvas::drawTextBlob`, and
-  separate `SkCanvas::drawLine` decoration strokes. The remaining text residuals
-  should therefore be fixed by a shaped text-blob/run-coordinate model, not by
-  per-sample offsets or more hand-tuned underline/vertical constants. Probes
-  using the same glyph positions make `drawTextBlob` byte-identical to
-  `draw_str`, and naive
-  `skia-safe/textlayout` ShapeThenWrap probes still regress the guard matrix;
-  CSP also rebuilds/caches glyph IDs, cluster maps, and positions through
-  `allocRunTextPos` before drawing with an external origin. The relevant CSP
-  RunHandler vtable has been mapped to begin/run-info/run-buffer/commit/line
-  callbacks. A native `textlayout` RunHandler/TextBlob prototype exists behind
-  `RIZUM_CLIP_SHAPED_TEXT=1`, but it is intentionally disabled by default
-  because it currently regresses ordinary horizontal text guards. Recover the
-  missing CSP text-entry level run-font/position/layout/decorations/raster
-  state before enabling shaping in product code; replacing only the current
-  `draw_str` calls is known to be the wrong granularity. Ordinary horizontal
-  text now builds a `HorizontalTextPlan` first, so line origins, run ranges, and
-  glyph/decoration draw commands are decided before drawing. Simple horizontal
-  runs now draw through positioned `TextBlobBuilder::alloc_run_text_pos` blobs
-  using the current measured per-character position model, so glyph drawing and
-  decoration positions share one planned coordinate model without changing the
-  established text guard metrics. The disabled ShapeThenWrap probe also has a
-  line-level command planner, but it remains behind `RIZUM_CLIP_SHAPED_TEXT=1`
-  because Skia's shaped glyph positions still regress horizontal guards.
-  The focused `Text_1` through `Text_15` matrix is now treated as a
-  99%-practical flattened text state: remaining residuals are mostly raster edge
-  strength and mixed-script glyph-run placement details, not missing or
-  misoriented text. A product-path probe of CSP's observed
-  `SkFont::setHinting(1)` / Skia `FontHinting::Slight` regressed multiple guard
-  samples while only barely improving `Text_15`, so the native path remains
-  unhinted unless future evidence proves a general rule.
+- Simple text layers are rasterized as flattened source pixels by
+  `clip_runtime/src/text_render/*` (Skia CPU surfaces, unhinted grayscale,
+  system fonts resolved through `fontdb`, no bundled fonts), then composited by
+  the wgpu renderer like any raster source. Horizontal text builds a
+  `HorizontalTextPlan` and draws positioned text blobs; vertical, CJK upright,
+  tate-chu-yoko, arc path, underline, and strikethrough layouts use measured
+  constants that live in code and tests, not in this file. The `Text_1`
+  through `Text_15` guard matrix is a 99%-practical flattened text state; the
+  remaining residuals are raster edge strength and mixed-script glyph placement.
+  A shaped-text prototype (`RIZUM_CLIP_SHAPED_TEXT=1`, Skia RunHandler/TextBlob
+  model matching CSP's observed `allocRunTextPos`/`drawTextBlob` path) is
+  disabled by default because it regresses horizontal guards; CSP's observed
+  `SkFont::setHinting(1)` was probed and rejected for the same reason. This is
+  not editable text import. Probe history: `docs/analysis.md`.
 - Blender generated-image import, reload, pack state, diagnostics, and i18n.
 - Native CLI verification against CSP PNG exports.
 
@@ -197,14 +150,15 @@ Representative current native results:
   residuals. Original `Test_HSL` still has low residuals.
 - `Test_Gradiation` remains a known Gradient Map residual (`max=10`); prior
   fixed-point interpolation probes traded the max for worse aggregate error.
-- The 4096x4096 `Tex_LiuJunlang_Clothes` work snapshot contains a masked
+- The 4096x4096 `Tex_LiuJunlang_Clothes` work snapshot (private, not in
+  `img/`) contains a masked
   Brightness/Contrast layer with payload `(+25, +20)`. Restoring additive
   brightness reduced its compare from `max=60 / mean=0.732963` to
   `max=7 / mean=0.122501`; the remaining extrema are sparse near-black/source
   quantization residuals, while representative adjusted colors are within one
   LSB of the CSP export.
 - `Test_RealArt`, `Ref_Terra404_Live2D`, `Ref_MXL_Idol1`, and `Ref_Kabi_Live2D`
-  are visually usable with remaining low-level or known reference residuals.
+  (gitignored private samples) are visually usable with remaining low-level or known reference residuals.
   Do not retune broad blend formulas from one hotspot without native evidence
   and guard samples.
 
@@ -213,9 +167,12 @@ Rejected fidelity shortcuts:
 - Do not reintroduce the broad Python compositor or CPU fallback.
 - Do not replace ordinary Multiply/Overlay/SoftLight/ColorBurn with recovered
   formulas unless a targeted sample improves and guards remain stable.
-- Do not relax the Terra guard that keeps nested THROUGH groups with direct
-  container children as explicit barriers unless a focused legacy-vs-tile test
-  proves faithful output.
+- Do not relax the nested THROUGH guards
+  (`planner_lowers_through_inside_nested_container_scope` and
+  `planner_lowers_clipped_container_sibling_with_nested_container_through_child`
+  in `clip_gpu/src/stream_program_tests.rs`, derived from `Ref_Terra404_Live2D`)
+  that keep nested THROUGH groups with direct container children as explicit
+  barriers unless a focused legacy-vs-tile test proves faithful output.
 
 ## Performance State
 
@@ -230,9 +187,15 @@ Rejected fidelity shortcuts:
   a measured prototype.
 - Resident sparse atlas inside `patch_renderer=region` was prototyped and did
   not hit useful cases in the fixed reload fixture; keep it disabled unless new
-  evidence changes that.
+  evidence changes that. It is opt-in behind
+  `RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS=1`; the fixture is
+  `scripts/benchmark_persistent_reload_cache.py`.
 
-Use `RIZUM_CLIP_RENDER_PROFILE=1` and
+Diagnostic env vars: `RIZUM_CLIP_RENDER_PROFILE`, `RIZUM_CLIP_DECODE_PROFILE`,
+and `RIZUM_CLIP_TEXT_PROFILE` (profiling output); `RIZUM_CLIP_PARALLEL_TILE_DECODE`,
+`RIZUM_CLIP_SHAPED_TEXT`, and `RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS` (opt-in
+experiments, all off by default); `RIZUM_CLIP_DISABLE_PERSISTENT_WORKER` and
+`RIZUM_CLIP_RENDERER_DLL` (add-on bridge overrides). See
 `docs/native-performance-investigation.md` for performance context.
 
 ## Verification Bias
@@ -248,6 +211,8 @@ cargo test --workspace
 cargo run -q -p clip_cli -- ..\..\img\Test_AddGlowMultiply.clip --compare-png ..\..\img\Test_AddGlowMultiply.png
 cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 ```
+
+Python add-on tests (repo root): `python -m unittest discover -s tests`.
 
 Convergence gate:
 

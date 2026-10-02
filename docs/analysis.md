@@ -6,6 +6,8 @@ As of 2026-06-14, the active project scope is raster-only Blender import and ver
 
 Historical vector/native-material notes below are preserved as evidence and rejected-hypothesis history. Do not continue that line unless Rizum explicitly reopens it.
 
+Update 2026-10-02: simple text layers re-entered scope on 2026-06-24 as flattened native rasterization (see `docs/AI_MEMORY.md`); vector and bubble/frame renderers remain out of scope.
+
 ## 2026-06-14 Terra Masked Clipped Preserve Fix
 
 `Ref_Terra404_Live2D` exposed a clipped masked raster layer inside `前髪/アンテナ`: layer `959` (`LayerType=3`, Normal, clipped) had raw alpha `189` at sampled blade pixels, but its layer mask reduced the effective alpha to about `18..19`. The preserve-alpha clipping path used raw source alpha as the recolor strength, so it ignored the layer mask and pushed the blade from the CSP range around `[78,95,102]` to a cyan-biased `[81,144,147]`.
@@ -35,8 +37,8 @@ Conclusion: chunk container, SQLite schema, and tile decode for full-color raste
 ```
 [CSFCHUNK][8B file_size][8B offset_info]
 [CHNKHead ...]
-[CHNKExta ...] x N    鈫?raster + vector blobs, one external_id each
-[CHNKSQLi ...]        鈫?embedded SQLite database (metadata)
+[CHNKExta ...] x N    →raster + vector blobs, one external_id each
+[CHNKSQLi ...]        →embedded SQLite database (metadata)
 [CHNKFoot ...]
 ```
 
@@ -56,20 +58,20 @@ All numeric fields big-endian. Each chunk header = 8B magic + 8B size.
 
 Layer types observed: `1` (raster layer), `256` (root / folder).
 
-## Lookup Path (Layer 鈫?Pixels)
+## Lookup Path (Layer →Pixels)
 
 ```
 Layer.LayerRenderMipmap
-  鈫?Mipmap.main_id
-  鈫?Mipmap.BaseMipmapInfo
-  鈫?MipmapInfo.main_id (highest scale entry)
-  鈫?MipmapInfo.Offscreen
-  鈫?Offscreen.main_id
-  鈫?Offscreen.BlockData (= external_id text)
-  鈫?CHNKExta chunk whose external_id matches
-  鈫?BlockDataBeginChunk records (zlib-compressed 256x256 tiles)
-  鈫?assemble tiles 鈫?BGRA at padded (multiple-of-256) size
-  鈫?crop to (image_width, image_height)
+  →Mipmap.main_id
+  →Mipmap.BaseMipmapInfo
+  →MipmapInfo.main_id (highest scale entry)
+  →MipmapInfo.Offscreen
+  →Offscreen.main_id
+  →Offscreen.BlockData (= external_id text)
+  →CHNKExta chunk whose external_id matches
+  →BlockDataBeginChunk records (zlib-compressed 256x256 tiles)
+  →assemble tiles →BGRA at padded (multiple-of-256) size
+  →crop to (image_width, image_height)
 ```
 
 ## Tile Format
@@ -360,7 +362,7 @@ Distribution across samples:
 | Aya | 15 | 54 |
 | RealArt | 18 | 64 |
 
-A global sort (`LayerFolder=17` first / rendered below, `LayerFolder=1` last / rendered on top) was tested on Kabi. It improved the previously-worst dark pixel `(1461,1158)` from `[22,21,21]` to `[251,245,242]` (ref `[255,212,205]`), but caused widespread new white-pixel errors (mean diff 0.010鈫?.0, exact 98.49%鈫?4.05%). The sort must be scoped more narrowly 鈥?likely only within specific parent contexts.
+A global sort (`LayerFolder=17` first / rendered below, `LayerFolder=1` last / rendered on top) was tested on Kabi. It improved the previously-worst dark pixel `(1461,1158)` from `[22,21,21]` to `[251,245,242]` (ref `[255,212,205]`), but caused widespread new white-pixel errors (mean diff 0.010→.0, exact 98.49%→4.05%). The sort must be scoped more narrowly 鈥?likely only within specific parent contexts.
 
 ## Kabi Layer Ordering Root Cause
 
@@ -368,11 +370,11 @@ Pixel `(1461, 1158)`: reference `[255,212,205,255]`, loader `[22,21,21,255]`.
 
 The compositor trace shows the correct layer stack rendering bottom-up:
 
-1. L3 (搴曡壊, Normal, `[194,193,193,255]`) 鈫?canvas gray
-2. Folder 47 (澶寸罕濂? 鈫?shadow layers darken canvas
-3. Folder 54 (浣? 鈫?L73 (`[217,181,226,255]`) brightens
-4. **Folder 107** (琛ㄦ儏, `LayerFolder=1`, inside folder 100) 鈫?L143 (`[251,245,242,255]`) near-white, composites to canvas `[0.984, 0.961, 0.949, 1.0]`
-5. **Folder 232** (鏄庢殫绶? `LayerFolder=17`, inside folder 100) 鈫?L259 (`[0,0,0,101]`) dark overlay, composites to canvas `[0.086, 0.082, 0.082, 1.0]`
+1. L3 (搴曡壊, Normal, `[194,193,193,255]`) →canvas gray
+2. Folder 47 (澶寸罕濂? →shadow layers darken canvas
+3. Folder 54 (浣? →L73 (`[217,181,226,255]`) brightens
+4. **Folder 107** (琛ㄦ儏, `LayerFolder=1`, inside folder 100) →L143 (`[251,245,242,255]`) near-white, composites to canvas `[0.984, 0.961, 0.949, 1.0]`
+5. **Folder 232** (鏄庢殫绶? `LayerFolder=17`, inside folder 100) →L259 (`[0,0,0,101]`) dark overlay, composites to canvas `[0.086, 0.082, 0.082, 1.0]`
 
 In CSP's bottom-up chain, folder 232 (NextIndex=265) renders AFTER folder 107 (NextIndex=149), so dark content appears on top 鈥?covering the bright layers. The CSP reference however shows the bright content `[255,212,205]`, meaning the dark overlay is either masked out at this pixel in CSP, or CSP's layer ordering differs from the chain order within certain folder contexts.
 
@@ -384,11 +386,11 @@ Historical pixel `(2484, 3492)`: reference `[190,73,107,255]`, older loader trac
 
 Only the red channel differs. The compositor trace shows:
 
-1. L3 (base) 鈫?canvas `[255,73,107]`
-2. Multiply/darken layers 鈫?reduce to `[44,24,27]`
-3. Several normal layers 鈫?various intermediate colors
-4. **L432** (hl3, ADD) 鈫?brightens `[0.557, 0.098, 0.137]` 鈫?`[0.690, 0.219, 0.208]`
-5. **L434** (hl, ADD) 鈫?`[0.690, 0.219, 0.208]` 鈫?`[1.000, 0.285, 0.420]` = `[255,73,107]` 鈥?exactly L3's base color
+1. L3 (base) →canvas `[255,73,107]`
+2. Multiply/darken layers →reduce to `[44,24,27]`
+3. Several normal layers →various intermediate colors
+4. **L432** (hl3, ADD) →brightens `[0.557, 0.098, 0.137]` →`[0.690, 0.219, 0.208]`
+5. **L434** (hl, ADD) →`[0.690, 0.219, 0.208]` →`[1.000, 0.285, 0.420]` = `[255,73,107]` 鈥?exactly L3's base color
 
 Follow-up with the current `RenderBlendModeCall`-derived `_blend_add_u8()` shows this is no longer an open mask/folder issue. At the point:
 
@@ -407,7 +409,7 @@ That is within `[0,-2,-1,0]` of CSP's reference `[190,73,107,255]`. The older `[
 
 **Confirmed through regression testing:**
 
-- Type=0 folders MUST render offscreen (not pass-through) when their composite mode is not THROUGH. Pass-through variants (all-comp-0, LayerFolder-based, NORMAL-only) all cause regressions in Aya (max diff 16鈫?7 or worse) and/or RealArt (max diff 25鈫?8).
+- Type=0 folders MUST render offscreen (not pass-through) when their composite mode is not THROUGH. Pass-through variants (all-comp-0, LayerFolder-based, NORMAL-only) all cause regressions in Aya (max diff 16→7 or worse) and/or RealArt (max diff 25→8).
 - The offscreen buffer approach is structurally correct. The historical Kabi ordering and MXL ADD cases are now retired as later blend/offscreen fixes rather than folder-model failures. Remaining per-sample issues should be treated as localized layer interactions, not a reason to replace the folder model wholesale.
 - Type=0 THROUGH folders are handled correctly by `_render_through_group` with mask/opacity blending and clip chain reset.
 

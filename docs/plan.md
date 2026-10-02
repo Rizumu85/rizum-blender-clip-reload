@@ -1,6 +1,6 @@
 # Plan
 
-Last reconciled: 2026-06-20
+Last reconciled: 2026-10-02
 
 ## Purpose
 
@@ -27,13 +27,16 @@ In scope:
 - Raster layers and paper/background rendering.
 - Folders, masks, clipping, opacity, blend modes, and THROUGH/container behavior.
 - Adjustment/filter layers supported by the native strict path.
+- Simple text layers rendered as flattened pixels through Skia with the user's
+  installed fonts (not editable text).
 - Generated Blender image import, reload, packing, and diagnostics.
 - Native CLI verification against CSP-exported PNG references.
 
 Out of scope:
 
 - Editable Blender layer import.
-- Vector, text, bubble/frame, 3D, animation, and `.clip` write-back.
+- Vector strokes/fills, bubble/frame, 3D, animation, editable text, and `.clip`
+  write-back.
 - CPU compositor fallback, sidecar PNG workflows, post-processing fixes, and
   global full-canvas per-layer caches.
 
@@ -52,6 +55,9 @@ Rules:
 Current known residuals:
 
 - `Test_Gradiation` still has a Gradient Map residual.
+- `Text_1` through `Text_15` keep raster edge-strength and mixed-script glyph
+  placement residuals; the shaped-text prototype behind `RIZUM_CLIP_SHAPED_TEXT=1`
+  stays disabled because it regresses those guards.
 - Some private/reference files keep low-level edge or quantization residuals.
 - Fidelity work is now lower priority unless a visible user-facing issue appears
   or a focused sample proves a general algorithmic bug.
@@ -77,16 +83,8 @@ Packaging:
 
 ## Direction 4: Native Architecture
 
-Keep Rust native code split by responsibility:
-
-- `clip_model`: shared data types.
-- `clip_file`: `.clip` container and SQLite/resource reads.
-- `clip_graph`: semantic render graph construction.
-- `clip_gpu`: GPU execution, shaders, tile events, barriers, and stream encoder.
-- `clip_runtime`: session orchestration, manifests, persistent renderer, and
-  Blender worker JSON.
-- `clip_capi`: C ABI surface only.
-- `clip_cli`: command-line and worker entry points.
+Keep Rust native code split by responsibility. The crate table and module
+boundaries live in `docs/native-code-architecture.md`; do not duplicate them here.
 
 Root files are wiring only. Split files before adding behavior if they approach
 the project threshold in `AGENTS.md`.
@@ -96,14 +94,11 @@ the project threshold in `AGENTS.md`.
 The tile-event renderer is the main performance model. Barrier segments are
 allowed when a CSP semantic is not safely tile-local.
 
-Before any new semantic lowering:
-
-1. Update `docs/native-tile-event-scoreboard.md`.
-2. Pick the largest measured barrier reason.
-3. Add focused planner/runtime/shader tests.
-4. Prove `planned_passes` or `barrier_segments` drops on a fixed sample.
-5. Keep Terra regression guards stable.
-6. Run `scripts/verify_native_convergence.ps1`.
+Before any new semantic lowering, follow the Convergence Gate in
+`docs/native-tile-event-renderer.md`: update the scoreboard first, pick one
+measured barrier reason, add focused tests, prove `planned_passes` or
+`barrier_segments` drops, keep the named nested-THROUGH guards stable, and run
+`scripts/verify_native_convergence.ps1`.
 
 Do not continue old implementation logs as a backlog. Add only the next measured
 semantic task when it passes the gate.
