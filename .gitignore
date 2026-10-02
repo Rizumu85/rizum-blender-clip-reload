@@ -8,3 +8,6 @@ local_artifacts/
 # Private/customer reference art stays local only.
 img/Ref*
 img/Test_RealArt*
+
+# Local release build output.
+dist/

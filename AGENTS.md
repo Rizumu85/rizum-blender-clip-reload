@@ -6,6 +6,7 @@ Project-level instructions for Codex.
 
 - Start with `docs/AI_MEMORY.md` for the current renderer state before reading the long research logs.
 - Write project files, code comments, and technical docs in English. Summarize chat changes in Chinese.
+- After producing a new Windows release for this project, install that exact release into the local Blender user extensions and verify the installed manifest version and native binaries. If Blender is running, do not overwrite the active extension; ask Rizum to save and close Blender, then finish the installation before considering the release task complete.
 
 ## Current Scope
 
