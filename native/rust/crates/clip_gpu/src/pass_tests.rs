@@ -267,182 +267,70 @@ fn container_with_through_child_resolves_non_empty_cache() {
 
 #[test]
 fn add_raster_source_uses_standard_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(9),
-        render_mipmap_id: 19,
-    };
-    let pixels = [100u8, 50, 100, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(0),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload Add source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::Add,
+            [100, 50, 100, 128],
+            Rgba8 {
                 r: 0,
                 g: 0,
                 b: 200,
                 a: 255,
             },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::Add,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw Add source");
-
-    assert_eq!(output.pixels, [50, 25, 228, 255]);
+        ),
+        [50, 25, 228, 255]
+    );
 }
 
 #[test]
 fn add_glow_raster_source_uses_byte_domain_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(10),
-        render_mipmap_id: 20,
-    };
-    let pixels = [100u8, 50, 0, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(1),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload AddGlow source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::AddGlow,
+            [100, 50, 0, 128],
+            Rgba8 {
                 r: 0,
                 g: 0,
                 b: 200,
                 a: 255,
             },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::AddGlow,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw AddGlow source");
-
-    assert_eq!(output.pixels, [50, 25, 200, 255]);
+        ),
+        [50, 25, 200, 255]
+    );
 }
 
 #[test]
 fn add_glow_raster_source_rounds_partial_tail_like_csp() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(11),
-        render_mipmap_id: 21,
-    };
-    let pixels = [66u8, 251, 182, 2];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(2),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload partial AddGlow source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::AddGlow,
+            [66, 251, 182, 2],
+            Rgba8 {
                 r: 169,
                 g: 32,
                 b: 253,
                 a: 53,
             },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::AddGlow,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw partial AddGlow source");
-
-    assert_eq!(output.pixels, [167, 49, 252, 55]);
+        ),
+        [167, 49, 252, 55]
+    );
 }
 
 #[test]
 fn add_glow_raster_source_floors_first_partial_mix_into_transparent_target() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(12),
-        render_mipmap_id: 22,
-    };
-    let pixels = [90u8, 252, 207, 95];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(3),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload cached AddGlow source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::AddGlow,
+            [90, 252, 207, 95],
+            Rgba8 {
                 r: 169,
                 g: 32,
                 b: 253,
                 a: 219,
             },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::AddGlow,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw AddGlow over transparent target");
-
-    assert_eq!(output.pixels, [199, 142, 252, 232]);
+        ),
+        [199, 142, 252, 232]
+    );
 }
 
 #[test]
@@ -674,182 +562,34 @@ fn clipping_run_preserves_base_alpha_with_byte_domain_clipped_blends() {
 
 #[test]
 fn color_dodge_raster_source_uses_byte_domain_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(11),
-        render_mipmap_id: 21,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(2),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload ColorDodge source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::ColorDodge,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw ColorDodge source");
-
-    assert_eq!(output.pixels, [132, 141, 228, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::ColorDodge),
+        [132, 141, 228, 255]
+    );
 }
 
 #[test]
 fn color_burn_raster_source_uses_byte_domain_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(13),
-        render_mipmap_id: 23,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(4),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload ColorBurn source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::ColorBurn,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw ColorBurn source");
-
-    assert_eq!(output.pixels, [50, 25, 199, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::ColorBurn),
+        [50, 25, 199, 255]
+    );
 }
 
 #[test]
 fn vivid_light_raster_source_uses_standard_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(14),
-        render_mipmap_id: 24,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(5),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload VividLight source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::VividLight,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw VividLight source");
-
-    assert_eq!(output.pixels, [78, 83, 228, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::VividLight),
+        [78, 83, 228, 255]
+    );
 }
 
 #[test]
 fn hard_mix_raster_source_uses_standard_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(15),
-        render_mipmap_id: 25,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(6),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload HardMix source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::HardMix,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw HardMix source");
-
-    assert_eq!(output.pixels, [50, 25, 228, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::HardMix),
+        [50, 25, 228, 255]
+    );
 }
 
 fn draw_one_pixel_standard_blend(blend_mode: GpuRasterBlendMode) -> Vec<u8> {
@@ -1104,92 +844,18 @@ fn divide_raster_source_uses_standard_blend_formula() {
 
 #[test]
 fn soft_light_raster_source_uses_w3c_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(19),
-        render_mipmap_id: 29,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(10),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload SoftLight source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::SoftLight,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw SoftLight source");
-
-    assert_eq!(output.pixels, [93, 68, 213, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::SoftLight),
+        [93, 68, 213, 255]
+    );
 }
 
 #[test]
 fn hue_raster_source_uses_hsl_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(16),
-        render_mipmap_id: 26,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(7),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload Hue source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::Hue,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw Hue source");
-
-    assert_eq!(output.pixels, [52, 77, 177, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::Hue),
+        [52, 77, 177, 255]
+    );
 }
 
 #[test]
@@ -1228,47 +894,10 @@ fn opaque_hue_raster_source_uses_hue_luminosity_weights() {
 
 #[test]
 fn saturation_raster_source_uses_hsl_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(17),
-        render_mipmap_id: 27,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(8),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload Saturation source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::Saturation,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw Saturation source");
-
-    assert_eq!(output.pixels, [100, 50, 200, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::Saturation),
+        [100, 50, 200, 255]
+    );
 }
 
 #[test]
@@ -1307,47 +936,10 @@ fn saturation_raster_source_ceils_min_channel_after_high_luminosity_clip_for_non
 
 #[test]
 fn color_raster_source_uses_hsl_blend_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(18),
-        render_mipmap_id: 28,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(9),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload Color source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::Color,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw Color source");
-
-    assert_eq!(output.pixels, [52, 78, 177, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::Color),
+        [52, 78, 177, 255]
+    );
 }
 
 #[test]
@@ -1369,90 +961,25 @@ fn color_raster_source_quantizes_low_luminosity_clip() {
 
 #[test]
 fn glow_dodge_raster_source_uses_byte_domain_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(12),
-        render_mipmap_id: 22,
-    };
-    let pixels = [100u8, 200, 250, 128];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(3),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload GlowDodge source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 100,
-                g: 50,
-                b: 200,
-                a: 255,
-            },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::GlowDodge,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw GlowDodge source");
-
-    assert_eq!(output.pixels, [124, 82, 255, 255]);
+    assert_eq!(
+        draw_one_pixel_standard_blend(GpuRasterBlendMode::GlowDodge),
+        [124, 82, 255, 255]
+    );
 }
 
 #[test]
 fn glow_dodge_uses_additive_alpha_over_translucent_black_target() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
-    let key = GpuRasterResourceKey {
-        layer_id: LayerId(13),
-        render_mipmap_id: 23,
-    };
-    let pixels = [165u8, 116, 255, 140];
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(4),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload GlowDodge source");
-    let sources = [
-        GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
+    assert_eq!(
+        draw_one_pixel_standard_blend_with_colors(
+            GpuRasterBlendMode::GlowDodge,
+            [165, 116, 255, 140],
+            Rgba8 {
                 r: 0,
                 g: 0,
                 b: 0,
                 a: 101,
             },
-            opacity: 1.0,
-        },
-        GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            key,
-            opacity: 1.0,
-            mask_key: None,
-            offset_x: 0,
-            offset_y: 0,
-            blend_mode: GpuRasterBlendMode::GlowDodge,
-        }),
-    ];
-
-    let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
-        .expect("draw GlowDodge source");
-
-    assert_eq!(output.pixels, [75, 53, 116, 241]);
+        ),
+        [75, 53, 116, 241]
+    );
 }

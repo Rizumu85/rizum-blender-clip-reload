@@ -355,62 +355,6 @@ fn sparse_atlas_batch_executor_draws_clipped_container_sibling() {
 }
 
 #[test]
-fn sparse_atlas_batch_executor_draws_solid_color_clipped_container_sibling() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
-    let mut pool = GpuSparseAtlasTexturePool::default();
-    let raster = GpuSparseAtlasTextureKey {
-        format: GpuSparseAtlasFormat::Rgba8,
-        atlas_id: 43,
-    };
-    renderer
-        .update_sparse_atlas_texture_pool(&mut pool, &[one_pixel_update(raster, [255, 0, 0, 255])])
-        .expect("prepare sparse atlas pool");
-    let clip_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let clipped_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
-        vec![
-            GpuSparseAtlasTileEvent::BeginClipBase(clip_scope),
-            GpuSparseAtlasTileEvent::ClipBaseRaster(sparse_event(raster)),
-            GpuSparseAtlasTileEvent::BeginClippedScope(clipped_scope),
-            GpuSparseAtlasTileEvent::SolidColor(GpuSparseAtlasSolidColorEvent {
-                color: clip_model::Rgba8 {
-                    r: 0,
-                    g: 0,
-                    b: 255,
-                    a: 255,
-                },
-                opacity: 1.0,
-                local_bounds: Rect::new(0, 0, 1, 1),
-            }),
-            GpuSparseAtlasTileEvent::EndClippedScope(clipped_scope),
-            GpuSparseAtlasTileEvent::ResolveClipBase(clip_scope),
-        ],
-        1.0,
-        GpuRasterBlendMode::Normal,
-        Rect::new(0, 0, 1, 1),
-        None,
-    );
-
-    let output = renderer
-        .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(1, 1), &pool, &[batch])
-        .expect("draw sparse atlas clipped solid color sibling batch");
-
-    assert_eq!(output.pixels, vec![0, 0, 255, 255]);
-}
-
-#[test]
 fn sparse_atlas_batch_executor_filters_clipped_container_sibling() {
     let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
     let mut pool = GpuSparseAtlasTexturePool::default();
@@ -468,46 +412,57 @@ fn sparse_atlas_batch_executor_filters_clipped_container_sibling() {
 }
 
 #[test]
-fn sparse_atlas_batch_executor_draws_child_clipping_run_inside_clipped_container_sibling() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
-    let mut pool = GpuSparseAtlasTexturePool::default();
-    let raster = GpuSparseAtlasTextureKey {
-        format: GpuSparseAtlasFormat::Rgba8,
-        atlas_id: 42,
-    };
-    renderer
-        .update_sparse_atlas_texture_pool(
-            &mut pool,
-            &[three_pixel_update(
-                raster,
-                [255, 0, 0, 255],
-                [0, 255, 0, 255],
-                [0, 0, 255, 255],
-            )],
-        )
-        .expect("prepare sparse atlas pool");
-    let outer_clip_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let clipped_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let inner_clip_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
+fn sparse_atlas_batch_executor_draws_clipped_container_sibling_variants() {
+    struct Case {
+        name: &'static str,
+        atlas_id: u32,
+        pool_update: fn(GpuSparseAtlasTextureKey) -> GpuSparseAtlasTexturePoolUpdate,
+        events: fn(GpuSparseAtlasTextureKey) -> Vec<GpuSparseAtlasTileEvent>,
+        expected: [u8; 4],
+    }
+
+    fn red_pixel(key: GpuSparseAtlasTextureKey) -> GpuSparseAtlasTexturePoolUpdate {
+        one_pixel_update(key, [255, 0, 0, 255])
+    }
+
+    fn red_blue_pixels(key: GpuSparseAtlasTextureKey) -> GpuSparseAtlasTexturePoolUpdate {
+        two_pixel_update(key, [255, 0, 0, 255], [0, 0, 255, 255])
+    }
+
+    fn red_green_blue_pixels(key: GpuSparseAtlasTextureKey) -> GpuSparseAtlasTexturePoolUpdate {
+        three_pixel_update(key, [255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255])
+    }
+
+    fn solid_color_sibling_events(
+        raster: GpuSparseAtlasTextureKey,
+    ) -> Vec<GpuSparseAtlasTileEvent> {
+        let clip_scope = container_scope_event();
+        let clipped_scope = container_scope_event();
+        vec![
+            GpuSparseAtlasTileEvent::BeginClipBase(clip_scope),
+            GpuSparseAtlasTileEvent::ClipBaseRaster(sparse_event(raster)),
+            GpuSparseAtlasTileEvent::BeginClippedScope(clipped_scope),
+            GpuSparseAtlasTileEvent::SolidColor(GpuSparseAtlasSolidColorEvent {
+                color: clip_model::Rgba8 {
+                    r: 0,
+                    g: 0,
+                    b: 255,
+                    a: 255,
+                },
+                opacity: 1.0,
+                local_bounds: Rect::new(0, 0, 1, 1),
+            }),
+            GpuSparseAtlasTileEvent::EndClippedScope(clipped_scope),
+            GpuSparseAtlasTileEvent::ResolveClipBase(clip_scope),
+        ]
+    }
+
+    fn child_clipping_run_sibling_events(
+        raster: GpuSparseAtlasTextureKey,
+    ) -> Vec<GpuSparseAtlasTileEvent> {
+        let outer_clip_scope = container_scope_event();
+        let clipped_scope = container_scope_event();
+        let inner_clip_scope = container_scope_event();
         vec![
             GpuSparseAtlasTileEvent::BeginClipBase(outer_clip_scope),
             GpuSparseAtlasTileEvent::ClipBaseRaster(sparse_event_atlas_x(raster, 0)),
@@ -518,68 +473,16 @@ fn sparse_atlas_batch_executor_draws_child_clipping_run_inside_clipped_container
             GpuSparseAtlasTileEvent::ResolveClipBase(inner_clip_scope),
             GpuSparseAtlasTileEvent::EndClippedScope(clipped_scope),
             GpuSparseAtlasTileEvent::ResolveClipBase(outer_clip_scope),
-        ],
-        1.0,
-        GpuRasterBlendMode::Normal,
-        Rect::new(0, 0, 1, 1),
-        None,
-    );
+        ]
+    }
 
-    let output = renderer
-        .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(1, 1), &pool, &[batch])
-        .expect("draw sparse atlas child clipping-run clipped sibling batch");
-
-    assert_eq!(output.pixels, vec![0, 0, 255, 255]);
-}
-
-#[test]
-fn sparse_atlas_batch_executor_draws_through_child_clipping_run_inside_clipped_container_sibling() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
-    let mut pool = GpuSparseAtlasTexturePool::default();
-    let raster = GpuSparseAtlasTextureKey {
-        format: GpuSparseAtlasFormat::Rgba8,
-        atlas_id: 42,
-    };
-    renderer
-        .update_sparse_atlas_texture_pool(
-            &mut pool,
-            &[three_pixel_update(
-                raster,
-                [255, 0, 0, 255],
-                [0, 255, 0, 255],
-                [0, 0, 255, 255],
-            )],
-        )
-        .expect("prepare sparse atlas pool");
-    let outer_clip_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let clipped_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let through_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Through,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let inner_clip_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
+    fn through_child_clipping_run_sibling_events(
+        raster: GpuSparseAtlasTextureKey,
+    ) -> Vec<GpuSparseAtlasTileEvent> {
+        let outer_clip_scope = container_scope_event();
+        let clipped_scope = container_scope_event();
+        let through_scope = through_scope_event();
+        let inner_clip_scope = container_scope_event();
         vec![
             GpuSparseAtlasTileEvent::BeginClipBase(outer_clip_scope),
             GpuSparseAtlasTileEvent::ClipBaseRaster(sparse_event_atlas_x(raster, 0)),
@@ -592,56 +495,15 @@ fn sparse_atlas_batch_executor_draws_through_child_clipping_run_inside_clipped_c
             GpuSparseAtlasTileEvent::EndScope(through_scope),
             GpuSparseAtlasTileEvent::EndClippedScope(clipped_scope),
             GpuSparseAtlasTileEvent::ResolveClipBase(outer_clip_scope),
-        ],
-        1.0,
-        GpuRasterBlendMode::Normal,
-        Rect::new(0, 0, 1, 1),
-        None,
-    );
+        ]
+    }
 
-    let output = renderer
-        .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(1, 1), &pool, &[batch])
-        .expect("draw sparse atlas through child clipping-run clipped sibling batch");
-
-    assert_eq!(output.pixels, vec![0, 0, 255, 255]);
-}
-
-#[test]
-fn sparse_atlas_batch_executor_filters_through_child_inside_clipped_container_sibling() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
-    let mut pool = GpuSparseAtlasTexturePool::default();
-    let raster = GpuSparseAtlasTextureKey {
-        format: GpuSparseAtlasFormat::Rgba8,
-        atlas_id: 42,
-    };
-    renderer
-        .update_sparse_atlas_texture_pool(
-            &mut pool,
-            &[two_pixel_update(raster, [255, 0, 0, 255], [0, 0, 255, 255])],
-        )
-        .expect("prepare sparse atlas pool");
-    let clip_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let clipped_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Container,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let through_scope = GpuSparseAtlasScopeEvent {
-        kind: GpuSparseAtlasScopeEventKind::Through,
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: Rect::new(0, 0, 1, 1),
-        mask: None,
-    };
-    let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
+    fn filtered_through_child_sibling_events(
+        raster: GpuSparseAtlasTextureKey,
+    ) -> Vec<GpuSparseAtlasTileEvent> {
+        let clip_scope = container_scope_event();
+        let clipped_scope = container_scope_event();
+        let through_scope = through_scope_event();
         vec![
             GpuSparseAtlasTileEvent::BeginClipBase(clip_scope),
             GpuSparseAtlasTileEvent::ClipBaseRaster(sparse_event_atlas_x(raster, 0)),
@@ -658,18 +520,81 @@ fn sparse_atlas_batch_executor_filters_through_child_inside_clipped_container_si
             }),
             GpuSparseAtlasTileEvent::EndClippedScope(clipped_scope),
             GpuSparseAtlasTileEvent::ResolveClipBase(clip_scope),
-        ],
-        1.0,
-        GpuRasterBlendMode::Normal,
-        Rect::new(0, 0, 1, 1),
-        None,
-    );
+        ]
+    }
 
-    let output = renderer
-        .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(1, 1), &pool, &[batch])
-        .expect("draw sparse atlas filtered through-child clipped sibling batch");
+    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let cases = [
+        Case {
+            name: "solid color clipped container sibling",
+            atlas_id: 43,
+            pool_update: red_pixel,
+            events: solid_color_sibling_events,
+            expected: [0, 0, 255, 255],
+        },
+        Case {
+            name: "child clipping run inside clipped container sibling",
+            atlas_id: 42,
+            pool_update: red_green_blue_pixels,
+            events: child_clipping_run_sibling_events,
+            expected: [0, 0, 255, 255],
+        },
+        Case {
+            name: "through child clipping run inside clipped container sibling",
+            atlas_id: 42,
+            pool_update: red_green_blue_pixels,
+            events: through_child_clipping_run_sibling_events,
+            expected: [0, 0, 255, 255],
+        },
+        Case {
+            name: "filtered through child inside clipped container sibling",
+            atlas_id: 42,
+            pool_update: red_blue_pixels,
+            events: filtered_through_child_sibling_events,
+            expected: [255, 255, 0, 255],
+        },
+    ];
 
-    assert_eq!(output.pixels, vec![255, 255, 0, 255]);
+    for case in cases {
+        let mut pool = GpuSparseAtlasTexturePool::default();
+        let raster = GpuSparseAtlasTextureKey {
+            format: GpuSparseAtlasFormat::Rgba8,
+            atlas_id: case.atlas_id,
+        };
+        renderer
+            .update_sparse_atlas_texture_pool(&mut pool, &[(case.pool_update)(raster)])
+            .unwrap_or_else(|error| panic!("{}: prepare sparse atlas pool: {error:?}", case.name));
+        let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
+            (case.events)(raster),
+            1.0,
+            GpuRasterBlendMode::Normal,
+            Rect::new(0, 0, 1, 1),
+            None,
+        );
+
+        let output = renderer
+            .draw_sparse_atlas_raster_event_batches_to_rgba8(CanvasSize::new(1, 1), &pool, &[batch])
+            .unwrap_or_else(|error| panic!("{}: draw clipped sibling batch: {error:?}", case.name));
+
+        assert_eq!(output.pixels, case.expected.to_vec(), "{}", case.name);
+    }
+}
+
+fn container_scope_event() -> GpuSparseAtlasScopeEvent {
+    GpuSparseAtlasScopeEvent {
+        kind: GpuSparseAtlasScopeEventKind::Container,
+        opacity: 1.0,
+        blend_mode: GpuRasterBlendMode::Normal,
+        local_bounds: Rect::new(0, 0, 1, 1),
+        mask: None,
+    }
+}
+
+fn through_scope_event() -> GpuSparseAtlasScopeEvent {
+    GpuSparseAtlasScopeEvent {
+        kind: GpuSparseAtlasScopeEventKind::Through,
+        ..container_scope_event()
+    }
 }
 
 fn one_pixel_update(

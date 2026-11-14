@@ -658,49 +658,72 @@ fn planner_lowers_provider_backed_masked_filter_inside_scope() {
     assert_eq!(program.stats().barrier_reasons.filter_not_lowered, 0);
 }
 
+/// `(name, scope builder, nesting depth, lowered tile events)`: a single raster
+/// wrapped `depth` times in the given scope kind. `Some(n)` expects one lowered
+/// `SimpleContainerScope` segment with `n` tile events; `None` expects the
+/// planner to keep the stack as a `ScopeDepthLimitExceeded` barrier.
+type ScopeDepthCase = (&'static str, ScopeBuilder, usize, Option<u32>);
+
+const SCOPE_DEPTH_CASES: &[ScopeDepthCase] = &[
+    (
+        "container_inside_simple_container_scope",
+        container,
+        2,
+        Some(5),
+    ),
+    ("three_deep_container_scope", container, 3, Some(7)),
+    ("four_deep_container_scope", container, 4, Some(9)),
+    ("five_deep_container_scope_as_barrier", container, 5, None),
+    (
+        "through_beyond_scope_depth_limit_as_barrier",
+        through,
+        3,
+        None,
+    ),
+];
+
 #[test]
-fn planner_lowers_container_inside_simple_container_scope() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
+fn planner_lowers_nested_scopes_up_to_depth_limit() {
+    for &(name, wrap, depth, lowered_tile_events) in SCOPE_DEPTH_CASES {
+        let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
+        let mut source = raster(1);
+        for _ in 0..depth {
+            source = wrap(vec![source], 1.0);
+        }
+        let sources = vec![source];
 
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
+        let program = plan_sixteen(&provider, &sources);
+        let reasons = program.stats().barrier_reasons;
 
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 5,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-    assert_eq!(
-        program
-            .stats()
-            .barrier_reasons
-            .isolated_container_requires_intermediate,
-        0
-    );
+        match lowered_tile_events {
+            Some(tile_events) => {
+                assert_eq!(
+                    program.segments(),
+                    &[tile_local_segment(
+                        TileProgramKind::SimpleContainerScope,
+                        tile_events
+                    )],
+                    "{name}"
+                );
+                assert_eq!(program.stats().simple_container_scope_segments, 1, "{name}");
+                assert_eq!(
+                    reasons.isolated_container_requires_intermediate, 0,
+                    "{name}"
+                );
+                assert_eq!(reasons.scope_depth_limit_exceeded, 0, "{name}");
+            }
+            None => {
+                assert_eq!(
+                    program.segments()[0].kind,
+                    RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
+                        RenderProgramBarrierReason::ScopeDepthLimitExceeded,
+                    )),
+                    "{name}"
+                );
+                assert_eq!(reasons.scope_depth_limit_exceeded, 1, "{name}");
+            }
+        }
+    }
 }
 
 #[test]
@@ -823,652 +846,167 @@ fn planner_lowers_clipping_run_inside_simple_container_scope() {
     assert_eq!(program.stats().simple_container_scope_segments, 1);
 }
 
-#[test]
-fn planner_lowers_clipped_container_sibling_inside_simple_container_scope() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
+/// `(name, clipped container children, lowered tile events)` for the stack
+/// `Container { ClippingRun { base: raster 1, clipped: [Container(layer 8) {
+/// children }] } }`, expected to lower into one `SimpleContainerScope` segment.
+/// Rasters `1..=5` are registered with the planner provider for every row.
+type ClippedContainerSiblingCase = (&'static str, ChildrenBuilder, u32);
+
+const CLIPPED_CONTAINER_SIBLING_CASES: &[ClippedContainerSiblingCase] = &[
+    ("inside_simple_container_scope", || vec![raster(2)], 8),
+    ("with_point_filter", || vec![raster(2), lut_filter()], 9),
+    (
+        "with_nested_container",
+        || vec![container(vec![raster(2)], 1.0)],
+        10,
+    ),
+    ("with_child_clipping_run", || vec![clipping(2, 3)], 11),
+    (
+        "with_through_child",
+        || vec![through(vec![raster(2)], 0.5)],
+        10,
+    ),
+    (
+        "with_nested_through_child",
+        || vec![through(vec![through(vec![raster(2)], 0.75)], 0.5)],
+        12,
+    ),
+    (
+        "with_through_child_then_filter",
+        || vec![through(vec![raster(2)], 0.5), lut_filter()],
+        11,
+    ),
+    (
+        "with_through_child_clipping_run",
+        || vec![through(vec![clipping(2, 3)], 0.5)],
+        13,
+    ),
+    NESTED_CONTAINER_THROUGH_CHILD_CASE,
+    (
+        "mixed_with_child_clipping_run",
+        || vec![container(vec![raster(2)], 1.0), clipping(3, 4)],
+        14,
+    ),
+];
+
+/// Nested THROUGH regression guard; also runs as a row of the table above.
+const NESTED_CONTAINER_THROUGH_CHILD_CASE: ClippedContainerSiblingCase = (
+    "with_nested_container_through_child",
+    || vec![container(vec![through(vec![raster(2)], 0.5)], 0.75)],
+    12,
+);
+
+fn assert_clipped_container_sibling_lowers(
+    &(name, children, tile_events): &ClippedContainerSiblingCase,
+) {
+    let provider = planner_provider_with_rasters(5);
+    let sources = vec![container(
+        vec![GpuNormalStackSource::ClippingRun {
             base: raster_source(1),
             clipped: vec![GpuClippedStackSource::Container {
                 layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::Raster(raster_source(2))],
+                children: children(),
                 opacity: 1.0,
                 mask_key: None,
                 blend_mode: GpuRasterBlendMode::Normal,
             }],
         }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
+        1.0,
+    )];
 
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
+    let program = plan_sixteen(&provider, &sources);
 
     assert_eq!(
         program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 8,
-                legacy_sources: 0,
-            },
-        }]
+        &[tile_local_segment(
+            TileProgramKind::SimpleContainerScope,
+            tile_events
+        )],
+        "{name}"
     );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
+    assert_eq!(program.stats().simple_container_scope_segments, 1, "{name}");
 }
 
 #[test]
-fn planner_lowers_clipped_container_sibling_with_point_filter() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![
-                    GpuNormalStackSource::Raster(raster_source(2)),
-                    GpuNormalStackSource::LutFilter {
-                        lut_rgba: identity_lut(),
-                        opacity: 1.0,
-                        mask_key: None,
-                        filter_mode: GpuLutFilterMode::ToneCurveRgb,
-                    },
-                ],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 9,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
-
-#[test]
-fn planner_lowers_clipped_container_sibling_with_nested_container() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::Container {
-                    children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                    opacity: 1.0,
-                    mask_key: None,
-                    blend_mode: GpuRasterBlendMode::Normal,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 10,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
-
-#[test]
-fn planner_lowers_clipped_container_sibling_with_child_clipping_run() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-        (raster_key(3), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::ClippingRun {
-                    base: raster_source(2),
-                    clipped: vec![GpuClippedStackSource::Raster(raster_source(3))],
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 11,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
-
-#[test]
-fn planner_lowers_clipped_container_sibling_with_through_child() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::ThroughGroup {
-                    children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                    opacity: 0.5,
-                    mask_key: None,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 10,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
-
-#[test]
-fn planner_lowers_clipped_container_sibling_with_nested_through_child() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::ThroughGroup {
-                    children: vec![GpuNormalStackSource::ThroughGroup {
-                        children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                        opacity: 0.75,
-                        mask_key: None,
-                    }],
-                    opacity: 0.5,
-                    mask_key: None,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 12,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
-
-#[test]
-fn planner_lowers_clipped_container_sibling_with_through_child_then_filter() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![
-                    GpuNormalStackSource::ThroughGroup {
-                        children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                        opacity: 0.5,
-                        mask_key: None,
-                    },
-                    GpuNormalStackSource::LutFilter {
-                        lut_rgba: identity_lut(),
-                        opacity: 1.0,
-                        mask_key: None,
-                        filter_mode: GpuLutFilterMode::ToneCurveRgb,
-                    },
-                ],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 11,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
-
-#[test]
-fn planner_lowers_clipped_container_sibling_with_through_child_clipping_run() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-        (raster_key(3), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::ThroughGroup {
-                    children: vec![GpuNormalStackSource::ClippingRun {
-                        base: raster_source(2),
-                        clipped: vec![GpuClippedStackSource::Raster(raster_source(3))],
-                    }],
-                    opacity: 0.5,
-                    mask_key: None,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 13,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
+fn planner_lowers_clipped_container_siblings_inside_simple_container_scope() {
+    for case in CLIPPED_CONTAINER_SIBLING_CASES {
+        assert_clipped_container_sibling_lowers(case);
+    }
 }
 
 #[test]
 fn planner_lowers_clipped_container_sibling_with_nested_container_through_child() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![GpuNormalStackSource::Container {
-                    children: vec![GpuNormalStackSource::ThroughGroup {
-                        children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                        opacity: 0.5,
-                        mask_key: None,
-                    }],
-                    opacity: 0.75,
-                    mask_key: None,
-                    blend_mode: GpuRasterBlendMode::Normal,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 12,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
+    assert_clipped_container_sibling_lowers(&NESTED_CONTAINER_THROUGH_CHILD_CASE);
 }
 
-#[test]
-fn planner_lowers_clipped_container_sibling_mixed_with_child_clipping_run() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-        (raster_key(3), CanvasSize::new(4, 4)),
-        (raster_key(4), CanvasSize::new(4, 4)),
-        (raster_key(5), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Container {
-                layer_id: LayerId(8),
-                children: vec![
-                    GpuNormalStackSource::Container {
-                        children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                        opacity: 1.0,
-                        mask_key: None,
-                        blend_mode: GpuRasterBlendMode::Normal,
-                    },
-                    GpuNormalStackSource::ClippingRun {
-                        base: raster_source(3),
-                        clipped: vec![GpuClippedStackSource::Raster(raster_source(4))],
-                    },
-                ],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
+/// `(name, through-group children, through-group opacity, lowered tile events)`
+/// for a top-level `ThroughGroup` expected to lower into one
+/// `SimpleThroughScope` segment. Rasters `1..=5` are registered for every row.
+type ThroughScopeCase = (&'static str, ChildrenBuilder, f32, u32);
 
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 14,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-}
+const THROUGH_SCOPE_CASES: &[ThroughScopeCase] = &[
+    ("direct_clipping_run", || vec![clipping(1, 2)], 0.5, 6),
+    (
+        "nested_container_clipping_run",
+        || vec![container(vec![clipping(1, 2)], 1.0)],
+        0.5,
+        8,
+    ),
+    (
+        "nested_through_direct_clipping_run",
+        || vec![through(vec![clipping(1, 2)], 1.0)],
+        0.5,
+        8,
+    ),
+    (
+        "raster_filter_raster",
+        || vec![raster(1), lut_filter(), raster(2)],
+        0.5,
+        5,
+    ),
+    (
+        "container_child",
+        || vec![container(vec![raster(1)], 1.0)],
+        1.0,
+        5,
+    ),
+    (
+        "nested_through_sibling",
+        || vec![raster(1), through(vec![raster(2)], 1.0)],
+        1.0,
+        6,
+    ),
+    (
+        "fractional_nested_through",
+        || vec![through(vec![raster(1)], 0.5)],
+        1.0,
+        5,
+    ),
+];
 
 #[test]
-fn planner_lowers_direct_clipping_run_inside_simple_through_scope() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![GpuNormalStackSource::ClippingRun {
-            base: raster_source(1),
-            clipped: vec![GpuClippedStackSource::Raster(raster_source(2))],
-        }],
-        opacity: 0.5,
-        mask_key: None,
-    }];
+fn planner_lowers_simple_through_scopes() {
+    for &(name, children, opacity, tile_events) in THROUGH_SCOPE_CASES {
+        let provider = planner_provider_with_rasters(5);
+        let sources = vec![through(children(), opacity)];
 
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
+        let program = plan_sixteen(&provider, &sources);
 
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 6,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
-}
-
-#[test]
-fn planner_lowers_nested_container_clipping_run_inside_through_scope() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::ClippingRun {
-                base: raster_source(1),
-                clipped: vec![GpuClippedStackSource::Raster(raster_source(2))],
-            }],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }],
-        opacity: 0.5,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 8,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
-}
-
-#[test]
-fn planner_lowers_nested_through_direct_clipping_run_inside_through_scope() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![GpuNormalStackSource::ThroughGroup {
-            children: vec![GpuNormalStackSource::ClippingRun {
-                base: raster_source(1),
-                clipped: vec![GpuClippedStackSource::Raster(raster_source(2))],
-            }],
-            opacity: 1.0,
-            mask_key: None,
-        }],
-        opacity: 0.5,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 8,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
+        assert_eq!(
+            program.segments(),
+            &[tile_local_segment(
+                TileProgramKind::SimpleThroughScope,
+                tile_events
+            )],
+            "{name}"
+        );
+        assert_eq!(program.stats().simple_through_scope_segments, 1, "{name}");
+        assert_eq!(
+            program.stats().barrier_reasons.through_group_not_lowered,
+            0,
+            "{name}"
+        );
+    }
 }
 
 #[test]
@@ -1529,350 +1067,6 @@ fn planner_keeps_through_child_container_as_legacy_barrier() {
             .stats()
             .barrier_reasons
             .isolated_container_requires_intermediate,
-        1
-    );
-}
-
-#[test]
-fn planner_lowers_three_deep_container_scope() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Container {
-                children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 7,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-    assert_eq!(
-        program
-            .stats()
-            .barrier_reasons
-            .isolated_container_requires_intermediate,
-        0
-    );
-}
-
-#[test]
-fn planner_lowers_four_deep_container_scope() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Container {
-                children: vec![GpuNormalStackSource::Container {
-                    children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-                    opacity: 1.0,
-                    mask_key: None,
-                    blend_mode: GpuRasterBlendMode::Normal,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleContainerScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 9,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_container_scope_segments, 1);
-    assert_eq!(
-        program.stats().barrier_reasons.scope_depth_limit_exceeded,
-        0
-    );
-}
-
-#[test]
-fn planner_keeps_five_deep_container_scope_as_barrier() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::Container {
-        children: vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Container {
-                children: vec![GpuNormalStackSource::Container {
-                    children: vec![GpuNormalStackSource::Container {
-                        children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-                        opacity: 1.0,
-                        mask_key: None,
-                        blend_mode: GpuRasterBlendMode::Normal,
-                    }],
-                    opacity: 1.0,
-                    mask_key: None,
-                    blend_mode: GpuRasterBlendMode::Normal,
-                }],
-                opacity: 1.0,
-                mask_key: None,
-                blend_mode: GpuRasterBlendMode::Normal,
-            }],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-        blend_mode: GpuRasterBlendMode::Normal,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments()[0].kind,
-        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::ScopeDepthLimitExceeded,
-        ))
-    );
-    assert_eq!(
-        program.stats().barrier_reasons.scope_depth_limit_exceeded,
-        1
-    );
-}
-
-#[test]
-fn planner_lowers_simple_through_scope() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![
-            GpuNormalStackSource::Raster(raster_source(1)),
-            GpuNormalStackSource::LutFilter {
-                lut_rgba: identity_lut(),
-                opacity: 1.0,
-                mask_key: None,
-                filter_mode: GpuLutFilterMode::ToneCurveRgb,
-            },
-            GpuNormalStackSource::Raster(raster_source(2)),
-        ],
-        opacity: 0.5,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 5,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
-}
-
-#[test]
-fn planner_lowers_container_inside_simple_through_scope() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-            opacity: 1.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 5,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
-}
-
-#[test]
-fn planner_lowers_nested_simple_through_scope() {
-    let provider = PlannerProvider::new([
-        (raster_key(1), CanvasSize::new(4, 4)),
-        (raster_key(2), CanvasSize::new(4, 4)),
-    ]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![
-            GpuNormalStackSource::Raster(raster_source(1)),
-            GpuNormalStackSource::ThroughGroup {
-                children: vec![GpuNormalStackSource::Raster(raster_source(2))],
-                opacity: 1.0,
-                mask_key: None,
-            },
-        ],
-        opacity: 1.0,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments(),
-        &[RenderSegment {
-            source_range: 0..1,
-            kind: RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope),
-            cost_hint: SegmentCostHint {
-                expected_passes: 1,
-                tile_events: 6,
-                legacy_sources: 0,
-            },
-        }]
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
-}
-
-#[test]
-fn planner_lowers_fractional_nested_through_scope() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![GpuNormalStackSource::ThroughGroup {
-            children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-            opacity: 0.5,
-            mask_key: None,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments()[0].kind,
-        RenderSegmentKind::TileLocal(TileProgramKind::SimpleThroughScope)
-    );
-    assert_eq!(program.stats().simple_through_scope_segments, 1);
-    assert_eq!(program.stats().barrier_reasons.through_group_not_lowered, 0);
-}
-
-#[test]
-fn planner_keeps_through_beyond_scope_depth_limit_as_barrier() {
-    let provider = PlannerProvider::new([(raster_key(1), CanvasSize::new(4, 4))]);
-    let sources = vec![GpuNormalStackSource::ThroughGroup {
-        children: vec![GpuNormalStackSource::ThroughGroup {
-            children: vec![GpuNormalStackSource::ThroughGroup {
-                children: vec![GpuNormalStackSource::Raster(raster_source(1))],
-                opacity: 1.0,
-                mask_key: None,
-            }],
-            opacity: 1.0,
-            mask_key: None,
-        }],
-        opacity: 1.0,
-        mask_key: None,
-    }];
-
-    let program = plan_render_program(
-        &provider,
-        CanvasSize::new(16, 16),
-        (0, 0),
-        CanvasSize::new(16, 16),
-        &sources,
-    );
-
-    assert_eq!(
-        program.segments()[0].kind,
-        RenderSegmentKind::Barrier(BarrierProgramKind::LegacySource(
-            RenderProgramBarrierReason::ScopeDepthLimitExceeded,
-        ))
-    );
-    assert_eq!(
-        program.stats().barrier_reasons.scope_depth_limit_exceeded,
         1
     );
 }
@@ -2020,4 +1214,72 @@ fn identity_lut() -> Vec<u8> {
         lut.extend_from_slice(&[value, value, value, 255]);
     }
     lut
+}
+
+type ChildrenBuilder = fn() -> Vec<GpuNormalStackSource>;
+type ScopeBuilder = fn(Vec<GpuNormalStackSource>, f32) -> GpuNormalStackSource;
+
+fn planner_provider_with_rasters(count: u32) -> PlannerProvider {
+    PlannerProvider::from_sizes((1..=count).map(|id| (raster_key(id), CanvasSize::new(4, 4))))
+}
+
+/// Plans a 16x16 canvas rendered into a 16x16 target at the origin, the
+/// configuration shared by every table-driven planner case in this file.
+fn plan_sixteen(provider: &PlannerProvider, sources: &[GpuNormalStackSource]) -> RenderProgram {
+    plan_render_program(
+        provider,
+        CanvasSize::new(16, 16),
+        (0, 0),
+        CanvasSize::new(16, 16),
+        sources,
+    )
+}
+
+fn tile_local_segment(kind: TileProgramKind, tile_events: u32) -> RenderSegment {
+    RenderSegment {
+        source_range: 0..1,
+        kind: RenderSegmentKind::TileLocal(kind),
+        cost_hint: SegmentCostHint {
+            expected_passes: 1,
+            tile_events,
+            legacy_sources: 0,
+        },
+    }
+}
+
+fn raster(id: u32) -> GpuNormalStackSource {
+    GpuNormalStackSource::Raster(raster_source(id))
+}
+
+fn container(children: Vec<GpuNormalStackSource>, opacity: f32) -> GpuNormalStackSource {
+    GpuNormalStackSource::Container {
+        children,
+        opacity,
+        mask_key: None,
+        blend_mode: GpuRasterBlendMode::Normal,
+    }
+}
+
+fn through(children: Vec<GpuNormalStackSource>, opacity: f32) -> GpuNormalStackSource {
+    GpuNormalStackSource::ThroughGroup {
+        children,
+        opacity,
+        mask_key: None,
+    }
+}
+
+fn clipping(base_id: u32, clipped_id: u32) -> GpuNormalStackSource {
+    GpuNormalStackSource::ClippingRun {
+        base: raster_source(base_id),
+        clipped: vec![GpuClippedStackSource::Raster(raster_source(clipped_id))],
+    }
+}
+
+fn lut_filter() -> GpuNormalStackSource {
+    GpuNormalStackSource::LutFilter {
+        lut_rgba: identity_lut(),
+        opacity: 1.0,
+        mask_key: None,
+        filter_mode: GpuLutFilterMode::ToneCurveRgb,
+    }
 }

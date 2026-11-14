@@ -141,25 +141,24 @@ fn non_empty_tile_visitor_skips_empty_blocks_without_inflating_them() {
 }
 
 #[test]
-fn parallel_tile_decode_policy_keeps_tiny_work_sequential() {
+fn parallel_tile_decode_policy_scales_with_compressed_work() {
+    // Too few tiles, or too few compressed bytes, stays sequential.
     let policy = choose_parallel_tile_decode_policy(15, 2 * 1024 * 1024);
-    assert!(!policy.parallel);
+    assert!(!policy.parallel, "15 tiles should stay sequential");
     assert_eq!(policy.threads, 1);
 
     let policy = choose_parallel_tile_decode_policy(16, 1024 * 1024 - 1);
-    assert!(!policy.parallel);
+    assert!(!policy.parallel, "under 1 MiB should stay sequential");
     assert_eq!(policy.threads, 1);
-}
 
-#[test]
-fn parallel_tile_decode_policy_uses_workers_for_many_compressed_tiles() {
+    // Many compressed tiles use a bounded worker pool when the host has cores.
     let policy = choose_parallel_tile_decode_policy(32, 2 * 1024 * 1024);
     if std::thread::available_parallelism()
         .map(|count| count.get())
         .unwrap_or(1)
         > 1
     {
-        assert!(policy.parallel);
+        assert!(policy.parallel, "32 tiles over 2 MiB should go parallel");
         assert!(policy.threads >= 2);
         assert!(policy.threads <= 8);
     }

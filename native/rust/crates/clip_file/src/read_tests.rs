@@ -11,20 +11,16 @@ use crate::tiles::{decode_rgba_tiles, rgba_tile_blob_len};
 use super::*;
 
 #[test]
-fn reads_test_clipping_summary() {
+fn reads_test_clipping_metadata() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
-    let summary = read_summary(path).expect("read Test_Clipping.clip summary");
+    let summary = read_summary(&path).expect("read Test_Clipping.clip summary");
 
     assert_eq!(summary.canvas, CanvasSize::new(512, 512));
     assert_eq!(summary.root_layer_id, LayerId(2));
     assert_eq!(summary.layer_count, 4);
     assert_eq!(summary.external_data_count, 7);
-}
 
-#[test]
-fn reads_test_clipping_layer_graph_records() {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
-    let container = ClipContainer::open(path).expect("open Test_Clipping.clip container");
+    let container = ClipContainer::open(&path).expect("open Test_Clipping.clip container");
     let records =
         read_layer_graph_records_from_sqlite(container.sqlite_bytes()).expect("read layers");
 
@@ -63,9 +59,11 @@ fn reads_test_clipping_layer_graph_records() {
 }
 
 #[test]
-fn decodes_test_clipping_layer_10_rgba_tiles() {
+fn decodes_test_clipping_raster_layers() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
-    let container = ClipContainer::open(path).expect("open Test_Clipping.clip container");
+
+    // Layer 10: internal source metadata plus a manual tile decode.
+    let container = ClipContainer::open(&path).expect("open Test_Clipping.clip container");
     let summary = metadata::read_summary_from_sqlite(
         container.sqlite_bytes(),
         container.external_data().len(),
@@ -99,48 +97,35 @@ fn decodes_test_clipping_layer_10_rgba_tiles() {
     assert_eq!(blob.external_id, source.external_id);
     assert_eq!(blob.bytes.len(), 1_310_720);
 
-    let image = decode_rgba_tiles(
+    let layer_10 = decode_rgba_tiles(
         &blob.bytes,
         source.pixel_size.width,
         source.pixel_size.height,
     )
     .expect("decode rgba tiles");
-    assert_eq!(image.width, 512);
-    assert_eq!(image.height, 512);
-
-    assert_eq!(pixel_at(&image.pixels, 512, 0, 0), [0, 0, 0, 0]);
-    assert_eq!(pixel_at(&image.pixels, 512, 100, 100), [0, 0, 0, 0]);
-
-    let mut alpha_count = 0usize;
-    let mut sums = [0u64; 4];
-    for pixel in image.pixels.chunks_exact(4) {
-        if pixel[3] > 0 {
-            alpha_count += 1;
-        }
-        for channel in 0..4 {
-            sums[channel] += u64::from(pixel[channel]);
-        }
-    }
+    assert_eq!(layer_10.width, 512);
+    assert_eq!(layer_10.height, 512);
+    assert_eq!(pixel_at(&layer_10.pixels, 512, 0, 0), [0, 0, 0, 0]);
+    assert_eq!(pixel_at(&layer_10.pixels, 512, 100, 100), [0, 0, 0, 0]);
+    let (alpha_count, sums) = rgba_stats(&layer_10.pixels);
     assert_eq!(alpha_count, 37_151);
     assert_eq!(sums, [8_507_579, 5_832_707, 5_832_707, 8_933_976]);
-}
 
-#[test]
-fn public_api_decodes_test_clipping_layer_11() {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Clipping.clip");
-    let image = read_raster_layer_rgba(path, LayerId(11)).expect("decode layer 11");
+    // Layer 11: public API decode placed on the canvas.
+    let layer_11 = read_raster_layer_rgba(&path, LayerId(11)).expect("decode layer 11");
 
-    assert_eq!(image.width, 512);
-    assert_eq!(image.height, 512);
-    assert_eq!(pixel_at(&image.pixels, 512, 0, 0), [0, 0, 0, 0]);
-    assert_eq!(pixel_at(&image.pixels, 512, 100, 100), [80, 70, 229, 255],);
-    assert_eq!(pixel_at(&image.pixels, 512, 300, 300), [80, 70, 229, 255],);
-
-    let alpha_count = image
-        .pixels
-        .chunks_exact(4)
-        .filter(|pixel| pixel[3] > 0)
-        .count();
+    assert_eq!(layer_11.width, 512);
+    assert_eq!(layer_11.height, 512);
+    assert_eq!(pixel_at(&layer_11.pixels, 512, 0, 0), [0, 0, 0, 0]);
+    assert_eq!(
+        pixel_at(&layer_11.pixels, 512, 100, 100),
+        [80, 70, 229, 255],
+    );
+    assert_eq!(
+        pixel_at(&layer_11.pixels, 512, 300, 300),
+        [80, 70, 229, 255],
+    );
+    let (alpha_count, _) = rgba_stats(&layer_11.pixels);
     assert_eq!(alpha_count, 196_553);
 }
 
@@ -200,27 +185,25 @@ fn public_api_decodes_test_monochrome_layer_7() {
 }
 
 #[test]
-fn reads_test_tone_curve_filter_payload() {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_ToneCurve.clip");
-    let container = ClipContainer::open(path).expect("open Test_ToneCurve.clip container");
-    let filter = read_filter_layer_source_from_sqlite(container.sqlite_bytes(), LayerId(6))
-        .expect("read tone curve filter source");
+fn reads_filter_layer_payloads() {
+    // (sample, expected filter_type, expected payload length) for layer 6.
+    let cases = [
+        ("Test_ToneCurve.clip", 3u32, 4160usize),
+        ("Test_Gradiation.clip", 9u32, 280usize),
+    ];
+    for (sample, filter_type, payload_len) in cases {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../../img")
+            .join(sample);
+        let container = ClipContainer::open(path)
+            .unwrap_or_else(|error| panic!("open {sample} container: {error:?}"));
+        let filter = read_filter_layer_source_from_sqlite(container.sqlite_bytes(), LayerId(6))
+            .unwrap_or_else(|error| panic!("read {sample} filter source: {error:?}"));
 
-    assert_eq!(filter.layer_id, LayerId(6));
-    assert_eq!(filter.filter_type, 3);
-    assert_eq!(filter.payload.len(), 4160);
-}
-
-#[test]
-fn reads_test_gradiation_filter_payload() {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img/Test_Gradiation.clip");
-    let container = ClipContainer::open(path).expect("open Test_Gradiation.clip container");
-    let filter = read_filter_layer_source_from_sqlite(container.sqlite_bytes(), LayerId(6))
-        .expect("read gradient map filter source");
-
-    assert_eq!(filter.layer_id, LayerId(6));
-    assert_eq!(filter.filter_type, 9);
-    assert_eq!(filter.payload.len(), 280);
+        assert_eq!(filter.layer_id, LayerId(6), "{sample}");
+        assert_eq!(filter.filter_type, filter_type, "{sample}");
+        assert_eq!(filter.payload.len(), payload_len, "{sample}");
+    }
 }
 
 fn pixel_at(pixels: &[u8], width: usize, x: usize, y: usize) -> [u8; 4] {

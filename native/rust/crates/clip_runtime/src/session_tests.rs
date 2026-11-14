@@ -56,12 +56,8 @@ fn opens_session_from_memory_bytes() {
 }
 
 #[test]
-fn byte_diff_count_includes_length_mismatch() {
+fn pixel_buffer_utils_count_byte_diffs_and_check_every_alpha() {
     assert_eq!(super::byte_diff_count(&[1, 2, 3], &[1, 4]), 2);
-}
-
-#[test]
-fn alpha_is_fully_opaque_checks_every_pixel() {
     assert!(super::alpha_is_fully_opaque(&[1, 2, 3, 255, 4, 5, 6, 255]));
     assert!(!super::alpha_is_fully_opaque(&[1, 2, 3, 255, 4, 5, 6, 254]));
 }
@@ -229,7 +225,9 @@ fn strict_normal_selector_clears_clip_base_after_through_group() {
 }
 
 #[test]
-fn gpu_selector_accepts_python_backed_lut_and_luminosity_filters() {
+fn gpu_selector_accepts_lut_and_luminosity_filters() {
+    use clip_gpu::GpuLutFilterMode::{Hsl, ThresholdLum, ToneCurveRgb};
+
     let mut session = synthetic_session(vec![
         container_node(0, 2, 0, 0),
         filter_node(1, 10, 1),
@@ -277,504 +275,110 @@ fn gpu_selector_accepts_python_backed_lut_and_luminosity_filters() {
 
     assert!(selection.unsupported.is_empty());
     assert_eq!(selection.sources.len(), 7);
-    for (source, (input, expected, expected_mode)) in selection.sources.iter().zip([
+    // LUT contents are covered by filter_lut_tests.rs; this only checks that
+    // each filter type reaches the GPU as the expected LUT mode.
+    let expected_modes = [
+        ("brightness/contrast", ToneCurveRgb),
+        ("level correction", ToneCurveRgb),
+        ("invert", ToneCurveRgb),
+        ("posterization", ToneCurveRgb),
+        ("threshold", ThresholdLum),
+        ("color balance", ToneCurveRgb),
         (
-            64usize,
-            [87, 87, 87],
-            clip_gpu::GpuLutFilterMode::ToneCurveRgb,
-        ),
-        (
-            64usize,
-            [24, 24, 24],
-            clip_gpu::GpuLutFilterMode::ToneCurveRgb,
-        ),
-        (
-            64usize,
-            [191, 191, 191],
-            clip_gpu::GpuLutFilterMode::ToneCurveRgb,
-        ),
-        (
-            64usize,
-            [85, 85, 85],
-            clip_gpu::GpuLutFilterMode::ToneCurveRgb,
-        ),
-        (
-            128usize,
-            [255, 255, 255],
-            clip_gpu::GpuLutFilterMode::ThresholdLum,
-        ),
-        (
-            226usize,
-            [231, 212, 231],
-            clip_gpu::GpuLutFilterMode::ToneCurveRgb,
-        ),
-        (
-            128usize,
-            [128, 128, 128],
-            clip_gpu::GpuLutFilterMode::Hsl(clip_gpu::GpuHslFilterParams {
+            "hue/saturation/luminosity",
+            Hsl(clip_gpu::GpuHslFilterParams {
                 hue_turns: 30.0 / 360.0,
                 saturation_delta: -25.0 / 100.0,
                 luminosity_delta: 40.0 / 100.0,
             }),
         ),
-    ]) {
-        let clip_gpu::GpuNormalStackSource::LutFilter {
-            lut_rgba,
-            filter_mode,
-            ..
-        } = source
-        else {
-            panic!("source was not represented as a LUT filter");
+    ];
+    for (source, (name, expected_mode)) in selection.sources.iter().zip(expected_modes) {
+        let clip_gpu::GpuNormalStackSource::LutFilter { filter_mode, .. } = source else {
+            panic!("{name}: source was not represented as a LUT filter");
         };
-        assert_eq!(*filter_mode, expected_mode);
-        assert_eq!(&lut_rgba[input * 4..input * 4 + 3], expected.as_slice());
+        assert_eq!(*filter_mode, expected_mode, "{name}");
     }
 }
 
 #[test]
-fn strict_raster_blend_mode_allows_supported_blends_by_position() {
-    let options = StrictRasterStackOptions {
-        allow_alpha_compositing: true,
-        allow_paper: true,
-        allow_layer_opacity: true,
-        allow_masks: true,
-        allow_clipping_runs: true,
-        allow_container_isolation: true,
-        allow_through_groups: true,
-        allow_add_blend: true,
-        allow_add_glow_blend: true,
-        allow_color_burn_blend: true,
-        allow_color_dodge_blend: true,
-        allow_extended_blends: true,
-        allow_glow_dodge_blend: true,
-        allow_hard_mix_blend: true,
-        allow_hsl_blends: true,
-        allow_simple_blends: true,
-        allow_soft_light_blend: true,
-        allow_lut_filters: true,
-        allow_vivid_light_blend: true,
-        allow_w3c_blends: true,
-        allow_initial_terminal_container_elision: false,
-    };
-    let add_glow = raster_node_with_composite(1, 5, 1, 9, false, super::LAYER_COMPOSITE_ADD_GLOW);
-    assert_eq!(
-        super::strict_raster_blend_mode(&add_glow, options, false),
-        Some(super::StrictRasterBlendMode::AddGlow)
-    );
+fn strict_raster_blend_mode_allows_every_supported_blend_by_position() {
+    use super::StrictRasterBlendMode::*;
 
-    let clipped_add_glow =
-        raster_node_with_composite(2, 6, 1, 10, true, super::LAYER_COMPOSITE_ADD_GLOW);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_add_glow, options, true),
-        Some(super::StrictRasterBlendMode::AddGlow)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_add_glow_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&add_glow, disabled, false),
-        None
-    );
-
-    let color_burn =
-        raster_node_with_composite(7, 11, 1, 15, false, super::LAYER_COMPOSITE_COLOR_BURN);
-    assert_eq!(
-        super::strict_raster_blend_mode(&color_burn, options, false),
-        Some(super::StrictRasterBlendMode::ColorBurn)
-    );
-
-    let clipped_color_burn =
-        raster_node_with_composite(8, 12, 1, 16, true, super::LAYER_COMPOSITE_COLOR_BURN);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_color_burn, options, true),
-        Some(super::StrictRasterBlendMode::ColorBurn)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_color_burn_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&color_burn, disabled, false),
-        None
-    );
-
-    let color_dodge =
-        raster_node_with_composite(3, 7, 1, 11, false, super::LAYER_COMPOSITE_COLOR_DODGE);
-    assert_eq!(
-        super::strict_raster_blend_mode(&color_dodge, options, false),
-        Some(super::StrictRasterBlendMode::ColorDodge)
-    );
-
-    let clipped_color_dodge =
-        raster_node_with_composite(4, 8, 1, 12, true, super::LAYER_COMPOSITE_COLOR_DODGE);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_color_dodge, options, true),
-        Some(super::StrictRasterBlendMode::ColorDodge)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_color_dodge_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&color_dodge, disabled, false),
-        None
-    );
-
-    let glow_dodge =
-        raster_node_with_composite(5, 9, 1, 13, false, super::LAYER_COMPOSITE_GLOW_DODGE);
-    assert_eq!(
-        super::strict_raster_blend_mode(&glow_dodge, options, false),
-        Some(super::StrictRasterBlendMode::GlowDodge)
-    );
-
-    let clipped_glow_dodge =
-        raster_node_with_composite(6, 10, 1, 14, true, super::LAYER_COMPOSITE_GLOW_DODGE);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_glow_dodge, options, true),
-        Some(super::StrictRasterBlendMode::GlowDodge)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_glow_dodge_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&glow_dodge, disabled, false),
-        None
-    );
-
-    let add = raster_node_with_composite(26, 36, 1, 40, false, super::LAYER_COMPOSITE_ADD);
-    assert_eq!(
-        super::strict_raster_blend_mode(&add, options, false),
-        Some(super::StrictRasterBlendMode::Add)
-    );
-
-    let clipped_add = raster_node_with_composite(27, 37, 1, 41, true, super::LAYER_COMPOSITE_ADD);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_add, options, true),
-        Some(super::StrictRasterBlendMode::Add)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_add_blend: false,
-        ..options
-    };
-    assert_eq!(super::strict_raster_blend_mode(&add, disabled, false), None);
-
-    let hard_mix = raster_node_with_composite(9, 13, 1, 17, false, super::LAYER_COMPOSITE_HARD_MIX);
-    assert_eq!(
-        super::strict_raster_blend_mode(&hard_mix, options, false),
-        Some(super::StrictRasterBlendMode::HardMix)
-    );
-
-    let clipped_hard_mix =
-        raster_node_with_composite(10, 14, 1, 18, true, super::LAYER_COMPOSITE_HARD_MIX);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_hard_mix, options, true),
-        Some(super::StrictRasterBlendMode::HardMix)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_hard_mix_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&hard_mix, disabled, false),
-        None
-    );
-
-    let w3c_blends = [
-        (
-            40,
-            50,
-            60,
-            super::LAYER_COMPOSITE_MULTIPLY,
-            super::StrictRasterBlendMode::Multiply,
-        ),
-        (
-            41,
-            51,
-            61,
-            super::LAYER_COMPOSITE_OVERLAY,
-            super::StrictRasterBlendMode::Overlay,
-        ),
-        (
-            42,
-            52,
-            62,
-            super::LAYER_COMPOSITE_HARD_LIGHT,
-            super::StrictRasterBlendMode::HardLight,
-        ),
+    let options = gpu_selector_options();
+    let modes = [
+        Normal,
+        Add,
+        AddGlow,
+        ColorBurn,
+        ColorDodge,
+        Darken,
+        DarkerColor,
+        Difference,
+        Divide,
+        Exclusion,
+        GlowDodge,
+        HardMix,
+        HardLight,
+        Hue,
+        Lighten,
+        LighterColor,
+        LinearBurn,
+        LinearLight,
+        Multiply,
+        Overlay,
+        PinLight,
+        Saturation,
+        Brightness,
+        Color,
+        Screen,
+        SoftLight,
+        Subtract,
+        VividLight,
     ];
-    for (node, layer, mipmap, composite, expected) in w3c_blends {
-        let raster = raster_node_with_composite(node, layer, 1, mipmap, false, composite);
-        assert_eq!(
-            super::strict_raster_blend_mode(&raster, options, false),
-            Some(expected)
-        );
 
-        let clipped =
-            raster_node_with_composite(node + 10, layer + 10, 1, mipmap + 10, true, composite);
+    for (index, mode) in modes.into_iter().enumerate() {
+        let (composite, gate) = blend_composite_and_gate(mode);
+        let id = u32::try_from(index).expect("small index") + 1;
+        let unclipped = raster_node_with_composite(id, 100 + id, 1, 200 + id, false, composite);
+        let clipped = raster_node_with_composite(50 + id, 150 + id, 1, 250 + id, true, composite);
+
+        assert_eq!(
+            super::strict_raster_blend_mode(&unclipped, options, false),
+            Some(mode),
+            "{mode:?}: unclipped raster outside a clipping run"
+        );
         assert_eq!(
             super::strict_raster_blend_mode(&clipped, options, true),
-            Some(expected)
+            Some(mode),
+            "{mode:?}: clipped raster inside a clipping run"
         );
 
-        let disabled = StrictRasterStackOptions {
-            allow_w3c_blends: false,
-            ..options
-        };
+        // Composite 0 (Normal) is never position-gated. Every other blend must
+        // reject a clip flag outside a clipping run and a clipping-run position
+        // without the clip flag.
+        let mismatched = (mode == Normal).then_some(Normal);
         assert_eq!(
-            super::strict_raster_blend_mode(&raster, disabled, false),
-            None
+            super::strict_raster_blend_mode(&clipped, options, false),
+            mismatched,
+            "{mode:?}: clip flag outside a clipping run"
         );
+        assert_eq!(
+            super::strict_raster_blend_mode(&unclipped, options, true),
+            mismatched,
+            "{mode:?}: clipping-run position without clip flag"
+        );
+
+        if let Some(disable) = gate {
+            let mut disabled = options;
+            disable(&mut disabled);
+            assert_eq!(
+                super::strict_raster_blend_mode(&unclipped, disabled, false),
+                None,
+                "{mode:?}: gating option disabled"
+            );
+        }
     }
-
-    let simple_blends = [
-        (
-            21,
-            31,
-            35,
-            super::LAYER_COMPOSITE_DARKEN,
-            super::StrictRasterBlendMode::Darken,
-        ),
-        (
-            22,
-            32,
-            36,
-            super::LAYER_COMPOSITE_SUBTRACT,
-            super::StrictRasterBlendMode::Subtract,
-        ),
-        (
-            23,
-            33,
-            37,
-            super::LAYER_COMPOSITE_LIGHTEN,
-            super::StrictRasterBlendMode::Lighten,
-        ),
-        (
-            24,
-            34,
-            38,
-            super::LAYER_COMPOSITE_SCREEN,
-            super::StrictRasterBlendMode::Screen,
-        ),
-        (
-            25,
-            35,
-            39,
-            super::LAYER_COMPOSITE_DIFFERENCE,
-            super::StrictRasterBlendMode::Difference,
-        ),
-    ];
-    for (node, layer, mipmap, composite, expected) in simple_blends {
-        let raster = raster_node_with_composite(node, layer, 1, mipmap, false, composite);
-        assert_eq!(
-            super::strict_raster_blend_mode(&raster, options, false),
-            Some(expected)
-        );
-
-        let clipped =
-            raster_node_with_composite(node + 10, layer + 10, 1, mipmap + 10, true, composite);
-        assert_eq!(
-            super::strict_raster_blend_mode(&clipped, options, true),
-            Some(expected)
-        );
-
-        let disabled = StrictRasterStackOptions {
-            allow_simple_blends: false,
-            ..options
-        };
-        assert_eq!(
-            super::strict_raster_blend_mode(&raster, disabled, false),
-            None
-        );
-    }
-
-    let extended_blends = [
-        (
-            60,
-            70,
-            80,
-            super::LAYER_COMPOSITE_LINEAR_BURN,
-            super::StrictRasterBlendMode::LinearBurn,
-        ),
-        (
-            61,
-            71,
-            81,
-            super::LAYER_COMPOSITE_DARKER_COLOR,
-            super::StrictRasterBlendMode::DarkerColor,
-        ),
-        (
-            62,
-            72,
-            82,
-            super::LAYER_COMPOSITE_LIGHTER_COLOR,
-            super::StrictRasterBlendMode::LighterColor,
-        ),
-        (
-            63,
-            73,
-            83,
-            super::LAYER_COMPOSITE_LINEAR_LIGHT,
-            super::StrictRasterBlendMode::LinearLight,
-        ),
-        (
-            64,
-            74,
-            84,
-            super::LAYER_COMPOSITE_PIN_LIGHT,
-            super::StrictRasterBlendMode::PinLight,
-        ),
-        (
-            65,
-            75,
-            85,
-            super::LAYER_COMPOSITE_EXCLUSION,
-            super::StrictRasterBlendMode::Exclusion,
-        ),
-        (
-            66,
-            76,
-            86,
-            super::LAYER_COMPOSITE_BRIGHTNESS,
-            super::StrictRasterBlendMode::Brightness,
-        ),
-        (
-            67,
-            77,
-            87,
-            super::LAYER_COMPOSITE_DIVIDE,
-            super::StrictRasterBlendMode::Divide,
-        ),
-    ];
-    for (node, layer, mipmap, composite, expected) in extended_blends {
-        let raster = raster_node_with_composite(node, layer, 1, mipmap, false, composite);
-        assert_eq!(
-            super::strict_raster_blend_mode(&raster, options, false),
-            Some(expected)
-        );
-
-        let clipped =
-            raster_node_with_composite(node + 10, layer + 10, 1, mipmap + 10, true, composite);
-        assert_eq!(
-            super::strict_raster_blend_mode(&clipped, options, true),
-            Some(expected)
-        );
-
-        let disabled = StrictRasterStackOptions {
-            allow_extended_blends: false,
-            ..options
-        };
-        assert_eq!(
-            super::strict_raster_blend_mode(&raster, disabled, false),
-            None
-        );
-    }
-
-    let hue = raster_node_with_composite(13, 17, 1, 21, false, super::LAYER_COMPOSITE_HUE);
-    assert_eq!(
-        super::strict_raster_blend_mode(&hue, options, false),
-        Some(super::StrictRasterBlendMode::Hue)
-    );
-
-    let clipped_hue = raster_node_with_composite(14, 18, 1, 22, true, super::LAYER_COMPOSITE_HUE);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_hue, options, true),
-        Some(super::StrictRasterBlendMode::Hue)
-    );
-
-    let saturation =
-        raster_node_with_composite(15, 19, 1, 23, false, super::LAYER_COMPOSITE_SATURATION);
-    assert_eq!(
-        super::strict_raster_blend_mode(&saturation, options, false),
-        Some(super::StrictRasterBlendMode::Saturation)
-    );
-
-    let clipped_saturation =
-        raster_node_with_composite(16, 20, 1, 24, true, super::LAYER_COMPOSITE_SATURATION);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_saturation, options, true),
-        Some(super::StrictRasterBlendMode::Saturation)
-    );
-
-    let color = raster_node_with_composite(17, 21, 1, 25, false, super::LAYER_COMPOSITE_COLOR);
-    assert_eq!(
-        super::strict_raster_blend_mode(&color, options, false),
-        Some(super::StrictRasterBlendMode::Color)
-    );
-
-    let clipped_color =
-        raster_node_with_composite(18, 22, 1, 26, true, super::LAYER_COMPOSITE_COLOR);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_color, options, true),
-        Some(super::StrictRasterBlendMode::Color)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_hsl_blends: false,
-        ..options
-    };
-    assert_eq!(super::strict_raster_blend_mode(&hue, disabled, false), None);
-    assert_eq!(
-        super::strict_raster_blend_mode(&saturation, disabled, false),
-        None
-    );
-    assert_eq!(
-        super::strict_raster_blend_mode(&color, disabled, false),
-        None
-    );
-
-    let soft_light =
-        raster_node_with_composite(19, 23, 1, 27, false, super::LAYER_COMPOSITE_SOFT_LIGHT);
-    assert_eq!(
-        super::strict_raster_blend_mode(&soft_light, options, false),
-        Some(super::StrictRasterBlendMode::SoftLight)
-    );
-
-    let clipped_soft_light =
-        raster_node_with_composite(20, 24, 1, 28, true, super::LAYER_COMPOSITE_SOFT_LIGHT);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_soft_light, options, true),
-        Some(super::StrictRasterBlendMode::SoftLight)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_soft_light_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&soft_light, disabled, false),
-        None
-    );
-
-    let vivid_light =
-        raster_node_with_composite(11, 15, 1, 19, false, super::LAYER_COMPOSITE_VIVID_LIGHT);
-    assert_eq!(
-        super::strict_raster_blend_mode(&vivid_light, options, false),
-        Some(super::StrictRasterBlendMode::VividLight)
-    );
-
-    let clipped_vivid_light =
-        raster_node_with_composite(12, 16, 1, 20, true, super::LAYER_COMPOSITE_VIVID_LIGHT);
-    assert_eq!(
-        super::strict_raster_blend_mode(&clipped_vivid_light, options, true),
-        Some(super::StrictRasterBlendMode::VividLight)
-    );
-
-    let disabled = StrictRasterStackOptions {
-        allow_vivid_light_blend: false,
-        ..options
-    };
-    assert_eq!(
-        super::strict_raster_blend_mode(&vivid_light, disabled, false),
-        None
-    );
 }
 
 #[test]
@@ -927,6 +531,7 @@ fn region_read_skips_unsupported_layer_kinds() {
 #[test]
 fn gpu_selector_accepts_container_base_clipping_runs_in_aya_fixture() {
     let Some(path) = fixture_path_ending("Aya_Live2D.clip") else {
+        eprintln!("skip: private fixture img/*Aya_Live2D.clip is not present");
         return;
     };
     let session = ClipSession::open(&path).expect("open Aya fixture");
@@ -952,6 +557,7 @@ fn gpu_selector_accepts_container_base_clipping_runs_in_aya_fixture() {
 #[test]
 fn gpu_selector_accepts_container_clipped_siblings_in_kabi_fixture() {
     let Some(path) = fixture_path_ending("Kabi_Live2D.clip") else {
+        eprintln!("skip: private fixture img/*Kabi_Live2D.clip is not present");
         return;
     };
     let session = ClipSession::open(&path).expect("open Kabi fixture");
@@ -975,84 +581,80 @@ fn gpu_selector_accepts_container_clipped_siblings_in_kabi_fixture() {
 }
 
 #[test]
-fn gpu_selector_folds_off_canvas_zero_fill_mask_to_zero_opacity() {
-    let mut session = synthetic_session(vec![
-        container_node(0, 2, 0, 0),
-        raster_node_with_mask(1, 10, 1, 15, 50, false),
-    ]);
-    session
-        .raster_sources
-        .insert(LayerId(10), raster_source(10, 15));
-    session
-        .mask_sources
-        .insert(LayerId(10), off_canvas_mask_source(10, 50, 0));
+fn gpu_selector_resolves_off_canvas_mask_by_empty_fill() {
+    struct Case {
+        name: &'static str,
+        empty_fill: u8,
+        mask_resources: usize,
+        opacity: f32,
+        keeps_mask_key: bool,
+    }
+    let cases = [
+        Case {
+            name: "zero fill folds to zero opacity",
+            empty_fill: 0,
+            mask_resources: 0,
+            opacity: 0.0,
+            keeps_mask_key: false,
+        },
+        Case {
+            name: "opaque fill elides the mask resource",
+            empty_fill: 255,
+            mask_resources: 0,
+            opacity: 1.0,
+            keeps_mask_key: false,
+        },
+        Case {
+            name: "partial fill keeps the mask resource",
+            empty_fill: 128,
+            mask_resources: 1,
+            opacity: 1.0,
+            keeps_mask_key: true,
+        },
+    ];
 
-    let selection = session
-        .select_gpu_normal_render_stack(gpu_selector_options())
-        .expect("select synthetic masked raster");
+    for case in cases {
+        let mut session = synthetic_session(vec![
+            container_node(0, 2, 0, 0),
+            raster_node_with_mask(1, 10, 1, 15, 50, false),
+        ]);
+        session
+            .raster_sources
+            .insert(LayerId(10), raster_source(10, 15));
+        session
+            .mask_sources
+            .insert(LayerId(10), off_canvas_mask_source(10, 50, case.empty_fill));
 
-    assert!(selection.unsupported.is_empty());
-    assert_eq!(selection.resource_plan.mask_resource_count(), 0);
-    assert_eq!(selection.sources.len(), 1);
-    let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
-        panic!("masked raster was not represented as a raster source");
-    };
-    assert_eq!(raster.opacity, 0.0);
-    assert_eq!(raster.mask_key, None);
-}
+        let selection = session
+            .select_gpu_normal_render_stack(gpu_selector_options())
+            .unwrap_or_else(|error| panic!("{}: selector failed: {error:?}", case.name));
 
-#[test]
-fn gpu_selector_elides_off_canvas_opaque_mask_resource() {
-    let mut session = synthetic_session(vec![
-        container_node(0, 2, 0, 0),
-        raster_node_with_mask(1, 10, 1, 15, 50, false),
-    ]);
-    session
-        .raster_sources
-        .insert(LayerId(10), raster_source(10, 15));
-    session
-        .mask_sources
-        .insert(LayerId(10), off_canvas_mask_source(10, 50, 255));
-
-    let selection = session
-        .select_gpu_normal_render_stack(gpu_selector_options())
-        .expect("select synthetic masked raster");
-
-    assert!(selection.unsupported.is_empty());
-    assert_eq!(selection.resource_plan.mask_resource_count(), 0);
-    assert_eq!(selection.sources.len(), 1);
-    let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
-        panic!("masked raster was not represented as a raster source");
-    };
-    assert_eq!(raster.opacity, 1.0);
-    assert_eq!(raster.mask_key, None);
-}
-
-#[test]
-fn gpu_selector_keeps_partial_fill_off_canvas_mask_resource() {
-    let mut session = synthetic_session(vec![
-        container_node(0, 2, 0, 0),
-        raster_node_with_mask(1, 10, 1, 15, 50, false),
-    ]);
-    session
-        .raster_sources
-        .insert(LayerId(10), raster_source(10, 15));
-    session
-        .mask_sources
-        .insert(LayerId(10), off_canvas_mask_source(10, 50, 128));
-
-    let selection = session
-        .select_gpu_normal_render_stack(gpu_selector_options())
-        .expect("select synthetic masked raster");
-
-    assert!(selection.unsupported.is_empty());
-    assert_eq!(selection.resource_plan.mask_resource_count(), 1);
-    assert_eq!(selection.sources.len(), 1);
-    let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
-        panic!("masked raster was not represented as a raster source");
-    };
-    assert_eq!(raster.opacity, 1.0);
-    assert!(raster.mask_key.is_some());
+        assert!(
+            selection.unsupported.is_empty(),
+            "{}: unsupported entries",
+            case.name
+        );
+        assert_eq!(
+            selection.resource_plan.mask_resource_count(),
+            case.mask_resources,
+            "{}: mask resource count",
+            case.name
+        );
+        assert_eq!(selection.sources.len(), 1, "{}: source count", case.name);
+        let clip_gpu::GpuNormalStackSource::Raster(raster) = &selection.sources[0] else {
+            panic!(
+                "{}: masked raster was not represented as a raster source",
+                case.name
+            );
+        };
+        assert_eq!(raster.opacity, case.opacity, "{}: opacity", case.name);
+        assert_eq!(
+            raster.mask_key.is_some(),
+            case.keeps_mask_key,
+            "{}: mask key presence",
+            case.name
+        );
+    }
 }
 
 fn synthetic_session(nodes: Vec<RenderNode>) -> ClipSession {
@@ -1082,7 +684,7 @@ fn synthetic_session(nodes: Vec<RenderNode>) -> ClipSession {
 
 fn fixture_path_ending(suffix: &str) -> Option<PathBuf> {
     let img_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../img");
-    let path = std::fs::read_dir(&img_dir)
+    std::fs::read_dir(&img_dir)
         .expect("read fixture directory")
         .filter_map(Result::ok)
         .map(|entry| entry.path())
@@ -1090,11 +692,7 @@ fn fixture_path_ending(suffix: &str) -> Option<PathBuf> {
             path.file_name()
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| name.ends_with(suffix))
-        });
-    if path.is_none() {
-        eprintln!("skip missing private fixture ending with {suffix:?}");
-    }
-    path
+        })
 }
 
 fn stack_contains_container_clipping_run(source: &clip_gpu::GpuNormalStackSource) -> bool {
@@ -1342,5 +940,124 @@ fn gpu_selector_options() -> StrictRasterStackOptions {
         allow_vivid_light_blend: true,
         allow_w3c_blends: true,
         allow_initial_terminal_container_elision: false,
+    }
+}
+
+type BlendGate = fn(&mut StrictRasterStackOptions);
+
+/// Layer composite id and the option that gates each strict blend mode. The
+/// exhaustive match forces this table to grow with the enum.
+fn blend_composite_and_gate(mode: super::StrictRasterBlendMode) -> (u32, Option<BlendGate>) {
+    use super::StrictRasterBlendMode::*;
+    match mode {
+        Normal => (0, None),
+        Add => (
+            super::LAYER_COMPOSITE_ADD,
+            Some(|o| o.allow_add_blend = false),
+        ),
+        AddGlow => (
+            super::LAYER_COMPOSITE_ADD_GLOW,
+            Some(|o| o.allow_add_glow_blend = false),
+        ),
+        ColorBurn => (
+            super::LAYER_COMPOSITE_COLOR_BURN,
+            Some(|o| o.allow_color_burn_blend = false),
+        ),
+        ColorDodge => (
+            super::LAYER_COMPOSITE_COLOR_DODGE,
+            Some(|o| o.allow_color_dodge_blend = false),
+        ),
+        Darken => (
+            super::LAYER_COMPOSITE_DARKEN,
+            Some(|o| o.allow_simple_blends = false),
+        ),
+        DarkerColor => (
+            super::LAYER_COMPOSITE_DARKER_COLOR,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        Difference => (
+            super::LAYER_COMPOSITE_DIFFERENCE,
+            Some(|o| o.allow_simple_blends = false),
+        ),
+        Divide => (
+            super::LAYER_COMPOSITE_DIVIDE,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        Exclusion => (
+            super::LAYER_COMPOSITE_EXCLUSION,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        GlowDodge => (
+            super::LAYER_COMPOSITE_GLOW_DODGE,
+            Some(|o| o.allow_glow_dodge_blend = false),
+        ),
+        HardMix => (
+            super::LAYER_COMPOSITE_HARD_MIX,
+            Some(|o| o.allow_hard_mix_blend = false),
+        ),
+        HardLight => (
+            super::LAYER_COMPOSITE_HARD_LIGHT,
+            Some(|o| o.allow_w3c_blends = false),
+        ),
+        Hue => (
+            super::LAYER_COMPOSITE_HUE,
+            Some(|o| o.allow_hsl_blends = false),
+        ),
+        Lighten => (
+            super::LAYER_COMPOSITE_LIGHTEN,
+            Some(|o| o.allow_simple_blends = false),
+        ),
+        LighterColor => (
+            super::LAYER_COMPOSITE_LIGHTER_COLOR,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        LinearBurn => (
+            super::LAYER_COMPOSITE_LINEAR_BURN,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        LinearLight => (
+            super::LAYER_COMPOSITE_LINEAR_LIGHT,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        Multiply => (
+            super::LAYER_COMPOSITE_MULTIPLY,
+            Some(|o| o.allow_w3c_blends = false),
+        ),
+        Overlay => (
+            super::LAYER_COMPOSITE_OVERLAY,
+            Some(|o| o.allow_w3c_blends = false),
+        ),
+        PinLight => (
+            super::LAYER_COMPOSITE_PIN_LIGHT,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        Saturation => (
+            super::LAYER_COMPOSITE_SATURATION,
+            Some(|o| o.allow_hsl_blends = false),
+        ),
+        Brightness => (
+            super::LAYER_COMPOSITE_BRIGHTNESS,
+            Some(|o| o.allow_extended_blends = false),
+        ),
+        Color => (
+            super::LAYER_COMPOSITE_COLOR,
+            Some(|o| o.allow_hsl_blends = false),
+        ),
+        Screen => (
+            super::LAYER_COMPOSITE_SCREEN,
+            Some(|o| o.allow_simple_blends = false),
+        ),
+        SoftLight => (
+            super::LAYER_COMPOSITE_SOFT_LIGHT,
+            Some(|o| o.allow_soft_light_blend = false),
+        ),
+        Subtract => (
+            super::LAYER_COMPOSITE_SUBTRACT,
+            Some(|o| o.allow_simple_blends = false),
+        ),
+        VividLight => (
+            super::LAYER_COMPOSITE_VIVID_LIGHT,
+            Some(|o| o.allow_vivid_light_blend = false),
+        ),
     }
 }

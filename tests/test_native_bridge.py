@@ -151,36 +151,25 @@ class FakeRenderer:
 
 class NativeBridgeTests(unittest.TestCase):
     def test_packaged_renderer_candidates_prefer_runtime_platform_directory(self) -> None:
+        cases = [
+            ("linux-x64", "libclip_capi.so"),
+            ("macos-arm64", "libclip_capi.dylib"),
+        ]
         original_platform_id = native_bridge._runtime_platform_id
         try:
-            native_bridge._runtime_platform_id = lambda: "linux-x64"
-            module_dir = Path("/addon")
+            for platform_id, library_name in cases:
+                with self.subTest(platform=platform_id):
+                    native_bridge._runtime_platform_id = lambda platform_id=platform_id: platform_id
+                    module_dir = Path("/addon")
 
-            self.assertEqual(
-                native_bridge._packaged_renderer_library_candidates(module_dir)[0],
-                module_dir / "native" / "linux-x64" / "libclip_capi.so",
-            )
-            self.assertEqual(
-                native_bridge._packaged_renderer_worker_candidates(module_dir)[0],
-                module_dir / "native" / "linux-x64" / "clip_cli",
-            )
-        finally:
-            native_bridge._runtime_platform_id = original_platform_id
-
-    def test_packaged_renderer_candidates_use_macos_library_name(self) -> None:
-        original_platform_id = native_bridge._runtime_platform_id
-        try:
-            native_bridge._runtime_platform_id = lambda: "macos-arm64"
-            module_dir = Path("/addon")
-
-            self.assertEqual(
-                native_bridge._packaged_renderer_library_candidates(module_dir)[0],
-                module_dir / "native" / "macos-arm64" / "libclip_capi.dylib",
-            )
-            self.assertEqual(
-                native_bridge._packaged_renderer_worker_candidates(module_dir)[0],
-                module_dir / "native" / "macos-arm64" / "clip_cli",
-            )
+                    self.assertEqual(
+                        native_bridge._packaged_renderer_library_candidates(module_dir)[0],
+                        module_dir / "native" / platform_id / library_name,
+                    )
+                    self.assertEqual(
+                        native_bridge._packaged_renderer_worker_candidates(module_dir)[0],
+                        module_dir / "native" / platform_id / "clip_cli",
+                    )
         finally:
             native_bridge._runtime_platform_id = original_platform_id
 
@@ -264,20 +253,6 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(shutdown_calls, [True])
         self.assertEqual(calls, [("C:/addon/clip_cli.exe", "sample.clip", '{"abi":1}')])
 
-    def test_worker_unsupported_detail_formats_issue_locator(self) -> None:
-        self.assertEqual(
-            worker_protocol._worker_unsupported_detail(
-                {
-                    "layer_id": 9,
-                    "layer_name": "Tone curve",
-                    "node_id": 4,
-                    "kind": "Filter",
-                    "reason": "filter layer is not supported",
-                }
-            ),
-            "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
-        )
-
     def test_create_or_update_image_flips_rows_for_blender_pixel_storage(self) -> None:
         bpy = FakeBpy()
         result = native_bridge.NativeRenderResult(
@@ -344,14 +319,13 @@ class NativeBridgeTests(unittest.TestCase):
             ],
         )
 
-    def test_import_clip_as_image_uploads_pixels_and_tracks_source(self) -> None:
+    def test_create_or_update_image_uploads_pixels_and_tracks_source(self) -> None:
         bpy = FakeBpy()
 
-        image = native_bridge.import_clip_as_image(
-            "sample.clip",
-            bpy_module=bpy,
+        image = native_bridge.create_or_update_image(
+            bpy,
+            FakeRenderer().render_rgba8("sample.clip"),
             image_name="sample",
-            renderer=FakeRenderer(),
         )
 
         self.assertEqual(image.name, "sample")
@@ -524,28 +498,14 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_DETAILS_KEY], "")
         self.assertEqual(image[native_bridge.CLIP_SUPPORT_LOCATIONS_KEY], "")
 
-    def test_support_detail_locations_extracts_layer_node_kind(self) -> None:
-        locations = native_bridge.support_detail_locations(
-            (
-                "- layer 9 node 4 Filter: filter layer is not supported",
-                "- layer 10 [Layer 2] node 5 Raster: raster colour type None is not supported",
-                "plain summary line",
-            )
-        )
-
-        self.assertEqual(
-            locations,
-            ("layer 9 node 4 Filter", "layer 10 [Layer 2] node 5 Raster"),
-        )
-
     def test_support_detail_records_extract_names_and_reasons(self) -> None:
-        records = native_bridge.support_detail_records(
-            (
-                "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
-                "- layer 10 node 5 Raster: raster colour type None is not supported",
-                "plain summary line",
-            )
+        details = (
+            "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
+            "- layer 10 node 5 Raster: raster colour type None is not supported",
+            "plain summary line",
         )
+
+        records = native_bridge.support_detail_records(details)
 
         self.assertEqual(len(records), 2)
         self.assertEqual(records[0].layer_id, 9)
@@ -556,6 +516,21 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(records[0].location, "layer 9 [Tone curve] node 4 Filter")
         self.assertEqual(records[1].layer_name, "")
         self.assertEqual(records[1].reason, "raster colour type None is not supported")
+
+        self.assertEqual(
+            native_bridge.support_detail_locations(details),
+            ("layer 9 [Tone curve] node 4 Filter", "layer 10 node 5 Raster"),
+        )
+        self.assertEqual(
+            native_bridge.support_detail_locations(
+                (
+                    "- layer 9 node 4 Filter: filter layer is not supported",
+                    "- layer 10 [Layer 2] node 5 Raster: raster colour type None is not supported",
+                    "plain summary line",
+                )
+            ),
+            ("layer 9 node 4 Filter", "layer 10 [Layer 2] node 5 Raster"),
+        )
 
     def test_successful_update_clears_previous_reload_error(self) -> None:
         bpy = FakeBpy()
@@ -574,44 +549,45 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
         self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
 
-    def test_write_reload_error_records_message(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
+    def test_write_reload_status_and_error_manage_error_and_started_keys(self) -> None:
+        with self.subTest(case="error_records_message_and_clears_started"):
+            image = FakeImage("sample", 1, 1)
+            image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
 
-        native_bridge.write_reload_error(image, "render failed")
+            native_bridge.write_reload_error(image, "render failed")
 
-        self.assertEqual(
-            image[native_bridge.CLIP_RELOAD_STATUS_KEY],
-            native_bridge.RELOAD_STATUS_ERROR,
-        )
-        self.assertEqual(image[native_bridge.CLIP_RELOAD_ERROR_KEY], "render failed")
-        self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
+            self.assertEqual(
+                image[native_bridge.CLIP_RELOAD_STATUS_KEY],
+                native_bridge.RELOAD_STATUS_ERROR,
+            )
+            self.assertEqual(image[native_bridge.CLIP_RELOAD_ERROR_KEY], "render failed")
+            self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
 
-    def test_write_reload_status_clears_previous_error(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        native_bridge.write_reload_error(image, "render failed")
-        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
+        with self.subTest(case="status_clears_previous_error_and_started"):
+            image = FakeImage("sample", 1, 1)
+            native_bridge.write_reload_error(image, "render failed")
+            image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
 
-        native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_MISSING)
+            native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_MISSING)
 
-        self.assertEqual(
-            image[native_bridge.CLIP_RELOAD_STATUS_KEY],
-            native_bridge.RELOAD_STATUS_MISSING,
-        )
-        self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
-        self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
+            self.assertEqual(
+                image[native_bridge.CLIP_RELOAD_STATUS_KEY],
+                native_bridge.RELOAD_STATUS_MISSING,
+            )
+            self.assertNotIn(native_bridge.CLIP_RELOAD_ERROR_KEY, image)
+            self.assertNotIn(native_bridge.CLIP_RELOAD_STARTED_AT_KEY, image)
 
-    def test_write_reload_status_keeps_started_time_while_refreshing(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
+        with self.subTest(case="refreshing_keeps_started_time"):
+            image = FakeImage("sample", 1, 1)
+            image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY] = "10.0"
 
-        native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_REFRESHING)
+            native_bridge.write_reload_status(image, native_bridge.RELOAD_STATUS_REFRESHING)
 
-        self.assertEqual(
-            image[native_bridge.CLIP_RELOAD_STATUS_KEY],
-            native_bridge.RELOAD_STATUS_REFRESHING,
-        )
-        self.assertEqual(image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY], "10.0")
+            self.assertEqual(
+                image[native_bridge.CLIP_RELOAD_STATUS_KEY],
+                native_bridge.RELOAD_STATUS_REFRESHING,
+            )
+            self.assertEqual(image[native_bridge.CLIP_RELOAD_STARTED_AT_KEY], "10.0")
 
     def test_create_or_update_applies_patch_rows_to_existing_image(self) -> None:
         bpy = FakeBpy()
@@ -730,153 +706,122 @@ class NativeBridgeTests(unittest.TestCase):
         self.assertEqual(image.size, (1, 1))
         self.assertTrue(image.updated)
 
-    def test_inspect_native_image_source_marks_fresh_source_ok(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-        image[native_bridge.CLIP_SIZE_KEY] = "42"
+    def test_inspect_native_image_source(self) -> None:
+        source = native_bridge.CLIP_SOURCE_KEY
+        mtime = native_bridge.CLIP_MTIME_KEY
+        size = native_bridge.CLIP_SIZE_KEY
+        sha256 = native_bridge.CLIP_SHA256_KEY
+        ok = native_bridge.RELOAD_STATUS_OK
+        stale = native_bridge.RELOAD_STATUS_STALE
+        missing = native_bridge.RELOAD_STATUS_MISSING
 
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: True,
-            getmtime=lambda path: 10.0,
-            getsize=lambda path: 42,
-        )
+        # (name, stored image properties, inspect kwargs, expected state attributes,
+        #  expected paths passed to exists(), or None to skip that check).
+        cases = [
+            (
+                "fresh_source_ok",
+                {source: "sample.clip", mtime: "10.0", size: "42"},
+                dict(exists=lambda path: True, getmtime=lambda path: 10.0, getsize=lambda path: 42),
+                dict(
+                    clip_path="sample.clip",
+                    stored_mtime=10.0,
+                    current_mtime=10.0,
+                    stored_size=42,
+                    current_size=42,
+                    should_reload=False,
+                    status=ok,
+                ),
+                ["sample.clip"],
+            ),
+            (
+                "resolves_blender_relative_path",
+                {source: "//img/sample.clip", mtime: "10.0", size: "42"},
+                dict(
+                    resolve_path=lambda path: "C:/project/img/sample.clip",
+                    exists=lambda path: True,
+                    getmtime=lambda path: 10.0,
+                    getsize=lambda path: 42,
+                ),
+                dict(clip_path="C:/project/img/sample.clip", should_reload=False, status=ok),
+                ["C:/project/img/sample.clip"],
+            ),
+            (
+                "newer_source_stale",
+                {source: "sample.clip", mtime: "10.0"},
+                dict(exists=lambda path: True, getmtime=lambda path: 11.0, getsize=lambda path: 42),
+                dict(should_reload=True, status=stale),
+                None,
+            ),
+            (
+                "size_change_stale",
+                {source: "sample.clip", mtime: "10.0", size: "42"},
+                dict(exists=lambda path: True, getmtime=lambda path: 10.0, getsize=lambda path: 43),
+                dict(should_reload=True, status=stale),
+                None,
+            ),
+            (
+                "hash_check_catches_same_stat_change",
+                {source: "sample.clip", mtime: "10.0", size: "42", sha256: "old"},
+                dict(
+                    exists=lambda path: True,
+                    getmtime=lambda path: 10.0,
+                    getsize=lambda path: 42,
+                    getsha256=lambda path: "new",
+                    check_hash=True,
+                ),
+                dict(stored_sha256="old", current_sha256="new", should_reload=True, status=stale),
+                None,
+            ),
+            (
+                "hash_check_refreshes_missing_hash",
+                {source: "sample.clip", mtime: "10.0", size: "42"},
+                dict(
+                    exists=lambda path: True,
+                    getmtime=lambda path: 10.0,
+                    getsize=lambda path: 42,
+                    getsha256=lambda path: "current",
+                    check_hash=True,
+                ),
+                dict(current_sha256="current", should_reload=True, status=stale),
+                None,
+            ),
+            (
+                "missing_source_keeps_pixels",
+                {source: "missing.clip", mtime: "10.0"},
+                dict(exists=lambda path: False, getmtime=lambda path: 11.0, getsize=lambda path: 42),
+                dict(should_reload=False, current_mtime=None, status=missing),
+                None,
+            ),
+            (
+                "unknown_mtime_refreshes",
+                {source: "sample.clip"},
+                dict(exists=lambda path: True, getmtime=lambda path: 12.0, getsize=lambda path: 42),
+                dict(stored_mtime=None, current_mtime=12.0, should_reload=True, status=stale),
+                None,
+            ),
+        ]
 
-        self.assertEqual(state.clip_path, "sample.clip")
-        self.assertEqual(state.stored_mtime, 10.0)
-        self.assertEqual(state.current_mtime, 10.0)
-        self.assertEqual(state.stored_size, 42)
-        self.assertEqual(state.current_size, 42)
-        self.assertFalse(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_OK)
+        for name, props, kwargs, expected, expected_seen_paths in cases:
+            with self.subTest(name=name):
+                image = FakeImage("sample", 1, 1)
+                for key, value in props.items():
+                    image[key] = value
+                seen_paths = []
+                exists = kwargs["exists"]
 
-    def test_inspect_native_image_source_resolves_blender_relative_path(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "//img/sample.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-        image[native_bridge.CLIP_SIZE_KEY] = "42"
-        seen_paths = []
+                def record_exists(path: str, exists=exists) -> bool:
+                    seen_paths.append(path)
+                    return exists(path)
 
-        def record_exists(path: str) -> bool:
-            seen_paths.append(path)
-            return True
+                state = native_bridge.inspect_native_image_source(
+                    image,
+                    **{**kwargs, "exists": record_exists},
+                )
 
-        state = native_bridge.inspect_native_image_source(
-            image,
-            resolve_path=lambda path: "C:/project/img/sample.clip",
-            exists=record_exists,
-            getmtime=lambda path: 10.0,
-            getsize=lambda path: 42,
-        )
-
-        self.assertEqual(state.clip_path, "C:/project/img/sample.clip")
-        self.assertEqual(seen_paths, ["C:/project/img/sample.clip"])
-        self.assertFalse(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_OK)
-
-    def test_inspect_native_image_source_marks_newer_source_stale(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: True,
-            getmtime=lambda path: 11.0,
-            getsize=lambda path: 42,
-        )
-
-        self.assertTrue(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
-
-    def test_inspect_native_image_source_marks_size_change_stale(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-        image[native_bridge.CLIP_SIZE_KEY] = "42"
-
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: True,
-            getmtime=lambda path: 10.0,
-            getsize=lambda path: 43,
-        )
-
-        self.assertTrue(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
-
-    def test_inspect_native_image_source_hash_check_catches_same_stat_change(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-        image[native_bridge.CLIP_SIZE_KEY] = "42"
-        image[native_bridge.CLIP_SHA256_KEY] = "old"
-
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: True,
-            getmtime=lambda path: 10.0,
-            getsize=lambda path: 42,
-            getsha256=lambda path: "new",
-            check_hash=True,
-        )
-
-        self.assertEqual(state.stored_sha256, "old")
-        self.assertEqual(state.current_sha256, "new")
-        self.assertTrue(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
-
-    def test_inspect_native_image_source_hash_check_refreshes_missing_hash(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-        image[native_bridge.CLIP_SIZE_KEY] = "42"
-
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: True,
-            getmtime=lambda path: 10.0,
-            getsize=lambda path: 42,
-            getsha256=lambda path: "current",
-            check_hash=True,
-        )
-
-        self.assertEqual(state.current_sha256, "current")
-        self.assertTrue(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
-
-    def test_inspect_native_image_source_keeps_missing_source_pixels(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "missing.clip"
-        image[native_bridge.CLIP_MTIME_KEY] = "10.0"
-
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: False,
-            getmtime=lambda path: 11.0,
-            getsize=lambda path: 42,
-        )
-
-        self.assertFalse(state.should_reload)
-        self.assertIsNone(state.current_mtime)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_MISSING)
-
-    def test_inspect_native_image_source_refreshes_unknown_mtime(self) -> None:
-        image = FakeImage("sample", 1, 1)
-        image[native_bridge.CLIP_SOURCE_KEY] = "sample.clip"
-
-        state = native_bridge.inspect_native_image_source(
-            image,
-            exists=lambda path: True,
-            getmtime=lambda path: 12.0,
-            getsize=lambda path: 42,
-        )
-
-        self.assertIsNone(state.stored_mtime)
-        self.assertEqual(state.current_mtime, 12.0)
-        self.assertTrue(state.should_reload)
-        self.assertEqual(state.status, native_bridge.RELOAD_STATUS_STALE)
+                for attribute, value in expected.items():
+                    self.assertEqual(getattr(state, attribute), value, attribute)
+                if expected_seen_paths is not None:
+                    self.assertEqual(seen_paths, expected_seen_paths)
 
 
 if __name__ == "__main__":

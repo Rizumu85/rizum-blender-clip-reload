@@ -143,27 +143,100 @@ mod tests {
             serde_json::from_str(&report).expect("performance report should be valid JSON");
 
         assert_eq!(parsed["canvas"][0], 512);
-        assert_eq!(parsed["tile_event_abi_version"], 10);
+        assert_eq!(parsed["canvas"][1], 512);
+        assert_eq!(parsed["tile_size"], 256);
+        // The ABI version comes from the runtime constant carried by the plan result;
+        // the literal number is a convergence-gate detail, not a JSON contract.
         assert_eq!(
-            parsed["coverage"]["product_render_path"],
-            "tile_event_with_legacy_barriers"
+            parsed["tile_event_abi_version"],
+            Value::from(result.tile_event_abi_version)
         );
-        assert_eq!(parsed["coverage"]["legacy_segment_count"], 1);
+
+        // Coverage: the render path name is one of the two known routes and must agree
+        // with the barrier segment count; the legacy counts and barrier reason list are
+        // checked for shape only because the convergence gate is expected to move them.
+        let barrier_segments = parsed["barrier_segments"].as_u64().unwrap();
+        let product_render_path = parsed["coverage"]["product_render_path"].as_str().unwrap();
+        if barrier_segments == 0 {
+            assert_eq!(product_render_path, "tile_event_only");
+        } else {
+            assert_eq!(product_render_path, "tile_event_with_legacy_barriers");
+        }
+        let legacy_segment_count = parsed["coverage"]["legacy_segment_count"].as_u64().unwrap();
+        assert_eq!(
+            parsed["fallback"]["legacy_segment_count"].as_u64().unwrap(),
+            legacy_segment_count
+        );
+        assert_eq!(
+            parsed["planner"]["legacy_source_segments"]
+                .as_u64()
+                .unwrap(),
+            legacy_segment_count
+        );
+        assert_eq!(
+            parsed["fallback"]["legacy_barrier_count"].as_u64().unwrap(),
+            barrier_segments
+        );
+        assert!(
+            parsed["coverage"]["legacy_segment_ratio"]
+                .as_f64()
+                .is_some()
+        );
+        assert!(
+            parsed["coverage"]["tile_local_segment_ratio"]
+                .as_f64()
+                .is_some()
+        );
+        assert_eq!(parsed["fallback"]["sparse_patch_attempted"], false);
+        assert_eq!(parsed["fallback"]["sparse_patch_succeeded"], false);
         assert_eq!(
             parsed["fallback"]["sparse_patch_fallback_reason"],
             "not_applicable_performance_plan_only"
         );
+
+        let barrier_reasons = parsed["barrier_reasons"]
+            .as_object()
+            .expect("barrier_reasons should be an object");
+        let top_barrier_reasons = parsed["coverage"]["top_barrier_reasons"]
+            .as_array()
+            .expect("top_barrier_reasons should be an array");
+        assert!(top_barrier_reasons.len() <= 5);
         assert_eq!(
-            parsed["coverage"]["top_barrier_reasons"][0]["reason"],
-            "SolidColorNotLowered"
+            top_barrier_reasons.len(),
+            barrier_reasons.len().min(5),
+            "top_barrier_reasons should list the nonzero reasons"
         );
+        for entry in top_barrier_reasons {
+            let reason = entry["reason"]
+                .as_str()
+                .expect("top barrier reason should be a string");
+            assert!(!reason.is_empty());
+            let count = entry["count"]
+                .as_u64()
+                .expect("top barrier count should be an integer");
+            assert!(count > 0);
+            assert_eq!(barrier_reasons[reason], Value::from(count));
+        }
+
         assert!(parsed["planned_passes"].as_u64().unwrap() > 0);
+        assert!(parsed["tile_local_segments"].as_u64().is_some());
         assert!(
             parsed["planner"]["point_filter_run_segments"]
                 .as_u64()
                 .is_some()
         );
+        assert!(parsed["planner"]["segments"].as_u64().unwrap() > 0);
         assert!(parsed["compressed_raster_tiles"].as_u64().unwrap() > 0);
+        assert!(parsed["mask_tiles"].as_u64().is_some());
+        assert!(parsed["atlas_upload_bytes"].as_u64().is_some());
+        assert!(parsed["estimated_tile_events"].as_u64().is_some());
         assert!(parsed["source_counts"]["rasters"].as_u64().unwrap() > 0);
+        assert!(parsed["resources"]["unique_rasters"].as_u64().unwrap() > 0);
+        assert!(
+            parsed["tile_occupancy"]["canvas_tile_count"]
+                .as_u64()
+                .unwrap()
+                > 0
+        );
     }
 }

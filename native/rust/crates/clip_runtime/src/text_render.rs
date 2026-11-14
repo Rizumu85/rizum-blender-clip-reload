@@ -491,29 +491,70 @@ mod tests {
     }
 
     #[test]
-    fn font_name_candidates_strip_style_suffixes() {
-        assert_eq!(
-            font_name_candidates("HarmonyOS_Sans_Bold"),
-            vec![
-                "HarmonyOS_Sans_Bold".to_owned(),
-                "HarmonyOS Sans Bold".to_owned(),
-                "HarmonyOS Sans".to_owned(),
-            ],
-        );
+    fn font_name_candidates_strip_style_suffixes_and_map_variable_font_names() {
+        struct Case {
+            name: &'static str,
+            exact: Option<Vec<&'static str>>,
+            contains: Vec<&'static str>,
+        }
+        let cases = [
+            Case {
+                name: "HarmonyOS_Sans_Bold",
+                exact: Some(vec![
+                    "HarmonyOS_Sans_Bold",
+                    "HarmonyOS Sans Bold",
+                    "HarmonyOS Sans",
+                ]),
+                contains: Vec::new(),
+            },
+            Case {
+                name: "MiSansVF-ExtraLight",
+                exact: None,
+                contains: vec!["MiSans-ExtraLight", "MiSans ExtraLight"],
+            },
+        ];
+
+        for case in cases {
+            let candidates = font_name_candidates(case.name);
+            if let Some(exact) = &case.exact {
+                assert_eq!(
+                    candidates,
+                    exact.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>(),
+                    "{}: exact candidate list",
+                    case.name
+                );
+            }
+            for expected in &case.contains {
+                assert!(
+                    candidates.contains(&(*expected).to_owned()),
+                    "{}: candidates {candidates:?} should contain {expected}",
+                    case.name
+                );
+            }
+        }
     }
 
     #[test]
-    fn font_name_candidates_map_variable_font_style_names() {
-        assert!(
-            font_name_candidates("MiSansVF-ExtraLight").contains(&"MiSans-ExtraLight".to_owned())
-        );
-        assert!(
-            font_name_candidates("MiSansVF-ExtraLight").contains(&"MiSans ExtraLight".to_owned())
-        );
+    fn text_fonts_use_unhinted_grayscale_rasterization_and_snap_baselines_only_for_mixed_upright_runs()
+     {
+        let (resolved, style) = default_resolved_font_and_style();
+
+        let horizontal = skia_font(&resolved, &style);
+        assert!(horizontal.is_subpixel());
+        assert_eq!(horizontal.edging(), skia_font_mod::Edging::AntiAlias);
+        assert_eq!(horizontal.hinting(), FontHinting::None);
+
+        let vertical_horizontal_run = vertical_horizontal_run_font(&resolved, &style);
+        assert!(!vertical_horizontal_run.is_baseline_snap());
+        assert_eq!(vertical_horizontal_run.hinting(), FontHinting::None);
+
+        let pure_cjk_upright = vertical_upright_font(&resolved, &style, true);
+        let mixed_run_upright = vertical_upright_font(&resolved, &style, false);
+        assert!(!pure_cjk_upright.is_baseline_snap());
+        assert!(mixed_run_upright.is_baseline_snap());
     }
 
-    #[test]
-    fn skia_font_uses_unhinted_grayscale_text_rasterization() {
+    fn default_resolved_font_and_style() -> (ResolvedFont, TextCharStyle) {
         let typeface = FontMgr::new()
             .legacy_make_typeface(None, FontStyle::normal())
             .expect("default typeface");
@@ -537,77 +578,7 @@ mod tests {
             underline: false,
             strikethrough: false,
         };
-
-        let font = skia_font(&resolved, &style);
-
-        assert!(font.is_subpixel());
-        assert_eq!(font.edging(), skia_font_mod::Edging::AntiAlias);
-        assert_eq!(font.hinting(), FontHinting::None);
-    }
-
-    #[test]
-    fn vertical_horizontal_run_font_disables_baseline_snap() {
-        let typeface = FontMgr::new()
-            .legacy_make_typeface(None, FontStyle::normal())
-            .expect("default typeface");
-        let resolved = ResolvedFont {
-            typeface,
-            metrics: TextFontMetrics::default(),
-            synthetic_italic: false,
-        };
-        let style = TextCharStyle {
-            font_name: Some("Default".to_owned()),
-            fallback_font: None,
-            font_size_px: 24.0,
-            color: Rgba8 {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 255,
-            },
-            bold: false,
-            italic: false,
-            underline: false,
-            strikethrough: false,
-        };
-
-        let font = vertical_horizontal_run_font(&resolved, &style);
-
-        assert!(!font.is_baseline_snap());
-        assert_eq!(font.hinting(), FontHinting::None);
-    }
-
-    #[test]
-    fn pure_cjk_vertical_upright_font_can_disable_baseline_snap() {
-        let typeface = FontMgr::new()
-            .legacy_make_typeface(None, FontStyle::normal())
-            .expect("default typeface");
-        let resolved = ResolvedFont {
-            typeface,
-            metrics: TextFontMetrics::default(),
-            synthetic_italic: false,
-        };
-        let style = TextCharStyle {
-            font_name: Some("Default".to_owned()),
-            fallback_font: None,
-            font_size_px: 24.0,
-            color: Rgba8 {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 255,
-            },
-            bold: false,
-            italic: false,
-            underline: false,
-            strikethrough: false,
-        };
-
-        let pure_cjk_font = vertical_upright_font(&resolved, &style, true);
-        let mixed_run_font = vertical_upright_font(&resolved, &style, false);
-
-        assert!(!pure_cjk_font.is_baseline_snap());
-        assert!(mixed_run_font.is_baseline_snap());
+        (resolved, style)
     }
 
     #[test]
@@ -711,103 +682,66 @@ mod tests {
 
     #[test]
     fn horizontal_text_line_plans_glyphs_and_decorations_before_drawing() {
-        let entry = clip_file::metadata::TextLayerEntry {
-            text: "AB".to_owned(),
-            attributes: clip_file::metadata::TextLayerAttributes {
-                default_font: Some("Arial".to_owned()),
-                fallback_font: None,
-                fonts: Vec::new(),
-                layout_flags: None,
-                path_mode: None,
-                path_angle_a_degrees: None,
-                path_angle_b_degrees: None,
-                path_center: None,
-                font_size_100: Some(1000),
-                color: None,
-                bbox: None,
-                quad_verts_100: None,
-                box_size: None,
-                align: None,
-                underline_spans: vec![clip_file::metadata::TextLayerSpan {
-                    start: 0,
-                    length: 2,
-                }],
-                strikethrough_spans: Vec::new(),
-                runs: Vec::new(),
-            },
+        // Glyph planning must not depend on decorations: the plain line and the
+        // underlined line both plan one positioned blob at the line origin.
+        let underline = clip_file::metadata::TextLayerSpan {
+            start: 0,
+            length: 2,
         };
-        let chars = entry.text.chars().collect::<Vec<_>>();
-        let styles = text_char_styles(&entry, 72);
-        let logical_styles = styles.clone();
-        let mut fonts = FontResolver::new();
-        let plan = build_horizontal_text_plan(
-            &entry,
-            &TextRasterLayout {
-                size: CanvasSize::new(200, 200),
-                offset_x: 0,
-                offset_y: 0,
-            },
-            chars,
-            styles,
-            logical_styles,
-            &mut fonts,
-        );
+        for (name, underline_spans) in [
+            ("plain line", Vec::new()),
+            ("underlined line", vec![underline]),
+        ] {
+            let entry = clip_file::metadata::TextLayerEntry {
+                text: "AB".to_owned(),
+                attributes: clip_file::metadata::TextLayerAttributes {
+                    default_font: Some("Arial".to_owned()),
+                    fallback_font: None,
+                    fonts: Vec::new(),
+                    layout_flags: None,
+                    path_mode: None,
+                    path_angle_a_degrees: None,
+                    path_angle_b_degrees: None,
+                    path_center: None,
+                    font_size_100: Some(1000),
+                    color: None,
+                    bbox: None,
+                    quad_verts_100: None,
+                    box_size: None,
+                    align: None,
+                    underline_spans: underline_spans.clone(),
+                    strikethrough_spans: Vec::new(),
+                    runs: Vec::new(),
+                },
+            };
+            let chars = entry.text.chars().collect::<Vec<_>>();
+            let styles = text_char_styles(&entry, 72);
+            let logical_styles = styles.clone();
+            let mut fonts = FontResolver::new();
+            let plan = build_horizontal_text_plan(
+                &entry,
+                &TextRasterLayout {
+                    size: CanvasSize::new(200, 200),
+                    offset_x: 0,
+                    offset_y: 0,
+                },
+                chars,
+                styles,
+                logical_styles,
+                &mut fonts,
+            );
 
-        let commands =
-            plan_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts).unwrap();
+            let commands =
+                plan_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts).unwrap();
 
-        assert_eq!(commands.glyphs.len(), 1);
-        assert_eq!(commands.decorations.len(), 1);
-        assert_eq!(commands.glyphs[0].x, plan.lines[0].origin.0);
-        assert!(commands.decorations[0].x1 > commands.decorations[0].x0);
-    }
-
-    #[test]
-    fn horizontal_text_line_uses_positioned_text_blob_for_simple_runs() {
-        let entry = clip_file::metadata::TextLayerEntry {
-            text: "AB".to_owned(),
-            attributes: clip_file::metadata::TextLayerAttributes {
-                default_font: Some("Arial".to_owned()),
-                fallback_font: None,
-                fonts: Vec::new(),
-                layout_flags: None,
-                path_mode: None,
-                path_angle_a_degrees: None,
-                path_angle_b_degrees: None,
-                path_center: None,
-                font_size_100: Some(1000),
-                color: None,
-                bbox: None,
-                quad_verts_100: None,
-                box_size: None,
-                align: None,
-                underline_spans: Vec::new(),
-                strikethrough_spans: Vec::new(),
-                runs: Vec::new(),
-            },
-        };
-        let chars = entry.text.chars().collect::<Vec<_>>();
-        let styles = text_char_styles(&entry, 72);
-        let logical_styles = styles.clone();
-        let mut fonts = FontResolver::new();
-        let plan = build_horizontal_text_plan(
-            &entry,
-            &TextRasterLayout {
-                size: CanvasSize::new(200, 200),
-                offset_x: 0,
-                offset_y: 0,
-            },
-            chars,
-            styles,
-            logical_styles,
-            &mut fonts,
-        );
-
-        let commands =
-            plan_horizontal_text_line_commands(&plan, &plan.lines[0], &mut fonts).unwrap();
-
-        assert_eq!(commands.glyphs.len(), 1);
-        assert!(commands.glyphs[0].uses_positioned_blob());
+            assert_eq!(commands.glyphs.len(), 1, "{name}");
+            assert!(commands.glyphs[0].uses_positioned_blob(), "{name}");
+            assert_eq!(commands.glyphs[0].x, plan.lines[0].origin.0, "{name}");
+            assert_eq!(commands.decorations.len(), underline_spans.len(), "{name}");
+            for decoration in &commands.decorations {
+                assert!(decoration.x1 > decoration.x0, "{name}");
+            }
+        }
     }
 
     #[test]
@@ -1010,6 +944,12 @@ mod tests {
         assert_eq!(commands[0].y, 9.0);
         assert_eq!(commands[0].thickness, 2.0);
         assert!(commands[0].inset_ends);
+
+        // Fitted spans inset each end by half the stroke; the stroke itself is
+        // clamped to at least one pixel before halving.
+        assert_eq!(decoration_line_end_inset(4.0, false), 0.0);
+        assert_eq!(decoration_line_end_inset(4.0, true), 2.0);
+        assert_eq!(decoration_line_end_inset(0.25, true), 0.5);
     }
 
     #[test]
@@ -1067,13 +1007,6 @@ mod tests {
     }
 
     #[test]
-    fn fitted_decoration_lines_inset_ends_by_half_stroke() {
-        assert_eq!(decoration_line_end_inset(4.0, false), 0.0);
-        assert_eq!(decoration_line_end_inset(4.0, true), 2.0);
-        assert_eq!(decoration_line_end_inset(0.25, true), 0.5);
-    }
-
-    #[test]
     fn fitted_decoration_lines_use_hard_edges() {
         let color = Rgba8 {
             r: 39,
@@ -1090,20 +1023,114 @@ mod tests {
     }
 
     #[test]
-    fn high_strikethrough_metric_position_overrides_fallback_y() {
-        let fallback_y = decoration_y(0.0, 100.0, 0.66, None, Some(0.1));
-        let metric_y = decoration_y(0.0, 100.0, 0.66, Some(0.512), Some(0.102));
+    fn decoration_y_metric_position_overrides_fallback_ratio() {
+        struct Case {
+            name: &'static str,
+            fallback_ratio: f32,
+            fallback_thickness: f32,
+            metric_position: f32,
+            metric_thickness: f32,
+            expected_fallback_y: i32,
+            expected_metric_y: i32,
+        }
+        let cases = [
+            Case {
+                name: "high strikethrough metric",
+                fallback_ratio: 0.66,
+                fallback_thickness: 0.1,
+                metric_position: 0.512,
+                metric_thickness: 0.102,
+                expected_fallback_y: 66,
+                expected_metric_y: 44,
+            },
+            Case {
+                name: "underline metric below baseline",
+                fallback_ratio: 0.90,
+                fallback_thickness: 0.05,
+                metric_position: -0.075,
+                metric_thickness: 0.05,
+                expected_fallback_y: 90,
+                expected_metric_y: 105,
+            },
+        ];
 
-        assert_eq!(fallback_y.round() as i32, 66);
-        assert_eq!(metric_y.round() as i32, 44);
+        for case in cases {
+            let fallback_y = decoration_y(
+                0.0,
+                100.0,
+                case.fallback_ratio,
+                None,
+                Some(case.fallback_thickness),
+            );
+            let metric_y = decoration_y(
+                0.0,
+                100.0,
+                case.fallback_ratio,
+                Some(case.metric_position),
+                Some(case.metric_thickness),
+            );
+
+            assert_eq!(
+                fallback_y.round() as i32,
+                case.expected_fallback_y,
+                "{}: fallback y",
+                case.name
+            );
+            assert_eq!(
+                metric_y.round() as i32,
+                case.expected_metric_y,
+                "{}: metric y",
+                case.name
+            );
+        }
     }
 
     #[test]
-    fn underline_metric_position_overrides_fallback_y() {
-        let fallback_y = decoration_y(0.0, 100.0, 0.90, None, Some(0.05));
-        let metric_y = decoration_y(0.0, 100.0, 0.90, Some(-0.075), Some(0.05));
+    fn strikethrough_metric_position_only_overrides_fallback_above_threshold() {
+        let style = TextCharStyle {
+            font_name: None,
+            fallback_font: None,
+            font_size_px: 20.0,
+            color: Rgba8 {
+                r: 39,
+                g: 39,
+                b: 39,
+                a: 255,
+            },
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: true,
+        };
+        // Fallback: 20.0 * 0.66. Metric: baseline 20.0 - 0.46 * 20.0 - half of
+        // the default 1/24 em thickness.
+        for (name, position, expected_y) in [
+            (
+                "just above 0.45 uses the metric",
+                0.46,
+                20.0 - 9.2 - 20.0 / 24.0 * 0.5,
+            ),
+            ("just below 0.45 keeps the fallback", 0.44, 13.2),
+        ] {
+            let commands = plan_text_decoration_commands(
+                (0.0, 0.0),
+                &[style.clone()],
+                &[style.clone()],
+                &[(2.0, 20.0)],
+                &[Some(TextFontMetrics {
+                    underline_thickness: None,
+                    underline_position: None,
+                    strikethrough_thickness: None,
+                    strikethrough_position: Some(position),
+                })],
+            );
 
-        assert_eq!(fallback_y.round() as i32, 90);
-        assert_eq!(metric_y.round() as i32, 105);
+            assert_eq!(commands.len(), 1, "{name}: one strikethrough command");
+            assert!(
+                (commands[0].y - expected_y).abs() < 0.001,
+                "{name}: y {} should be {expected_y}",
+                commands[0].y
+            );
+        }
     }
 }

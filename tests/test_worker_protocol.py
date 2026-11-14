@@ -140,6 +140,20 @@ class WorkerProtocolTests(unittest.TestCase):
             ("- layer 9 [Tone curve] node 4 Filter: unsupported",),
         )
 
+    def test_worker_unsupported_detail_formats_issue_locator(self) -> None:
+        self.assertEqual(
+            worker_protocol._worker_unsupported_detail(
+                {
+                    "layer_id": 9,
+                    "layer_name": "Tone curve",
+                    "node_id": 4,
+                    "kind": "Filter",
+                    "reason": "filter layer is not supported",
+                }
+            ),
+            "- layer 9 [Tone curve] node 4 Filter: filter layer is not supported",
+        )
+
     def test_rejects_mismatched_patch_buffer_length(self) -> None:
         metadata = {
             "width": 4,

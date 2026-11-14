@@ -405,31 +405,27 @@ mod tests {
     }
 
     #[test]
-    fn checkpoint_cache_keeps_higher_priority_entry_by_count() {
+    fn checkpoint_cache_keeps_higher_priority_entry_by_count_regardless_of_store_order() {
         let plan = patch_plan_with_segments();
-        let high = SegmentCheckpointKey::from_reload_plan(&plan, 1);
-        let low = SegmentCheckpointKey::from_reload_plan(&plan, 2);
-        let mut cache = SegmentCheckpointCache::new(1, 8);
+        for (name, first_priority, second_priority) in [
+            ("high stored first, low evicted on arrival", 10, 1),
+            ("low stored first, replaced by high", 1, 10),
+        ] {
+            let first = SegmentCheckpointKey::from_reload_plan(&plan, 1);
+            let second = SegmentCheckpointKey::from_reload_plan(&plan, 2);
+            let mut cache = SegmentCheckpointCache::new(1, 8);
 
-        cache.store(high.clone(), &checkpoint_with_len(4), 10);
-        cache.store(low.clone(), &checkpoint_with_len(4), 1);
+            cache.store(first.clone(), &checkpoint_with_len(4), first_priority);
+            cache.store(second.clone(), &checkpoint_with_len(4), second_priority);
 
-        assert!(cache.get(&high).is_some());
-        assert!(cache.get(&low).is_none());
-    }
-
-    #[test]
-    fn checkpoint_cache_replaces_lower_priority_entry_by_count() {
-        let plan = patch_plan_with_segments();
-        let low = SegmentCheckpointKey::from_reload_plan(&plan, 1);
-        let high = SegmentCheckpointKey::from_reload_plan(&plan, 2);
-        let mut cache = SegmentCheckpointCache::new(1, 8);
-
-        cache.store(low.clone(), &checkpoint_with_len(4), 1);
-        cache.store(high.clone(), &checkpoint_with_len(4), 10);
-
-        assert!(cache.get(&low).is_none());
-        assert!(cache.get(&high).is_some());
+            let (high, low) = if first_priority > second_priority {
+                (&first, &second)
+            } else {
+                (&second, &first)
+            };
+            assert!(cache.get(high).is_some(), "{name}: high priority kept");
+            assert!(cache.get(low).is_none(), "{name}: low priority dropped");
+        }
     }
 
     #[test]

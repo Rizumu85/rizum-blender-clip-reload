@@ -1,4 +1,4 @@
-use clip_model::CanvasSize;
+use clip_model::{CanvasSize, LayerId};
 
 use super::atlas_events::{
     SparseAtlasRasterEventSkipReason, sparse_atlas_raster_affected_event_plan,
@@ -171,8 +171,8 @@ fn raster_run_splits_resident_events_by_executor_compatible_atlas_keys() {
 fn affected_plan_skips_later_non_overlapping_barrier_segment() {
     let diff = diff_with_segments_and_rects(
         vec![
-            manifest_segment_at_rect(7, 0, 1, "RasterRun", 10, 1, 12, 34),
-            manifest_segment_at_rect(8, 1, 2, "SimpleContainerScope", 11, 2, 96, 96),
+            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
+            manifest_segment(8, 1, 2, "SimpleContainerScope", 11, 2),
         ],
         vec![
             source_manifest_at_rect(10, 1, 12, 34),
@@ -217,8 +217,8 @@ fn affected_plan_skips_later_non_overlapping_barrier_segment() {
 fn affected_plan_lowers_later_overlapping_raster_segment() {
     let diff = diff_with_segments_and_rects(
         vec![
-            manifest_segment_at_rect(7, 0, 1, "RasterRun", 10, 1, 12, 34),
-            manifest_segment_at_rect(8, 1, 2, "RasterRun", 11, 2, 20, 40),
+            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
+            manifest_segment(8, 1, 2, "RasterRun", 11, 2),
         ],
         vec![
             source_manifest_at_rect(10, 1, 12, 34),
@@ -332,8 +332,8 @@ fn affected_plan_narrows_event_ranges_to_overlapping_tiles() {
 fn affected_plan_explains_later_overlapping_non_raster_segment() {
     let diff = diff_with_segments_and_rects(
         vec![
-            manifest_segment_at_rect(7, 0, 1, "RasterRun", 10, 1, 12, 34),
-            manifest_segment_at_rect(8, 1, 2, "SimpleContainerScope", 11, 2, 20, 40),
+            manifest_segment(7, 0, 1, "RasterRun", 10, 1),
+            manifest_segment(8, 1, 2, "SimpleContainerScope", 11, 2),
         ],
         vec![
             source_manifest_at_rect(10, 1, 12, 34),
@@ -381,16 +381,7 @@ fn affected_plan_explains_later_overlapping_non_raster_segment() {
 #[test]
 fn affected_plan_fails_closed_for_unknown_work_list_tile() {
     let diff = diff_with_segments_and_rects(
-        vec![manifest_segment_at_rect(
-            7,
-            0,
-            1,
-            "RasterRun",
-            10,
-            1,
-            12,
-            34,
-        )],
+        vec![manifest_segment(7, 0, 1, "RasterRun", 10, 1)],
         Vec::new(),
         vec![dirty_segment(7)],
         vec![crate::ReloadPatchRect {
@@ -419,4 +410,191 @@ fn affected_plan_fails_closed_for_unknown_work_list_tile() {
         plan.skipped_segments[0].reason,
         SparseAtlasRasterEventSkipReason::EmptyRasterSlots
     );
+}
+
+#[test]
+fn raster_clipping_run_resident_slots_lower_to_clipping_batch() {
+    let base = raster_source(10, 1, 0.75, clip_gpu::GpuRasterBlendMode::Multiply, None);
+    let clipped = raster_source(11, 2, 1.0, clip_gpu::GpuRasterBlendMode::Normal, None);
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("RasterClippingRun")),
+        &reload_with_slots(vec![
+            slot("raster", 10, 1, 0, 12, 34),
+            slot("raster", 11, 2, 1, 12, 34),
+        ]),
+        &[clip_gpu::GpuNormalStackSource::ClippingRun {
+            base,
+            clipped: vec![clip_gpu::GpuClippedStackSource::Raster(clipped)],
+        }],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    assert_eq!(plan.segments.len(), 1);
+    assert_eq!(plan.segments[0].batches.len(), 1);
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(
+        batch.kind,
+        clip_gpu::GpuSparseAtlasRasterEventBatchKind::RasterClippingRun {
+            base_event_count: 1,
+            resolve_blend_mode: clip_gpu::GpuRasterBlendMode::Multiply,
+        }
+    );
+    assert_eq!(batch.events.len(), 2);
+    assert_eq!(batch.events[0].raster.atlas_x, 16);
+    assert_eq!(batch.events[1].raster.atlas_x, 80);
+    assert_eq!(batch.events[0].opacity, 0.75);
+    assert_eq!(
+        batch.events[1].blend_mode,
+        clip_gpu::GpuRasterBlendMode::Normal
+    );
+}
+
+#[test]
+fn raster_clipping_run_with_mixed_atlas_keys_is_skipped() {
+    let mut clipped_slot = slot("raster", 11, 2, 1, 12, 34);
+    clipped_slot.slot.atlas_id = 4;
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("RasterClippingRun")),
+        &reload_with_slots(vec![slot("raster", 10, 1, 0, 12, 34), clipped_slot]),
+        &[clip_gpu::GpuNormalStackSource::ClippingRun {
+            base: raster_source(10, 1, 1.0, clip_gpu::GpuRasterBlendMode::Normal, None),
+            clipped: vec![clip_gpu::GpuClippedStackSource::Raster(raster_source(
+                11,
+                2,
+                1.0,
+                clip_gpu::GpuRasterBlendMode::Normal,
+                None,
+            ))],
+        }],
+    );
+
+    assert!(plan.segments.is_empty());
+    assert_eq!(
+        plan.skipped_segments[0].reason,
+        SparseAtlasRasterEventSkipReason::MixedSparseAtlasKeys
+    );
+}
+
+#[test]
+fn point_filter_run_lowers_to_filter_batch() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("PointFilterRun")),
+        &reload_with_slots(Vec::new()),
+        &[point_filter_source(None)],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    assert_eq!(plan.segments.len(), 1);
+    let batch = &plan.segments[0].batches[0];
+    assert_eq!(
+        batch.kind,
+        clip_gpu::GpuSparseAtlasRasterEventBatchKind::PointFilterRun
+    );
+    assert!(batch.events.is_empty());
+    assert_eq!(batch.filters.len(), 1);
+    assert_eq!(batch.filters[0].local_bounds.width, 128);
+    assert_eq!(batch.filters[0].local_bounds.height, 128);
+    assert_eq!(batch.filters[0].lut_rgba.len(), 256 * 4);
+}
+
+#[test]
+fn masked_point_filter_run_is_explicitly_skipped() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segment(segment("PointFilterRun")),
+        &reload_with_slots(Vec::new()),
+        &[point_filter_source(Some(9))],
+    );
+
+    assert!(plan.segments.is_empty());
+    assert_eq!(
+        plan.skipped_segments[0].reason,
+        SparseAtlasRasterEventSkipReason::FilterMaskNotLowered {
+            layer_id: 10,
+            resource_id: 9,
+        }
+    );
+}
+
+#[test]
+fn masked_point_filter_run_lowers_when_resident_mask_slot_covers_dirty_bounds() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segments_and_rects(
+            vec![segment("PointFilterRun")],
+            Vec::new(),
+            Vec::new(),
+            vec![crate::ReloadPatchRect {
+                x: 20,
+                y: 40,
+                width: 10,
+                height: 8,
+            }],
+        ),
+        &reload_with_slots(vec![slot("mask", 10, 9, 0, 12, 34)]),
+        &[point_filter_source(Some(9))],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let mask = plan.segments[0].batches[0].filters[0]
+        .mask
+        .expect("filter mask tile ref");
+    assert_eq!(mask.key.format, clip_gpu::GpuSparseAtlasFormat::R8);
+    assert_eq!(mask.atlas_x, 24);
+    assert_eq!(mask.atlas_y, 38);
+    assert_eq!(mask.size, clip_model::CanvasSize::new(10, 8));
+}
+
+#[test]
+fn masked_point_filter_run_splits_across_resident_mask_slots() {
+    let plan = sparse_atlas_raster_event_plan(
+        &diff_with_segments_and_rects(
+            vec![segment("PointFilterRun")],
+            Vec::new(),
+            Vec::new(),
+            vec![crate::ReloadPatchRect {
+                x: 20,
+                y: 40,
+                width: 80,
+                height: 8,
+            }],
+        ),
+        &reload_with_slots(vec![
+            slot("mask", 10, 9, 0, 12, 34),
+            slot("mask", 10, 9, 1, 76, 34),
+        ]),
+        &[point_filter_source(Some(9))],
+    );
+
+    assert!(plan.skipped_segments.is_empty());
+    let filters = &plan.segments[0].batches[0].filters;
+    assert_eq!(filters.len(), 2);
+    assert_eq!(
+        filters[0].local_bounds,
+        clip_model::Rect::new(20, 40, 56, 8)
+    );
+    assert_eq!(
+        filters[1].local_bounds,
+        clip_model::Rect::new(76, 40, 24, 8)
+    );
+    assert_eq!(filters[0].mask.expect("first mask").atlas_x, 24);
+    assert_eq!(filters[1].mask.expect("second mask").atlas_x, 80);
+}
+
+fn point_filter_source(mask_mipmap_id: Option<u32>) -> clip_gpu::GpuNormalStackSource {
+    clip_gpu::GpuNormalStackSource::LutFilter {
+        lut_rgba: identity_lut(),
+        opacity: 1.0,
+        mask_key: mask_mipmap_id.map(|mask_mipmap_id| clip_gpu::GpuMaskResourceKey {
+            layer_id: LayerId(10),
+            mask_mipmap_id,
+        }),
+        filter_mode: clip_gpu::GpuLutFilterMode::ToneCurveRgb,
+    }
+}
+
+fn identity_lut() -> Vec<u8> {
+    let mut lut = Vec::with_capacity(256 * 4);
+    for value in 0..=255u8 {
+        lut.extend_from_slice(&[value, value, value, 255]);
+    }
+    lut
 }

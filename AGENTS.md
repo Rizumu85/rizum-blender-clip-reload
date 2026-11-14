@@ -70,4 +70,4 @@ cargo run -q -p clip_cli -- ..\..\img\Test_Mask.clip --compare-png ..\..\img\Tes
 cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 ```
 
-Python add-on tests run from the repo root with `python -m unittest discover -s tests`. The full gate is `scripts\verify_native_convergence.ps1 -SkipClipCompare`, which the `Native convergence` GitHub Actions workflow also runs on every push and pull request.
+Python add-on tests run from the repo root with `python -m unittest discover -s tests`. On a machine with a real GPU, run Rust tests with `cargo test --workspace -- --test-threads=4`: every GPU test creates its own wgpu device, and the default thread count creates dozens at once, which crashes or deadlocks the `clip_gpu` test process locally even though CI's software adapter copes. If `clip_gpu` still hangs with tests reported as running for over 60 seconds, rerun it with `--test-threads=1`. The full gate is `scripts\verify_native_convergence.ps1 -SkipClipCompare`, which the `Native convergence` GitHub Actions workflow also runs on every push and pull request.

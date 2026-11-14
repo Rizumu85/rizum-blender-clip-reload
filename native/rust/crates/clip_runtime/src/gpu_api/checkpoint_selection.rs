@@ -33,7 +33,9 @@ fn first_dirty_ordinal(plan: &crate::ReloadDiffPlan) -> Option<u32> {
 
 #[cfg(test)]
 mod tests {
-    use super::{dirty_checkpoint_candidate, dirty_starts_at_initial_accumulator};
+    use super::{
+        DirtyCheckpointCandidate, dirty_checkpoint_candidate, dirty_starts_at_initial_accumulator,
+    };
 
     #[test]
     fn dirty_initial_base_requires_first_dirty_segment_at_source_zero() {
@@ -49,25 +51,23 @@ mod tests {
     }
 
     #[test]
-    fn dirty_checkpoint_requires_explicit_depth_zero_candidate() {
+    fn dirty_checkpoint_requires_explicit_depth_zero_candidate_and_carries_priority() {
         let mut plan = patch_plan_with_segment_start(1);
+        plan.manifest.segments[0].checkpoint_priority = 45;
+        assert_eq!(
+            dirty_checkpoint_candidate(&plan),
+            Some(DirtyCheckpointCandidate {
+                source_start: 1,
+                priority: 45,
+            })
+        );
+
         plan.manifest.segments[0].checkpoint_before = false;
         assert_eq!(dirty_checkpoint_candidate(&plan), None);
 
         plan.manifest.segments[0].checkpoint_before = true;
         plan.manifest.segments[0].depth = 1;
         assert_eq!(dirty_checkpoint_candidate(&plan), None);
-    }
-
-    #[test]
-    fn dirty_checkpoint_carries_candidate_priority() {
-        let mut plan = patch_plan_with_segment_start(1);
-        plan.manifest.segments[0].checkpoint_priority = 45;
-
-        assert_eq!(
-            dirty_checkpoint_candidate(&plan).map(|candidate| candidate.priority),
-            Some(45)
-        );
     }
 
     fn patch_plan_with_segment_start(source_start: u32) -> crate::ReloadDiffPlan {

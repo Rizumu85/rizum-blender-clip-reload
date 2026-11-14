@@ -145,7 +145,7 @@ fn manifest_with_tile(source_signature: u64, compressed_hash: u64) -> ReloadDiff
     ReloadDiffManifest {
         abi: 4,
         tile_size: 256,
-        tile_event_abi_version: 8,
+        tile_event_abi_version: clip_gpu::TILE_EVENT_ABI_VERSION,
         width: 512,
         height: 512,
         root_layer_id: 1,

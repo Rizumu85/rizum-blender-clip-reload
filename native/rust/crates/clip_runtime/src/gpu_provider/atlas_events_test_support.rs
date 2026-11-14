@@ -114,26 +114,6 @@ pub(super) fn manifest_segment(
     }
 }
 
-pub(super) fn manifest_segment_at_rect(
-    ordinal: u32,
-    source_start: u32,
-    source_end: u32,
-    kind: &str,
-    layer_id: u32,
-    resource_id: u32,
-    _x: u32,
-    _y: u32,
-) -> ReloadDiffSegment {
-    manifest_segment(
-        ordinal,
-        source_start,
-        source_end,
-        kind,
-        layer_id,
-        resource_id,
-    )
-}
-
 pub(super) fn manifest_segment_with_tiles(
     ordinal: u32,
     source_start: u32,

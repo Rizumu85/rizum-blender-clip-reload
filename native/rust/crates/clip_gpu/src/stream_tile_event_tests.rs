@@ -152,124 +152,113 @@ fn builds_typed_solid_color_events() {
 
 #[test]
 fn builds_typed_container_scope_events() {
-    let scope = ScopeTileEventPayload {
-        opacity: 1.0,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: CanvasRect {
-            x: 4,
-            y: 5,
-            width: 6,
-            height: 7,
-        },
-        mask_atlas_origin: Some((8, 9)),
+    struct Case {
+        name: &'static str,
+        scope: ScopeTileEventPayload,
+        begin: fn(ScopeTileEventPayload) -> TileEventPayload,
+        end: fn(ScopeTileEventPayload) -> TileEventPayload,
+        begin_kind: TileEventKind,
+        end_kind: TileEventKind,
+        flags: u32,
+        /// Full scope payload words, when the case pins them down.
+        expected_scope_words: Option<Vec<u32>>,
+    }
+
+    let local_bounds = CanvasRect {
+        x: 4,
+        y: 5,
+        width: 6,
+        height: 7,
     };
-    let program = TileEventProgram::from_payloads([
-        TileEventPayload::BeginContainer(scope),
-        TileEventPayload::EndContainer(scope),
-    ]);
-
-    assert_eq!(
-        program.header_words(),
-        vec![
-            TileEventKind::BeginContainer as u32,
-            0,
-            0,
-            1,
-            TileEventKind::EndContainer as u32,
-            0,
-            1,
-            1,
-        ]
-    );
-    assert_eq!(
-        program.scope_payload_words(),
-        vec![
-            1.0f32.to_bits(),
-            0,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            1.0f32.to_bits(),
-            0,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-        ]
-    );
-}
-
-#[test]
-fn builds_typed_clipped_container_scope_events() {
-    let scope = ScopeTileEventPayload {
-        opacity: 0.75,
-        blend_mode: GpuRasterBlendMode::Multiply,
-        local_bounds: CanvasRect {
-            x: 4,
-            y: 5,
-            width: 6,
-            height: 7,
+    let cases = [
+        Case {
+            name: "container",
+            scope: ScopeTileEventPayload {
+                opacity: 1.0,
+                blend_mode: GpuRasterBlendMode::Normal,
+                local_bounds,
+                mask_atlas_origin: Some((8, 9)),
+            },
+            begin: TileEventPayload::BeginContainer,
+            end: TileEventPayload::EndContainer,
+            begin_kind: TileEventKind::BeginContainer,
+            end_kind: TileEventKind::EndContainer,
+            flags: 0,
+            expected_scope_words: Some(vec![
+                1.0f32.to_bits(),
+                0,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                1.0f32.to_bits(),
+                0,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+            ]),
         },
-        mask_atlas_origin: None,
-    };
-    let program = TileEventProgram::from_payloads([
-        TileEventPayload::BeginClippedContainer(scope),
-        TileEventPayload::EndClippedContainer(scope),
-    ]);
-
-    assert_eq!(
-        program.header_words(),
-        vec![
-            TileEventKind::BeginContainer as u32,
-            2,
-            0,
-            1,
-            TileEventKind::EndContainer as u32,
-            2,
-            1,
-            1,
-        ]
-    );
-    assert_eq!(program.scope_payload_words().len(), 16);
-}
-
-#[test]
-fn builds_typed_through_scope_events() {
-    let scope = ScopeTileEventPayload {
-        opacity: 0.5,
-        blend_mode: GpuRasterBlendMode::Normal,
-        local_bounds: CanvasRect {
-            x: 4,
-            y: 5,
-            width: 6,
-            height: 7,
+        Case {
+            name: "clipped container",
+            scope: ScopeTileEventPayload {
+                opacity: 0.75,
+                blend_mode: GpuRasterBlendMode::Multiply,
+                local_bounds,
+                mask_atlas_origin: None,
+            },
+            begin: TileEventPayload::BeginClippedContainer,
+            end: TileEventPayload::EndClippedContainer,
+            begin_kind: TileEventKind::BeginContainer,
+            end_kind: TileEventKind::EndContainer,
+            flags: 2,
+            expected_scope_words: None,
         },
-        mask_atlas_origin: None,
-    };
-    let program = TileEventProgram::from_payloads([
-        TileEventPayload::BeginThrough(scope),
-        TileEventPayload::EndThrough(scope),
-    ]);
+        Case {
+            name: "through",
+            scope: ScopeTileEventPayload {
+                opacity: 0.5,
+                blend_mode: GpuRasterBlendMode::Normal,
+                local_bounds,
+                mask_atlas_origin: None,
+            },
+            begin: TileEventPayload::BeginThrough,
+            end: TileEventPayload::EndThrough,
+            begin_kind: TileEventKind::BeginThrough,
+            end_kind: TileEventKind::EndThrough,
+            flags: 0,
+            expected_scope_words: None,
+        },
+    ];
 
-    assert_eq!(
-        program.header_words(),
-        vec![
-            TileEventKind::BeginThrough as u32,
-            0,
-            0,
-            1,
-            TileEventKind::EndThrough as u32,
-            0,
-            1,
-            1,
-        ]
-    );
-    assert_eq!(program.scope_payload_words().len(), 16);
+    for case in cases {
+        let program =
+            TileEventProgram::from_payloads([(case.begin)(case.scope), (case.end)(case.scope)]);
+
+        assert_eq!(
+            program.header_words(),
+            vec![
+                case.begin_kind as u32,
+                case.flags,
+                0,
+                1,
+                case.end_kind as u32,
+                case.flags,
+                1,
+                1,
+            ],
+            "{}",
+            case.name
+        );
+        assert_eq!(program.scope_payload_words().len(), 16, "{}", case.name);
+        if let Some(expected) = &case.expected_scope_words {
+            assert_eq!(&program.scope_payload_words(), expected, "{}", case.name);
+        }
+    }
 }
 
 #[test]

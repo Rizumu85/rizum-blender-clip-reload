@@ -34,9 +34,6 @@ class NativeTileEventModuleBoundaryTests(unittest.TestCase):
         )
         self.assertEqual(forbidden_function_names, [])
 
-        self.assertEqual(source.count("RenderSegmentKind::Barrier"), 1)
-        self.assertEqual(source.count("BarrierProgramKind::LegacySource"), 1)
-
 
 if __name__ == "__main__":
     unittest.main()

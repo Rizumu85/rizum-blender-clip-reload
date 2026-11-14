@@ -245,56 +245,40 @@ mod tests {
     }
 
     #[test]
-    fn unmasked_lut_filter_keeps_prior_bounded_stack_bounds() {
+    fn lut_filter_mask_does_not_change_prior_bounded_stack_bounds() {
         let key = raster_key(1);
         let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
-        let sources = vec![
-            GpuNormalStackSource::Raster(raster_source(key, 1, 1)),
-            GpuNormalStackSource::LutFilter {
-                lut_rgba: Vec::new(),
-                opacity: 1.0,
-                mask_key: None,
-                filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
-            },
+        let expected = KnownStackBounds::Bounded(CanvasRect {
+            x: 1,
+            y: 1,
+            width: 2,
+            height: 2,
+        });
+        let mask_keys = [
+            None,
+            Some(GpuMaskResourceKey {
+                layer_id: LayerId(9),
+                mask_mipmap_id: 10,
+            }),
         ];
 
-        assert_eq!(
-            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
-            KnownStackBounds::Bounded(CanvasRect {
-                x: 1,
-                y: 1,
-                width: 2,
-                height: 2,
-            })
-        );
-    }
+        for mask_key in mask_keys {
+            let sources = vec![
+                GpuNormalStackSource::Raster(raster_source(key, 1, 1)),
+                GpuNormalStackSource::LutFilter {
+                    lut_rgba: Vec::new(),
+                    opacity: 1.0,
+                    mask_key,
+                    filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
+                },
+            ];
 
-    #[test]
-    fn masked_lut_filter_keeps_prior_bounded_stack_bounds() {
-        let key = raster_key(1);
-        let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
-        let sources = vec![
-            GpuNormalStackSource::Raster(raster_source(key, 1, 1)),
-            GpuNormalStackSource::LutFilter {
-                lut_rgba: Vec::new(),
-                opacity: 1.0,
-                mask_key: Some(GpuMaskResourceKey {
-                    layer_id: LayerId(9),
-                    mask_mipmap_id: 10,
-                }),
-                filter_mode: crate::GpuLutFilterMode::ToneCurveRgb,
-            },
-        ];
-
-        assert_eq!(
-            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
-            KnownStackBounds::Bounded(CanvasRect {
-                x: 1,
-                y: 1,
-                width: 2,
-                height: 2,
-            })
-        );
+            assert_eq!(
+                known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
+                expected,
+                "mask_key = {mask_key:?}"
+            );
+        }
     }
 
     #[test]
@@ -322,54 +306,47 @@ mod tests {
     }
 
     #[test]
-    fn zero_opacity_raster_has_empty_stack_bounds() {
+    fn ineffective_sources_have_empty_stack_bounds() {
         let key = raster_key(1);
         let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
-        let sources = vec![GpuNormalStackSource::Raster(GpuNormalRasterSource {
-            opacity: 0.0,
-            ..raster_source(key, 1, 1)
-        })];
+        let cases = [
+            (
+                "zero-opacity raster",
+                GpuNormalStackSource::Raster(GpuNormalRasterSource {
+                    opacity: 0.0,
+                    ..raster_source(key, 1, 1)
+                }),
+            ),
+            (
+                "zero-opacity container",
+                GpuNormalStackSource::Container {
+                    children: vec![GpuNormalStackSource::Raster(raster_source(key, 1, 1))],
+                    opacity: 0.0,
+                    mask_key: None,
+                    blend_mode: GpuRasterBlendMode::Normal,
+                },
+            ),
+            (
+                "transparent solid",
+                GpuNormalStackSource::SolidColor {
+                    color: Rgba8 {
+                        r: 1,
+                        g: 2,
+                        b: 3,
+                        a: 0,
+                    },
+                    opacity: 1.0,
+                },
+            ),
+        ];
 
-        assert_eq!(
-            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
-            KnownStackBounds::Empty
-        );
-    }
-
-    #[test]
-    fn zero_opacity_container_has_empty_stack_bounds() {
-        let key = raster_key(1);
-        let provider = SizeProvider::new(&[(key, CanvasSize::new(2, 2))]);
-        let sources = vec![GpuNormalStackSource::Container {
-            children: vec![GpuNormalStackSource::Raster(raster_source(key, 1, 1))],
-            opacity: 0.0,
-            mask_key: None,
-            blend_mode: GpuRasterBlendMode::Normal,
-        }];
-
-        assert_eq!(
-            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
-            KnownStackBounds::Empty
-        );
-    }
-
-    #[test]
-    fn transparent_solid_has_empty_stack_bounds() {
-        let provider = SizeProvider::new(&[]);
-        let sources = vec![GpuNormalStackSource::SolidColor {
-            color: Rgba8 {
-                r: 1,
-                g: 2,
-                b: 3,
-                a: 0,
-            },
-            opacity: 1.0,
-        }];
-
-        assert_eq!(
-            known_stack_bounds(&provider, &sources, CanvasSize::new(10, 10)),
-            KnownStackBounds::Empty
-        );
+        for (name, source) in cases {
+            assert_eq!(
+                known_stack_bounds(&provider, &[source], CanvasSize::new(10, 10)),
+                KnownStackBounds::Empty,
+                "{name}"
+            );
+        }
     }
 
     fn raster_source(

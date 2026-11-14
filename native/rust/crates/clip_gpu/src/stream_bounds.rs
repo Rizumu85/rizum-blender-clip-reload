@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn rect_intersection_rejects_touching_edges() {
+    fn rect_intersection_accepts_one_pixel_overlap_and_rejects_touching_edge() {
         let rect = CanvasRect {
             x: 1,
             y: 1,

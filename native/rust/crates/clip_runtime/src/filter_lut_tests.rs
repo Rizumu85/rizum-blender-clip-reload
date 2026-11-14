@@ -35,7 +35,7 @@ fn brightness_contrast_lut_uses_additive_brightness_before_contrast() {
 }
 
 #[test]
-fn level_correction_lut_matches_python_formula_anchors() {
+fn level_correction_lut_remaps_input_black_point_anchors() {
     let payload = level_payload([0, 20000, 65535, 0, 65535]);
 
     let (name, mode, lut) =
@@ -57,7 +57,7 @@ fn level_correction_lut_matches_python_formula_anchors() {
 }
 
 #[test]
-fn invert_and_posterization_luts_match_python_formula_anchors() {
+fn invert_and_four_step_posterization_lut_anchors() {
     let (invert_name, invert_mode, invert_lut) =
         lut_filter_rgba(FILTER_TYPE_INVERT, &[]).expect("build invert LUT");
     assert_eq!(invert_name, "Invert");
@@ -92,7 +92,7 @@ fn invert_and_posterization_luts_match_python_formula_anchors() {
 }
 
 #[test]
-fn threshold_lut_matches_python_formula_anchors() {
+fn threshold_lut_steps_at_128_luminance_anchors() {
     let payload = 128i32.to_be_bytes();
     let (name, mode, lut) =
         lut_filter_rgba(FILTER_TYPE_THRESHOLD, &payload).expect("build threshold LUT");
@@ -130,7 +130,7 @@ fn hsl_filter_parses_sqlite_payload_scaling() {
 }
 
 #[test]
-fn color_balance_lut_matches_preserve_luminosity_python_formula_anchors() {
+fn color_balance_lut_preserve_luminosity_midtone_anchors() {
     let payload = color_balance_payload([1, 0, 0, 0, 43, -48, 48, 0, 0, 0]);
 
     let (name, mode, lut) =
@@ -151,7 +151,7 @@ fn color_balance_lut_matches_preserve_luminosity_python_formula_anchors() {
 }
 
 #[test]
-fn color_balance_lut_matches_normal_python_formula_anchors() {
+fn color_balance_lut_shadow_midtone_highlight_anchors() {
     let payload = color_balance_payload([0, -20, 10, 35, 40, -30, 15, 25, 0, -50]);
 
     let (name, mode, lut) =

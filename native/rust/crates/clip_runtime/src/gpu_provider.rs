@@ -9,19 +9,11 @@ pub(crate) mod atlas_cache;
 #[cfg(test)]
 mod atlas_cache_tests;
 pub(crate) mod atlas_events;
-#[cfg(test)]
-mod atlas_events_clipping_tests;
 mod atlas_events_filter;
-#[cfg(test)]
-mod atlas_events_filter_tests;
 mod atlas_events_scope;
 mod atlas_events_scope_split;
 #[cfg(test)]
-mod atlas_events_scope_split_tests;
-#[cfg(test)]
 mod atlas_events_scope_tests;
-#[cfg(test)]
-mod atlas_events_scope_through_tests;
 #[cfg(test)]
 mod atlas_events_test_support;
 #[cfg(test)]
