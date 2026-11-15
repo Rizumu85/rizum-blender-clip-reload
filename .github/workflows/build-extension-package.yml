@@ -20,7 +20,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
             worker: clip_cli
           - platform: macos-arm64
-            os: macos-14
+            os: macos-15
             target: aarch64-apple-darwin
             worker: clip_cli
 
