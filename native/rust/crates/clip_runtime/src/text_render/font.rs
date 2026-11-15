@@ -192,20 +192,9 @@ pub(super) fn horizontal_glyph_font(
 ) -> Font {
     let mut font = skia_font(resolved, style);
     if resolved.synthetic_italic && text_style_is_quad_fitted(style, logical_style) {
-        font.set_skew_x(horizontal_synthetic_italic_skew(style, logical_style));
+        font.set_skew_x(SKIA_FITTED_SYNTHETIC_ITALIC_SKEW);
     }
     font
-}
-
-pub(super) fn horizontal_synthetic_italic_skew(
-    style: &TextCharStyle,
-    logical_style: &TextCharStyle,
-) -> f32 {
-    if text_style_is_quad_fitted(style, logical_style) {
-        SKIA_FITTED_SYNTHETIC_ITALIC_SKEW
-    } else {
-        SKIA_SYNTHETIC_ITALIC_SKEW
-    }
 }
 
 pub(super) fn text_style_is_quad_fitted(

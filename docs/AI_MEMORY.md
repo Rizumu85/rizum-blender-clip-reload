@@ -11,8 +11,8 @@ Primary files:
 
 - `clip_studio_importer/__init__.py` - Blender UI, operators, preferences, and
   async import/reload orchestration.
-- `clip_studio_importer/native_bridge.py` - native worker/C ABI bridge and
-  Blender image upload.
+- `clip_studio_importer/native_bridge.py` - `clip_cli` worker bridge and Blender
+  image upload. The add-on does not load `clip_capi`.
 - `clip_studio_importer/image_state.py` - image IDProperties, status, timing,
   source freshness, pack state, and support locator state.
 - `clip_studio_importer/worker_protocol.py` - one-shot and persistent native
@@ -194,8 +194,8 @@ Rejected fidelity shortcuts:
 Diagnostic env vars: `RIZUM_CLIP_RENDER_PROFILE`, `RIZUM_CLIP_DECODE_PROFILE`,
 and `RIZUM_CLIP_TEXT_PROFILE` (profiling output); `RIZUM_CLIP_PARALLEL_TILE_DECODE`,
 `RIZUM_CLIP_SHAPED_TEXT`, and `RIZUM_CLIP_REGION_RASTER_RESIDENT_ATLAS` (opt-in
-experiments, all off by default); `RIZUM_CLIP_DISABLE_PERSISTENT_WORKER` and
-`RIZUM_CLIP_RENDERER_DLL` (add-on bridge overrides). See
+experiments, all off by default); `RIZUM_CLIP_DISABLE_PERSISTENT_WORKER`
+(add-on bridge override). See
 `docs/native-performance-investigation.md` for performance context.
 
 ## Verification Bias

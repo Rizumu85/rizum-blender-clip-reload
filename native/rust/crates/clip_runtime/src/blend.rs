@@ -65,325 +65,79 @@ pub(crate) fn strict_raster_blend_mode(
     options: StrictRasterStackOptions,
     allow_clip_flag: bool,
 ) -> Option<StrictRasterBlendMode> {
-    match node.composite {
-        0 => Some(StrictRasterBlendMode::Normal),
-        LAYER_COMPOSITE_DARKEN
-            if options.allow_simple_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Darken,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Darken)
-        }
-        LAYER_COMPOSITE_MULTIPLY
-            if options.allow_w3c_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Multiply,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Multiply)
-        }
-        LAYER_COMPOSITE_LINEAR_BURN
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::LinearBurn,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::LinearBurn)
-        }
-        LAYER_COMPOSITE_ADD_GLOW
-            if options.allow_add_glow_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::AddGlow,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::AddGlow)
-        }
-        LAYER_COMPOSITE_DARKER_COLOR
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::DarkerColor,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::DarkerColor)
-        }
-        LAYER_COMPOSITE_SUBTRACT
-            if options.allow_simple_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Subtract,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Subtract)
-        }
-        LAYER_COMPOSITE_LIGHTEN
-            if options.allow_simple_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Lighten,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Lighten)
-        }
-        LAYER_COMPOSITE_SCREEN
-            if options.allow_simple_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Screen,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Screen)
-        }
-        LAYER_COMPOSITE_COLOR_BURN
-            if options.allow_color_burn_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::ColorBurn,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::ColorBurn)
-        }
-        LAYER_COMPOSITE_COLOR_DODGE
-            if options.allow_color_dodge_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::ColorDodge,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::ColorDodge)
-        }
-        LAYER_COMPOSITE_GLOW_DODGE
-            if options.allow_glow_dodge_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::GlowDodge,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::GlowDodge)
-        }
-        LAYER_COMPOSITE_ADD
-            if options.allow_add_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Add,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Add)
-        }
-        LAYER_COMPOSITE_LIGHTER_COLOR
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::LighterColor,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::LighterColor)
-        }
-        LAYER_COMPOSITE_OVERLAY
-            if options.allow_w3c_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Overlay,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Overlay)
-        }
-        LAYER_COMPOSITE_HARD_MIX
-            if options.allow_hard_mix_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::HardMix,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::HardMix)
-        }
-        LAYER_COMPOSITE_HARD_LIGHT
-            if options.allow_w3c_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::HardLight,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::HardLight)
-        }
-        LAYER_COMPOSITE_LINEAR_LIGHT
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::LinearLight,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::LinearLight)
-        }
-        LAYER_COMPOSITE_PIN_LIGHT
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::PinLight,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::PinLight)
-        }
-        LAYER_COMPOSITE_HUE
-            if options.allow_hsl_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Hue,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Hue)
-        }
-        LAYER_COMPOSITE_SATURATION
-            if options.allow_hsl_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Saturation,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Saturation)
-        }
-        LAYER_COMPOSITE_COLOR
-            if options.allow_hsl_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Color,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Color)
-        }
-        LAYER_COMPOSITE_SOFT_LIGHT
-            if options.allow_soft_light_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::SoftLight,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::SoftLight)
-        }
-        LAYER_COMPOSITE_DIFFERENCE
-            if options.allow_simple_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Difference,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Difference)
-        }
-        LAYER_COMPOSITE_EXCLUSION
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Exclusion,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Exclusion)
-        }
-        LAYER_COMPOSITE_BRIGHTNESS
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Brightness,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Brightness)
-        }
-        LAYER_COMPOSITE_VIVID_LIGHT
-            if options.allow_vivid_light_blend
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::VividLight,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::VividLight)
-        }
-        LAYER_COMPOSITE_DIVIDE
-            if options.allow_extended_blends
-                && raster_blend_allowed_at_position(
-                    node,
-                    allow_clip_flag,
-                    StrictRasterBlendMode::Divide,
-                ) =>
-        {
-            Some(StrictRasterBlendMode::Divide)
-        }
-        _ => None,
-    }
-}
-
-fn raster_blend_allowed_at_position(
-    node: &clip_graph::RenderNode,
-    allow_clip_flag: bool,
-    blend_mode: StrictRasterBlendMode,
-) -> bool {
-    if !node.clip && !allow_clip_flag {
-        return true;
-    }
-    node.clip && allow_clip_flag && clipped_blend_supported(blend_mode)
-}
-
-fn clipped_blend_supported(blend_mode: StrictRasterBlendMode) -> bool {
-    matches!(
-        blend_mode,
-        StrictRasterBlendMode::Normal
-            | StrictRasterBlendMode::Add
-            | StrictRasterBlendMode::AddGlow
-            | StrictRasterBlendMode::ColorBurn
-            | StrictRasterBlendMode::ColorDodge
-            | StrictRasterBlendMode::Darken
-            | StrictRasterBlendMode::DarkerColor
-            | StrictRasterBlendMode::Difference
-            | StrictRasterBlendMode::Divide
-            | StrictRasterBlendMode::Exclusion
-            | StrictRasterBlendMode::GlowDodge
-            | StrictRasterBlendMode::HardMix
-            | StrictRasterBlendMode::HardLight
-            | StrictRasterBlendMode::Hue
-            | StrictRasterBlendMode::Lighten
-            | StrictRasterBlendMode::LighterColor
-            | StrictRasterBlendMode::LinearBurn
-            | StrictRasterBlendMode::LinearLight
-            | StrictRasterBlendMode::Multiply
-            | StrictRasterBlendMode::Overlay
-            | StrictRasterBlendMode::PinLight
-            | StrictRasterBlendMode::Saturation
-            | StrictRasterBlendMode::Brightness
-            | StrictRasterBlendMode::Color
-            | StrictRasterBlendMode::SoftLight
-            | StrictRasterBlendMode::Screen
-            | StrictRasterBlendMode::Subtract
-            | StrictRasterBlendMode::VividLight
-    )
+    let (blend_mode, enabled) = match node.composite {
+        0 => return Some(StrictRasterBlendMode::Normal),
+        LAYER_COMPOSITE_DARKEN => (StrictRasterBlendMode::Darken, options.allow_simple_blends),
+        LAYER_COMPOSITE_MULTIPLY => (StrictRasterBlendMode::Multiply, options.allow_w3c_blends),
+        LAYER_COMPOSITE_LINEAR_BURN => (
+            StrictRasterBlendMode::LinearBurn,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_ADD_GLOW => (StrictRasterBlendMode::AddGlow, options.allow_add_glow_blend),
+        LAYER_COMPOSITE_DARKER_COLOR => (
+            StrictRasterBlendMode::DarkerColor,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_SUBTRACT => (StrictRasterBlendMode::Subtract, options.allow_simple_blends),
+        LAYER_COMPOSITE_LIGHTEN => (StrictRasterBlendMode::Lighten, options.allow_simple_blends),
+        LAYER_COMPOSITE_SCREEN => (StrictRasterBlendMode::Screen, options.allow_simple_blends),
+        LAYER_COMPOSITE_COLOR_BURN => (
+            StrictRasterBlendMode::ColorBurn,
+            options.allow_color_burn_blend,
+        ),
+        LAYER_COMPOSITE_COLOR_DODGE => (
+            StrictRasterBlendMode::ColorDodge,
+            options.allow_color_dodge_blend,
+        ),
+        LAYER_COMPOSITE_GLOW_DODGE => (
+            StrictRasterBlendMode::GlowDodge,
+            options.allow_glow_dodge_blend,
+        ),
+        LAYER_COMPOSITE_ADD => (StrictRasterBlendMode::Add, options.allow_add_blend),
+        LAYER_COMPOSITE_LIGHTER_COLOR => (
+            StrictRasterBlendMode::LighterColor,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_OVERLAY => (StrictRasterBlendMode::Overlay, options.allow_w3c_blends),
+        LAYER_COMPOSITE_HARD_MIX => (StrictRasterBlendMode::HardMix, options.allow_hard_mix_blend),
+        LAYER_COMPOSITE_HARD_LIGHT => (StrictRasterBlendMode::HardLight, options.allow_w3c_blends),
+        LAYER_COMPOSITE_LINEAR_LIGHT => (
+            StrictRasterBlendMode::LinearLight,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_PIN_LIGHT => (
+            StrictRasterBlendMode::PinLight,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_HUE => (StrictRasterBlendMode::Hue, options.allow_hsl_blends),
+        LAYER_COMPOSITE_SATURATION => (StrictRasterBlendMode::Saturation, options.allow_hsl_blends),
+        LAYER_COMPOSITE_COLOR => (StrictRasterBlendMode::Color, options.allow_hsl_blends),
+        LAYER_COMPOSITE_SOFT_LIGHT => (
+            StrictRasterBlendMode::SoftLight,
+            options.allow_soft_light_blend,
+        ),
+        LAYER_COMPOSITE_DIFFERENCE => (
+            StrictRasterBlendMode::Difference,
+            options.allow_simple_blends,
+        ),
+        LAYER_COMPOSITE_EXCLUSION => (
+            StrictRasterBlendMode::Exclusion,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_BRIGHTNESS => (
+            StrictRasterBlendMode::Brightness,
+            options.allow_extended_blends,
+        ),
+        LAYER_COMPOSITE_VIVID_LIGHT => (
+            StrictRasterBlendMode::VividLight,
+            options.allow_vivid_light_blend,
+        ),
+        LAYER_COMPOSITE_DIVIDE => (StrictRasterBlendMode::Divide, options.allow_extended_blends),
+        _ => return None,
+    };
+    // A non-normal blend resolves only at the position the caller selects for:
+    // clipped layers inside a clipping run, unclipped layers outside one.
+    (enabled && node.clip == allow_clip_flag).then_some(blend_mode)
 }
 
 pub(crate) fn gpu_raster_blend_mode(

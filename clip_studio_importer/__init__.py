@@ -59,18 +59,6 @@ def _ui(message: str) -> str:
     return i18n.translate(bpy, message)
 
 
-def _import_clip_as_image(clip_path: str) -> bpy.types.Image:
-    started_at = time.time()
-    image = native_bridge.import_clip_as_image(
-        clip_path,
-        bpy_module=bpy,
-        pack=False,
-    )
-    image_state.set_last_render_seconds(image, time.time() - started_at)
-    image_state.mark_needs_pack(image)
-    return image
-
-
 def _resolve_clip_source_path(path: str | None) -> str:
     return image_state.resolve_source_path(str(path or ""), _blender_abspath())
 
@@ -409,10 +397,6 @@ def _schedule_async_decode(
             img.get(image_state.CLIP_RELOAD_MANIFEST_KEY, "") or ""
         )
         image_state.set_render_started(img)
-        image_state.write_reload_status(
-            img,
-            image_state.RELOAD_STATUS_REFRESHING,
-        )
         image_state.set_pack_status(img, image_state.PACK_STATUS_RENDERING)
 
     threading.Thread(

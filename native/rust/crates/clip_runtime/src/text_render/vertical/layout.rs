@@ -1,7 +1,6 @@
 use super::super::{TextRasterLayout, text_lines};
 
 pub(crate) const CJK_VERTICAL_ITEM_ADVANCE_EM: f32 = 0.99;
-pub(crate) const CJK_VERTICAL_PURE_ITEM_ADVANCE_EM: f32 = 0.99;
 pub(crate) const CJK_VERTICAL_MIXED_RIGHT_COLUMN_X_EM: f32 = 0.04;
 pub(crate) const CJK_VERTICAL_PURE_RIGHT_COLUMN_X_EM: f32 = 0.10;
 pub(crate) const CJK_VERTICAL_COLUMN_ADVANCE_EM: f32 = 1.22;
@@ -112,14 +111,6 @@ pub(crate) fn vertical_upright_items_have_horizontal_run(chars: &[char]) -> bool
     chars
         .iter()
         .any(|ch| vertical_char_starts_horizontal_run(*ch))
-}
-
-pub(crate) fn cjk_vertical_item_advance_em(has_horizontal_run: bool) -> f32 {
-    if has_horizontal_run {
-        CJK_VERTICAL_ITEM_ADVANCE_EM
-    } else {
-        CJK_VERTICAL_PURE_ITEM_ADVANCE_EM
-    }
 }
 
 pub(crate) fn cjk_vertical_right_column_x_em(has_horizontal_run: bool) -> f32 {

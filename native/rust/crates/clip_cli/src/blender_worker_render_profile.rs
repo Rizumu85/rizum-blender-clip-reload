@@ -218,7 +218,7 @@ fn dirty_source_tile_count(segments: &[ReloadDirtySegment]) -> u64 {
         .sum()
 }
 
-fn dirty_output_tile_count(plan: &ReloadDiffPlan) -> u64 {
+pub(crate) fn dirty_output_tile_count(plan: &ReloadDiffPlan) -> u64 {
     const TILE_SIZE: u32 = clip_file::tiles::TILE_SIZE as u32;
     plan.dirty_rects
         .iter()

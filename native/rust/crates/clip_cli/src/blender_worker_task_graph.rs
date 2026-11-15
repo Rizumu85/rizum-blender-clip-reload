@@ -1,5 +1,7 @@
 use serde_json::json;
 
+use crate::blender_worker_render_profile::dirty_output_tile_count;
+
 #[derive(Default)]
 pub(crate) struct RenderTaskGraphBuilder {
     tasks: Vec<serde_json::Value>,
@@ -242,56 +244,4 @@ pub(crate) fn render_task_graph_for_full_render(
         );
         graph.into_json()
     })
-}
-
-fn dirty_output_tile_count(plan: &clip_runtime::ReloadDiffPlan) -> u64 {
-    const TILE_SIZE: u32 = clip_file::tiles::TILE_SIZE as u32;
-    plan.dirty_rects
-        .iter()
-        .map(|rect| {
-            let x0 = rect.x / TILE_SIZE;
-            let y0 = rect.y / TILE_SIZE;
-            let x1 = rect.x.saturating_add(rect.width).saturating_sub(1) / TILE_SIZE;
-            let y1 = rect.y.saturating_add(rect.height).saturating_sub(1) / TILE_SIZE;
-            u64::from(x1.saturating_sub(x0).saturating_add(1))
-                .saturating_mul(u64::from(y1.saturating_sub(y0).saturating_add(1)))
-        })
-        .sum()
-}
-
-#[cfg(test)]
-mod tests {
-    use clip_runtime::{
-        ReloadDiffManifest, ReloadDiffMode, ReloadDiffPlan, ReloadDiffSegment, ReloadPatchRect,
-    };
-
-    use super::dirty_output_tile_count;
-
-    #[test]
-    fn dirty_output_tile_count_counts_intersected_tiles() {
-        let plan = ReloadDiffPlan {
-            manifest: ReloadDiffManifest {
-                abi: 4,
-                tile_size: clip_file::tiles::TILE_SIZE as u32,
-                tile_event_abi_version: 0,
-                width: 512,
-                height: 512,
-                root_layer_id: 1,
-                nodes: Vec::new(),
-                sources: Vec::new(),
-                segments: Vec::<ReloadDiffSegment>::new(),
-            },
-            mode: ReloadDiffMode::Patch,
-            reason: "test".to_string(),
-            dirty_rects: vec![ReloadPatchRect {
-                x: 250,
-                y: 250,
-                width: 20,
-                height: 20,
-            }],
-            dirty_segments: Vec::new(),
-        };
-
-        assert_eq!(dirty_output_tile_count(&plan), 4);
-    }
 }

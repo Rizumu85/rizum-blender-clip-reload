@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from array import array
-import ctypes
 import json
 import os
 from pathlib import Path
@@ -102,237 +101,11 @@ _PERSISTENT_WORKER_LOCK = threading.Lock()
 _PERSISTENT_WORKER: "PersistentNativeRendererWorker | None" = None
 
 
-class _ClipRendererImageInfo(ctypes.Structure):
-    _fields_ = [
-        ("width", ctypes.c_uint32),
-        ("height", ctypes.c_uint32),
-        ("root_layer_id", ctypes.c_uint32),
-        ("layer_count", ctypes.c_size_t),
-        ("external_data_count", ctypes.c_size_t),
-    ]
-
-
-class _ClipRendererSupportInfo(ctypes.Structure):
-    _fields_ = [
-        ("source_count", ctypes.c_size_t),
-        ("unsupported_count", ctypes.c_size_t),
-        ("raster_count", ctypes.c_size_t),
-        ("raster_bytes", ctypes.c_uint64),
-        ("max_raster_layer_id", ctypes.c_uint32),
-        ("max_raster_width", ctypes.c_uint32),
-        ("max_raster_height", ctypes.c_uint32),
-        ("max_raster_bytes", ctypes.c_uint64),
-        ("mask_count", ctypes.c_size_t),
-        ("mask_bytes", ctypes.c_uint64),
-        ("max_mask_layer_id", ctypes.c_uint32),
-        ("max_mask_width", ctypes.c_uint32),
-        ("max_mask_height", ctypes.c_uint32),
-        ("max_mask_bytes", ctypes.c_uint64),
-    ]
-
-
-class NativeRendererLibrary:
-    def __init__(self, library_path: str | os.PathLike[str]):
-        self.library_path = str(Path(library_path).resolve())
-        self._dll = ctypes.CDLL(self.library_path)
-        self._configure_signatures()
-        abi = int(self._dll.clip_renderer_abi_version())
-        if abi != EXPECTED_ABI_VERSION:
-            raise NativeBridgeError(
-                f"native renderer ABI {abi} does not match expected {EXPECTED_ABI_VERSION}"
-            )
-        self.abi_version = abi
-        self.renderer_version = self._read_renderer_version()
-
-    def render_rgba8(self, clip_path: str | os.PathLike[str]) -> NativeRenderResult:
-        source = str(Path(clip_path).resolve())
-        session = ctypes.c_void_p()
-        status = self._dll.clip_renderer_session_open(
-            source.encode("utf-8"),
-            ctypes.byref(session),
-        )
-        self._raise_if_error(status, "open native clip session")
-        if not session.value:
-            raise NativeBridgeError("native renderer returned a null session")
-
-        try:
-            info = _ClipRendererImageInfo()
-            status = self._dll.clip_renderer_session_info(session, ctypes.byref(info))
-            self._raise_if_error(status, "read native clip info")
-            support_summary = self._support_summary(session)
-
-            pixel_len = int(info.width) * int(info.height) * 4
-            pixels = (ctypes.c_uint8 * pixel_len)()
-            status = self._dll.clip_renderer_session_read_rgba8(
-                session,
-                0,
-                0,
-                info.width,
-                info.height,
-                pixels,
-                pixel_len,
-            )
-            self._raise_if_error(status, "read native clip pixels")
-
-            try:
-                source_mtime = os.path.getmtime(source)
-            except OSError:
-                source_mtime = None
-            try:
-                source_size = os.path.getsize(source)
-            except OSError:
-                source_size = None
-            try:
-                source_sha256 = source_file_sha256(source)
-            except OSError:
-                source_sha256 = ""
-
-            return NativeRenderResult(
-                clip_path=source,
-                width=int(info.width),
-                height=int(info.height),
-                root_layer_id=int(info.root_layer_id),
-                layer_count=int(info.layer_count),
-                external_data_count=int(info.external_data_count),
-                renderer_abi=self.abi_version,
-                renderer_version=self.renderer_version,
-                source_mtime=source_mtime,
-                source_size=source_size,
-                source_sha256=source_sha256,
-                pixels_rgba8=bytes(pixels),
-                support_summary=support_summary,
-                worker_seconds=None,
-                output_read_seconds=None,
-            )
-        finally:
-            self._dll.clip_renderer_session_close(session)
-
-    def _configure_signatures(self) -> None:
-        self._dll.clip_renderer_abi_version.argtypes = []
-        self._dll.clip_renderer_abi_version.restype = ctypes.c_uint32
-
-        self._dll.clip_renderer_version.argtypes = []
-        self._dll.clip_renderer_version.restype = ctypes.c_char_p
-
-        self._dll.clip_renderer_last_error.argtypes = []
-        self._dll.clip_renderer_last_error.restype = ctypes.c_char_p
-
-        self._dll.clip_renderer_session_open.argtypes = [
-            ctypes.c_char_p,
-            ctypes.POINTER(ctypes.c_void_p),
-        ]
-        self._dll.clip_renderer_session_open.restype = ctypes.c_int
-
-        self._dll.clip_renderer_session_close.argtypes = [ctypes.c_void_p]
-        self._dll.clip_renderer_session_close.restype = None
-
-        self._dll.clip_renderer_session_info.argtypes = [
-            ctypes.c_void_p,
-            ctypes.POINTER(_ClipRendererImageInfo),
-        ]
-        self._dll.clip_renderer_session_info.restype = ctypes.c_int
-
-        self._dll.clip_renderer_session_read_rgba8.argtypes = [
-            ctypes.c_void_p,
-            ctypes.c_uint32,
-            ctypes.c_uint32,
-            ctypes.c_uint32,
-            ctypes.c_uint32,
-            ctypes.POINTER(ctypes.c_uint8),
-            ctypes.c_size_t,
-        ]
-        self._dll.clip_renderer_session_read_rgba8.restype = ctypes.c_int
-
-        try:
-            self._support_info_fn = self._dll.clip_renderer_session_support_info
-        except AttributeError:
-            self._support_info_fn = None
-        if self._support_info_fn is not None:
-            self._support_info_fn.argtypes = [
-                ctypes.c_void_p,
-                ctypes.POINTER(_ClipRendererSupportInfo),
-                ctypes.c_char_p,
-                ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_size_t),
-            ]
-            self._support_info_fn.restype = ctypes.c_int
-
-    def _support_summary(self, session: ctypes.c_void_p) -> NativeSupportSummary | None:
-        if self._support_info_fn is None:
-            return None
-        info = _ClipRendererSupportInfo()
-        required_len = ctypes.c_size_t(0)
-        buffer_len = 4096
-        report = ctypes.create_string_buffer(buffer_len)
-        status = self._support_info_fn(
-            session,
-            ctypes.byref(info),
-            report,
-            buffer_len,
-            ctypes.byref(required_len),
-        )
-        if status == 6 and required_len.value > buffer_len:
-            buffer_len = int(required_len.value)
-            report = ctypes.create_string_buffer(buffer_len)
-            status = self._support_info_fn(
-                session,
-                ctypes.byref(info),
-                report,
-                buffer_len,
-                ctypes.byref(required_len),
-            )
-        self._raise_if_error(status, "read native support info")
-        decoded_report = report.value.decode("utf-8", errors="replace")
-        report_lines = decoded_report.splitlines()
-        summary_line = report_lines[0] if report_lines else ""
-        detail_lines = tuple(line for line in report_lines[1:] if line)
-        return NativeSupportSummary(
-            source_count=int(info.source_count),
-            unsupported_count=int(info.unsupported_count),
-            raster_count=int(info.raster_count),
-            raster_bytes=int(info.raster_bytes),
-            max_raster_layer_id=int(info.max_raster_layer_id),
-            max_raster_width=int(info.max_raster_width),
-            max_raster_height=int(info.max_raster_height),
-            max_raster_bytes=int(info.max_raster_bytes),
-            mask_count=int(info.mask_count),
-            mask_bytes=int(info.mask_bytes),
-            max_mask_layer_id=int(info.max_mask_layer_id),
-            max_mask_width=int(info.max_mask_width),
-            max_mask_height=int(info.max_mask_height),
-            max_mask_bytes=int(info.max_mask_bytes),
-            report=summary_line,
-            details=detail_lines,
-        )
-
-    def _raise_if_error(self, status: int, action: str) -> None:
-        if status == 0:
-            return
-        message = self._last_error_message()
-        detail = f": {message}" if message else ""
-        raise NativeBridgeError(f"could not {action} ({_status_name(status)}){detail}")
-
-    def _last_error_message(self) -> str:
-        message = self._dll.clip_renderer_last_error()
-        if not message:
-            return ""
-        return message.decode("utf-8", errors="replace")
-
-    def _read_renderer_version(self) -> str:
-        version = self._dll.clip_renderer_version()
-        if not version:
-            return ""
-        return version.decode("utf-8", errors="replace")
-
-
 def render_clip_rgba8(
     clip_path: str | os.PathLike[str],
     *,
-    renderer: Any | None = None,
     previous_manifest_json: str | None = None,
 ) -> NativeRenderResult:
-    if renderer is not None:
-        return renderer.render_rgba8(clip_path)
     worker_path = packaged_renderer_worker_path()
     if worker_path:
         if _persistent_worker_enabled():
@@ -377,23 +150,6 @@ def shutdown_renderer_worker() -> None:
         _PERSISTENT_WORKER = None
     if worker is not None:
         worker.shutdown()
-
-
-def import_clip_as_image(
-    clip_path: str | os.PathLike[str],
-    *,
-    bpy_module: Any,
-    image_name: str | None = None,
-    pack: bool = True,
-    renderer: Any | None = None,
-) -> Any:
-    result = render_clip_rgba8(clip_path, renderer=renderer)
-    return create_or_update_image(
-        bpy_module,
-        result,
-        image_name=image_name,
-        pack=pack,
-    )
 
 
 def create_or_update_image(
@@ -476,28 +232,6 @@ def create_or_update_image(
     return image
 
 
-def resolve_renderer_library() -> str:
-    env_path = os.environ.get("RIZUM_CLIP_RENDERER_DLL")
-    if env_path:
-        return env_path
-
-    packaged_path = packaged_renderer_library_path()
-    if packaged_path:
-        return packaged_path
-
-    raise NativeBridgeError(
-        "native renderer library not found; set RIZUM_CLIP_RENDERER_DLL or rebuild the add-on package"
-    )
-
-
-def packaged_renderer_library_path() -> str | None:
-    module_dir = Path(__file__).resolve().parent
-    for candidate in _packaged_renderer_library_candidates(module_dir):
-        if candidate.exists():
-            return str(candidate)
-    return None
-
-
 def packaged_renderer_worker_path() -> str | None:
     module_dir = Path(__file__).resolve().parent
     for candidate in _packaged_renderer_worker_candidates(module_dir):
@@ -522,41 +256,15 @@ def _runtime_platform_id() -> str | None:
     return None
 
 
-def _runtime_native_names() -> tuple[str, str]:
-    platform_id = _runtime_platform_id()
-    if platform_id == "windows-x64":
-        return "clip_capi.dll", "clip_cli.exe"
-    if platform_id == "linux-x64":
-        return "libclip_capi.so", "clip_cli"
-    if platform_id in {"macos-x64", "macos-arm64"}:
-        return "libclip_capi.dylib", "clip_cli"
-    return "clip_capi.dll", "clip_cli.exe"
-
-
-def _packaged_renderer_library_candidates(module_dir: Path) -> list[Path]:
-    platform_id = _runtime_platform_id()
-    library_name, _worker_name = _runtime_native_names()
-    candidates: list[Path] = []
-    if platform_id:
-        candidates.append(module_dir / "native" / platform_id / library_name)
-    candidates.extend(
-        [
-            module_dir / library_name,
-            module_dir / "native" / library_name,
-            module_dir / "clip_capi.dll",
-            module_dir / "libclip_capi.so",
-            module_dir / "libclip_capi.dylib",
-            module_dir / "native" / "clip_capi.dll",
-            module_dir / "native" / "libclip_capi.so",
-            module_dir / "native" / "libclip_capi.dylib",
-        ]
-    )
-    return list(dict.fromkeys(candidates))
+def _runtime_worker_name() -> str:
+    if _runtime_platform_id() in {"linux-x64", "macos-x64", "macos-arm64"}:
+        return "clip_cli"
+    return "clip_cli.exe"
 
 
 def _packaged_renderer_worker_candidates(module_dir: Path) -> list[Path]:
     platform_id = _runtime_platform_id()
-    _library_name, worker_name = _runtime_native_names()
+    worker_name = _runtime_worker_name()
     candidates: list[Path] = []
     if platform_id:
         candidates.append(module_dir / "native" / platform_id / worker_name)
@@ -838,14 +546,3 @@ def _apply_rgba8_patches_to_image(image: Any, result: NativeRenderResult) -> tup
             image.pixels[pixel_start:pixel_end] = values
             foreach_seconds += time.perf_counter() - foreach_started
     return convert_seconds, foreach_seconds
-
-
-def _status_name(status: int) -> str:
-    return {
-        1: "NullArgument",
-        2: "InvalidUtf8Path",
-        3: "OpenFailed",
-        4: "InvalidRegion",
-        5: "ReadFailed",
-        6: "BufferTooSmall",
-    }.get(status, f"status {status}")

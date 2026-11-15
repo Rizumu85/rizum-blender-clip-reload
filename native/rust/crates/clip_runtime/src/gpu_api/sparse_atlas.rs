@@ -285,46 +285,6 @@ impl RuntimeGpuRenderer {
         result
     }
 
-    pub fn draw_sparse_atlas_raster_event_segment_to_rgba8(
-        &self,
-        session: &ClipSession,
-        segment: &crate::GpuSparseAtlasRasterEventSegment,
-    ) -> Result<clip_file::tiles::RgbaTileImage, RuntimeError> {
-        let output = self
-            .renderer
-            .draw_sparse_atlas_raster_event_batches_to_rgba8(
-                session.summary.canvas,
-                &self.sparse_atlas_textures.borrow(),
-                &segment.batches,
-            )?;
-        Ok(clip_file::tiles::RgbaTileImage {
-            width: output.size.width,
-            height: output.size.height,
-            pixels: output.pixels,
-        })
-    }
-
-    pub fn draw_sparse_atlas_raster_event_segment_over_rgba8(
-        &self,
-        session: &ClipSession,
-        segment: &crate::GpuSparseAtlasRasterEventSegment,
-        base_pixels: &[u8],
-    ) -> Result<clip_file::tiles::RgbaTileImage, RuntimeError> {
-        let output = self
-            .renderer
-            .draw_sparse_atlas_raster_event_batches_over_rgba8(
-                session.summary.canvas,
-                &self.sparse_atlas_textures.borrow(),
-                &segment.batches,
-                base_pixels,
-            )?;
-        Ok(clip_file::tiles::RgbaTileImage {
-            width: output.size.width,
-            height: output.size.height,
-            pixels: output.pixels,
-        })
-    }
-
     pub fn draw_sparse_atlas_raster_event_segment_patches_over_rgba8(
         &self,
         session: &ClipSession,

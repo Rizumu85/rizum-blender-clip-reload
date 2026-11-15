@@ -16,10 +16,10 @@ mod layout;
 
 pub(super) use layout::{
     CJK_VERTICAL_ITEM_ADVANCE_EM, VerticalTextItem, VerticalTextItemKind,
-    cjk_vertical_horizontal_run_offset, cjk_vertical_item_advance_em, cjk_vertical_midpoint_y_em,
-    cjk_vertical_right_column_x_em, vertical_column_row_positions, vertical_text_box,
-    vertical_text_uses_upright_layout, vertical_upright_column_step,
-    vertical_upright_column_y_offset, vertical_upright_item_columns, vertical_upright_row_y_offset,
+    cjk_vertical_horizontal_run_offset, cjk_vertical_midpoint_y_em, cjk_vertical_right_column_x_em,
+    vertical_column_row_positions, vertical_text_box, vertical_text_uses_upright_layout,
+    vertical_upright_column_step, vertical_upright_column_y_offset, vertical_upright_item_columns,
+    vertical_upright_row_y_offset,
 };
 use layout::{vertical_text_columns, vertical_upright_items_have_horizontal_run};
 
@@ -100,7 +100,7 @@ fn render_upright_vertical_entry_surface(
         .map(|style| style.font_size_px)
         .fold(1.0f32, f32::max);
     let has_horizontal_run = vertical_upright_items_have_horizontal_run(chars);
-    let item_step = (max_font_size * cjk_vertical_item_advance_em(has_horizontal_run)).max(1.0);
+    let item_step = (max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM).max(1.0);
     let rows_per_column = ((box_height / item_step).floor() as usize).max(1);
     let columns = vertical_upright_item_columns(chars, rows_per_column);
     let right_column_x = layout.size.width as f32 * 0.5
@@ -111,16 +111,7 @@ fn render_upright_vertical_entry_surface(
     for (column, items) in columns.into_iter().enumerate() {
         let advances = items
             .iter()
-            .map(|item| {
-                vertical_upright_item_advance(
-                    item,
-                    chars,
-                    styles,
-                    max_font_size,
-                    fonts,
-                    has_horizontal_run,
-                )
-            })
+            .map(|item| vertical_upright_item_advance(item, chars, styles, max_font_size, fonts))
             .collect::<Vec<_>>();
         let column_midpoint_y =
             midpoint_y + vertical_upright_column_y_offset(has_horizontal_run, max_font_size);
@@ -206,7 +197,6 @@ fn vertical_upright_item_advance(
     styles: &[TextCharStyle],
     max_font_size: f32,
     fonts: &mut FontResolver,
-    has_horizontal_run: bool,
 ) -> f32 {
     match item.kind {
         VerticalTextItemKind::HorizontalRun => {
@@ -220,7 +210,7 @@ fn vertical_upright_item_advance(
             height.max(max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM)
         }
         VerticalTextItemKind::UprightChar | VerticalTextItemKind::RotatedChar => {
-            max_font_size * cjk_vertical_item_advance_em(has_horizontal_run)
+            max_font_size * CJK_VERTICAL_ITEM_ADVANCE_EM
         }
     }
 }

@@ -152,23 +152,20 @@ class FakeRenderer:
 class NativeBridgeTests(unittest.TestCase):
     def test_packaged_renderer_candidates_prefer_runtime_platform_directory(self) -> None:
         cases = [
-            ("linux-x64", "libclip_capi.so"),
-            ("macos-arm64", "libclip_capi.dylib"),
+            ("windows-x64", "clip_cli.exe"),
+            ("linux-x64", "clip_cli"),
+            ("macos-arm64", "clip_cli"),
         ]
         original_platform_id = native_bridge._runtime_platform_id
         try:
-            for platform_id, library_name in cases:
+            for platform_id, worker_name in cases:
                 with self.subTest(platform=platform_id):
                     native_bridge._runtime_platform_id = lambda platform_id=platform_id: platform_id
                     module_dir = Path("/addon")
 
                     self.assertEqual(
-                        native_bridge._packaged_renderer_library_candidates(module_dir)[0],
-                        module_dir / "native" / platform_id / library_name,
-                    )
-                    self.assertEqual(
                         native_bridge._packaged_renderer_worker_candidates(module_dir)[0],
-                        module_dir / "native" / platform_id / "clip_cli",
+                        module_dir / "native" / platform_id / worker_name,
                     )
         finally:
             native_bridge._runtime_platform_id = original_platform_id
