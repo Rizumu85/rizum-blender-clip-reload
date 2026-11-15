@@ -30,7 +30,6 @@ PACKAGE_ROOT_FILES = (
 class NativePlatformSpec:
     platform_id: str
     cargo_target: str
-    library_name: str
     worker_name: str
     tested_status: str
 
@@ -39,21 +38,18 @@ NATIVE_PLATFORMS: dict[str, NativePlatformSpec] = {
     "windows-x64": NativePlatformSpec(
         platform_id="windows-x64",
         cargo_target="x86_64-pc-windows-msvc",
-        library_name="clip_capi.dll",
         worker_name="clip_cli.exe",
         tested_status="tested on the maintainer's Windows machine",
     ),
     "linux-x64": NativePlatformSpec(
         platform_id="linux-x64",
         cargo_target="x86_64-unknown-linux-gnu",
-        library_name="libclip_capi.so",
         worker_name="clip_cli",
         tested_status="packaging-supported but not maintainer-tested",
     ),
     "macos-arm64": NativePlatformSpec(
         platform_id="macos-arm64",
         cargo_target="aarch64-apple-darwin",
-        library_name="libclip_capi.dylib",
         worker_name="clip_cli",
         tested_status="packaging-supported but not maintainer-tested",
     ),
@@ -112,7 +108,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--no-native",
         action="store_true",
-        help="Do not include locally built native renderer libraries.",
+        help="Do not include the locally built native renderer worker.",
     )
     parser.add_argument(
         "--platform",
@@ -349,26 +345,16 @@ def build_zip(
                 spec = NATIVE_PLATFORMS[platform_id]
                 native_dir = native_root / platform_id
                 native_dir.mkdir()
-                sources = [
-                    _find_native_artifact(
-                        root,
-                        platform_id,
-                        spec.library_name,
-                        native_artifact_dirs,
-                    ),
-                    _find_native_artifact(
-                        root,
-                        platform_id,
-                        spec.worker_name,
-                        native_artifact_dirs,
-                    ),
-                ]
-                for source in sources:
-                    target = native_dir / source.name
-                    shutil.copy2(source, target)
-                    if target.name == spec.worker_name:
-                        target.chmod(target.stat().st_mode | 0o755)
-                    written.append(f"native/{platform_id}/{source.name}")
+                source = _find_native_artifact(
+                    root,
+                    platform_id,
+                    spec.worker_name,
+                    native_artifact_dirs,
+                )
+                target = native_dir / source.name
+                shutil.copy2(source, target)
+                target.chmod(target.stat().st_mode | 0o755)
+                written.append(f"native/{platform_id}/{source.name}")
 
         if blender is not None:
             return _run_blender_extension_build(blender, staging_dir, output)

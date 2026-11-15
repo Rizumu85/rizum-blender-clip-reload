@@ -44,11 +44,8 @@ class BuildBlenderAddonTests(unittest.TestCase):
             }
             for path in artifacts.values():
                 path.mkdir()
-            (artifacts["windows-x64"] / "clip_capi.dll").write_bytes(b"fake windows library")
             (artifacts["windows-x64"] / "clip_cli.exe").write_bytes(b"fake windows worker")
-            (artifacts["linux-x64"] / "libclip_capi.so").write_bytes(b"fake linux library")
             (artifacts["linux-x64"] / "clip_cli").write_bytes(b"fake linux worker")
-            (artifacts["macos-arm64"] / "libclip_capi.dylib").write_bytes(b"fake mac library")
             (artifacts["macos-arm64"] / "clip_cli").write_bytes(b"fake mac worker")
             output_dir = root / "dist"
 
@@ -74,9 +71,7 @@ class BuildBlenderAddonTests(unittest.TestCase):
             mac_written = written_by_platform[
                 str(output_dir / "clip_studio_importer-macos-arm64.zip")
             ]
-            self.assertIn("native/linux-x64/libclip_capi.so", linux_written)
             self.assertIn("native/linux-x64/clip_cli", linux_written)
-            self.assertIn("native/macos-arm64/libclip_capi.dylib", mac_written)
             self.assertIn("native/macos-arm64/clip_cli", mac_written)
 
             with zipfile.ZipFile(output_dir / "clip_studio_importer-windows-x64.zip") as archive:
@@ -89,19 +84,16 @@ class BuildBlenderAddonTests(unittest.TestCase):
                 mac_names = set(archive.namelist())
                 mac_manifest = archive.read("blender_manifest.toml").decode("utf-8")
 
-        self.assertIn("native/windows-x64/clip_capi.dll", windows_names)
         self.assertIn("native/windows-x64/clip_cli.exe", windows_names)
         self.assertNotIn("native/linux-x64/clip_cli", windows_names)
         self.assertNotIn("native/macos-arm64/clip_cli", windows_names)
         self.assertIn('platforms = ["windows-x64"]', windows_manifest)
 
-        self.assertIn("native/linux-x64/libclip_capi.so", linux_names)
         self.assertIn("native/linux-x64/clip_cli", linux_names)
         self.assertNotIn("native/windows-x64/clip_cli.exe", linux_names)
         self.assertNotIn("native/macos-arm64/clip_cli", linux_names)
         self.assertIn('platforms = ["linux-x64"]', linux_manifest)
 
-        self.assertIn("native/macos-arm64/libclip_capi.dylib", mac_names)
         self.assertIn("native/macos-arm64/clip_cli", mac_names)
         self.assertNotIn("native/windows-x64/clip_cli.exe", mac_names)
         self.assertNotIn("native/linux-x64/clip_cli", mac_names)

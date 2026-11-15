@@ -116,7 +116,6 @@ Build the native renderer first:
 
 ```powershell
 cd native\rust
-cargo build --release -q -p clip_capi
 cargo build --release -q -p clip_cli
 cd ..\..
 ```
@@ -147,10 +146,9 @@ python tools\build_blender_addon.py --platform all --output-dir dist
 ```
 
 Each generated zip contains only its matching `native/<platform>/` files and
-should be uploaded as its own platform version on Blender Extensions. Windows
-packages contain `clip_cli.exe` and `clip_capi.dll`; Linux packages contain
-`clip_cli` and `libclip_capi.so`; macOS Apple Silicon packages contain
-`clip_cli` and `libclip_capi.dylib`.
+should be uploaded as its own platform version on Blender Extensions. The only
+native file in a package is the renderer worker: `clip_cli.exe` on Windows and
+`clip_cli` on Linux and macOS Apple Silicon.
 
 The `Build extension package` GitHub Actions workflow builds native artifacts
 on Windows, Linux, and macOS runners, then uploads split platform zips from
@@ -317,7 +315,6 @@ Apple Silicon 会作为单独 zip 构建，真实设备检查通过前先当作�
 
 ```powershell
 cd native\rust
-cargo build --release -q -p clip_capi
 cargo build --release -q -p clip_cli
 cd ..\..
 ```
@@ -345,9 +342,8 @@ python tools\build_blender_addon.py --platform all --output-dir dist
 ```
 
 每个生成的 zip 都只包含对应的 `native/<platform>/` 文件，并在 Blender Extensions 上作为
-对应平台的独立版本上传。Windows 包里是 `clip_cli.exe` 和 `clip_capi.dll`；Linux 包里是
-`clip_cli` 和 `libclip_capi.so`；macOS Apple Silicon 包里是 `clip_cli` 和
-`libclip_capi.dylib`。
+对应平台的独立版本上传。包里唯一的 native 文件是渲染 worker：Windows 上是
+`clip_cli.exe`，Linux 和 macOS Apple Silicon 上是 `clip_cli`。
 
 `Build extension package` GitHub Actions workflow 会在 Windows、Linux、macOS runner 上
 构建 native artifacts，然后从 `dist/` 上传拆分后的平台包。`Native convergence` workflow

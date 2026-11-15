@@ -14,17 +14,14 @@ jobs:
           - platform: windows-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            library: clip_capi.dll
             worker: clip_cli.exe
           - platform: linux-x64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            library: libclip_capi.so
             worker: clip_cli
           - platform: macos-arm64
             os: macos-14
             target: aarch64-apple-darwin
-            library: libclip_capi.dylib
             worker: clip_cli
 
     steps:
@@ -46,7 +43,7 @@ jobs:
         shell: pwsh
         run: |
           cd native/rust
-          cargo build --release --target ${{ matrix.target }} -p clip_capi -p clip_cli
+          cargo build --release --target ${{ matrix.target }} -p clip_cli
 
       - name: Stage native artifacts
         shell: pwsh
@@ -54,7 +51,6 @@ jobs:
           $source = "native/rust/target/${{ matrix.target }}/release"
           $dest = "native-artifacts/${{ matrix.platform }}"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item "$source/${{ matrix.library }}" "$dest/${{ matrix.library }}"
           Copy-Item "$source/${{ matrix.worker }}" "$dest/${{ matrix.worker }}"
 
       - name: Upload native artifacts

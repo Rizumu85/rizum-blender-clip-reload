@@ -80,7 +80,9 @@ point here instead of repeating it.
 - `blender_manifest.toml`.
 - Add-on Python modules at the extension root.
 - `LICENSE` and `NOTICE.md`.
-- Native `clip_cli` worker and `clip_capi` library under `native/<platform>/`.
+- Native `clip_cli` worker under `native/<platform>/`. The `clip_capi` library
+  is not packaged: the add-on only drives the worker, and the C ABI serves
+  hosts outside the Blender product path such as the OIIO adapter.
 
 Windows x64 is the current maintainer-tested release platform. Linux x64 and
 macOS arm64 package support exists in the builder, but those packages must be
