@@ -68,7 +68,7 @@ Out of scope:
 
 ## Accepted Runtime
 
-- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.2`.
+- The installable Blender add-on is `Rizum Clip Reload`, version `0.9.3`.
 - The import menu remains `File > Import > Clip Studio (.clip)`.
 - The packaged native worker renders flattened RGBA8 output outside Blender's UI
   process, and Blender uploads it into generated images.

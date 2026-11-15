@@ -11,7 +11,7 @@ No external auto-reload add-on is required.
 from __future__ import annotations
 
 ADDON_NAME = "Rizum Clip Reload"
-ADDON_VERSION = (0, 9, 2)
+ADDON_VERSION = (0, 9, 3)
 
 import os
 import threading

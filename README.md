@@ -11,7 +11,7 @@
   </p>
 
   <p style="margin-top: 0; margin-bottom: 10px;">
-    <img src="https://img.shields.io/badge/version-0.9.2-f2cfc7" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.9.3-f2cfc7" alt="Version">
     <img src="https://img.shields.io/badge/Blender-4.2%2B-d4b6aa" alt="Blender 4.2+">
     <img src="https://img.shields.io/badge/Rust-native-4a3832" alt="Rust native renderer">
     <img src="https://img.shields.io/badge/wgpu-GPU%20renderer-79675f" alt="wgpu GPU renderer">
@@ -84,7 +84,7 @@ packed render and marks the source as missing.
 
 ## Current Status
 
-Package version: `0.9.2`.
+Package version: `0.9.3`.
 
 Works today:
 
@@ -219,7 +219,7 @@ GPL-3.0-or-later. See [LICENSE](LICENSE).
   </p>
 
   <p style="margin-top: 0; margin-bottom: 10px;">
-    <img src="https://img.shields.io/badge/version-0.9.2-f2cfc7" alt="Version">
+    <img src="https://img.shields.io/badge/version-0.9.3-f2cfc7" alt="Version">
     <img src="https://img.shields.io/badge/Blender-4.2%2B-d4b6aa" alt="Blender 4.2+">
     <img src="https://img.shields.io/badge/Rust-native-4a3832" alt="Rust native renderer">
     <img src="https://img.shields.io/badge/wgpu-GPU%20renderer-79675f" alt="wgpu GPU renderer">
@@ -283,7 +283,7 @@ Apple Silicon 会作为单独 zip 构建，真实设备检查通过前先当作�
 
 ## 当前状态
 
-包版本：`0.9.2`。
+包版本：`0.9.3`。
 
 目前支持：
 
