@@ -1,10 +1,31 @@
 use clip_graph::RenderNodeId;
 use clip_model::{CanvasSize, LayerId, Rgba8};
 
+use super::common::{InlineProvider, InlineRaster};
 use crate::{
     GpuClippedStackSource, GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource,
-    GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceKey, GpuRasterUpload, GpuRenderer,
+    GpuRasterBlendMode, GpuRasterResourceKey, GpuRenderer,
 };
+
+/// Serves one-pixel rasters placed at the canvas origin.
+fn one_pixel_rasters(rasters: &[(GpuRasterResourceKey, [u8; 4])]) -> InlineProvider {
+    InlineProvider::new(
+        rasters
+            .iter()
+            .map(|(key, pixels)| {
+                (
+                    *key,
+                    InlineRaster {
+                        render_node_id: RenderNodeId(key.layer_id.0),
+                        size: CanvasSize::new(1, 1),
+                        offset: (0, 0),
+                        pixels: pixels.to_vec(),
+                    },
+                )
+            })
+            .collect(),
+    )
+}
 
 #[test]
 fn container_source_resolves_child_cache_with_opacity() {
@@ -25,11 +46,10 @@ fn container_source_resolves_child_cache_with_opacity() {
     }];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(
-            &GpuRasterResourceCache::empty(),
-            None,
+        .draw_normal_stack_with_provider_to_rgba8(
             CanvasSize::new(2, 2),
             &sources,
+            &mut one_pixel_rasters(&[]),
         )
         .expect("draw container source");
 
@@ -49,16 +69,15 @@ fn raster_source_samples_with_canvas_offset() {
         layer_id: LayerId(30),
         render_mipmap_id: 40,
     };
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(30),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &[10, 20, 30, 255],
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload source-sized raster");
+    let mut provider = InlineProvider::new(vec![(
+        key,
+        InlineRaster {
+            render_node_id: RenderNodeId(30),
+            size: CanvasSize::new(1, 1),
+            offset: (1, 1),
+            pixels: vec![10, 20, 30, 255],
+        },
+    )]);
     let sources = [GpuNormalStackSource::Raster(GpuNormalRasterSource {
         key,
         opacity: 1.0,
@@ -69,7 +88,7 @@ fn raster_source_samples_with_canvas_offset() {
     })];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(3, 3), &sources)
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(3, 3), &sources, &mut provider)
         .expect("draw source-sized raster with canvas offset");
 
     let mut expected = vec![255, 255, 255, 0].repeat(9);
@@ -107,11 +126,10 @@ fn container_source_resolves_child_cache_with_blend_mode() {
     ];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(
-            &GpuRasterResourceCache::empty(),
-            None,
+        .draw_normal_stack_with_provider_to_rgba8(
             CanvasSize::new(1, 1),
             &sources,
+            &mut one_pixel_rasters(&[]),
         )
         .expect("draw multiply container source");
 
@@ -129,25 +147,8 @@ fn normal_raster_source_uses_byte_domain_alpha_over() {
         layer_id: LayerId(8),
         render_mipmap_id: 18,
     };
-    let uploads = [
-        GpuRasterUpload {
-            layer_id: base_key.layer_id,
-            render_node_id: RenderNodeId(7),
-            render_mipmap_id: base_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &[0, 0, 0, 26],
-        },
-        GpuRasterUpload {
-            layer_id: top_key.layer_id,
-            render_node_id: RenderNodeId(8),
-            render_mipmap_id: top_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &[197, 182, 252, 91],
-        },
-    ];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload normal alpha-over sources");
+    let mut provider =
+        one_pixel_rasters(&[(base_key, [0, 0, 0, 26]), (top_key, [197, 182, 252, 91])]);
     let sources = [
         GpuNormalStackSource::Raster(GpuNormalRasterSource {
             key: base_key,
@@ -168,7 +169,7 @@ fn normal_raster_source_uses_byte_domain_alpha_over() {
     ];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(1, 1), &sources, &mut provider)
         .expect("draw normal alpha-over sources");
 
     assert_eq!(output.pixels, [168, 155, 214, 107]);
@@ -203,11 +204,10 @@ fn through_group_resolves_before_after_delta_with_opacity() {
     ];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(
-            &GpuRasterResourceCache::empty(),
-            None,
+        .draw_normal_stack_with_provider_to_rgba8(
             CanvasSize::new(2, 2),
             &sources,
+            &mut one_pixel_rasters(&[]),
         )
         .expect("draw through group source");
 
@@ -254,11 +254,10 @@ fn container_with_through_child_resolves_non_empty_cache() {
     }];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(
-            &GpuRasterResourceCache::empty(),
-            None,
+        .draw_normal_stack_with_provider_to_rgba8(
             CanvasSize::new(1, 1),
             &sources,
+            &mut one_pixel_rasters(&[]),
         )
         .expect("draw container with through child");
 
@@ -346,25 +345,7 @@ fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
     };
     let base_pixels = [100u8, 50, 0, 128];
     let clipped_pixels = [128u8, 128, 128, 128];
-    let uploads = [
-        GpuRasterUpload {
-            layer_id: base_key.layer_id,
-            render_node_id: RenderNodeId(30),
-            render_mipmap_id: base_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &base_pixels,
-        },
-        GpuRasterUpload {
-            layer_id: clipped_key.layer_id,
-            render_node_id: RenderNodeId(31),
-            render_mipmap_id: clipped_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &clipped_pixels,
-        },
-    ];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload clipping run sources");
+    let mut provider = one_pixel_rasters(&[(base_key, base_pixels), (clipped_key, clipped_pixels)]);
     let sources = [
         GpuNormalStackSource::SolidColor {
             color: Rgba8 {
@@ -396,7 +377,7 @@ fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
     ];
 
     let output = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(1, 1), &sources, &mut provider)
         .expect("draw clipping run");
 
     assert_eq!(output.pixels, [58, 59, 60, 255]);
@@ -415,25 +396,7 @@ fn container_clipping_run_matches_equivalent_raster_base_run() {
     };
     let base_pixels = [100u8, 50, 0, 128];
     let clipped_pixels = [128u8, 128, 128, 128];
-    let uploads = [
-        GpuRasterUpload {
-            layer_id: base_key.layer_id,
-            render_node_id: RenderNodeId(34),
-            render_mipmap_id: base_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &base_pixels,
-        },
-        GpuRasterUpload {
-            layer_id: clipped_key.layer_id,
-            render_node_id: RenderNodeId(35),
-            render_mipmap_id: clipped_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &clipped_pixels,
-        },
-    ];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload container clipping run sources");
+    let mut provider = one_pixel_rasters(&[(base_key, base_pixels), (clipped_key, clipped_pixels)]);
     let parent = GpuNormalStackSource::SolidColor {
         color: Rgba8 {
             r: 20,
@@ -484,10 +447,18 @@ fn container_clipping_run_matches_equivalent_raster_base_run() {
     ];
 
     let raster_base = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &raster_base_sources)
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(1, 1),
+            &raster_base_sources,
+            &mut provider,
+        )
         .expect("draw equivalent raster-base clipping run");
     let container_base = renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &container_base_sources)
+        .draw_normal_stack_with_provider_to_rgba8(
+            CanvasSize::new(1, 1),
+            &container_base_sources,
+            &mut provider,
+        )
         .expect("draw container-base clipping run");
 
     assert_eq!(container_base.pixels, raster_base.pixels);
@@ -507,25 +478,7 @@ fn clipping_run_preserves_base_alpha_with_byte_domain_clipped_blends() {
     };
     let base_pixels = [50u8, 50, 50, 128];
     let clipped_pixels = [128u8, 0, 0, 128];
-    let uploads = [
-        GpuRasterUpload {
-            layer_id: base_key.layer_id,
-            render_node_id: RenderNodeId(32),
-            render_mipmap_id: base_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &base_pixels,
-        },
-        GpuRasterUpload {
-            layer_id: clipped_key.layer_id,
-            render_node_id: RenderNodeId(33),
-            render_mipmap_id: clipped_key.render_mipmap_id,
-            size: CanvasSize::new(1, 1),
-            pixels: &clipped_pixels,
-        },
-    ];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload clipping run sources");
+    let mut provider = one_pixel_rasters(&[(base_key, base_pixels), (clipped_key, clipped_pixels)]);
 
     for (blend_mode, expected) in [
         (GpuRasterBlendMode::AddGlow, [114, 50, 50, 128]),
@@ -553,7 +506,11 @@ fn clipping_run_preserves_base_alpha_with_byte_domain_clipped_blends() {
         }];
 
         let output = renderer
-            .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+            .draw_normal_stack_with_provider_to_rgba8(
+                CanvasSize::new(1, 1),
+                &sources,
+                &mut provider,
+            )
             .expect("draw byte-domain clipping run");
 
         assert_eq!(output.pixels, expected, "blend mode {blend_mode:?}");
@@ -615,16 +572,7 @@ fn draw_one_pixel_standard_blend_with_colors(
         layer_id: LayerId(20),
         render_mipmap_id: 30,
     };
-    let uploads = [GpuRasterUpload {
-        layer_id: key.layer_id,
-        render_node_id: RenderNodeId(20),
-        render_mipmap_id: key.render_mipmap_id,
-        size: CanvasSize::new(1, 1),
-        pixels: &pixels,
-    }];
-    let cache = renderer
-        .upload_raster_resources(&uploads)
-        .expect("upload standard blend source");
+    let mut provider = one_pixel_rasters(&[(key, pixels)]);
     let sources = [
         GpuNormalStackSource::SolidColor {
             color: dest,
@@ -641,7 +589,7 @@ fn draw_one_pixel_standard_blend_with_colors(
     ];
 
     renderer
-        .draw_normal_stack_to_rgba8(&cache, None, CanvasSize::new(1, 1), &sources)
+        .draw_normal_stack_with_provider_to_rgba8(CanvasSize::new(1, 1), &sources, &mut provider)
         .expect("draw standard blend source")
         .pixels
 }

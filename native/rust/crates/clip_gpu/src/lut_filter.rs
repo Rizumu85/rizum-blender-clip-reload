@@ -1,7 +1,6 @@
 use std::time::Instant;
 
 use crate::GpuRenderError;
-use crate::pass::WHITE_TRANSPARENT;
 use crate::render_profile;
 use crate::stream_bounds::CanvasRect;
 
@@ -50,35 +49,6 @@ pub(crate) fn create_lut_filter_texture(
         },
     );
     Ok(texture)
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn encode_lut_filter_pass(
-    device: &wgpu::Device,
-    encoder: &mut wgpu::CommandEncoder,
-    pipeline: &wgpu::RenderPipeline,
-    bind_group_layout: &wgpu::BindGroupLayout,
-    source_view: &wgpu::TextureView,
-    mask_view: &wgpu::TextureView,
-    lut_view: &wgpu::TextureView,
-    output_view: &wgpu::TextureView,
-    uniform_bytes: [u8; 48],
-    label: &'static str,
-) {
-    encode_lut_filter_pass_with_load(
-        device,
-        encoder,
-        pipeline,
-        bind_group_layout,
-        source_view,
-        mask_view,
-        lut_view,
-        output_view,
-        uniform_bytes,
-        label,
-        wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
-        None,
-    );
 }
 
 #[allow(clippy::too_many_arguments)]

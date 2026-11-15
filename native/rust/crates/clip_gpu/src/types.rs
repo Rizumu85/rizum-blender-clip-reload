@@ -1,9 +1,6 @@
 use clip_model::{CanvasSize, LayerId, Rgba8};
 
-use crate::{
-    GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterResourceCache, GpuRasterResourceInfo,
-    GpuRasterResourceKey,
-};
+use crate::{GpuMaskResourceKey, GpuRasterResourceInfo, GpuRasterResourceKey};
 
 #[derive(Debug)]
 pub struct GpuRasterDrawOutput {
@@ -23,13 +20,6 @@ pub struct GpuRasterStackOutput {
 pub struct GpuRasterPatchOutput {
     pub size: CanvasSize,
     pub payload: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub struct GpuNormalStackChunk {
-    pub raster_cache: GpuRasterResourceCache,
-    pub mask_cache: Option<GpuMaskResourceCache>,
-    pub sources: Vec<GpuNormalStackSource>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

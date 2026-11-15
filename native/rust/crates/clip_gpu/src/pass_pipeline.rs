@@ -3,14 +3,10 @@ use std::time::Instant;
 
 use clip_model::CanvasSize;
 
+use crate::GpuRasterBlendMode;
 use crate::render_profile;
 use crate::shaders::*;
 use crate::stream_bounds::CanvasRect;
-use crate::types::GpuNormalRasterSource;
-use crate::{
-    GpuMaskResourceCache, GpuMaskResourceKey, GpuRasterBlendMode, GpuRasterResourceCache,
-    GpuRenderError,
-};
 pub(crate) struct NormalStackPipelines {
     pub(crate) bind_group_layout: wgpu::BindGroupLayout,
     alpha_pipeline: OnceCell<wgpu::RenderPipeline>,
@@ -327,50 +323,6 @@ pub(crate) fn create_rgba8_texture(
     })
 }
 
-pub(super) fn raster_texture_view(
-    cache: &GpuRasterResourceCache,
-    source: GpuNormalRasterSource,
-) -> Result<wgpu::TextureView, GpuRenderError> {
-    Ok(cache
-        .resource(source.key)
-        .ok_or(GpuRenderError::MissingRasterResource {
-            layer_id: source.key.layer_id,
-            render_mipmap_id: source.key.render_mipmap_id,
-        })?
-        .texture()
-        .create_view(&wgpu::TextureViewDescriptor::default()))
-}
-
-pub(super) fn mask_texture_view(
-    mask_cache: Option<&GpuMaskResourceCache>,
-    source: GpuNormalRasterSource,
-    fallback_texture: &wgpu::Texture,
-) -> Result<wgpu::TextureView, GpuRenderError> {
-    source_mask_texture_view(mask_cache, source.mask_key, fallback_texture)
-}
-
-pub(super) fn source_mask_texture_view(
-    mask_cache: Option<&GpuMaskResourceCache>,
-    mask_key: Option<GpuMaskResourceKey>,
-    fallback_texture: &wgpu::Texture,
-) -> Result<wgpu::TextureView, GpuRenderError> {
-    let Some(mask_key) = mask_key else {
-        return Ok(fallback_texture.create_view(&wgpu::TextureViewDescriptor::default()));
-    };
-    Ok(mask_cache
-        .ok_or(GpuRenderError::MissingMaskResource {
-            layer_id: mask_key.layer_id,
-            mask_mipmap_id: mask_key.mask_mipmap_id,
-        })?
-        .resource(mask_key)
-        .ok_or(GpuRenderError::MissingMaskResource {
-            layer_id: mask_key.layer_id,
-            mask_mipmap_id: mask_key.mask_mipmap_id,
-        })?
-        .texture()
-        .create_view(&wgpu::TextureViewDescriptor::default()))
-}
-
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_normal_source_pass(
     device: &wgpu::Device,
@@ -502,30 +454,5 @@ fn encode_normal_source_pass_with_load(
     }
     pass.draw(0..3, 0..1);
     drop(pass);
-    render_profile::record_gpu_pass_encode(encode_start.elapsed());
-}
-
-pub(crate) fn clear_rgba8_texture(
-    encoder: &mut wgpu::CommandEncoder,
-    view: &wgpu::TextureView,
-    label: &'static str,
-) {
-    let encode_start = Instant::now();
-    let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: Some(label),
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-            view,
-            resolve_target: None,
-            ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(WHITE_TRANSPARENT),
-                store: wgpu::StoreOp::Store,
-            },
-            depth_slice: None,
-        })],
-        depth_stencil_attachment: None,
-        occlusion_query_set: None,
-        timestamp_writes: None,
-        multiview_mask: None,
-    });
     render_profile::record_gpu_pass_encode(encode_start.elapsed());
 }

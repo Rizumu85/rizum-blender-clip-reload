@@ -3,21 +3,6 @@ use clip_model::Rgba8;
 use crate::blend::blend_kind;
 use crate::{GpuLutFilterMode, GpuMaskSamplingInfo, GpuNormalRasterSource, GpuRasterBlendMode};
 
-pub(crate) fn raster_source_uniform_bytes(source: GpuNormalRasterSource) -> [u8; 64] {
-    raster_source_uniform_bytes_with_target_origin(source, (0, 0))
-}
-
-pub(crate) fn raster_source_uniform_bytes_with_target_origin(
-    source: GpuNormalRasterSource,
-    target_origin: (i32, i32),
-) -> [u8; 64] {
-    raster_source_uniform_bytes_with_target_origin_and_mask(
-        source,
-        target_origin,
-        GpuMaskSamplingInfo::default(),
-    )
-}
-
 pub(crate) fn raster_source_uniform_bytes_with_target_origin_and_mask(
     source: GpuNormalRasterSource,
     target_origin: (i32, i32),
@@ -34,49 +19,6 @@ pub(crate) fn raster_source_uniform_bytes_with_target_origin_and_mask(
         target_origin.0,
         target_origin.1,
         mask_sampling,
-    )
-}
-
-pub(crate) fn generated_raster_source_uniform_bytes(opacity: f32, has_mask: bool) -> [u8; 64] {
-    normal_source_uniform_bytes(
-        [0.0, 0.0, 0.0, 0.0],
-        opacity,
-        0,
-        u32::from(has_mask),
-        0,
-        0,
-        0,
-        0,
-        0,
-        GpuMaskSamplingInfo::default(),
-    )
-}
-
-pub(crate) fn generated_raster_source_uniform_bytes_with_blend(
-    opacity: f32,
-    has_mask: bool,
-    blend_mode: GpuRasterBlendMode,
-) -> [u8; 64] {
-    generated_raster_source_uniform_bytes_with_blend_and_origin(
-        opacity,
-        has_mask,
-        blend_mode,
-        (0, 0),
-    )
-}
-
-pub(crate) fn generated_raster_source_uniform_bytes_with_blend_and_origin(
-    opacity: f32,
-    has_mask: bool,
-    blend_mode: GpuRasterBlendMode,
-    source_origin: (i32, i32),
-) -> [u8; 64] {
-    generated_raster_source_uniform_bytes_with_blend_and_origins(
-        opacity,
-        has_mask,
-        blend_mode,
-        source_origin,
-        (0, 0),
     )
 }
 
@@ -116,29 +58,6 @@ pub(crate) fn generated_raster_source_uniform_bytes_with_blend_origins_and_mask(
         target_origin.0,
         target_origin.1,
         mask_sampling,
-    )
-}
-
-pub(crate) fn lut_filter_uniform_bytes(
-    opacity: f32,
-    has_mask: bool,
-    filter_mode: GpuLutFilterMode,
-) -> [u8; 48] {
-    lut_filter_uniform_bytes_with_target_origin(opacity, has_mask, filter_mode, (0, 0))
-}
-
-pub(crate) fn lut_filter_uniform_bytes_with_target_origin(
-    opacity: f32,
-    has_mask: bool,
-    filter_mode: GpuLutFilterMode,
-    target_origin: (i32, i32),
-) -> [u8; 48] {
-    lut_filter_uniform_bytes_with_target_origin_and_mask(
-        opacity,
-        has_mask,
-        filter_mode,
-        target_origin,
-        GpuMaskSamplingInfo::default(),
     )
 }
 
@@ -234,19 +153,19 @@ mod tests {
     use clip_model::LayerId;
 
     use crate::{
-        GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource, GpuRasterBlendMode,
-        GpuRasterResourceKey,
+        GpuHslFilterParams, GpuLutFilterMode, GpuMaskSamplingInfo, GpuNormalRasterSource,
+        GpuRasterBlendMode, GpuRasterResourceKey,
     };
 
     use super::{
         generated_raster_source_uniform_bytes_with_blend_and_origins,
-        lut_filter_uniform_bytes_with_target_origin,
-        raster_source_uniform_bytes_with_target_origin,
+        lut_filter_uniform_bytes_with_target_origin_and_mask,
+        raster_source_uniform_bytes_with_target_origin_and_mask,
     };
 
     #[test]
     fn target_origin_uses_tail_padding_bytes() {
-        let bytes = raster_source_uniform_bytes_with_target_origin(
+        let bytes = raster_source_uniform_bytes_with_target_origin_and_mask(
             GpuNormalRasterSource {
                 key: GpuRasterResourceKey {
                     layer_id: LayerId(1),
@@ -259,6 +178,7 @@ mod tests {
                 blend_mode: GpuRasterBlendMode::Normal,
             },
             (5, 6),
+            GpuMaskSamplingInfo::default(),
         );
 
         assert_eq!(&bytes[32..36], &3i32.to_ne_bytes());
@@ -285,11 +205,12 @@ mod tests {
 
     #[test]
     fn lut_filter_records_target_origin() {
-        let bytes = lut_filter_uniform_bytes_with_target_origin(
+        let bytes = lut_filter_uniform_bytes_with_target_origin_and_mask(
             0.75,
             true,
             crate::GpuLutFilterMode::GradientMapLum,
             (11, 12),
+            GpuMaskSamplingInfo::default(),
         );
 
         assert_eq!(&bytes[0..4], &0.75f32.to_ne_bytes());
@@ -301,7 +222,7 @@ mod tests {
 
     #[test]
     fn hsl_filter_records_parameters_in_padding_slots() {
-        let bytes = lut_filter_uniform_bytes_with_target_origin(
+        let bytes = lut_filter_uniform_bytes_with_target_origin_and_mask(
             1.0,
             false,
             GpuLutFilterMode::Hsl(GpuHslFilterParams {
@@ -310,6 +231,7 @@ mod tests {
                 luminosity_delta: 0.25,
             }),
             (0, 0),
+            GpuMaskSamplingInfo::default(),
         );
 
         assert_eq!(&bytes[8..12], &3u32.to_ne_bytes());

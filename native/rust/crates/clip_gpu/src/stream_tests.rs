@@ -1,3 +1,4 @@
+mod blend;
 mod cache;
 mod common;
 mod effects;

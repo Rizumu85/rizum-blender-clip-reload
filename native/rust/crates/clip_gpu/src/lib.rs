@@ -67,7 +67,6 @@ mod stream_tile_silo_plan;
 mod stream_tile_silo_upload;
 mod stream_utils;
 pub mod types;
-mod validation;
 
 pub use device::{GpuContext, GpuDeviceConfig, GpuDeviceError};
 pub use renderer::{GpuRenderError, GpuRenderer};
@@ -103,6 +102,6 @@ pub use stream_program_inspect::{
 pub use stream_tile_event::TILE_EVENT_ABI_VERSION;
 pub use types::{
     GpuClippedStackSource, GpuHslFilterParams, GpuLutFilterMode, GpuNormalRasterSource,
-    GpuNormalStackChunk, GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput,
-    GpuRasterPatchOutput, GpuRasterStackOutput,
+    GpuNormalStackSource, GpuRasterBlendMode, GpuRasterDrawOutput, GpuRasterPatchOutput,
+    GpuRasterStackOutput,
 };

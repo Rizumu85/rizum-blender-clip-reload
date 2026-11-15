@@ -1,15 +1,5 @@
-#[path = "pass_clipping.rs"]
-mod pass_clipping;
-#[path = "pass_container.rs"]
-mod pass_container;
-#[path = "pass_normal.rs"]
-mod pass_normal;
-#[path = "pass_normal_encode.rs"]
-mod pass_normal_encode;
 #[path = "pass_pipeline.rs"]
 mod pass_pipeline;
-#[path = "pass_through.rs"]
-mod pass_through;
 
 use clip_model::CanvasSize;
 pub(crate) use pass_pipeline::{
@@ -228,7 +218,3 @@ fn stack_resources<'a>(
         resources,
     })
 }
-
-#[cfg(test)]
-#[path = "pass_tests.rs"]
-mod pass_tests;
