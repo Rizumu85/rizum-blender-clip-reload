@@ -66,6 +66,8 @@ mod stream_tile_silo_pipeline;
 mod stream_tile_silo_plan;
 mod stream_tile_silo_upload;
 mod stream_utils;
+#[cfg(test)]
+mod test_support;
 pub mod types;
 
 pub use device::{GpuContext, GpuDeviceConfig, GpuDeviceError};

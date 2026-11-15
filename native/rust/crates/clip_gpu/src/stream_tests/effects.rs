@@ -3,13 +3,13 @@ use clip_model::{CanvasSize, Rgba8};
 
 use super::common::*;
 use crate::{
-    GpuClippedStackSource, GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource,
-    GpuRasterBlendMode, GpuRasterResourceKey, GpuRenderer,
+    GpuClippedStackSource, GpuNormalRasterSource, GpuNormalStackSource, GpuRasterBlendMode,
+    GpuRasterResourceKey,
 };
 
 #[test]
 fn streamed_zero_opacity_raster_skips_provider_request() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(11);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -34,7 +34,7 @@ fn streamed_zero_opacity_raster_skips_provider_request() {
 
 #[test]
 fn streamed_zero_opacity_container_skips_child_provider_request() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(12);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -74,7 +74,7 @@ fn streamed_ineffective_clipping_run_matches_direct_base() {
         expected: Option<Vec<u8>>,
     }
 
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
 
     let mut zero_opacity_expected = [255, 255, 255, 0].repeat(16);
     for y in 1..=2 {

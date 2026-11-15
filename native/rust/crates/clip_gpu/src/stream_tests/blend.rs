@@ -3,8 +3,8 @@ use clip_model::{CanvasSize, LayerId, Rgba8};
 
 use super::common::{InlineProvider, InlineRaster};
 use crate::{
-    GpuClippedStackSource, GpuDeviceConfig, GpuNormalRasterSource, GpuNormalStackSource,
-    GpuRasterBlendMode, GpuRasterResourceKey, GpuRenderer,
+    GpuClippedStackSource, GpuNormalRasterSource, GpuNormalStackSource, GpuRasterBlendMode,
+    GpuRasterResourceKey,
 };
 
 /// Serves one-pixel rasters placed at the canvas origin.
@@ -29,7 +29,7 @@ fn one_pixel_rasters(rasters: &[(GpuRasterResourceKey, [u8; 4])]) -> InlineProvi
 
 #[test]
 fn container_source_resolves_child_cache_with_opacity() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let sources = [GpuNormalStackSource::Container {
         children: vec![GpuNormalStackSource::SolidColor {
             color: Rgba8 {
@@ -64,7 +64,7 @@ fn container_source_resolves_child_cache_with_opacity() {
 
 #[test]
 fn raster_source_samples_with_canvas_offset() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = GpuRasterResourceKey {
         layer_id: LayerId(30),
         render_mipmap_id: 40,
@@ -98,7 +98,7 @@ fn raster_source_samples_with_canvas_offset() {
 
 #[test]
 fn container_source_resolves_child_cache_with_blend_mode() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let sources = [
         GpuNormalStackSource::SolidColor {
             color: Rgba8 {
@@ -138,7 +138,7 @@ fn container_source_resolves_child_cache_with_blend_mode() {
 
 #[test]
 fn normal_raster_source_uses_byte_domain_alpha_over() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = GpuRasterResourceKey {
         layer_id: LayerId(7),
         render_mipmap_id: 17,
@@ -177,7 +177,7 @@ fn normal_raster_source_uses_byte_domain_alpha_over() {
 
 #[test]
 fn through_group_resolves_before_after_delta_with_opacity() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let sources = [
         GpuNormalStackSource::SolidColor {
             color: Rgba8 {
@@ -222,7 +222,7 @@ fn through_group_resolves_before_after_delta_with_opacity() {
 
 #[test]
 fn container_with_through_child_resolves_non_empty_cache() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let sources = [GpuNormalStackSource::Container {
         children: vec![
             GpuNormalStackSource::ThroughGroup {
@@ -334,7 +334,7 @@ fn add_glow_raster_source_floors_first_partial_mix_into_transparent_target() {
 
 #[test]
 fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = GpuRasterResourceKey {
         layer_id: LayerId(30),
         render_mipmap_id: 40,
@@ -385,7 +385,7 @@ fn clipping_run_resolves_cache_with_base_blend_and_clipped_multiply() {
 
 #[test]
 fn container_clipping_run_matches_equivalent_raster_base_run() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = GpuRasterResourceKey {
         layer_id: LayerId(34),
         render_mipmap_id: 44,
@@ -467,7 +467,7 @@ fn container_clipping_run_matches_equivalent_raster_base_run() {
 
 #[test]
 fn clipping_run_preserves_base_alpha_with_byte_domain_clipped_blends() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = GpuRasterResourceKey {
         layer_id: LayerId(32),
         render_mipmap_id: 42,
@@ -567,7 +567,7 @@ fn draw_one_pixel_standard_blend_with_colors(
     pixels: [u8; 4],
     dest: Rgba8,
 ) -> Vec<u8> {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = GpuRasterResourceKey {
         layer_id: LayerId(20),
         render_mipmap_id: 30,

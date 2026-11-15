@@ -5,16 +5,16 @@ use clip_model::CanvasSize;
 
 use super::common::*;
 use crate::{
-    GpuClippedStackSource, GpuDeviceConfig, GpuLutFilterMode, GpuMaskResourceCache,
-    GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackResourceProvider,
-    GpuNormalStackSource, GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels,
-    GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey,
-    GpuRasterUpload, GpuRenderError, GpuRenderer,
+    GpuClippedStackSource, GpuLutFilterMode, GpuMaskResourceCache, GpuMaskResourceKey,
+    GpuNormalRasterSource, GpuNormalStackResourceProvider, GpuNormalStackSource,
+    GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels, GpuRasterBlendMode,
+    GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey, GpuRasterUpload,
+    GpuRenderError, GpuRenderer,
 };
 
 #[test]
 fn streamed_clipping_cache_resolves_from_cropped_origin() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = raster_key(1);
     let clipped_key = raster_key(2);
     let mut provider = InlineProvider::new(vec![
@@ -62,7 +62,7 @@ fn streamed_clipping_cache_resolves_from_cropped_origin() {
 
 #[test]
 fn streamed_clipping_run_collapses_clipped_raster_siblings_with_atlas_tiles() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = raster_key(101);
     let clipped_key = raster_key(102);
     let multiply_key = raster_key(103);
@@ -125,7 +125,7 @@ fn streamed_clipping_run_collapses_clipped_raster_siblings_with_atlas_tiles() {
 
 #[test]
 fn streamed_clipped_tile_silo_skips_chunks_outside_cropped_base() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = raster_key(111);
     let clipped_key = raster_key(112);
     let multiply_key = raster_key(113);
@@ -188,7 +188,7 @@ fn streamed_clipped_tile_silo_skips_chunks_outside_cropped_base() {
 
 #[test]
 fn streamed_clipping_run_tile_silo_resolves_base_blend_to_parent() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let background_key = raster_key(131);
     let base_key = raster_key(132);
     let clipped_key = raster_key(133);
@@ -251,7 +251,7 @@ fn streamed_clipping_run_tile_silo_resolves_base_blend_to_parent() {
 
 #[test]
 fn streamed_clipping_run_accepts_clipped_container_source() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = raster_key(30);
     let clipped_key = raster_key(31);
     let mut provider = InlineProvider::new(vec![
@@ -303,7 +303,7 @@ fn streamed_clipping_run_accepts_clipped_container_source() {
 
 #[test]
 fn streamed_container_cache_resolves_from_cropped_origin() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(3);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -337,7 +337,7 @@ fn streamed_container_cache_resolves_from_cropped_origin() {
 
 #[test]
 fn streamed_nested_container_resolves_into_cropped_parent_origin() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(4);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -377,7 +377,7 @@ fn streamed_nested_container_resolves_into_cropped_parent_origin() {
 
 #[test]
 fn streamed_through_cache_preserves_parent_dirty_outside_cropped_bounds() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let red_key = raster_key(5);
     let green_key = raster_key(6);
     let mut provider = InlineProvider::new(vec![
@@ -427,7 +427,7 @@ fn streamed_through_cache_preserves_parent_dirty_outside_cropped_bounds() {
 
 #[test]
 fn streamed_nested_through_group_resolves_inside_cropped_container() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let red_key = raster_key(7);
     let green_key = raster_key(8);
     let mut provider = InlineProvider::new(vec![
@@ -484,7 +484,7 @@ fn streamed_nested_through_group_resolves_inside_cropped_container() {
 
 #[test]
 fn streamed_lut_filter_scissors_to_existing_dirty_bounds() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(7);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -521,7 +521,7 @@ fn streamed_lut_filter_scissors_to_existing_dirty_bounds() {
 
 #[test]
 fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(9);
     let mask_key = mask_key(9);
     let mut mask_pixels = vec![0u8; 2 * 2];
@@ -573,7 +573,7 @@ fn streamed_masked_lut_filter_samples_mask_at_cropped_target_origin() {
 
 #[test]
 fn streamed_threshold_lut_filter_uses_threshold_luminance_weights() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(19);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -605,7 +605,7 @@ fn streamed_threshold_lut_filter_uses_threshold_luminance_weights() {
 
 #[test]
 fn streamed_hsl_filter_matches_csp_fixed_point_hsv_adjust_formula() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(29);
     let mut provider = InlineProvider::new(vec![(
         key,
@@ -637,7 +637,7 @@ fn streamed_hsl_filter_matches_csp_fixed_point_hsv_adjust_formula() {
 
 #[test]
 fn streamed_cropped_mask_uses_fill_value_outside_texture() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let key = raster_key(10);
     let mask_key = mask_key(10);
     let mut provider = InlineProvider::new(vec![(

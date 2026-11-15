@@ -6,17 +6,16 @@ use clip_model::CanvasSize;
 use super::common::*;
 use crate::stream_tile_silo::raster_silo_run_len;
 use crate::{
-    GpuClippedStackSource, GpuDeviceConfig, GpuMaskAtlasSource, GpuMaskAtlasTileChunk,
-    GpuMaskResourceCache, GpuMaskResourceKey, GpuNormalRasterSource,
-    GpuNormalStackResourceProvider, GpuNormalStackSource, GpuRasterAtlasPixels,
-    GpuRasterAtlasSource, GpuRasterAtlasTileChunk, GpuRasterAtlasTilePixels, GpuRasterBlendMode,
-    GpuRasterResourceCache, GpuRasterResourceInfo, GpuRasterResourceKey, GpuRenderError,
-    GpuRenderer,
+    GpuClippedStackSource, GpuMaskAtlasSource, GpuMaskAtlasTileChunk, GpuMaskResourceCache,
+    GpuMaskResourceKey, GpuNormalRasterSource, GpuNormalStackResourceProvider,
+    GpuNormalStackSource, GpuRasterAtlasPixels, GpuRasterAtlasSource, GpuRasterAtlasTileChunk,
+    GpuRasterAtlasTilePixels, GpuRasterBlendMode, GpuRasterResourceCache, GpuRasterResourceInfo,
+    GpuRasterResourceKey, GpuRenderError, GpuRenderer,
 };
 
 #[test]
 fn streamed_tile_silo_collapses_opaque_normal_raster_run() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let red_key = raster_key(40);
     let blue_key = raster_key(41);
     let mut provider = InlineProvider::new(vec![
@@ -76,7 +75,7 @@ fn streamed_tile_silo_collapses_opaque_normal_raster_run() {
 
 #[test]
 fn streamed_tile_silo_accepts_provider_backed_atlas_pixels() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let red_key = raster_key(140);
     let blue_key = raster_key(141);
     let mut provider = AtlasInlineProvider::new(vec![
@@ -126,7 +125,7 @@ fn streamed_tile_silo_accepts_provider_backed_atlas_pixels() {
 
 #[test]
 fn streamed_tile_silo_applies_leading_filter_before_raster_like_legacy_pass() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let child_key = raster_key(149);
     let sources = vec![
         GpuNormalStackSource::LutFilter {
@@ -175,7 +174,7 @@ fn streamed_tile_silo_applies_leading_filter_before_raster_like_legacy_pass() {
 
 #[test]
 fn streamed_tile_silo_applies_filter_only_run_after_legacy_source() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let sources = vec![
         GpuNormalStackSource::SolidColor {
             color: clip_model::Rgba8 {
@@ -204,7 +203,7 @@ fn streamed_tile_silo_applies_filter_only_run_after_legacy_source() {
 
 #[test]
 fn streamed_tile_silo_applies_masked_filter_only_run_like_legacy_pass() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let filter_mask_key = mask_key(168);
     let sources = vec![
         GpuNormalStackSource::SolidColor {
@@ -262,7 +261,7 @@ fn streamed_tile_silo_applies_masked_filter_only_run_like_legacy_pass() {
 
 #[test]
 fn streamed_tile_silo_lowers_simple_container_as_isolated_scope() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let multiply_key = raster_key(142);
     let mut multiply = raster_source_at(multiply_key, 1, 1);
     multiply.blend_mode = GpuRasterBlendMode::Multiply;
@@ -718,7 +717,7 @@ fn container_scope_cases() -> Vec<ParityCase> {
 
 #[test]
 fn streamed_tile_silo_container_scope_equals_legacy() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     for case in container_scope_cases() {
         assert_tile_path_matches_legacy(&renderer, &case);
     }
@@ -923,7 +922,7 @@ fn clipped_container_sibling_cases() -> Vec<ParityCase> {
 
 #[test]
 fn streamed_tile_silo_clipped_container_sibling_equals_legacy() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     for case in clipped_container_sibling_cases() {
         assert_tile_path_matches_legacy(&renderer, &case);
     }
@@ -1046,7 +1045,7 @@ fn through_scope_cases() -> Vec<ParityCase> {
 
 #[test]
 fn streamed_tile_silo_through_scope_equals_legacy() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     for case in through_scope_cases() {
         assert_tile_path_matches_legacy(&renderer, &case);
     }
@@ -1054,7 +1053,7 @@ fn streamed_tile_silo_through_scope_equals_legacy() {
 
 #[test]
 fn streamed_tile_silo_accepts_provider_backed_masked_normal_atlas_pixels() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let red_key = raster_key(240);
     let blue_key = raster_key(241);
     let blue_mask_key = mask_key(241);
@@ -1122,7 +1121,7 @@ fn streamed_tile_silo_accepts_provider_backed_masked_normal_atlas_pixels() {
 
 #[test]
 fn streamed_tile_silo_accepts_nonzero_target_origin() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let red_key = raster_key(47);
     let green_key = raster_key(48);
     let mut provider = InlineProvider::new(vec![
@@ -1186,7 +1185,7 @@ fn streamed_tile_silo_accepts_nonzero_target_origin() {
 
 #[test]
 fn streamed_tile_silo_applies_standard_blend_order() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = raster_key(42);
     let multiply_key = raster_key(43);
     let mut multiply = raster_source_at(multiply_key, 1, 1);
@@ -1228,7 +1227,7 @@ fn streamed_tile_silo_applies_standard_blend_order() {
 
 #[test]
 fn streamed_tile_silo_applies_byte_domain_special_blends() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let cases = [
         (
             GpuRasterBlendMode::AddGlow,
@@ -1316,7 +1315,7 @@ fn streamed_tile_silo_applies_byte_domain_special_blends() {
 
 #[test]
 fn streamed_tile_silo_accepts_provider_backed_masked_multiply_atlas_tiles() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create GPU renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base_key = raster_key(340);
     let multiply_key = raster_key(341);
     let multiply_mask_key = mask_key(341);

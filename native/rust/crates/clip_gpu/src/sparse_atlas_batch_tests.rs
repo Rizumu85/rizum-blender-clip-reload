@@ -1,11 +1,10 @@
 use clip_model::{CanvasSize, Rect};
 
 use crate::{
-    GpuDeviceConfig, GpuLutFilterMode, GpuRasterBlendMode, GpuRenderError, GpuRenderer,
-    GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent,
-    GpuSparseAtlasRasterEventBatch, GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool,
-    GpuSparseAtlasTexturePoolUpdate, GpuSparseAtlasTileRef, GpuSparseAtlasUpdateChunk,
-    split_sparse_atlas_raster_event_batches,
+    GpuLutFilterMode, GpuRasterBlendMode, GpuRenderError, GpuSparseAtlasFormat,
+    GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch,
+    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolUpdate,
+    GpuSparseAtlasTileRef, GpuSparseAtlasUpdateChunk, split_sparse_atlas_raster_event_batches,
 };
 
 #[test]
@@ -69,7 +68,7 @@ fn sparse_atlas_batch_split_separates_conflicting_mask_atlases() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_multiple_atlases_without_losing_prior_pixels() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let first = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -105,7 +104,7 @@ fn sparse_atlas_batch_executor_draws_multiple_atlases_without_losing_prior_pixel
 
 #[test]
 fn sparse_atlas_batch_executor_draws_over_base_accumulator() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -134,7 +133,7 @@ fn sparse_atlas_batch_executor_draws_over_base_accumulator() {
 
 #[test]
 fn sparse_atlas_batch_executor_returns_base_when_batches_are_empty() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base = vec![1, 2, 3, 255, 4, 5, 6, 255];
 
     let output = renderer
@@ -151,7 +150,7 @@ fn sparse_atlas_batch_executor_returns_base_when_batches_are_empty() {
 
 #[test]
 fn sparse_atlas_batch_executor_rejects_wrong_base_size() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let err = renderer
         .draw_sparse_atlas_raster_event_batches_over_rgba8(
             CanvasSize::new(2, 1),
@@ -172,7 +171,7 @@ fn sparse_atlas_batch_executor_rejects_wrong_base_size() {
 
 #[test]
 fn sparse_atlas_batch_executor_reads_dirty_patches_over_base_accumulator() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -208,7 +207,7 @@ fn sparse_atlas_batch_executor_reads_dirty_patches_over_base_accumulator() {
 
 #[test]
 fn sparse_atlas_batch_executor_reads_base_patches_when_batches_are_empty() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let base = vec![1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255];
 
     let output = renderer
@@ -226,7 +225,7 @@ fn sparse_atlas_batch_executor_reads_base_patches_when_batches_are_empty() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_clipping_run_batch() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
         atlas_id: 15,
@@ -254,7 +253,7 @@ fn sparse_atlas_batch_executor_draws_clipping_run_batch() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_point_filter_batch_over_base() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let batch =
         GpuSparseAtlasRasterEventBatch::point_filter_run(vec![GpuSparseAtlasPointFilterEvent {
             lut_rgba: invert_lut(),
@@ -279,7 +278,7 @@ fn sparse_atlas_batch_executor_draws_point_filter_batch_over_base() {
 
 #[test]
 fn sparse_atlas_batch_executor_applies_point_filter_mask() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mask = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::R8,
         atlas_id: 16,
@@ -317,7 +316,7 @@ fn sparse_atlas_batch_executor_applies_point_filter_mask() {
 
 #[test]
 fn sparse_atlas_batch_executor_applies_split_point_filter_masks() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mask = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::R8,
         atlas_id: 17,

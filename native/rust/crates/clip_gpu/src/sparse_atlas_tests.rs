@@ -1,13 +1,11 @@
 use clip_model::CanvasSize;
 
-use crate::{
-    GpuDeviceConfig, GpuRenderError, GpuRenderer, GpuSparseAtlasFormat, GpuSparseAtlasUpdateChunk,
-};
+use crate::{GpuRenderError, GpuSparseAtlasFormat, GpuSparseAtlasUpdateChunk};
 use crate::{GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolUpdate};
 
 #[test]
 fn sparse_rgba_atlas_updates_regions_in_place() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let atlas = renderer
         .create_sparse_atlas_texture(CanvasSize::new(2, 2), GpuSparseAtlasFormat::Rgba8)
         .expect("create sparse atlas");
@@ -44,7 +42,7 @@ fn sparse_rgba_atlas_updates_regions_in_place() {
 
 #[test]
 fn sparse_atlas_rejects_short_chunk_payload() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let atlas = renderer
         .create_sparse_atlas_texture(CanvasSize::new(2, 2), GpuSparseAtlasFormat::Rgba8)
         .expect("create sparse atlas");
@@ -72,7 +70,7 @@ fn sparse_atlas_rejects_short_chunk_payload() {
 
 #[test]
 fn sparse_atlas_rejects_out_of_bounds_chunk() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let atlas = renderer
         .create_sparse_atlas_texture(CanvasSize::new(2, 2), GpuSparseAtlasFormat::R8)
         .expect("create sparse atlas");
@@ -102,7 +100,7 @@ fn sparse_atlas_rejects_out_of_bounds_chunk() {
 
 #[test]
 fn sparse_atlas_pool_reuses_existing_texture() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let key = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -151,7 +149,7 @@ fn sparse_atlas_pool_reuses_existing_texture() {
 
 #[test]
 fn sparse_atlas_pool_rejects_size_change_for_existing_key() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let key = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,

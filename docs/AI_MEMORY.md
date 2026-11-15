@@ -207,17 +207,17 @@ Useful commands:
 ```powershell
 cd native\rust
 cargo fmt --all --check
-cargo test --workspace -- --test-threads=4
+cargo test --workspace
 cargo run -q -p clip_cli -- ..\..\img\Test_AddGlowMultiply.clip --compare-png ..\..\img\Test_AddGlowMultiply.png
 cargo run -q -p clip_cli -- ..\..\img\Test_ToneCurve.clip --compare-png ..\..\img\Test_ToneCurve.png
 ```
 
 Python add-on tests (repo root): `python -m unittest discover -s tests`.
 
-Local GPU runs need the thread cap above: every GPU test creates its own wgpu
-device, and the default thread count creates dozens at once, which crashes or
-deadlocks the `clip_gpu` test process, while CI's software adapter copes
-without it. If `clip_gpu` still hangs, rerun it with `--test-threads=1`.
+`clip_gpu` GPU tests share one renderer through
+`crate::test_support::shared_renderer()`. Do not create a `GpuRenderer` per
+test: that made the suite take minutes and could deadlock the GPU driver when
+tests ran in parallel.
 
 Convergence gate:
 

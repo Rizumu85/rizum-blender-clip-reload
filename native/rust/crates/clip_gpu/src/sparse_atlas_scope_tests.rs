@@ -1,16 +1,16 @@
 use clip_model::{CanvasSize, Rect};
 
 use crate::{
-    GpuDeviceConfig, GpuLutFilterMode, GpuRasterBlendMode, GpuRenderer, GpuSparseAtlasFormat,
-    GpuSparseAtlasPointFilterEvent, GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch,
-    GpuSparseAtlasScopeEvent, GpuSparseAtlasScopeEventKind, GpuSparseAtlasSolidColorEvent,
-    GpuSparseAtlasTextureKey, GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolUpdate,
-    GpuSparseAtlasTileEvent, GpuSparseAtlasTileRef, GpuSparseAtlasUpdateChunk,
+    GpuLutFilterMode, GpuRasterBlendMode, GpuSparseAtlasFormat, GpuSparseAtlasPointFilterEvent,
+    GpuSparseAtlasRasterEvent, GpuSparseAtlasRasterEventBatch, GpuSparseAtlasScopeEvent,
+    GpuSparseAtlasScopeEventKind, GpuSparseAtlasSolidColorEvent, GpuSparseAtlasTextureKey,
+    GpuSparseAtlasTexturePool, GpuSparseAtlasTexturePoolUpdate, GpuSparseAtlasTileEvent,
+    GpuSparseAtlasTileRef, GpuSparseAtlasUpdateChunk,
 };
 
 #[test]
 fn sparse_atlas_batch_executor_draws_simple_container_scope() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -36,7 +36,7 @@ fn sparse_atlas_batch_executor_draws_simple_container_scope() {
 
 #[test]
 fn sparse_atlas_batch_executor_applies_simple_container_scope_mask() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -77,7 +77,7 @@ fn sparse_atlas_batch_executor_applies_simple_container_scope_mask() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_split_scope_mask_batches() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -132,7 +132,7 @@ fn sparse_atlas_batch_executor_draws_split_scope_mask_batches() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_nested_split_scope_masks() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -197,7 +197,7 @@ fn sparse_atlas_batch_executor_draws_nested_split_scope_masks() {
 
 #[test]
 fn sparse_atlas_batch_executor_applies_simple_container_scope_point_filter() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -232,7 +232,7 @@ fn sparse_atlas_batch_executor_applies_simple_container_scope_point_filter() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_simple_container_scope_solid_color() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let batch = GpuSparseAtlasRasterEventBatch::simple_container_scope_tile_events(
         vec![GpuSparseAtlasTileEvent::SolidColor(
             GpuSparseAtlasSolidColorEvent {
@@ -265,7 +265,7 @@ fn sparse_atlas_batch_executor_draws_simple_container_scope_solid_color() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_simple_container_scope_clipping_run() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -306,7 +306,7 @@ fn sparse_atlas_batch_executor_draws_simple_container_scope_clipping_run() {
 
 #[test]
 fn sparse_atlas_batch_executor_draws_clipped_container_sibling() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -356,7 +356,7 @@ fn sparse_atlas_batch_executor_draws_clipped_container_sibling() {
 
 #[test]
 fn sparse_atlas_batch_executor_filters_clipped_container_sibling() {
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let mut pool = GpuSparseAtlasTexturePool::default();
     let raster = GpuSparseAtlasTextureKey {
         format: GpuSparseAtlasFormat::Rgba8,
@@ -523,7 +523,7 @@ fn sparse_atlas_batch_executor_draws_clipped_container_sibling_variants() {
         ]
     }
 
-    let renderer = GpuRenderer::new(GpuDeviceConfig::default()).expect("create renderer");
+    let renderer = crate::test_support::shared_renderer();
     let cases = [
         Case {
             name: "solid color clipped container sibling",
